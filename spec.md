@@ -387,3 +387,8 @@ Verlängerungsanfragen.
   Text-Tests (Host) + 5 inkl. GUI offscreen gegen Fake-Agent (VM, PySide6 6.12). VM: Paket-Upgrade
   (Agent per post_upgrade neu gestartet, Socket 0666), SO_PEERCRED mit echten Usern (`admin` →
   nicht eingeschränkt + Chat abgelehnt; `kind` → Zustand „Max“, Nachricht beim Server).
+- 2026-10-13: Tray-App im VM-Fenster vom Nutzer bestätigt (Plasma, Paket 0.2.0): Symbol mit
+  Restminuten + Farbe, Chat senden, Verlängerung anfragen („Wartet auf Antwort“), Eltern-Antwort
+  als KDE-Benachrichtigung und im Chat, Genehmigung (+15 min) als Benachrichtigung, Status im Chat
+  und sofort höhere Restzeit im Symbol. Noch nicht sichtbar geprüft: Klick auf den Knopf
+  „Verlängerung anfordern“ in einer Warnung.
