@@ -452,3 +452,7 @@ Verlängerungsanfragen.
   Regressionstests (Agent gesamt 55); VM mit Autologin (nur für den Test): Login im Protokollmodus
   (nur `cpp`/`cc1` gemeldet), dann Login im Modus „Sperren“: kwin, plasmashell, ksmserver, pipewire,
   Xwayland und Tray-App laufen, nichts gesperrt.
+- 2026-10-13: Programm-Whitelist Modus „Sperren“ vom Nutzer im VM-Fenster bestätigt: nicht
+  freigegebene Apps (Dolphin, Systemeinstellungen, Konsole) werden sofort beendet mit
+  Benachrichtigung, freigegebene (Firefox, Kate) funktionieren, Tray-App läuft, Ab-/Anmelden mit
+  Passwort funktioniert. Sperrprotokoll im WebUI gefüllt.
