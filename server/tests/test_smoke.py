@@ -10,7 +10,7 @@ from kidctl_common import protocol as p
 from app.db import SessionLocal
 from app.models import Child, Device, Parent
 
-from conftest import PASSWORD, csrf_from, login
+from conftest import PASSWORD, csrf_from, login, recv
 
 
 def test_redirect_without_session(client):
@@ -103,16 +103,16 @@ def test_pairing_websocket_mapping_revoke(client, parent):
     with client.websocket_connect(p.WS_PATH, headers=headers) as ws:
         ws.send_text(p.Hello(protocol_version=p.PROTOCOL_VERSION, agent_version="0.1.0",
                              hostname="max-pc").model_dump_json())
-        welcome = p.server_message_adapter.validate_json(ws.receive_text())
+        welcome = recv(ws)
         assert isinstance(welcome, p.Welcome) and welcome.device_id == enrolled.device_id
 
         ws.send_text(p.Ping().model_dump_json())
-        assert isinstance(p.server_message_adapter.validate_json(ws.receive_text()), p.Pong)
+        assert isinstance(recv(ws), p.Pong)
 
         ws.send_text(p.ReportUsers(users=[p.LocalUser(username="max", uid=1001, full_name="Max"),
                                           p.LocalUser(username="papa", uid=1000)]).model_dump_json())
         ws.send_text(p.Ping().model_dump_json())
-        ws.receive_text()  # Pong -> Bericht verarbeitet
+        assert isinstance(recv(ws), p.Pong)  # Bericht verarbeitet
 
         page = client.get(f"/devices/{enrolled.device_id}")
         assert "online" in page.text and "max" in page.text and "papa" in page.text
@@ -131,7 +131,7 @@ def test_pairing_websocket_mapping_revoke(client, parent):
         # Widerruf trennt die laufende Verbindung
         client.post(f"/devices/{enrolled.device_id}/revoke", data={"csrf_token": csrf_from(page.text)})
         with pytest.raises(WebSocketDisconnect) as exc:
-            ws.receive_text()
+            recv(ws)  # vorher evtl. noch die Policy nach der Zuordnung
         assert exc.value.code == p.CLOSE_REVOKED
 
     # Widerrufenes Token wird abgewiesen
@@ -147,7 +147,7 @@ def test_websocket_unsupported_version(client, parent):
     token = client.post(p.ENROLL_PATH, json={"code": code, "hostname": "alt"}).json()["token"]
     with client.websocket_connect(p.WS_PATH, headers={"Authorization": f"Bearer {token}"}) as ws:
         ws.send_text(p.Hello(protocol_version=0, agent_version="0.0.1", hostname="alt").model_dump_json())
-        err = p.server_message_adapter.validate_json(ws.receive_text())
+        err = recv(ws)
         assert isinstance(err, p.Error) and err.code == "unsupported_version"
         with pytest.raises(WebSocketDisconnect) as exc:
             ws.receive_text()

@@ -17,7 +17,7 @@ from ..db import get_db
 from ..models import (
     Child, DayException, Device, Message, PairingCode, Parent, ParentSession, WeekdayRule, utcnow,
 )
-from .. import chat
+from .. import chat, policy
 from .. import schedule as sch
 from ..security import (
     csrf_protect, hash_password, new_pairing_code, new_totp_secret, require_session, token_hash,
@@ -48,7 +48,8 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     devices = db.scalars(select(Device).where(Device.revoked_at.is_(None)).order_by(Device.name)).all()
     chat.expire_stale_requests(db)
     return render(request, "dashboard.html", children=children, devices=devices, online=manager.is_online,
-                  pending=chat.pending_count(db))
+                  pending=chat.pending_count(db), status={c.id: policy.day_status(db, c) for c in children},
+                  fmt_minutes=sch.fmt_minutes)
 
 
 # ---------- Kinder ----------
@@ -81,9 +82,12 @@ def child_create(request: Request, name: str = Form(...), db: Session = Depends(
 
 
 @router.post("/children/{child_id}/delete", dependencies=[Depends(csrf_protect)])
-def child_delete(child_id: int, db: Session = Depends(get_db)):
-    db.delete(_get_or_404(db, Child, child_id))
+async def child_delete(child_id: int, db: Session = Depends(get_db)):
+    child = _get_or_404(db, Child, child_id)
+    devices = chat.device_ids_for_child(db, child.id)
+    db.delete(child)
     db.commit()
+    await policy.push_policies(db, devices)
     return _redirect("/children")
 
 
@@ -121,11 +125,12 @@ async def child_schedule(child_id: int, request: Request, db: Session = Depends(
         db.rollback()
         return _child_page(request, db, child, status_code=400, error=str(e))
     db.commit()
+    await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
     return _redirect(f"/children/{child_id}?saved=1")
 
 
 @router.post("/children/{child_id}/credit", dependencies=[Depends(csrf_protect)])
-def child_credit(child_id: int, request: Request, day: str = Form(...), extra_minutes: str = Form("0"),
+async def child_credit(child_id: int, request: Request, day: str = Form(...), extra_minutes: str = Form("0"),
                  window_end: str = Form(""), db: Session = Depends(get_db)):
     """Direkte Gutschrift ohne Anfrage = Tagesausnahme für genau ein Datum."""
     child = _get_or_404(db, Child, child_id)
@@ -135,16 +140,18 @@ def child_credit(child_id: int, request: Request, day: str = Form(...), extra_mi
         return _child_page(request, db, child, status_code=400, error=str(e), credit_day=day)
     sch.add_credit(db, child, the_day, extra, override)
     db.commit()
+    await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
     return _redirect(f"/children/{child_id}")
 
 
 @router.post("/children/{child_id}/exceptions/{exc_id}/delete", dependencies=[Depends(csrf_protect)])
-def child_exception_delete(child_id: int, exc_id: int, db: Session = Depends(get_db)):
+async def child_exception_delete(child_id: int, exc_id: int, db: Session = Depends(get_db)):
     exc = _get_or_404(db, DayException, exc_id)
     if exc.child_id != child_id:
         raise HTTPException(404)
     db.delete(exc)
     db.commit()
+    await policy.push_policies(db, chat.device_ids_for_child(db, child_id))
     return _redirect(f"/children/{child_id}")
 
 
@@ -214,6 +221,8 @@ async def child_request_decide(child_id: int, msg_id: int, request: Request,
         db.rollback()
         return render(request, "chat.html", status_code=400, **_chat_ctx(db, child), error=str(e))
     await chat.push_to_child(db, msg)
+    if msg.status == "approved":
+        await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
     return _redirect(f"/children/{child_id}/chat#m{msg.id}")
 
 
@@ -243,7 +252,8 @@ def device_detail(device_id: int, request: Request, db: Session = Depends(get_db
     device = _get_or_404(db, Device, device_id)
     children = db.scalars(select(Child).order_by(Child.name)).all()
     return render(request, "device.html", device=device, children=children,
-                  online=manager.is_online(device.id), supported=sorted(SUPPORTED_VERSIONS))
+                  online=manager.is_online(device.id), supported=sorted(SUPPORTED_VERSIONS),
+                  policy_current=policy.policy_current(db, device))
 
 
 @router.post("/devices/{device_id}/mapping", dependencies=[Depends(csrf_protect)])
@@ -255,6 +265,7 @@ async def device_mapping(device_id: int, request: Request, db: Session = Depends
         raw = str(form.get(f"user_{du.id}", ""))
         du.child_id = int(raw) if raw.isdigit() and int(raw) in child_ids else None
     db.commit()
+    await policy.send_policy(db, device_id)
     return _redirect(f"/devices/{device_id}")
 
 

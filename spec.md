@@ -1,6 +1,6 @@
 # Parental Control für Arch Linux – Spezifikation
 
-Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Server-Grundgerüst, Bildschirmzeit-Konfiguration, Chat/Verlängerungen und PWA/Web Push (Server) umgesetzt, Client noch nicht.
+Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Serverseite für Bildschirmzeit, Chat/Verlängerungen, PWA/Web Push, Policy-Verteilung und Offline-Alarm umgesetzt; Client noch nicht.
 Arbeitstitel: `kidctl` (Name noch nicht final). Deploy unter `kids.nossco.de` (Annahme).
 
 ## Hintergrund
@@ -83,6 +83,18 @@ Verlängerungsanfragen.
 - Messung der Dauer über monotone Uhr (`CLOCK_BOOTTIME`); Systemuhr nur für Tag/Zeitfenster.
 - Geräteübergreifend pro Kind summiert. Überziehung durch gleichzeitige Offline-Nutzung auf
   mehreren Geräten wird im WebUI nur angezeigt, nicht automatisch verrechnet.
+- Synchronisation: Agent meldet je (Linux-User, Tag) seinen **absoluten** lokalen Zählerstand
+  (`usage_report`, idempotent, Server übernimmt das Maximum). Server sendet je Kind die Summe
+  der **anderen** Geräte (`usage_update`); effektive Nutzung = eigene Zählung + andere Geräte.
+  Nicht zugeordnete User und Meldungen außerhalb von heute−7 … heute+1 werden ignoriert.
+
+### Policy-Verteilung
+- Server sendet nach dem Handshake und nach jeder relevanten Änderung (Wochenvorlage,
+  Gutschrift, Genehmigung, Ausnahme entfernt, Zuordnung, Kind gelöscht) die vollständige Policy
+  des Geräts: Zeitzone, Zuordnung User → Kind (nur zugeordnete User), Wochenregeln und
+  Tagesausnahmen ab gestern.
+- `version` = Hash des Inhalts; Agent bestätigt per `policy_ack`, WebUI zeigt je Gerät
+  „aktuell / veraltet / noch nicht übertragen“.
 
 ### Ablauf bei Zeitende
 - Vorwarnungen bei 15, 5 und 1 Minute(n) als KDE-Benachrichtigung mit Knopf
@@ -182,6 +194,7 @@ Verlängerungsanfragen.
 - **Kein** Verlauf erlaubter Websites.
 - Push-Alarme:
   - Gerät hat sich länger als X Stunden nicht gemeldet (Standard 48 h, pro Gerät einstellbar).
+    Prüfung alle 5 min, ein Alarm pro Offline-Phase (erneut erst nach erneuter Meldung).
   - Integritätsfehler des Agenten (z. B. nftables-Regeln fehlen, PAM-Konfiguration verändert).
 
 ## Verteilung & Updates
@@ -252,3 +265,15 @@ Verlängerungsanfragen.
   Entfernen bei 410) – gesamt 33 grün; Live-Smoke-Test mit uvicorn (Seiten, Abo, Push an
   unerreichbaren Endpunkt blockiert Chat nicht, Abo bleibt). **Nicht getestet:** Zustellung
   über einen echten Push-Dienst an einen echten Browser/ein Handy (nach Deployment prüfen).
+- 2026-10-13: Policy-Verteilung & Nutzungszeit: Protokoll v1 um `policy`, `policy_ack`,
+  `usage_report`, `usage_update` erweitert; Push der Policy bei allen Regeländerungen;
+  geräteübergreifende Summe; Übersicht zeigt je Kind „heute genutzt / erlaubt / Rest“ und
+  Überziehung; Geräteseite zeigt Policy-Stand. Offline-Alarm als Hintergrundaufgabe mit Web Push.
+  Migration `device`: `policy_version`, `offline_alerted_at`; neue Tabelle `usage_record`.
+  Getestet: 8 neue pytest-Tests (Policy bei Verbindung/Zuordnung/Ack/Regeländerung,
+  Gutschrift + Ausnahme entfernen, Kind löschen hebt Einschränkung auf, Summe über zwei Geräte
+  inkl. Maximum-Regel/ignorierte Einträge/Überziehungsanzeige, Nachholen nach Reconnect,
+  Offline-Alarm einmal pro Phase, kein Alarm für verbundene/widerrufene Geräte, Migration) –
+  gesamt 41 grün; Live-Smoke-Test mit uvicorn gegen Alt-Datenbank (Migration im Log) und zwei
+  `websockets`-Agenten (Policy, Ack, `usage_update` an das andere Gerät, Gutschrift an beide,
+  Übersicht).

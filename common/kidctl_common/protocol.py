@@ -154,11 +154,80 @@ class ChatMessage(BaseModel):
     approved_window_end: time | None = None
 
 
+# ---------- Policy & Nutzungszeit ----------
+# Der Server sendet nach ``welcome`` und nach jeder Änderung die vollständige ``policy`` des
+# Geräts. ``version`` ist ein Hash des Inhalts; der Agent bestätigt mit ``policy_ack``, cacht die
+# Policy lokal und setzt sie auch offline durch. Linux-User, die nicht in ``users`` stehen, sind
+# nicht eingeschränkt.
+#
+# Nutzungszeit: Der Agent meldet je (Linux-User, Tag) seine *absolute* lokal gezählte Zeit
+# (idempotent, Server übernimmt das Maximum). Für die geräteübergreifende Summe sendet der Server
+# je Kind ``usage_update`` mit der Zeit *aller anderen* Geräte; effektive Nutzung = eigene
+# Zählung + ``others_seconds``.
+
+
+class DayRule(BaseModel):
+    weekday: int = Field(ge=0, le=6)  # 0 = Montag
+    quota_minutes: int = Field(ge=0)
+    window_start: time
+    window_end: time
+
+
+class DayOverride(BaseModel):
+    day: date
+    extra_minutes: int = Field(default=0, ge=0)
+    window_end_override: time | None = None
+
+
+class ChildPolicy(BaseModel):
+    id: int
+    name: str
+    rules: list[DayRule]
+    exceptions: list[DayOverride] = []
+
+
+class Policy(BaseModel):
+    """Server -> Agent: vollständige Policy für dieses Gerät."""
+    type: Literal["policy"] = "policy"
+    version: str
+    timezone: str  # Tageswechsel/Zeitfenster in dieser Zone (z. B. Europe/Berlin)
+    users: dict[str, int]  # Linux-Username -> Kind-ID
+    children: list[ChildPolicy]
+
+
+class PolicyAck(BaseModel):
+    """Agent -> Server: Policy ``version`` übernommen und gecacht."""
+    type: Literal["policy_ack"] = "policy_ack"
+    version: str = Field(max_length=64)
+
+
+class UsageEntry(BaseModel):
+    username: str = Field(max_length=64)
+    day: date
+    seconds: int = Field(ge=0, le=2 * 86400)
+
+
+class UsageReport(BaseModel):
+    """Agent -> Server: absolute Nutzungszeit je (User, Tag) auf diesem Gerät."""
+    type: Literal["usage_report"] = "usage_report"
+    entries: list[UsageEntry] = Field(max_length=200)
+
+
+class UsageUpdate(BaseModel):
+    """Server -> Agent: Nutzungszeit des Kindes an ``day`` auf allen *anderen* Geräten."""
+    type: Literal["usage_update"] = "usage_update"
+    child_id: int
+    day: date
+    others_seconds: int
+
+
 AgentMessage = Annotated[
-    Union[Hello, Ping, Pong, ReportUsers, ChatSend, ExtensionRequest, ChatSync],
+    Union[Hello, Ping, Pong, ReportUsers, ChatSend, ExtensionRequest, ChatSync, PolicyAck,
+          UsageReport],
     Field(discriminator="type")]
 ServerMessage = Annotated[
-    Union[Welcome, Error, Ping, Pong, Ack, ChatMessage], Field(discriminator="type")]
+    Union[Welcome, Error, Ping, Pong, Ack, ChatMessage, Policy, UsageUpdate],
+    Field(discriminator="type")]
 
 agent_message_adapter: TypeAdapter[AgentMessage] = TypeAdapter(AgentMessage)
 server_message_adapter: TypeAdapter[ServerMessage] = TypeAdapter(ServerMessage)

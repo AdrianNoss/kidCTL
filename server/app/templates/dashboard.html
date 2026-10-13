@@ -4,7 +4,20 @@
 <section class="card">
   <h2>Kinder</h2>
   {% if children %}
-  <ul>{% for c in children %}<li><a href="/children/{{ c.id }}">{{ c.name }}</a> · <a href="/children/{{ c.id }}/chat">Chat</a>{% if pending.get(c.id) %} <span class="badge">{{ pending[c.id] }} Anfrage(n) offen</span>{% endif %}</li>{% endfor %}</ul>
+  <table>
+    <tr><th>Kind</th><th>Heute genutzt</th><th>Rest</th><th>Fenster</th><th></th></tr>
+    {% for c in children %}{% set st = status[c.id] %}
+    <tr>
+      <td><a href="/children/{{ c.id }}">{{ c.name }}</a></td>
+      <td>{{ fmt_minutes(st.used_seconds // 60) }} von {{ fmt_minutes(st.allowed_minutes) }}</td>
+      <td>{% if st.overrun_minutes %}<span class="warn">überzogen um {{ st.overrun_minutes }} min</span>
+          {% else %}{{ fmt_minutes(st.remaining_minutes) }}{% endif %}</td>
+      <td>{% if st.window_start %}{{ st.window_start.strftime("%H:%M") }}–{{ st.window_end.strftime("%H:%M") }}{% endif %}</td>
+      <td class="right"><a href="/children/{{ c.id }}/chat">Chat</a>{% if pending.get(c.id) %} <span class="badge">{{ pending[c.id] }} Anfrage(n) offen</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <p class="muted">Summe über alle Geräte, Stand der letzten Meldungen. Überziehung durch gleichzeitige Offline-Nutzung wird nur angezeigt, nicht verrechnet.</p>
   {% else %}<p class="muted">Noch keine Kinder angelegt. <a href="/children">Kind anlegen</a></p>{% endif %}
 </section>
 <section class="card">

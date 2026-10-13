@@ -36,5 +36,6 @@ export KIDCTL_DEV=1 KIDCTL_DATA_DIR=./data BASE_URL=http://127.0.0.1:8000 PYTHON
 Handshake: Agent sendet `hello {protocol_version, agent_version, hostname}`, Server antwortet
 `welcome` bzw. `error unsupported_version` + Close 4426. Weitere Nachrichten: `ping`/`pong`,
 `report_users`, Chat: `chat_send`, `extension_request`, `chat_sync` (Agent → Server),
-`ack`, `chat_message` (Server → Agent). Close-Codes: 4401 Token ungültig, 4403 widerrufen, 4400 Protokollfehler,
+`ack`, `chat_message` (Server → Agent). Policy & Nutzung: `policy`, `usage_update`
+(Server → Agent), `policy_ack`, `usage_report` (Agent → Server). Close-Codes: 4401 Token ungültig, 4403 widerrufen, 4400 Protokollfehler,
 4409 durch neuere Verbindung ersetzt.

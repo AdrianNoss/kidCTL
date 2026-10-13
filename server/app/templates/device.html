@@ -9,6 +9,7 @@
     <dt>Zuletzt gesehen</dt><dd>{{ device.last_seen_at | localtime }}</dd>
     <dt>Agent</dt><dd>{{ device.agent_version or "–" }} (Protokoll {{ device.protocol_version or "–" }})
       {% if device.protocol_unsupported %}<span class="warn">veraltet – Server unterstützt {{ supported | join(", ") }}. Agent per <code>pacman -Syu</code> aktualisieren; Durchsetzung läuft mit letzter Policy weiter.</span>{% endif %}</dd>
+    <dt>Policy</dt><dd>{% if policy_current %}<span class="ok">aktuell</span>{% elif device.policy_version %}<span class="warn">veraltet – wird beim nächsten Verbinden übertragen</span>{% else %}noch nicht übertragen{% endif %}</dd>
     <dt>Gekoppelt am</dt><dd>{{ device.created_at | localtime }}</dd>
   </dl>
 </section>

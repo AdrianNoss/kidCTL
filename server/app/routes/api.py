@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from kidctl_common import protocol as p
 
-from .. import chat
+from .. import chat, policy
 from ..db import SessionLocal, get_db
 from ..models import Device, DeviceUser, PairingCode, utcnow
 from ..security import (
@@ -111,6 +111,8 @@ async def agent_ws(ws: WebSocket):
         server_time=datetime.now(timezone.utc).isoformat()))
     log.info("Gerät %s verbunden (Agent %s, Protokoll %s)",
              device_id, hello.agent_version, hello.protocol_version)
+    with SessionLocal() as db:
+        await policy.send_policy(db, device_id)
 
     last_seen = utcnow()
     try:
@@ -142,6 +144,12 @@ async def agent_ws(ws: WebSocket):
                     if new is not None:
                         await chat.push_to_child(db, new)
                         chat.notify_parents_new(db, new)
+                elif isinstance(msg, p.PolicyAck):
+                    dev.policy_version = msg.version
+                    db.commit()
+                elif isinstance(msg, p.UsageReport):
+                    changed = policy.record_usage(db, device_id, msg)
+                    await policy.push_usage_updates(db, changed, device_id)
                 elif isinstance(msg, p.ChatSync):
                     chat.expire_stale_requests(db)
                     for m in chat.history_for_agent(db, device_id, msg):

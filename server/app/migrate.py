@@ -22,6 +22,9 @@ COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
     ("message", "approved_window_end", "TIME"),
     ("message", "device_id", "INTEGER REFERENCES device(id) ON DELETE SET NULL"),
     ("message", "client_msg_id", "VARCHAR(64)"),
+    # 2026-10-13: Policy-Verteilung, Offline-Alarm
+    ("device", "policy_version", "VARCHAR(64) NOT NULL DEFAULT ''"),
+    ("device", "offline_alerted_at", "DATETIME"),
 ]
 
 

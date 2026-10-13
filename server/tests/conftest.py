@@ -76,3 +76,12 @@ def login(client, parent, password=PASSWORD, code=None):
         "csrf_token": csrf_from(page.text), "username": parent.username, "password": password,
         "totp": code or pyotp.TOTP(parent.totp_secret).now(),
     }, follow_redirects=False)
+
+
+def recv(ws, keep_policy=False):
+    """Nächste Server-Nachricht; Policy/UsageUpdate werden übersprungen, außer keep_policy."""
+    from kidctl_common import protocol as p
+    while True:
+        msg = p.server_message_adapter.validate_json(ws.receive_text())
+        if keep_policy or not isinstance(msg, (p.Policy, p.UsageUpdate)):
+            return msg

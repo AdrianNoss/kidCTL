@@ -120,6 +120,8 @@ class Device(Base):
     protocol_version: Mapped[int] = mapped_column(Integer, default=0)
     protocol_unsupported: Mapped[bool] = mapped_column(Boolean, default=False)
     alert_after_hours: Mapped[int] = mapped_column(Integer, default=48)
+    policy_version: Mapped[str] = mapped_column(String(64), default="")  # vom Agenten bestätigt
+    offline_alerted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     users: Mapped[list[DeviceUser]] = relationship(
         back_populates="device", cascade="all, delete-orphan", order_by="DeviceUser.username")
@@ -140,6 +142,21 @@ class DeviceUser(Base):
 
     device: Mapped[Device] = relationship(back_populates="users")
     child: Mapped[Child | None] = relationship()
+
+
+class UsageRecord(Base):
+    """Absolute Nutzungszeit je (Gerät, Linux-User, Tag), wie vom Agenten gemeldet."""
+    __tablename__ = "usage_record"
+    __table_args__ = (UniqueConstraint("device_id", "username", "day"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    device_id: Mapped[int] = mapped_column(ForeignKey("device.id", ondelete="CASCADE"))
+    username: Mapped[str] = mapped_column(String(64))
+    day: Mapped[date] = mapped_column(Date, index=True)
+    child_id: Mapped[int | None] = mapped_column(
+        ForeignKey("child.id", ondelete="CASCADE"), nullable=True, index=True)
+    seconds: Mapped[int] = mapped_column(Integer, default=0)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class PairingCode(Base):

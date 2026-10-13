@@ -12,15 +12,14 @@ from app.db import SessionLocal
 from app.models import Child, DayException, Device, Message
 from app.schedule import today_local
 
-from conftest import csrf_from, login
+from conftest import csrf_from, login, recv
 
 
 def _cid() -> str:
     return uuid.uuid4().hex
 
 
-def _recv(ws):
-    return p.server_message_adapter.validate_json(ws.receive_text())
+_recv = recv
 
 
 @contextmanager
