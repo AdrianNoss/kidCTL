@@ -307,3 +307,9 @@ Verlängerungsanfragen.
   sind Klasse `background` (für Tests `XDG_SESSION_CLASS=user` setzen); `notify-send` ohne
   Benachrichtigungsdienst hängt → Timeout; `runuser` erzeugte PAM-Sitzungen → `setpriv`.
   **Nicht getestet:** sichtbare KDE-Benachrichtigungen in einer echten Plasma-Sitzung.
+- 2026-10-13: Agent: nach dem Start bis zu 10 s auf die aktuelle Server-Policy warten, bevor
+  durchgesetzt wird (Zählung läuft weiter). Behebt Fehlalarm „Bildschirmzeit zu Ende“ mit
+  veralteter gecachter Policy, beobachtet im VM-Test mit echter Plasma-Sitzung. Ohne Server gilt
+  danach die gecachte Policy. Getestet: 2 neue pytest-Tests (gesamt 18). VM-Test mit angemeldetem
+  `kind` in Plasma: Start mit 3 min Restzeit → Countdown nach 3:00 min → Abmeldung nach 60 s;
+  kein hängendes notify-send.

@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 from kidctl_common import protocol as p
 
 from . import store
-from .accounting import Usage
+from .accounting import Usage, boottime
 from .connection import Connection
 from .enforcer import Enforcer
 from .rules import Decision, evaluate
@@ -21,6 +21,9 @@ log = logging.getLogger("kidctl.agent")
 TICK = 5.0            # Sekunden
 SAVE_EVERY = 6        # Takte (= 30 s)
 REPORT_EVERY = 60.0   # Sekunden
+# Nach dem Start kurz auf die aktuelle Policy vom Server warten, bevor durchgesetzt wird –
+# sonst kann die (ältere) gecachte Policy einen Fehlalarm auslösen. Gezählt wird trotzdem.
+STARTUP_SYNC = 10.0   # Sekunden
 DEFAULT_TZ = "Europe/Berlin"
 
 
@@ -38,6 +41,8 @@ class Agent:
         self.policy: p.Policy | None = p.Policy.model_validate(raw) if raw else None
         self.conn = Connection(device, self) if device else None
         self._ticks = 0
+        self._started = boottime()
+        self._synced = self.conn is None  # ohne Server: sofort gecachte Policy durchsetzen
 
     # ---------- Hilfen ----------
 
@@ -68,7 +73,8 @@ class Agent:
         mapped = set(self.policy.users) if self.policy else set()
         counting = {s.user for s in sessions if s.counts and s.user in mapped}
         self.usage.tick(counting, now.date())
-        await self.enforcer.step(now.date(), sessions, self.decisions(now))
+        if self._synced or boottime() - self._started >= STARTUP_SYNC:
+            await self.enforcer.step(now.date(), sessions, self.decisions(now))
         self._ticks += 1
         if self._ticks % SAVE_EVERY == 0:
             self.usage.prune(now.date())
@@ -104,6 +110,7 @@ class Agent:
     async def on_message(self, msg) -> None:
         if isinstance(msg, p.Policy):
             self.policy = msg
+            self._synced = True
             store.save(store.POLICY_FILE, msg.model_dump(mode="json"))
             log.info("Policy %s übernommen (%d zugeordnete User)", msg.version, len(msg.users))
             await self.conn.send(p.PolicyAck(version=msg.version))
