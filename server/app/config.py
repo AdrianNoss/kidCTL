@@ -26,6 +26,13 @@ class Settings:
     login_max_failures: int = 5
     login_window_minutes: int = 15
     pairing_code_minutes: int = 10
+    vapid_private_key: str = ""   # Web Push; erzeugen mit `python -m app.cli vapid-keys`
+    vapid_public_key: str = ""
+    vapid_subject: str = ""       # mailto:… oder https://…
+
+    @property
+    def push_enabled(self) -> bool:
+        return bool(self.vapid_private_key and self.vapid_public_key and self.vapid_subject)
 
 
 def load_settings() -> Settings:
@@ -44,6 +51,9 @@ def load_settings() -> Settings:
         base_url=os.environ.get("BASE_URL", "https://kids.nossco.de").rstrip("/"),
         timezone=os.environ.get("TZ_HOME", "Europe/Berlin"),
         totp_issuer=os.environ.get("TOTP_ISSUER", "kidctl"),
+        vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY", ""),
+        vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY", ""),
+        vapid_subject=os.environ.get("VAPID_SUBJECT", ""),
     )
 
 

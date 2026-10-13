@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from kidctl_common import protocol as p
 
+from . import push
 from . import schedule as sch
 from .models import Child, Device, DeviceUser, Message, Parent, utcnow
 from .ws import manager
@@ -75,6 +76,22 @@ def pending_count(db: Session) -> dict[int, int]:
             Message.kind == "extension_request", Message.status == "pending",
             Message.request_day >= sch.today_local())
         .group_by(Message.child_id)).all())
+
+
+def notify_parents_new(db: Session, msg: Message) -> None:
+    """Web Push an alle Eltern für eine neue Nachricht/Anfrage des Kindes."""
+    name = sender_name(db, msg)
+    if msg.kind == "extension_request":
+        parts = []
+        if msg.requested_minutes:
+            parts.append(f"+{msg.requested_minutes} min")
+        if msg.requested_window_end:
+            parts.append(f"bis {msg.requested_window_end:%H:%M} Uhr")
+        title, body = f"{name} bittet um Verlängerung ({', '.join(parts)})", msg.body
+    else:
+        title, body = f"Nachricht von {name}", msg.body
+    push.notify_parents(title, body, url=f"/children/{msg.child_id}/chat#m{msg.id}",
+                        tag=f"chat-{msg.child_id}")
 
 
 # ---------- Eingang vom Agenten ----------

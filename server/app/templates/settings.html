@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Benachrichtigungen – kidctl{% endblock %}
+{% block content %}
+<h1>Benachrichtigungen</h1>
+{% if not push_enabled %}
+<section class="card">
+  <p class="warn">Web Push ist auf dem Server nicht konfiguriert.</p>
+  <p>VAPID-Schlüssel erzeugen und in <code>.env</code> eintragen, dann Container neu starten:</p>
+  <pre>docker compose run --rm kidctl python -m app.cli vapid-keys</pre>
+</section>
+{% else %}
+<section class="card" id="push" data-key="{{ vapid_public_key }}" data-csrf="{{ csrf_token }}">
+  <p>Push-Benachrichtigungen bei neuen Nachrichten und Verlängerungsanfragen – pro Gerät/Browser einzeln aktivieren.</p>
+  <p id="push-status" class="muted">Prüfe …</p>
+  <p class="row">
+    <button type="button" id="push-on" hidden>Auf diesem Gerät aktivieren</button>
+    <button type="button" id="push-off" class="danger" hidden>Auf diesem Gerät deaktivieren</button>
+  </p>
+  <p class="muted">iPhone/iPad: Seite zuerst über „Teilen → Zum Home-Bildschirm“ als App installieren und von dort öffnen.</p>
+</section>
+<form method="post" action="/push/test" class="card row">
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <span>Aktive Geräte für deinen Account: <strong>{{ subscription_count }}</strong></span>
+  <button type="submit" class="small">Test-Benachrichtigung senden</button>
+  {% if sent is not none %}<span class="{{ 'ok' if sent != '0' else 'warn' }}">{{ sent }} zugestellt</span>{% endif %}
+</form>
+<script src="/static/push.js" defer></script>
+{% endif %}
+{% endblock %}

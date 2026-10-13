@@ -1,6 +1,6 @@
 # Parental Control für Arch Linux – Spezifikation
 
-Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Server-Grundgerüst, Bildschirmzeit-Konfiguration und Chat/Verlängerungen (Server) umgesetzt, Client noch nicht.
+Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Server-Grundgerüst, Bildschirmzeit-Konfiguration, Chat/Verlängerungen und PWA/Web Push (Server) umgesetzt, Client noch nicht.
 Arbeitstitel: `kidctl` (Name noch nicht final). Deploy unter `kids.nossco.de` (Annahme).
 
 ## Hintergrund
@@ -25,7 +25,12 @@ Verlängerungsanfragen.
 ### Server
 - Python/FastAPI, SQLite, Jinja2 (serverseitig gerendert), etwas JavaScript für Live-Chat/Push.
 - Docker Compose hinter dem bestehenden Traefik, öffentlich per HTTPS.
-- PWA: Web-App-Manifest + Service Worker, Web Push (z. B. `pywebpush`, VAPID).
+- PWA: Web-App-Manifest + Service Worker, Web Push (`pywebpush`, VAPID).
+  - VAPID-Schlüssel aus `.env` (`VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT`),
+    erzeugt per `python -m app.cli vapid-keys`. Ohne Schlüssel ist Push deaktiviert (Hinweis im WebUI).
+  - Service Worker ohne Offline-Cache (nur Push + Klick öffnet die passende Seite).
+  - Push pro Gerät/Browser auf der Seite „Benachrichtigungen“ aktivierbar, mit Test-Knopf.
+  - Abgelaufene Abos (HTTP 404/410 vom Push-Dienst) werden automatisch entfernt.
 - Leichtgewicht-Migrationsskript `app/migrate.py` nach bekanntem Muster
   (Spalte prüfen → `ALTER TABLE` → verifizieren → sonst `RuntimeError`).
 - `bcrypt==4.0.1` gepinnt (passlib-Inkompatibilität mit bcrypt 5.x).
@@ -238,3 +243,12 @@ Verlängerungsanfragen.
   Ablehnung + ungültige Genehmigung, Verfall + `chat_sync`, Migration gegen Alt-Schema) – gesamt
   28 grün; Live-Smoke-Test mit uvicorn gegen bestehende Alt-Datenbank (Migration im Log,
   Anfrage per `websockets`-Client, Genehmigung im WebUI, Entscheidung beim Agenten empfangen).
+- 2026-10-13: PWA & Web Push: Manifest, Icons, Service Worker (`/sw.js`), Seite „Benachrichtigungen“
+  (Abo pro Gerät, Test-Push), Push an alle Eltern bei neuer Kind-Nachricht/Verlängerungsanfrage
+  (nicht blockierend im Thread-Pool), CLI `vapid-keys`, CSRF zusätzlich per Header
+  `X-CSRF-Token` für JSON-Aufrufe. Alarme (Gerät offline, Integrität) folgen. Getestet: 5 neue
+  pytest-Tests (PWA-Dateien, Abo inkl. CSRF/HTTPS-Pflicht/Idempotenz/Abmelden, Test-Push mit
+  echter aes128gcm-Verschlüsselung + VAPID-Header und Entschlüsselung, Push bei Kind-Anfrage,
+  Entfernen bei 410) – gesamt 33 grün; Live-Smoke-Test mit uvicorn (Seiten, Abo, Push an
+  unerreichbaren Endpunkt blockiert Chat nicht, Abo bleibt). **Nicht getestet:** Zustellung
+  über einen echten Push-Dienst an einen echten Browser/ein Handy (nach Deployment prüfen).

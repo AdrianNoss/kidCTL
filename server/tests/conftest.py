@@ -4,6 +4,24 @@ import tempfile
 from pathlib import Path
 
 _tmp = tempfile.mkdtemp(prefix="kidctl-test-")
+def _vapid_env() -> dict:
+    import base64
+
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+
+    def b64(d):
+        return base64.urlsafe_b64encode(d).rstrip(b"=").decode()
+    k = ec.generate_private_key(ec.SECP256R1())
+    return {
+        "VAPID_PRIVATE_KEY": b64(k.private_numbers().private_value.to_bytes(32, "big")),
+        "VAPID_PUBLIC_KEY": b64(k.public_key().public_bytes(
+            serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint)),
+        "VAPID_SUBJECT": "mailto:test@example.org",
+    }
+
+
+os.environ.update(_vapid_env())
 os.environ.update({
     "KIDCTL_DEV": "1",
     "SECRET_KEY": "test-secret",

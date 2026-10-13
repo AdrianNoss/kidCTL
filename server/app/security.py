@@ -169,7 +169,15 @@ def require_session(request: Request, db: Session = Depends(get_db)) -> ParentSe
 
 # ---------- CSRF ----------
 
+CSRF_HEADER = "x-csrf-token"  # für fetch()-Aufrufe mit JSON-Body
+
+
 async def _form_token(request: Request) -> str:
+    if header := request.headers.get(CSRF_HEADER):
+        return header
+    if not request.headers.get("content-type", "").startswith(
+            ("application/x-www-form-urlencoded", "multipart/form-data")):
+        return ""
     form = await request.form()
     return str(form.get(CSRF_FIELD, ""))
 

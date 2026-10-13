@@ -9,7 +9,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from .db import init_db
-from .routes import admin, api, auth
+from .routes import admin, api, auth, pwa
 from .security import LoginRequired
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -37,4 +37,5 @@ def healthz():
 
 app.include_router(auth.router)
 app.include_router(api.router)
+app.include_router(pwa.router)
 app.include_router(admin.router)

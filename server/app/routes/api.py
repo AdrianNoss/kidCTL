@@ -141,6 +141,7 @@ async def agent_ws(ws: WebSocket):
                     await _send(ws, ack)
                     if new is not None:
                         await chat.push_to_child(db, new)
+                        chat.notify_parents_new(db, new)
                 elif isinstance(msg, p.ChatSync):
                     chat.expire_stale_requests(db)
                     for m in chat.history_for_agent(db, device_id, msg):

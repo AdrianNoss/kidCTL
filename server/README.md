@@ -7,7 +7,9 @@ FastAPI-App mit Eltern-WebUI und Agent-API (Kopplung + WebSocket).
 1. `.env` aus `.env.example` anlegen, `SECRET_KEY` setzen.
 2. In `docker-compose.yml` Traefik-Netzwerknamen und Host prüfen.
 3. `docker compose up -d --build`
-4. Ersten Eltern-Account anlegen:
+4. Optional Web Push: `docker compose run --rm kidctl python -m app.cli vapid-keys` → Ausgabe in
+   `.env` eintragen, `VAPID_SUBJECT` setzen, `docker compose up -d`.
+5. Ersten Eltern-Account anlegen:
    `docker compose exec kidctl python -m app.cli create-parent`
    (TOTP-QR-Code wird im Terminal angezeigt.) Weitere Accounts im WebUI unter „Eltern“.
 
