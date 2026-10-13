@@ -1,4 +1,8 @@
-"""Durchsetzung: Vorwarnungen, 60-s-Countdown, Beenden der Sitzungen."""
+"""Durchsetzung: Vorwarnungen, 60-s-Countdown, Beenden der Sitzungen.
+
+Grafische Sitzungen werden über Plasma abgemeldet (sonst bleibt SDDM ohne Anmeldebildschirm
+zurück); erst wenn das nicht wirkt, hart per ``TerminateSession``.
+"""
 
 from __future__ import annotations
 
@@ -13,15 +17,19 @@ log = logging.getLogger("kidctl.enforcer")
 
 WARN_MINUTES = (15, 5, 1)
 GRACE_SECONDS = 60
+LOGOUT_TIMEOUT = 20   # so lange auf die Plasma-Abmeldung warten, dann hart beenden
+RECOVER_DELAY = 10    # danach prüfen, ob SDDM wieder einen Anmeldebildschirm zeigt
 
 
 class Enforcer:
-    def __init__(self, logind, notifier, clock=boottime) -> None:
+    def __init__(self, logind, desktop, clock=boottime) -> None:
         self.logind = logind
-        self.notifier = notifier
+        self.desktop = desktop
         self.clock = clock
         self.warned: dict[tuple[str, date], set[int]] = {}
-        self.deadline: dict[str, float] = {}   # User -> Zeitpunkt (BOOTTIME) der Abmeldung
+        self.deadline: dict[str, float] = {}   # User -> Ende des Countdowns (BOOTTIME)
+        self.hard: dict[str, float] = {}       # User -> Abmeldung angefordert, hart beenden ab
+        self.recover_at: float | None = None
 
     async def step(self, day: date, sessions: list[SessionInfo], decisions: dict[str, Decision]) -> None:
         """``decisions`` enthält nur zugeordnete User; alle anderen bleiben unangetastet."""
@@ -30,36 +38,68 @@ class Enforcer:
             if s.is_user_session and s.user in decisions:
                 by_user.setdefault(s.user, []).append(s)
 
-        for user in list(self.deadline):
-            if user not in by_user:
-                del self.deadline[user]  # abgemeldet
+        for pending in (self.deadline, self.hard):
+            for user in list(pending):
+                if user not in by_user:
+                    del pending[user]  # abgemeldet
 
+        now = self.clock()
         for user, user_sessions in by_user.items():
             d = decisions[user]
             uid = user_sessions[0].uid
             if d.allowed:
+                self.hard.pop(user, None)
                 if self.deadline.pop(user, None) is not None:
-                    await self.notifier.notify(user, uid, "Bildschirmzeit verlängert",
-                                               f"Noch {_fmt(d.remaining_seconds)}.")
+                    await self.desktop.notify(user, uid, "Bildschirmzeit verlängert",
+                                              f"Noch {_fmt(d.remaining_seconds)}.")
                 await self._warn(user, uid, day, d.remaining_seconds)
                 continue
 
-            now = self.clock()
-            if user not in self.deadline:
+            if user not in self.deadline and user not in self.hard:
                 self.deadline[user] = now + GRACE_SECONDS
                 log.info("Zeit für %s abgelaufen (%s) – Abmeldung in %d s", user, d.reason, GRACE_SECONDS)
-                await self.notifier.notify(
+                await self.desktop.notify(
                     user, uid, "Bildschirmzeit zu Ende",
                     f"{REASON_TEXT.get(d.reason, '')} Abmeldung in {GRACE_SECONDS} Sekunden – "
                     "bitte jetzt speichern.", critical=True)
-            elif now >= self.deadline[user]:
+            elif user in self.deadline and now >= self.deadline[user]:
                 del self.deadline[user]
-                for s in user_sessions:
-                    log.warning("Beende Sitzung %s von %s (%s)", s.id, user, d.reason)
-                    try:
-                        await self.logind.terminate(s.id)
-                    except Exception:
-                        log.exception("Sitzung %s konnte nicht beendet werden", s.id)
+                await self._end(user, uid, user_sessions, d.reason, now)
+            elif user in self.hard and now >= self.hard[user]:
+                del self.hard[user]
+                log.warning("Plasma-Abmeldung von %s wirkt nicht – beende hart", user)
+                await self._terminate(user_sessions, d.reason)
+                if any(s.graphical for s in user_sessions):
+                    self.recover_at = now + RECOVER_DELAY
+
+        await self._recover_greeter(sessions, now)
+
+    async def _end(self, user: str, uid: int, sessions: list[SessionInfo], reason, now: float) -> None:
+        graphical = [s for s in sessions if s.graphical]
+        await self._terminate([s for s in sessions if not s.graphical], reason)
+        if graphical:
+            log.warning("Melde %s von Plasma ab (%s)", user, reason)
+            await self.desktop.logout(user, uid)
+            self.hard[user] = now + LOGOUT_TIMEOUT
+
+    async def _terminate(self, sessions: list[SessionInfo], reason) -> None:
+        for s in sessions:
+            log.warning("Beende Sitzung %s von %s (%s)", s.id, s.user, reason)
+            try:
+                await self.logind.terminate(s.id)
+            except Exception:
+                log.exception("Sitzung %s konnte nicht beendet werden", s.id)
+
+    async def _recover_greeter(self, sessions: list[SessionInfo], now: float) -> None:
+        """Nach hartem Beenden einer Desktop-Sitzung: Zeigt seat0 nichts mehr an (kein Greeter,
+        keine andere Sitzung), Display-Manager neu starten. Trifft so niemanden."""
+        if self.recover_at is None or now < self.recover_at:
+            return
+        self.recover_at = None
+        on_seat = [s for s in sessions if s.seat == "seat0" and s.state != "closing"
+                   and s.session_class in ("greeter", "user")]
+        if not on_seat:
+            await self.desktop.restart_display_manager()
 
     async def _warn(self, user: str, uid: int, day: date, remaining: int) -> None:
         warned = self.warned.setdefault((user, day), set())
@@ -68,7 +108,7 @@ class Enforcer:
         due = [m for m in WARN_MINUTES if remaining <= m * 60 and m not in warned]
         if due:
             warned.update(due)  # bei Anmeldung mit wenig Restzeit nur eine Warnung
-            await self.notifier.notify(user, uid, "Bildschirmzeit",
+            await self.desktop.notify(user, uid, "Bildschirmzeit",
                                        f"Noch {_fmt(remaining)} – danach wirst du abgemeldet.",
                                        critical=min(due) == 1)
 

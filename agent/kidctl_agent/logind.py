@@ -22,6 +22,12 @@ class SessionInfo:
     active: bool
     locked: bool
     state: str           # online | active | closing
+    type: str = "unspecified"  # wayland | x11 | tty | unspecified
+    seat: str = ""
+
+    @property
+    def graphical(self) -> bool:
+        return self.type in ("wayland", "x11")
 
     @property
     def is_user_session(self) -> bool:
@@ -63,7 +69,8 @@ class Logind:
             out.append(SessionInfo(
                 id=sid, uid=uid, user=user,
                 session_class=props["Class"].value, active=props["Active"].value,
-                locked=props["LockedHint"].value, state=props["State"].value))
+                locked=props["LockedHint"].value, state=props["State"].value,
+                type=props["Type"].value, seat=props["Seat"].value[0]))
         return out
 
     async def terminate(self, session_id: str) -> None:

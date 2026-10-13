@@ -1,7 +1,7 @@
 import asyncio
 from datetime import date
 
-from kidctl_agent.enforcer import GRACE_SECONDS, Enforcer
+from kidctl_agent.enforcer import GRACE_SECONDS, LOGOUT_TIMEOUT, RECOVER_DELAY, Enforcer
 from kidctl_agent.logind import SessionInfo
 from kidctl_agent.rules import QUOTA, Decision
 
@@ -19,9 +19,18 @@ class FakeLogind:
 class FakeNotifier:
     def __init__(self):
         self.sent = []
+        self.logouts = []
+        self.dm_restarts = 0
 
     async def notify(self, user, uid, title, body, critical=False):
         self.sent.append((user, title, body, critical))
+
+    async def logout(self, user, uid):
+        self.logouts.append(user)
+        return True
+
+    async def restart_display_manager(self):
+        self.dm_restarts += 1
 
 
 class Clock:
@@ -31,9 +40,9 @@ class Clock:
         return self.t
 
 
-def sess(sid, user="max", cls="user", active=True, locked=False):
+def sess(sid, user="max", cls="user", active=True, locked=False, type="tty", seat=""):
     return SessionInfo(id=sid, uid=1001, user=user, session_class=cls, active=active,
-                       locked=locked, state="active")
+                       locked=locked, state="active", type=type, seat=seat)
 
 
 def make():
@@ -101,7 +110,7 @@ def test_notifier_kills_hanging_notify_send(monkeypatch, tmp_path):
     import os
     import pwd
 
-    from kidctl_agent import notify
+    from kidctl_agent import usersession as notify
 
     me = pwd.getpwuid(os.getuid())
     started = []
@@ -118,8 +127,54 @@ def test_notifier_kills_hanging_notify_send(monkeypatch, tmp_path):
     monkeypatch.setattr(notify.os.path, "exists", lambda p: True)
 
     async def scenario():
-        await notify.Notifier().notify(me.pw_name, me.pw_uid, "T", "B")
+        await notify.UserSession().notify(me.pw_name, me.pw_uid, "T", "B")
         await asyncio.sleep(0.5)
         assert started[0].returncode is not None  # beendet
         assert not notify._tasks
     asyncio.run(scenario())
+
+
+def test_graphical_session_logged_out_via_plasma():
+    e, lg, nt, clk = make()
+    desk = sess("2", type="wayland", seat="seat0")
+    sessions = [desk, sess("3"), sess("c1", user="sddm", cls="greeter", type="wayland", seat="seat0")]
+    gone = {"max": Decision(False, 0, QUOTA)}
+    run(e.step(DAY, sessions, gone))
+    clk.t += GRACE_SECONDS
+    run(e.step(DAY, sessions, gone))
+    assert nt.logouts == ["max"] and lg.terminated == ["3"]  # TTY direkt, Plasma sauber
+    # Plasma hat sich abgemeldet -> nichts weiter
+    clk.t += LOGOUT_TIMEOUT
+    run(e.step(DAY, [sessions[2]], gone))
+    assert lg.terminated == ["3"] and nt.dm_restarts == 0
+
+
+def test_hard_terminate_and_greeter_recovery_when_logout_fails():
+    e, lg, nt, clk = make()
+    desk = sess("2", type="wayland", seat="seat0")
+    gone = {"max": Decision(False, 0, QUOTA)}
+    run(e.step(DAY, [desk], gone))
+    clk.t += GRACE_SECONDS
+    run(e.step(DAY, [desk], gone))
+    clk.t += LOGOUT_TIMEOUT
+    run(e.step(DAY, [desk], gone))          # Plasma reagiert nicht -> hart
+    assert lg.terminated == ["2"]
+    clk.t += RECOVER_DELAY
+    run(e.step(DAY, [], gone))              # seat0 leer: kein Greeter, keine Sitzung
+    assert nt.dm_restarts == 1
+    clk.t += 100
+    run(e.step(DAY, [], gone))
+    assert nt.dm_restarts == 1               # nur einmal
+
+
+def test_no_display_manager_restart_if_seat_in_use():
+    e, lg, nt, clk = make()
+    desk = sess("2", type="wayland", seat="seat0")
+    gone = {"max": Decision(False, 0, QUOTA)}
+    for dt in (0, GRACE_SECONDS, LOGOUT_TIMEOUT):
+        clk.t += dt
+        run(e.step(DAY, [desk], gone))
+    clk.t += RECOVER_DELAY
+    papa = sess("7", user="papa", type="wayland", seat="seat0")  # anderer User am Bildschirm
+    run(e.step(DAY, [papa], gone))
+    assert nt.dm_restarts == 0

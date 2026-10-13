@@ -60,10 +60,10 @@ def run() -> int:
     _require_root()
     from .agent import Agent
     from .logind import Logind
-    from .notify import Notifier
+    from .usersession import UserSession
 
     async def main() -> None:
-        agent = Agent(Logind(), Notifier(), store.load(store.DEVICE_FILE))
+        agent = Agent(Logind(), UserSession(), store.load(store.DEVICE_FILE))
         task = asyncio.create_task(agent.run())
         loop = asyncio.get_running_loop()
         for sig in (signal.SIGTERM, signal.SIGINT):
@@ -82,7 +82,7 @@ def status() -> int:
 
     device = store.load(store.DEVICE_FILE)
     print(f"Server:  {device['server_url']} (Gerät {device['device_id']})" if device else "Server:  nicht gekoppelt")
-    agent = Agent(logind=None, notifier=None)
+    agent = Agent(logind=None, desktop=None)
     if agent.policy is None:
         print("Policy:  keine – niemand wird eingeschränkt")
         return 0

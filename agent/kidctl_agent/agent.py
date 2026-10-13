@@ -33,9 +33,9 @@ def local_users() -> list[p.LocalUser]:
 
 
 class Agent:
-    def __init__(self, logind, notifier, device: dict | None = None) -> None:
+    def __init__(self, logind, desktop, device: dict | None = None) -> None:
         self.logind = logind
-        self.enforcer = Enforcer(logind, notifier)
+        self.enforcer = Enforcer(logind, desktop)
         self.usage = Usage.load()
         raw = store.load(store.POLICY_FILE)
         self.policy: p.Policy | None = p.Policy.model_validate(raw) if raw else None

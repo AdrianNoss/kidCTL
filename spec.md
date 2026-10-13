@@ -102,7 +102,13 @@ Verlängerungsanfragen.
 ### Ablauf bei Zeitende
 - Vorwarnungen bei 15, 5 und 1 Minute(n) als KDE-Benachrichtigung mit Knopf
   „Verlängerung anfordern“.
-- Nach Ablauf 60 Sekunden Countdown zum Speichern, dann `loginctl terminate-session`.
+- Nach Ablauf 60 Sekunden Countdown zum Speichern, dann Abmeldung:
+  - Grafische Sitzungen (Wayland/X11) über Plasma (`org.kde.Shutdown.logout`, ohne Rückfrage).
+    `TerminateSession` würde den Sitzungsleiter `sddm-helper` mitbeenden – SDDM wertet das als
+    Absturz und zeigt keinen Anmeldebildschirm mehr (im VM-Test beobachtet).
+  - Wirkt die Plasma-Abmeldung nach 20 s nicht: hart per `TerminateSession`; zeigt seat0 danach
+    weder Greeter noch andere Sitzung, wird `display-manager.service` neu gestartet.
+  - TTY-/SSH-Sitzungen direkt per `TerminateSession`.
 - Login-Sperre per PAM (gilt für SDDM und TTY), solange kein Kontingent/Zeitfenster verfügbar.
 - SDDM zeigt Hinweis „Bildschirmzeit für heute aufgebraucht“.
 
@@ -313,3 +319,10 @@ Verlängerungsanfragen.
   danach die gecachte Policy. Getestet: 2 neue pytest-Tests (gesamt 18). VM-Test mit angemeldetem
   `kind` in Plasma: Start mit 3 min Restzeit → Countdown nach 3:00 min → Abmeldung nach 60 s;
   kein hängendes notify-send.
+- 2026-10-13: Agent: Abmeldung grafischer Sitzungen über Plasma statt `TerminateSession`, harter
+  Rückfall nach 20 s mit Wiederherstellung des Anmeldebildschirms; `notify.py` → `usersession.py`.
+  Anlass: VM-Test zeigte nach `TerminateSession` nur noch blinkenden Cursor („sddm-helper crashed“).
+  Getestet: 3 neue pytest-Tests (gesamt 21: Plasma-Abmeldung, harter Rückfall + DM-Neustart,
+  kein DM-Neustart bei belegtem seat0). VM mit echter Plasma-Sitzung (Autologin nur für den Test,
+  danach entfernt): Countdown → Plasma-Abmeldung → Greeter auf tty1, kein SDDM-Fehler. KDE-
+  Benachrichtigungen (Restzeit, 1 min, Zeitende) vom Nutzer im VM-Fenster bestätigt.

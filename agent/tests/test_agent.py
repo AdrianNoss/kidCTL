@@ -27,6 +27,12 @@ class FakeNotifier:
     async def notify(self, user, uid, title, body, critical=False):
         self.sent.append(title)
 
+    async def logout(self, user, uid):
+        return True
+
+    async def restart_display_manager(self):
+        pass
+
 
 class FakeConn:
     connected = True
