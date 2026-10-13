@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Geräte – kidctl{% endblock %}
+{% block content %}
+<h1>Geräte</h1>
+<section class="card">
+  {% if devices %}
+  <table>
+    <tr><th>Gerät</th><th>Host</th><th>Status</th><th>Zuletzt gesehen</th></tr>
+    {% for d in devices %}
+    <tr{% if d.revoked_at %} class="muted"{% endif %}>
+      <td><a href="/devices/{{ d.id }}">{{ d.name }}</a></td>
+      <td>{{ d.hostname }}</td>
+      <td>{% if d.revoked_at %}widerrufen{% elif online(d.id) %}<span class="ok">online</span>{% else %}offline{% endif %}
+          {% if d.protocol_unsupported and not d.revoked_at %}<span class="warn">Agent veraltet</span>{% endif %}</td>
+      <td>{{ d.last_seen_at | localtime }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="muted">Noch keine Geräte gekoppelt.</p>{% endif %}
+</section>
+<form method="post" action="/devices/pair" class="card row">
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <input name="name" placeholder="Gerätename, z. B. Laptop Max" maxlength="128">
+  <button type="submit">Gerät hinzufügen</button>
+</form>
+{% endblock %}

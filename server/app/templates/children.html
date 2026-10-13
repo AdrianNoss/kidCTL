@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Kinder – kidctl{% endblock %}
+{% block content %}
+<h1>Kinder</h1>
+<section class="card">
+  {% if children %}
+  <table>
+    {% for c in children %}
+    <tr>
+      <td>{{ c.name }}</td>
+      <td class="right">
+        <form method="post" action="/children/{{ c.id }}/delete" class="inline"
+              onsubmit="return confirm('Kind mit allen Regeln löschen?')">
+          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+          <button type="submit" class="danger small">Löschen</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="muted">Noch keine Kinder angelegt.</p>{% endif %}
+</section>
+<form method="post" action="/children" class="card row">
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <input name="name" placeholder="Name" required maxlength="64">
+  <button type="submit">Kind anlegen</button>
+</form>
+{% endblock %}

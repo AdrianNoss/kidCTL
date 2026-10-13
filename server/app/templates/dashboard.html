@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Übersicht</h1>
+<section class="card">
+  <h2>Kinder</h2>
+  {% if children %}
+  <ul>{% for c in children %}<li>{{ c.name }}</li>{% endfor %}</ul>
+  {% else %}<p class="muted">Noch keine Kinder angelegt. <a href="/children">Kind anlegen</a></p>{% endif %}
+</section>
+<section class="card">
+  <h2>Geräte</h2>
+  {% if devices %}
+  <table>
+    <tr><th>Gerät</th><th>Status</th><th>Zuletzt gesehen</th></tr>
+    {% for d in devices %}
+    <tr>
+      <td><a href="/devices/{{ d.id }}">{{ d.name }}</a></td>
+      <td>{% if online(d.id) %}<span class="ok">online</span>{% else %}<span class="muted">offline</span>{% endif %}
+          {% if d.protocol_unsupported %}<span class="warn">Agent veraltet</span>{% endif %}</td>
+      <td>{{ d.last_seen_at | localtime }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="muted">Noch keine Geräte gekoppelt. <a href="/devices">Gerät hinzufügen</a></p>{% endif %}
+</section>
+{% endblock %}

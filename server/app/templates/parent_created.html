@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Account angelegt – kidctl{% endblock %}
+{% block content %}
+<h1>Account „{{ parent.username }}“ angelegt</h1>
+<section class="card">
+  <p>TOTP jetzt in der Authenticator-App einrichten. <strong>Dieser QR-Code wird nur einmal angezeigt.</strong></p>
+  <div class="qr">{{ qr_svg | safe }}</div>
+  <p>Secret: <code>{{ secret }}</code></p>
+  <p><a href="/parents">Fertig</a></p>
+</section>
+{% endblock %}

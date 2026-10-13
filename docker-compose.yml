@@ -1,0 +1,27 @@
+services:
+  kidctl:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: kidctl
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/data
+    networks:
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.kidctl.rule=Host(`kids.nossco.de`)
+      - traefik.http.routers.kidctl.entrypoints=websecure
+      - traefik.http.routers.kidctl.tls=true
+      - traefik.http.routers.kidctl.tls.certresolver=letsencrypt
+      - traefik.http.routers.kidctl.middlewares=secHeaders@file
+      - traefik.http.services.kidctl.loadbalancer.server.port=8000
+
+networks:
+  traefik:
+    # An den tatsächlichen Namen des Traefik-Netzwerks anpassen (docker network ls)
+    name: traefik
+    external: true

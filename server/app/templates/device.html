@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ device.name }} – kidctl{% endblock %}
+{% block content %}
+<h1>{{ device.name }}</h1>
+<section class="card">
+  <dl>
+    <dt>Hostname</dt><dd>{{ device.hostname or "–" }}</dd>
+    <dt>Status</dt><dd>{% if device.revoked_at %}Token widerrufen am {{ device.revoked_at | localtime }}{% elif online %}<span class="ok">online</span>{% else %}offline{% endif %}</dd>
+    <dt>Zuletzt gesehen</dt><dd>{{ device.last_seen_at | localtime }}</dd>
+    <dt>Agent</dt><dd>{{ device.agent_version or "–" }} (Protokoll {{ device.protocol_version or "–" }})
+      {% if device.protocol_unsupported %}<span class="warn">veraltet – Server unterstützt {{ supported | join(", ") }}. Agent per <code>pacman -Syu</code> aktualisieren; Durchsetzung läuft mit letzter Policy weiter.</span>{% endif %}</dd>
+    <dt>Gekoppelt am</dt><dd>{{ device.created_at | localtime }}</dd>
+  </dl>
+</section>
+
+<section class="card">
+  <h2>Benutzer-Zuordnung</h2>
+  <p class="muted">Nicht zugeordnete Linux-Benutzer werden nie eingeschränkt.</p>
+  {% if device.users %}
+  <form method="post" action="/devices/{{ device.id }}/mapping">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <table>
+      <tr><th>Linux-Benutzer</th><th>UID</th><th>Kind</th></tr>
+      {% for u in device.users %}
+      <tr{% if not u.present %} class="muted"{% endif %}>
+        <td>{{ u.username }}{% if u.full_name %} ({{ u.full_name }}){% endif %}{% if not u.present %} – nicht mehr vorhanden{% endif %}</td>
+        <td>{{ u.uid }}</td>
+        <td>
+          <select name="user_{{ u.id }}">
+            <option value="">– nicht eingeschränkt –</option>
+            {% for c in children %}<option value="{{ c.id }}"{% if u.child_id == c.id %} selected{% endif %}>{{ c.name }}</option>{% endfor %}
+          </select>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    <button type="submit">Zuordnung speichern</button>
+  </form>
+  {% else %}<p class="muted">Der Agent hat noch keine Benutzer gemeldet.</p>{% endif %}
+</section>
+
+{% if not device.revoked_at %}
+<section class="card">
+  <h2>Einstellungen</h2>
+  <form method="post" action="/devices/{{ device.id }}/alert" class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>Alarm, wenn länger als <input type="number" name="hours" min="1" max="720" value="{{ device.alert_after_hours }}" class="short"> Stunden ohne Meldung</label>
+    <button type="submit">Speichern</button>
+  </form>
+  <form method="post" action="/devices/{{ device.id }}/revoke"
+        onsubmit="return confirm('Geräte-Token widerrufen? Das Gerät muss danach neu gekoppelt werden.')">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <button type="submit" class="danger">Token widerrufen</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

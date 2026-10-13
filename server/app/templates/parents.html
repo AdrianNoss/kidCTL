@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Eltern – kidctl{% endblock %}
+{% block content %}
+<h1>Eltern-Accounts</h1>
+<section class="card">
+  <table>
+    {% for p in parents %}
+    <tr>
+      <td>{{ p.username }}{% if p.display_name %} ({{ p.display_name }}){% endif %}</td>
+      <td class="right">
+        {% if p.id != current_parent.id %}
+        <form method="post" action="/parents/{{ p.id }}/delete" class="inline"
+              onsubmit="return confirm('Account löschen?')">
+          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+          <button type="submit" class="danger small">Löschen</button>
+        </form>
+        {% else %}<span class="muted">angemeldet</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+<form method="post" action="/parents" class="card">
+  <h2>Account hinzufügen</h2>
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <label>Benutzername <input name="username" required maxlength="64" autocomplete="off"></label>
+  <label>Anzeigename <input name="display_name" maxlength="128"></label>
+  <label>Passwort (min. 12 Zeichen) <input type="password" name="password" minlength="12" required autocomplete="new-password"></label>
+  <button type="submit">Anlegen</button>
+</form>
+{% endblock %}

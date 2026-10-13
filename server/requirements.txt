@@ -1,0 +1,11 @@
+fastapi==0.143.0
+uvicorn[standard]==0.54.0
+SQLAlchemy==2.1.4
+Jinja2==3.1.6
+python-multipart==0.0.32
+passlib[bcrypt]==1.7.4
+# passlib ist mit bcrypt 5.x inkompatibel ("password cannot be longer than 72 bytes")
+bcrypt==4.0.1
+pyotp==2.10.0
+qrcode==8.2
+pydantic==2.14.1

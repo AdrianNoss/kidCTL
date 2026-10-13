@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}kidctl{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+{% if current_parent %}
+<header>
+  <nav>
+    <a href="/" class="brand">kidctl</a>
+    <a href="/children">Kinder</a>
+    <a href="/devices">Geräte</a>
+    <a href="/parents">Eltern</a>
+  </nav>
+  <form method="post" action="/logout" class="inline">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <span class="muted">{{ current_parent.display_name or current_parent.username }}</span>
+    <button type="submit" class="link">Abmelden</button>
+  </form>
+</header>
+{% endif %}
+<main>
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>
