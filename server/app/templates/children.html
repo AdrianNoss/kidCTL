@@ -8,6 +8,7 @@
     {% for c in children %}
     <tr>
       <td><a href="/children/{{ c.id }}">{{ c.name }}</a></td>
+      <td><a href="/children/{{ c.id }}/chat">Chat</a>{% if (pending or {}).get(c.id) %} <span class="badge">{{ pending[c.id] }} offen</span>{% endif %}</td>
       <td class="right">
         <form method="post" action="/children/{{ c.id }}/delete" class="inline"
               onsubmit="return confirm('Kind mit allen Regeln löschen?')">

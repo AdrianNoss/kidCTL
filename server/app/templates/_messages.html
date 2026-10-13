@@ -1,0 +1,49 @@
+{% if not messages %}<p class="muted">Noch keine Nachrichten.</p>{% endif %}
+{% for m in messages %}
+<div class="msg {{ 'from-child' if m.from_child else 'from-parent' }}{% if m.kind == 'extension_request' %} request{% endif %}" id="m{{ m.id }}">
+  <div class="meta">{{ sender_name(m) }} · {{ m.created_at | localtime }}</div>
+  {% if m.kind == "extension_request" %}
+    {% set day = weekday_names[m.request_day.weekday()][:2] ~ " " ~ m.request_day.strftime("%d.%m.") %}
+    <div><strong>Verlängerungsanfrage für {{ day }}:</strong>
+      {% if m.requested_minutes %}+{{ m.requested_minutes }} min{% endif %}
+      {% if m.requested_minutes and m.requested_window_end %} und {% endif %}
+      {% if m.requested_window_end %}bis {{ m.requested_window_end.strftime("%H:%M") }} Uhr{% endif %}
+    </div>
+    <div class="body">„{{ m.body }}“</div>
+    {% if m.status == "pending" %}
+    <div class="actions">
+      <form method="post" action="/children/{{ child.id }}/requests/{{ m.id }}" class="inline">
+        <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+        <input type="hidden" name="action" value="approve">
+        <input type="hidden" name="minutes" value="{{ m.requested_minutes or 0 }}">
+        <input type="hidden" name="window_end" value="{{ m.requested_window_end.strftime('%H:%M') if m.requested_window_end else '' }}">
+        <button type="submit" class="small">Genehmigen</button>
+      </form>
+      <form method="post" action="/children/{{ child.id }}/requests/{{ m.id }}" class="inline">
+        <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+        <input type="hidden" name="action" value="reject">
+        <button type="submit" class="small danger">Ablehnen</button>
+      </form>
+      <details>
+        <summary>Anpassen …</summary>
+        <form method="post" action="/children/{{ child.id }}/requests/{{ m.id }}" class="row">
+          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+          <input type="hidden" name="action" value="approve">
+          <label>+ <input type="number" name="minutes" min="0" max="{{ max_extra }}" step="5" value="{{ m.requested_minutes or 0 }}" class="short"> min</label>
+          <label>bis <input type="time" name="window_end" value="{{ m.requested_window_end.strftime('%H:%M') if m.requested_window_end else '' }}"></label>
+          <button type="submit" class="small">Angepasst genehmigen</button>
+        </form>
+      </details>
+    </div>
+    {% elif m.status == "approved" %}
+    <div class="ok">Genehmigt{% if m.approved_minutes %}: +{{ m.approved_minutes }} min{% endif %}{% if m.approved_window_end %}{{ "," if m.approved_minutes else ":" }} bis {{ m.approved_window_end.strftime("%H:%M") }} Uhr{% endif %}</div>
+    {% elif m.status == "rejected" %}
+    <div class="warn">Abgelehnt</div>
+    {% elif m.status == "expired" %}
+    <div class="muted">Verfallen (Tag vorbei)</div>
+    {% endif %}
+  {% else %}
+    <div class="body">{{ m.body }}</div>
+  {% endif %}
+</div>
+{% endfor %}

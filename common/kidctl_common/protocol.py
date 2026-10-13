@@ -9,6 +9,7 @@ Versionen in ``SUPPORTED_VERSIONS`` (Ziel: aktuelle + mindestens eine ältere).
 
 from __future__ import annotations
 
+from datetime import date, datetime, time
 from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field, TypeAdapter
@@ -85,8 +86,79 @@ class ReportUsers(BaseModel):
     users: list[LocalUser] = Field(max_length=500)
 
 
-AgentMessage = Annotated[Union[Hello, Ping, Pong, ReportUsers], Field(discriminator="type")]
-ServerMessage = Annotated[Union[Welcome, Error, Ping, Pong], Field(discriminator="type")]
+# ---------- Chat & Verlängerungen ----------
+# Der Agent leitet Nachrichten der Tray-App weiter und puffert sie offline. ``client_msg_id``
+# macht das Senden idempotent: Der Server bestätigt jede Nachricht mit ``ack`` (auch Duplikate),
+# erst danach entfernt der Agent sie aus seiner Warteschlange.
+
+MAX_BODY = 2000
+
+
+class ChatSend(BaseModel):
+    """Agent -> Server: Textnachricht eines Kindes (``username`` = Linux-User)."""
+    type: Literal["chat_send"] = "chat_send"
+    client_msg_id: str = Field(min_length=8, max_length=64)
+    username: str = Field(max_length=64)
+    body: str = Field(min_length=1, max_length=MAX_BODY)
+
+
+class ExtensionRequest(BaseModel):
+    """Agent -> Server: Verlängerungsanfrage (mehr Minuten und/oder späteres Fensterende)."""
+    type: Literal["extension_request"] = "extension_request"
+    client_msg_id: str = Field(min_length=8, max_length=64)
+    username: str = Field(max_length=64)
+    day: date  # lokaler Kalendertag, für den die Verlängerung gelten soll
+    minutes: int = Field(default=0, ge=0, le=720)
+    window_end: time | None = None
+    reason: str = Field(min_length=1, max_length=MAX_BODY)
+
+
+class ChatSync(BaseModel):
+    """Agent -> Server: Verlauf ab ``after_id`` für einen Linux-User anfordern."""
+    type: Literal["chat_sync"] = "chat_sync"
+    username: str = Field(max_length=64)
+    after_id: int = Field(default=0, ge=0)
+
+
+class Ack(BaseModel):
+    """Server -> Agent: Bestätigung für ``chat_send``/``extension_request``.
+
+    ``ok=False`` mit ``error`` = endgültig abgelehnt (z. B. User keinem Kind zugeordnet);
+    der Agent verwirft die Nachricht dann ebenfalls.
+    """
+    type: Literal["ack"] = "ack"
+    client_msg_id: str
+    ok: bool
+    message_id: int | None = None
+    error: str = ""
+
+
+class ChatMessage(BaseModel):
+    """Server -> Agent: Chat-Eintrag (neu oder aktualisiert, z. B. Entscheidung einer Anfrage).
+
+    Der Agent ersetzt Einträge mit gleicher ``id`` (Upsert).
+    """
+    type: Literal["chat_message"] = "chat_message"
+    id: int
+    child_id: int
+    from_child: bool
+    sender_name: str
+    kind: Literal["text", "extension_request"]
+    body: str
+    created_at: datetime  # UTC
+    request_day: date | None = None
+    requested_minutes: int | None = None
+    requested_window_end: time | None = None
+    status: Literal["pending", "approved", "rejected", "expired"] | None = None
+    approved_minutes: int | None = None
+    approved_window_end: time | None = None
+
+
+AgentMessage = Annotated[
+    Union[Hello, Ping, Pong, ReportUsers, ChatSend, ExtensionRequest, ChatSync],
+    Field(discriminator="type")]
+ServerMessage = Annotated[
+    Union[Welcome, Error, Ping, Pong, Ack, ChatMessage], Field(discriminator="type")]
 
 agent_message_adapter: TypeAdapter[AgentMessage] = TypeAdapter(AgentMessage)
 server_message_adapter: TypeAdapter[ServerMessage] = TypeAdapter(ServerMessage)

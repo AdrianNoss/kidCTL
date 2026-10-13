@@ -34,3 +34,20 @@ def test_init_db_on_existing_db_is_idempotent(client):
     from app.db import init_db
     init_db()
     init_db()
+
+
+def test_message_columns_migrated_on_old_schema(tmp_path):
+    """Alt-Schema der message-Tabelle (vor Chat-Erweiterung) bekommt die neuen Spalten."""
+    eng = create_engine(f"sqlite:///{tmp_path}/alt.db")
+    with eng.begin() as c:
+        c.execute(text("CREATE TABLE device (id INTEGER PRIMARY KEY)"))
+        c.execute(text(
+            "CREATE TABLE message (id INTEGER PRIMARY KEY, child_id INTEGER, from_child BOOLEAN, "
+            "kind VARCHAR(32), body TEXT, status VARCHAR(16))"))
+        c.execute(text("INSERT INTO message (child_id, from_child, kind, body) VALUES (1, 1, 'text', 'alt')"))
+    migrate.run_migrations(eng)
+    with eng.connect() as c:
+        cols = migrate._columns(c, "message")
+        assert {"approved_minutes", "approved_window_end", "device_id", "client_msg_id"} <= set(cols)
+        assert c.execute(text("SELECT body FROM message")).scalar() == "alt"
+    migrate.run_migrations(eng)  # idempotent

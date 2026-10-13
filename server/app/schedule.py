@@ -5,8 +5,10 @@ from __future__ import annotations
 from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
+from sqlalchemy import select
+
 from .config import settings
-from .models import Child, WeekdayRule
+from .models import Child, DayException, WeekdayRule
 
 WEEKDAY_NAMES = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
 # Gruppen für „Werktage/Wochenende gleich“: Schlüssel -> (Bezeichnung, Wochentage)
@@ -86,3 +88,38 @@ def group_differs(child: Child) -> list[str]:
 def fmt_minutes(minutes: int) -> str:
     h, m = divmod(minutes, 60)
     return f"{h}:{m:02d} h"
+
+
+def parse_credit(child: Child, day: str, extra_minutes: str, window_end: str) -> tuple[date, int, time | None]:
+    """Validiert eine Gutschrift (auch genehmigte/angepasste Verlängerungsanfrage)."""
+    try:
+        the_day = date.fromisoformat(day)
+    except ValueError:
+        raise ScheduleError("Ungültiges Datum.") from None
+    extra = parse_minutes(extra_minutes or "0", "Zusätzliche Minuten", MAX_EXTRA)
+    override = parse_time(window_end, "Fensterende") if window_end.strip() else None
+    check_credit(child, the_day, extra, override)
+    return the_day, extra, override
+
+
+def check_credit(child: Child, the_day: date, extra: int, override: time | None) -> None:
+    if the_day < today_local():
+        raise ScheduleError("Gutschriften sind nur für heute oder künftige Tage möglich.")
+    if not extra and override is None:
+        raise ScheduleError("Bitte Minuten und/oder ein späteres Fensterende angeben.")
+    rule = rules_by_day(child).get(the_day.weekday())
+    if override is not None and rule is not None and override <= rule.window_end:
+        raise ScheduleError(
+            f"Das Fensterende muss nach dem regulären Ende ({rule.window_end:%H:%M}) liegen.")
+
+
+def add_credit(db, child: Child, the_day: date, extra: int, override: time | None) -> None:
+    """Tagesausnahme anlegen/erweitern: Minuten addieren, Fensterende ersetzen. Kein Commit."""
+    exc = db.scalar(select(DayException).where(
+        DayException.child_id == child.id, DayException.day == the_day))
+    if exc is None:
+        exc = DayException(child_id=child.id, day=the_day, extra_minutes=0)
+        db.add(exc)
+    exc.extra_minutes = min(exc.extra_minutes + extra, MAX_QUOTA)
+    if override is not None:
+        exc.window_end_override = override

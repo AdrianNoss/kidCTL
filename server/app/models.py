@@ -172,6 +172,12 @@ class Message(Base):
     requested_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     requested_window_end: Mapped[time | None] = mapped_column(Time, nullable=True)
     request_day: Mapped[date | None] = mapped_column(Date, nullable=True)
-    status: Mapped[str | None] = mapped_column(String(16), nullable=True)  # pending|approved|rejected
+    status: Mapped[str | None] = mapped_column(String(16), nullable=True)  # pending|approved|rejected|expired
     decided_by: Mapped[int | None] = mapped_column(ForeignKey("parent.id", ondelete="SET NULL"), nullable=True)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    approved_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    approved_window_end: Mapped[time | None] = mapped_column(Time, nullable=True)
+    # Herkunft vom Agenten (Idempotenz bei Offline-Warteschlange)
+    device_id: Mapped[int | None] = mapped_column(
+        ForeignKey("device.id", ondelete="SET NULL"), nullable=True)
+    client_msg_id: Mapped[str | None] = mapped_column(String(64), nullable=True)

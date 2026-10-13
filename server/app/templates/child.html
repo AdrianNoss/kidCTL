@@ -10,6 +10,7 @@
 {% endmacro %}
 {% block content %}
 <h1>{{ child.name }}</h1>
+<p><a href="/children/{{ child.id }}/chat">Chat mit {{ child.name }}</a></p>
 {% if request.query_params.get("saved") %}<p class="success">Wochenvorlage gespeichert.</p>{% endif %}
 
 <section class="card">

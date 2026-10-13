@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from kidctl_common import protocol as p
 
+from .. import chat
 from ..db import SessionLocal, get_db
 from ..models import Device, DeviceUser, PairingCode, utcnow
 from ..security import (
@@ -133,8 +134,17 @@ async def agent_ws(ws: WebSocket):
                     _apply_user_report(dev, msg)
                 db.commit()
 
-            if isinstance(msg, p.Ping):
-                await _send(ws, p.Pong())
+                if isinstance(msg, p.Ping):
+                    await _send(ws, p.Pong())
+                elif isinstance(msg, (p.ChatSend, p.ExtensionRequest)):
+                    ack, new = chat.receive_from_agent(db, device_id, msg)
+                    await _send(ws, ack)
+                    if new is not None:
+                        await chat.push_to_child(db, new)
+                elif isinstance(msg, p.ChatSync):
+                    chat.expire_stale_requests(db)
+                    for m in chat.history_for_agent(db, device_id, msg):
+                        await _send(ws, chat.to_wire(db, m))
     except WebSocketDisconnect:
         pass
     finally:

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Chat {{ child.name }} – kidctl{% endblock %}
+{% block content %}
+<h1>Chat mit {{ child.name }}</h1>
+<p><a href="/children/{{ child.id }}">Bildschirmzeit von {{ child.name }}</a></p>
+{% if not has_device %}<p class="warn">{{ child.name }} ist noch keinem Linux-Benutzer zugeordnet – Nachrichten werden erst nach der Zuordnung zugestellt.</p>{% endif %}
+<section class="card chat" id="chat" data-src="/children/{{ child.id }}/chat/messages">
+{% include "_messages.html" %}
+</section>
+<form method="post" action="/children/{{ child.id }}/chat" class="card row" id="ende">
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <textarea name="body" rows="2" maxlength="2000" required placeholder="Nachricht an {{ child.name }}"></textarea>
+  <button type="submit">Senden</button>
+</form>
+<script src="/static/chat.js" defer></script>
+{% endblock %}

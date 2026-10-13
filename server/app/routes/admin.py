@@ -10,13 +10,14 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from kidctl_common.protocol import CLOSE_REVOKED, SUPPORTED_VERSIONS
+from kidctl_common.protocol import CLOSE_REVOKED, MAX_BODY, SUPPORTED_VERSIONS
 
 from ..config import settings
 from ..db import get_db
 from ..models import (
-    Child, DayException, Device, PairingCode, Parent, ParentSession, WeekdayRule, utcnow,
+    Child, DayException, Device, Message, PairingCode, Parent, ParentSession, WeekdayRule, utcnow,
 )
+from .. import chat
 from .. import schedule as sch
 from ..security import (
     csrf_protect, hash_password, new_pairing_code, new_totp_secret, require_session, token_hash,
@@ -45,7 +46,9 @@ def _get_or_404(db: Session, model, obj_id: int):
 def dashboard(request: Request, db: Session = Depends(get_db)):
     children = db.scalars(select(Child).order_by(Child.name)).all()
     devices = db.scalars(select(Device).where(Device.revoked_at.is_(None)).order_by(Device.name)).all()
-    return render(request, "dashboard.html", children=children, devices=devices, online=manager.is_online)
+    chat.expire_stale_requests(db)
+    return render(request, "dashboard.html", children=children, devices=devices, online=manager.is_online,
+                  pending=chat.pending_count(db))
 
 
 # ---------- Kinder ----------
@@ -53,7 +56,8 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
 @router.get("/children")
 def children_list(request: Request, db: Session = Depends(get_db)):
     children = db.scalars(select(Child).order_by(Child.name)).all()
-    return render(request, "children.html", children=children)
+    chat.expire_stale_requests(db)
+    return render(request, "children.html", children=children, pending=chat.pending_count(db))
 
 
 @router.post("/children", dependencies=[Depends(csrf_protect)])
@@ -126,31 +130,10 @@ def child_credit(child_id: int, request: Request, day: str = Form(...), extra_mi
     """Direkte Gutschrift ohne Anfrage = Tagesausnahme für genau ein Datum."""
     child = _get_or_404(db, Child, child_id)
     try:
-        try:
-            the_day = date.fromisoformat(day)
-        except ValueError:
-            raise sch.ScheduleError("Ungültiges Datum.") from None
-        if the_day < sch.today_local():
-            raise sch.ScheduleError("Gutschriften sind nur für heute oder künftige Tage möglich.")
-        extra = sch.parse_minutes(extra_minutes or "0", "Zusätzliche Minuten", sch.MAX_EXTRA)
-        override = sch.parse_time(window_end, "Fensterende") if window_end.strip() else None
-        if not extra and override is None:
-            raise sch.ScheduleError("Bitte Minuten und/oder ein späteres Fensterende angeben.")
-        rule = sch.rules_by_day(child).get(the_day.weekday())
-        if override is not None and rule is not None and override <= rule.window_end:
-            raise sch.ScheduleError(
-                f"Das Fensterende muss nach dem regulären Ende ({rule.window_end:%H:%M}) liegen.")
+        the_day, extra, override = sch.parse_credit(child, day, extra_minutes, window_end)
     except sch.ScheduleError as e:
         return _child_page(request, db, child, status_code=400, error=str(e), credit_day=day)
-
-    exc = db.scalar(select(DayException).where(
-        DayException.child_id == child.id, DayException.day == the_day))
-    if exc is None:
-        exc = DayException(child_id=child.id, day=the_day, extra_minutes=0)
-        db.add(exc)
-    exc.extra_minutes = min(exc.extra_minutes + extra, sch.MAX_QUOTA)
-    if override is not None:
-        exc.window_end_override = override
+    sch.add_credit(db, child, the_day, extra, override)
     db.commit()
     return _redirect(f"/children/{child_id}")
 
@@ -163,6 +146,75 @@ def child_exception_delete(child_id: int, exc_id: int, db: Session = Depends(get
     db.delete(exc)
     db.commit()
     return _redirect(f"/children/{child_id}")
+
+
+# ---------- Chat & Verlängerungsanfragen ----------
+
+CHAT_LIMIT = 100
+
+
+def _chat_messages(db: Session, child: Child) -> list[Message]:
+    chat.expire_stale_requests(db)
+    rows = db.scalars(select(Message).where(Message.child_id == child.id)
+                      .order_by(Message.id.desc()).limit(CHAT_LIMIT)).all()
+    return list(reversed(rows))
+
+
+def _chat_ctx(db: Session, child: Child) -> dict:
+    return dict(child=child, messages=_chat_messages(db, child),
+                sender_name=lambda m: chat.sender_name(db, m, child),
+                weekday_names=sch.WEEKDAY_NAMES, fmt_minutes=sch.fmt_minutes,
+                max_extra=sch.MAX_EXTRA, has_device=bool(chat.device_ids_for_child(db, child.id)))
+
+
+@router.get("/children/{child_id}/chat")
+def child_chat(child_id: int, request: Request, db: Session = Depends(get_db)):
+    return render(request, "chat.html", **_chat_ctx(db, _get_or_404(db, Child, child_id)))
+
+
+@router.get("/children/{child_id}/chat/messages")
+def child_chat_fragment(child_id: int, request: Request, db: Session = Depends(get_db)):
+    """HTML-Fragment für die Live-Aktualisierung (Polling aus static/chat.js)."""
+    return render(request, "_messages.html", **_chat_ctx(db, _get_or_404(db, Child, child_id)))
+
+
+@router.post("/children/{child_id}/chat")
+async def child_chat_send(child_id: int, request: Request, body: str = Form(...),
+                          sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    child = _get_or_404(db, Child, child_id)
+    body = body.strip()
+    if not body or len(body) > MAX_BODY:
+        return render(request, "chat.html", status_code=400, **_chat_ctx(db, child),
+                      error=f"Nachricht muss 1 bis {MAX_BODY} Zeichen lang sein.")
+    msg = Message(child_id=child.id, from_child=False, sender_parent_id=sess.parent_id, body=body)
+    db.add(msg)
+    db.commit()
+    await chat.push_to_child(db, msg)
+    return _redirect(f"/children/{child_id}/chat#ende")
+
+
+@router.post("/children/{child_id}/requests/{msg_id}")
+async def child_request_decide(child_id: int, msg_id: int, request: Request,
+                               action: str = Form(...), minutes: str = Form("0"),
+                               window_end: str = Form(""),
+                               sess: ParentSession = Depends(csrf_protect),
+                               db: Session = Depends(get_db)):
+    child = _get_or_404(db, Child, child_id)
+    msg = _get_or_404(db, Message, msg_id)
+    if msg.child_id != child.id or action not in {"approve", "reject"}:
+        raise HTTPException(404)
+    try:
+        if action == "approve":
+            extra = sch.parse_minutes(minutes or "0", "Zusätzliche Minuten", sch.MAX_EXTRA)
+            override = sch.parse_time(window_end, "Fensterende") if window_end.strip() else None
+            chat.decide(db, msg, sess.parent_id, True, extra, override)
+        else:
+            chat.decide(db, msg, sess.parent_id, False)
+    except sch.ScheduleError as e:
+        db.rollback()
+        return render(request, "chat.html", status_code=400, **_chat_ctx(db, child), error=str(e))
+    await chat.push_to_child(db, msg)
+    return _redirect(f"/children/{child_id}/chat#m{msg.id}")
 
 
 # ---------- Geräte ----------

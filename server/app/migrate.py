@@ -16,7 +16,13 @@ from sqlalchemy import Engine, text
 log = logging.getLogger("kidctl.migrate")
 
 # (Tabelle, Spalte, DDL), z. B. ("device", "alert_hours", "INTEGER NOT NULL DEFAULT 48")
-COLUMN_MIGRATIONS: list[tuple[str, str, str]] = []
+COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
+    # 2026-10-13: Chat/Verlängerungen
+    ("message", "approved_minutes", "INTEGER"),
+    ("message", "approved_window_end", "TIME"),
+    ("message", "device_id", "INTEGER REFERENCES device(id) ON DELETE SET NULL"),
+    ("message", "client_msg_id", "VARCHAR(64)"),
+]
 
 
 def _columns(conn, table: str) -> list[str]:

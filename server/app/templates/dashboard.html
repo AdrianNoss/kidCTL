@@ -4,7 +4,7 @@
 <section class="card">
   <h2>Kinder</h2>
   {% if children %}
-  <ul>{% for c in children %}<li><a href="/children/{{ c.id }}">{{ c.name }}</a></li>{% endfor %}</ul>
+  <ul>{% for c in children %}<li><a href="/children/{{ c.id }}">{{ c.name }}</a> · <a href="/children/{{ c.id }}/chat">Chat</a>{% if pending.get(c.id) %} <span class="badge">{{ pending[c.id] }} Anfrage(n) offen</span>{% endif %}</li>{% endfor %}</ul>
   {% else %}<p class="muted">Noch keine Kinder angelegt. <a href="/children">Kind anlegen</a></p>{% endif %}
 </section>
 <section class="card">

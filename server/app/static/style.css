@@ -35,3 +35,13 @@ pre { background:#f1f5f9; padding:.6rem; border-radius:.3rem; overflow-x:auto; }
 .success { background:#dcfce7; color:var(--ok); padding:.5rem .8rem; border-radius:.3rem; }
 .scroll { overflow-x:auto; }
 input[type=time], input[type=date] { width:auto; }
+.chat { max-height:60vh; overflow-y:auto; display:flex; flex-direction:column; gap:.6rem; }
+.msg { max-width:85%; padding:.5rem .7rem; border-radius:.6rem; background:#f1f5f9; }
+.msg.from-parent { align-self:flex-end; background:#dbeafe; }
+.msg.request { border-left:4px solid var(--warn); }
+.msg .meta { font-size:.8em; color:var(--muted); }
+.msg .body { white-space:pre-wrap; overflow-wrap:anywhere; }
+.msg .actions { margin-top:.4rem; display:flex; gap:.4rem; flex-wrap:wrap; align-items:flex-start; }
+.msg details { width:100%; }
+textarea { font:inherit; padding:.4rem .5rem; border:1px solid #cbd5e1; border-radius:.3rem; flex:1; min-width:12rem; }
+.badge { background:var(--warn); color:#fff; border-radius:1rem; padding:0 .5rem; font-size:.8em; }

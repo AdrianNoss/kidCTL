@@ -1,6 +1,6 @@
 # Parental Control für Arch Linux – Spezifikation
 
-Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Server-Grundgerüst und Bildschirmzeit-Konfiguration umgesetzt, Client noch nicht.
+Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Server-Grundgerüst, Bildschirmzeit-Konfiguration und Chat/Verlängerungen (Server) umgesetzt, Client noch nicht.
 Arbeitstitel: `kidctl` (Name noch nicht final). Deploy unter `kids.nossco.de` (Annahme).
 
 ## Hintergrund
@@ -143,6 +143,13 @@ Verlängerungsanfragen.
   Genehmigen / Anpassen / Ablehnen.
 - Web Push an alle Push-Abos der Eltern bei neuer Nachricht/Anfrage.
 - Keine Bilder/Dateien, keine Lesebestätigungen.
+- Zustellung: Agent leitet Nachrichten der Tray-App per WebSocket weiter (`chat_send`,
+  `extension_request`) und puffert sie offline; `client_msg_id` macht das Senden idempotent,
+  der Server bestätigt mit `ack`. Server stellt neue/geänderte Einträge als `chat_message` an
+  alle online-Geräte des Kindes zu (Upsert per `id`); Verlauf per `chat_sync` nachholbar.
+- Eltern-WebUI aktualisiert den Chat per Polling (5 s).
+- Verlängerungsanfragen für vergangene Tage verfallen automatisch (Status `expired`).
+- Gleichzeitige Entscheidungen zweier Eltern: nur die erste wird übernommen.
 
 ## Eltern-Accounts & Sicherheit
 
@@ -221,3 +228,13 @@ Verlängerungsanfragen.
   Validierung ohne Teilspeicherung, Gutschrift addieren/ersetzen/entfernen, Validierung der
   Gutschrift, CSRF) – gesamt 22 grün; Live-Smoke-Test mit uvicorn (Vorlage speichern,
   Gutschrift, DB-Inhalt geprüft).
+- 2026-10-13: Chat & Verlängerungsanfragen (Serverseite): Protokoll v1 (noch unveröffentlicht)
+  um `chat_send`, `extension_request`, `chat_sync`, `ack`, `chat_message` erweitert; Chat-Seite
+  pro Kind mit Live-Aktualisierung, Genehmigen / Anpassen / Ablehnen (Genehmigung erzeugt bzw.
+  erweitert die Tagesausnahme), offene Anfragen in Übersicht und Kinderliste. Migration
+  `message`: `approved_minutes`, `approved_window_end`, `device_id`, `client_msg_id`.
+  Web Push folgt separat. Getestet: 6 neue pytest-Tests (Ack/Duplikat/nicht zugeordneter User,
+  Eltern-Nachricht zugestellt, angepasste Genehmigung inkl. Tagesausnahme + Doppelentscheidung,
+  Ablehnung + ungültige Genehmigung, Verfall + `chat_sync`, Migration gegen Alt-Schema) – gesamt
+  28 grün; Live-Smoke-Test mit uvicorn gegen bestehende Alt-Datenbank (Migration im Log,
+  Anfrage per `websockets`-Client, Genehmigung im WebUI, Entscheidung beim Agenten empfangen).
