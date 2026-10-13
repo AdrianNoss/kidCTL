@@ -122,6 +122,12 @@ Verlängerungsanfragen.
 - Admin-Schutz: root und Mitglieder von `wheel`/`sudo`/`admin` werden nie eingeschränkt, auch wenn
   sie einem Kind zugeordnet sind (Warnung im Agent-Log).
 - SDDM zeigt Hinweis „Bildschirmzeit für heute aufgebraucht“.
+  - Breeze wertet PAM-Hinweise nicht aus (zeigt nur „Login Failed“). Daher eigenes SDDM-Theme
+    `kidctl`, das Breeze unverändert per `Loader` lädt und bei abgelehnter Anmeldung die PAM-
+    Hinweise (alle Meldungen außer dem abschließenden PAM-Fehlertext) 10 s lang anzeigt.
+    Falsches Passwort → weiterhin „Login Failed“. `theme.conf` ist ein Symlink auf Breeze.
+  - Aktivierung über `/etc/sddm.conf.d/zz-kidctl-theme.conf` (nach `kde_settings.conf` gelesen);
+    Installation per `packaging/sddm/kidctl-sddm.sh install|remove [--apply]`.
 
 ### Verlängerungen
 - Kind fordert an: mehr Minuten und/oder späteres Fensterende, mit Begründung (Freitext).
@@ -345,3 +351,9 @@ Verlängerungsanfragen.
   installiert; ohne Sperrdatei erlaubt (fail-open); mit Agent `kind` abgelehnt über `login`,
   `sddm`, `sddm-autologin`, `sshd` jeweils mit Hinweistext, `admin` erlaubt; Gutschrift im WebUI →
   nach ≤ 5 s erlaubt, Gutschrift entfernt → nach ≤ 5 s wieder gesperrt.
+- 2026-10-13: SDDM-Theme `kidctl` (Breeze-Hülle) für den Hinweis der Login-Sperre. Anlass: im VM-
+  Test zeigte Breeze nur „Login Failed“, erste Version zeigte den nachfolgenden PAM-Fehlertext
+  („Authentication failure“), weil SDDM Hinweis und Fehlertext über denselben Kanal schickt.
+  Getestet in der VM (kein QML-Fehler im Greeter-Log), vom Nutzer im VM-Fenster bestätigt:
+  Aussehen unverändert, `admin` meldet sich normal an, `kind` (gesperrt) sieht den
+  Bildschirmzeit-Hinweis, falsches Passwort zeigt weiterhin „Login Failed“.

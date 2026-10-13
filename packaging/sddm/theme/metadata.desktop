@@ -1,0 +1,12 @@
+[SddmGreeterTheme]
+Name=kidctl (Breeze)
+Description=Breeze mit Hinweisen der kidctl-Login-Sperre
+Author=kidctl
+License=LGPL-2.0-or-later
+Type=sddm-theme
+Version=0.1
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=kidctl
+Theme-API=2.0
+QtVersion=6
