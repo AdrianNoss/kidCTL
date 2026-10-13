@@ -1,6 +1,6 @@
 # Parental Control für Arch Linux – Spezifikation
 
-Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Serverseite für Bildschirmzeit, Chat/Verlängerungen, PWA/Web Push, Policy-Verteilung und Offline-Alarm umgesetzt; Client noch nicht.
+Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Serverseite für Bildschirmzeit, Chat/Verlängerungen, PWA/Web Push, Policy-Verteilung und Offline-Alarm umgesetzt; Agent Teil 1 (Bildschirmzeit ohne PAM) umgesetzt.
 Arbeitstitel: `kidctl` (Name noch nicht final). Deploy unter `kids.nossco.de` (Annahme).
 
 ## Hintergrund
@@ -79,6 +79,9 @@ Verlängerungsanfragen.
 
 ### Zählung
 - Gezählt wird nur eine aktive, entsperrte Session: logind `Active=yes` und `LockedHint=no`.
+  Nur Sitzungen der Klasse `user` (SDDM, TTY, SSH); Greeter, `manager` und `background`
+  werden weder gezählt noch beendet. Je User wird höchstens einmal pro Takt gezählt.
+- Die 60 s Countdown nach Zeitende zählen mit (Überziehung um bis zu 1 min möglich).
 - Keine Leerlauferkennung.
 - Messung der Dauer über monotone Uhr (`CLOCK_BOOTTIME`); Systemuhr nur für Tag/Zeitfenster.
 - Geräteübergreifend pro Kind summiert. Überziehung durch gleichzeitige Offline-Nutzung auf
@@ -290,3 +293,17 @@ Verlängerungsanfragen.
   python-websockets, python-dbus-next, python-pydantic, Locale de_DE/Tastatur de), nach Neustart
   SDDM-Greeter unter `kwin_wayland`, keine relevanten Boot-Fehler. Screenshot per QMP mit virgl
   nicht möglich (bekannte Einschränkung) – Sichtprüfung im VM-Fenster.
+- 2026-10-13: Agent Teil 1 (`agent/`): `kidctl enroll|run|status`, Zustand in `/var/lib/kidctl`
+  (root, 0700/0600, atomar), WebSocket-Verbindung mit Backoff, Policy-Cache + Ack, Nutzungsbericht,
+  Zeitzählung per logind/D-Bus und `CLOCK_BOOTTIME`, Vorwarnungen 15/5/1 min, 60-s-Countdown,
+  `TerminateSession`. Noch offen: PAM-Login-Sperre, Tray/Chat, Aktionsknopf „Verlängerung
+  anfordern“, systemd-Unit/PKGBUILD. Getestet: 16 pytest-Tests (Regeln inkl. Ausnahmen,
+  Zählung inkl. Suspend-Lücken/Persistenz/Rechte, Warnstufen, Countdown/Abbruch/Beenden, nicht
+  zugeordnete User unangetastet, hängendes notify-send, E2E gegen echten uvicorn-Server:
+  enroll → Policy → Zuordnung → Ack → Nutzung im WebUI → Widerruf → Offline-Policy). In der
+  Test-VM gegen den Entwicklungsserver: enroll (Token root:root 0600), Agent als transiente
+  systemd-Unit, Policy „aktuell“ im WebUI, simulierte `user`-Sitzung von `kind` (PAM `login`) nach
+  Kontingent + 60 s exakt beendet, Gutschrift wirkt sofort. Erkenntnisse: `systemd-run`-Sitzungen
+  sind Klasse `background` (für Tests `XDG_SESSION_CLASS=user` setzen); `notify-send` ohne
+  Benachrichtigungsdienst hängt → Timeout; `runuser` erzeugte PAM-Sitzungen → `setpriv`.
+  **Nicht getestet:** sichtbare KDE-Benachrichtigungen in einer echten Plasma-Sitzung.
