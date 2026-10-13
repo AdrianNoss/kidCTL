@@ -285,3 +285,8 @@ Verlängerungsanfragen.
   die Repos, erzeugtes cloud-init-YAML (parsebar, Platzhalter ersetzt, eingebettetes Skript
   identisch), Erreichbarkeit des Cloud-Images. **Nicht getestet:** tatsächlicher VM-Start (QEMU
   auf dem Host noch nicht installiert).
+- 2026-10-13: Test-VM real aufgesetzt und gestartet: Image geladen + SHA256 ok, cloud-init legt
+  `admin`/`kind` an, 9p-Mount `/opt/kidctl-src` ok, Provisionierung fertig (Plasma 6.7, PySide6,
+  python-websockets, python-dbus-next, python-pydantic, Locale de_DE/Tastatur de), nach Neustart
+  SDDM-Greeter unter `kwin_wayland`, keine relevanten Boot-Fehler. Screenshot per QMP mit virgl
+  nicht möglich (bekannte Einschränkung) – Sichtprüfung im VM-Fenster.
