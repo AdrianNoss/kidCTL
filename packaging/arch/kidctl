@@ -1,0 +1,9 @@
+#!/bin/sh
+# kidctl-Befehl. -E: PYTHON*-Umgebungsvariablen ignorieren, -s: keine User-site-packages
+# (läuft als root – keine fremden Module laden).
+exec /usr/bin/python3 -E -s -c '
+import sys
+sys.path.insert(0, "/usr/lib/kidctl")
+from kidctl_agent.cli import main
+sys.exit(main())
+' "$@"

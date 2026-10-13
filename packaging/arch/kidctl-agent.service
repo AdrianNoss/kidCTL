@@ -1,0 +1,30 @@
+[Unit]
+Description=kidctl Agent (Bildschirmzeit, Login-Sperre)
+Documentation=https://kids.nossco.de
+After=dbus.service systemd-logind.service
+# Vor Logins bereit sein: Sperrliste ist geschrieben, bevor SDDM/getty Anmeldungen annehmen.
+# Bewusst nicht nach network-online.target – offline würde das den Login verzögern; der Agent
+# verbindet sich selbst neu und setzt bis dahin die gecachte Policy durch.
+Before=systemd-user-sessions.service display-manager.service
+
+[Service]
+Type=notify
+NotifyAccess=main
+ExecStart=/usr/bin/kidctl run
+Restart=always
+RestartSec=2
+# Hängt der Start, gehen Anmeldungen nach dem Timeout trotzdem weiter (keine Aussperrung).
+TimeoutStartSec=30
+StateDirectory=kidctl
+StateDirectoryMode=0700
+RuntimeDirectory=kidctl
+RuntimeDirectoryMode=0755
+# Sperrliste bei Neustart des Agenten nicht kurz entfernen
+RuntimeDirectoryPreserve=yes
+Environment=PYTHONDONTWRITEBYTECODE=1
+NoNewPrivileges=yes
+ProtectSystem=full
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

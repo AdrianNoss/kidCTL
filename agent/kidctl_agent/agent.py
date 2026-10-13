@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 
 from kidctl_common import protocol as p
 
-from . import store
+from . import sdnotify, store
 from .accounting import Usage, boottime
 from .connection import Connection
 from .enforcer import Enforcer
@@ -93,11 +93,17 @@ class Agent:
             self.usage.save()
 
     async def _tick_loop(self) -> None:
+        ready = False
         while True:
             try:
                 await self.tick_once()
             except Exception:
                 log.exception("Fehler im Takt")
+            if not ready:
+                # Erst nach dem ersten Takt (Sperrliste geschrieben) bereit melden – die Unit
+                # liegt vor systemd-user-sessions.service, Anmeldungen sind also erst danach möglich.
+                ready = True
+                sdnotify.notify("READY=1")
             await asyncio.sleep(TICK)
 
     async def _report_loop(self) -> None:

@@ -1,0 +1,18 @@
+import re
+from pathlib import Path
+
+import kidctl_agent
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_pkgbuild_version_matches_agent():
+    pkgbuild = (ROOT / "packaging/arch/PKGBUILD").read_text()
+    assert re.search(r"^pkgver=(\S+)", pkgbuild, re.M).group(1) == kidctl_agent.__version__
+
+
+def test_unit_orders_agent_before_logins():
+    unit = (ROOT / "packaging/arch/kidctl-agent.service").read_text()
+    assert "Type=notify" in unit and "systemd-user-sessions.service" in unit
+    deps = [line for line in unit.splitlines() if line.startswith(("After=", "Wants=", "Requires="))]
+    assert not any("network-online" in line for line in deps)  # offline keine Login-Verzögerung

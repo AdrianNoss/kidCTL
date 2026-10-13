@@ -1,0 +1,30 @@
+# pacman-Install-Skript für kidctl
+
+_pam() { /usr/lib/kidctl/kidctl-pam.sh "$1" --apply >/dev/null; }
+
+post_install() {
+  _pam install
+  cat <<'MSG'
+==> kidctl installiert. Login-Sperre in /etc/pam.d/system-login eingetragen
+    (Sicherung: system-login.kidctl.bak), SDDM-Theme „kidctl“ aktiv ab nächstem Anmeldebildschirm.
+==> Gerät koppeln und Agent starten:
+      sudo kidctl enroll https://kids.nossco.de <KOPPLUNGSCODE>
+      sudo systemctl enable --now kidctl-agent.service
+MSG
+}
+
+post_upgrade() {
+  _pam install
+  systemctl daemon-reload
+  systemctl try-restart kidctl-agent.service
+}
+
+pre_remove() {
+  systemctl disable --now kidctl-agent.service 2>/dev/null || true
+  _pam remove
+  rm -rf /run/kidctl
+}
+
+post_remove() {
+  echo "==> Zustand (Geräte-Token, Policy, Nutzung) bleibt in /var/lib/kidctl – bei Bedarf löschen."
+}

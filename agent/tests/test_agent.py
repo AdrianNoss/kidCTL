@@ -81,3 +81,18 @@ def test_cached_policy_enforced_when_server_unreachable(monkeypatch):
         await a.tick_once()                      # kein Server -> nach Wartezeit gecachte Policy
         assert nt.sent == ["Bildschirmzeit zu Ende"]
     asyncio.run(scenario())
+
+
+def test_sdnotify_ready(tmp_path, monkeypatch):
+    import socket as sk
+
+    from kidctl_agent import sdnotify
+    path = str(tmp_path / "notify.sock")
+    srv = sk.socket(sk.AF_UNIX, sk.SOCK_DGRAM)
+    srv.bind(path)
+    monkeypatch.setenv("NOTIFY_SOCKET", path)
+    assert sdnotify.notify("READY=1")
+    assert srv.recv(64) == b"READY=1"
+    srv.close()
+    monkeypatch.delenv("NOTIFY_SOCKET")
+    assert not sdnotify.notify("READY=1")

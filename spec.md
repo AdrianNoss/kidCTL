@@ -246,6 +246,7 @@ Verlängerungsanfragen.
 ## Offene Punkte
 
 - Finaler Projektname (Arbeitstitel `kidctl`) und Subdomain (Annahme `kids.nossco.de`).
+- Lizenz (PKGBUILD derzeit Platzhalter `LicenseRef-kidctl`).
 - Inhalt der Dienst-Bundles und Vorauswahl der Sperrlisten.
 
 ## Changelog
@@ -357,3 +358,14 @@ Verlängerungsanfragen.
   Getestet in der VM (kein QML-Fehler im Greeter-Log), vom Nutzer im VM-Fenster bestätigt:
   Aussehen unverändert, `admin` meldet sich normal an, `kind` (gesperrt) sieht den
   Bildschirmzeit-Hinweis, falsches Passwort zeigt weiterhin „Login Failed“.
+- 2026-10-13: Paketierung Client (`packaging/arch/`): PKGBUILD, `/usr/bin/kidctl` (Python `-E -s`),
+  `kidctl-agent.service` (`Type=notify` nach erster Sperrliste, vor `systemd-user-sessions`,
+  `Restart=always`, State-/Runtime-Directory, leichte Härtung), Install-Skript setzt/entfernt
+  PAM-Block, SDDM-Theme als Paketdateien; Agent meldet Bereitschaft per sd_notify. Getestet:
+  3 neue pytest-Tests (gesamt 27: sd_notify, PKGBUILD-Version = Agent-Version, Unit-Ordnung ohne
+  network-online). In der VM ab Snapshot `vor-pam`: `makepkg` + `namcap` (verbleibende Meldungen
+  bewertet), `pacman -U` (PAM-Block + Theme + Hinweis), `enable --now` (bereit nach Sperrliste,
+  `kind` abgelehnt, `admin` erlaubt), Neustart (Agent bereit bei 8,95 s, Logins ab 11,99 s, `kind`
+  sofort gesperrt trotz anfangs fehlendem Netz), `kill -9` (Sperrliste bleibt, Neustart durch
+  systemd), `pacman -R` (system-login identisch mit Original, Theme/Dienst weg, Token bleibt),
+  Neuinstallation.
