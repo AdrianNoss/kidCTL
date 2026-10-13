@@ -14,4 +14,9 @@ def state_dir(tmp_path, monkeypatch):
     d = tmp_path / "state"
     monkeypatch.setattr(store, "STATE_DIR", d)
     monkeypatch.setenv("KIDCTL_STATE_DIR", str(d))
+    from kidctl_agent import loginlock
+    monkeypatch.setattr(loginlock, "RUN_DIR", tmp_path / "run")
+    monkeypatch.setattr(loginlock, "is_admin", lambda u: False)  # Testsystem-User unabhängig
+    from kidctl_agent import agent
+    monkeypatch.setattr(agent, "is_admin", lambda u: False)
     return d

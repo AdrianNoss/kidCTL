@@ -1,6 +1,6 @@
 # Parental Control für Arch Linux – Spezifikation
 
-Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Serverseite für Bildschirmzeit, Chat/Verlängerungen, PWA/Web Push, Policy-Verteilung und Offline-Alarm umgesetzt; Agent Teil 1 (Bildschirmzeit ohne PAM) umgesetzt.
+Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Serverseite für Bildschirmzeit, Chat/Verlängerungen, PWA/Web Push, Policy-Verteilung und Offline-Alarm umgesetzt; Agent Bildschirmzeit inkl. PAM-Login-Sperre umgesetzt.
 Arbeitstitel: `kidctl` (Name noch nicht final). Deploy unter `kids.nossco.de` (Annahme).
 
 ## Hintergrund
@@ -110,6 +110,17 @@ Verlängerungsanfragen.
     weder Greeter noch andere Sitzung, wird `display-manager.service` neu gestartet.
   - TTY-/SSH-Sitzungen direkt per `TerminateSession`.
 - Login-Sperre per PAM (gilt für SDDM und TTY), solange kein Kontingent/Zeitfenster verfügbar.
+  - Agent schreibt alle 5 s `/run/kidctl/locked-users` (zugeordnete User ohne Zeit, root 0644)
+    und `/run/kidctl/locked-message`; sofort beim Start aus der gecachten Policy.
+  - PAM: markierter Block am Ende des Account-Teils von `/etc/pam.d/system-login`
+    (`pam_listfile` sense=deny `onerr=succeed`, `pam_echo` Hinweis, `pam_deny`). Greift für SDDM,
+    SDDM-Autologin, TTY (`login`) und SSH; nicht für Bildschirmsperre (`kde`) und `systemd-user`.
+  - Ausfallsicher: fehlt/unlesbar die Sperrdatei, ist die Anmeldung erlaubt. Kein Python im
+    Anmeldepfad.
+  - Ein-/Austragen per `packaging/pam/kidctl-pam.sh install|remove [--apply]` (Dry-Run-Standard,
+    Sicherung `system-login.kidctl.bak`, idempotent).
+- Admin-Schutz: root und Mitglieder von `wheel`/`sudo`/`admin` werden nie eingeschränkt, auch wenn
+  sie einem Kind zugeordnet sind (Warnung im Agent-Log).
 - SDDM zeigt Hinweis „Bildschirmzeit für heute aufgebraucht“.
 
 ### Verlängerungen
@@ -326,3 +337,11 @@ Verlängerungsanfragen.
   kein DM-Neustart bei belegtem seat0). VM mit echter Plasma-Sitzung (Autologin nur für den Test,
   danach entfernt): Countdown → Plasma-Abmeldung → Greeter auf tty1, kein SDDM-Fehler. KDE-
   Benachrichtigungen (Restzeit, 1 min, Zeitende) vom Nutzer im VM-Fenster bestätigt.
+- 2026-10-13: Agent Teil 2 – PAM-Login-Sperre (`agent/kidctl_agent/loginlock.py`,
+  `packaging/pam/kidctl-pam.sh`), Admin-Schutz, Test-Werkzeug `dev/vm/pamtest.py`. Getestet:
+  3 neue pytest-Tests (gesamt 24: Sperrdatei + Rechte, echte Admin-Erkennung, sofortiges Schreiben
+  beim Start ohne Admin); Install-Skript gegen Dateikopie (Dry-Run unverändert, idempotent,
+  Entfernen = Original). In der VM (Snapshot `vor-pam` vorher): ohne Block erlaubt; Block
+  installiert; ohne Sperrdatei erlaubt (fail-open); mit Agent `kind` abgelehnt über `login`,
+  `sddm`, `sddm-autologin`, `sshd` jeweils mit Hinweistext, `admin` erlaubt; Gutschrift im WebUI →
+  nach ≤ 5 s erlaubt, Gutschrift entfernt → nach ≤ 5 s wieder gesperrt.

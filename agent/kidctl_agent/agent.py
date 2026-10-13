@@ -14,6 +14,7 @@ from . import store
 from .accounting import Usage, boottime
 from .connection import Connection
 from .enforcer import Enforcer
+from .loginlock import LoginLock, is_admin
 from .rules import Decision, evaluate
 
 log = logging.getLogger("kidctl.agent")
@@ -41,6 +42,8 @@ class Agent:
         self.policy: p.Policy | None = p.Policy.model_validate(raw) if raw else None
         self.conn = Connection(device, self) if device else None
         self._ticks = 0
+        self.loginlock = LoginLock()
+        self._admin_warned: set[str] = set()
         self._started = boottime()
         self._synced = self.conn is None  # ohne Server: sofort gecachte Policy durchsetzen
 
@@ -60,6 +63,12 @@ class Agent:
             child = children.get(child_id)
             if child is None:
                 continue
+            if is_admin(user):  # Grundregel: Admin-Accounts nie einschränken
+                if user not in self._admin_warned:
+                    log.warning("%s ist Admin (wheel/sudo) – Zuordnung zu Kind %s wird ignoriert",
+                                user, child_id)
+                    self._admin_warned.add(user)
+                continue
             same_child = [u for u, c in self.policy.users.items() if c == child_id]
             used = self.usage.used_seconds(child_id, same_child, now.date())
             out[user] = evaluate(child, now, used)
@@ -70,11 +79,14 @@ class Agent:
     async def tick_once(self) -> None:
         sessions = await self.logind.sessions()
         now = self.now_local()
-        mapped = set(self.policy.users) if self.policy else set()
-        counting = {s.user for s in sessions if s.counts and s.user in mapped}
+        decisions = self.decisions(now)  # nur zugeordnete Nicht-Admins
+        counting = {s.user for s in sessions if s.counts and s.user in decisions}
         self.usage.tick(counting, now.date())
+        # Login-Sperre sofort (auch mit gecachter Policy) – sonst wäre direkt nach dem Booten
+        # kurz eine Anmeldung möglich. Gilt auch ohne laufende Sitzung.
+        self.loginlock.update({u for u, d in decisions.items() if not d.allowed})
         if self._synced or boottime() - self._started >= STARTUP_SYNC:
-            await self.enforcer.step(now.date(), sessions, self.decisions(now))
+            await self.enforcer.step(now.date(), sessions, decisions)
         self._ticks += 1
         if self._ticks % SAVE_EVERY == 0:
             self.usage.prune(now.date())
