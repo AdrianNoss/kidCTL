@@ -32,3 +32,6 @@ dd { margin:0; }
 .code { font:700 2rem/1.2 ui-monospace, monospace; letter-spacing:.15em; }
 pre { background:#f1f5f9; padding:.6rem; border-radius:.3rem; overflow-x:auto; }
 .qr svg { width:220px; height:220px; }
+.success { background:#dcfce7; color:var(--ok); padding:.5rem .8rem; border-radius:.3rem; }
+.scroll { overflow-x:auto; }
+input[type=time], input[type=date] { width:auto; }

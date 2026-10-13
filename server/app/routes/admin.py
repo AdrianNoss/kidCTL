@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import time, timedelta
+from datetime import date, time, timedelta
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
@@ -14,7 +14,10 @@ from kidctl_common.protocol import CLOSE_REVOKED, SUPPORTED_VERSIONS
 
 from ..config import settings
 from ..db import get_db
-from ..models import Child, Device, DeviceUser, PairingCode, Parent, ParentSession, WeekdayRule, utcnow
+from ..models import (
+    Child, DayException, Device, PairingCode, Parent, ParentSession, WeekdayRule, utcnow,
+)
+from .. import schedule as sch
 from ..security import (
     csrf_protect, hash_password, new_pairing_code, new_totp_secret, require_session, token_hash,
     totp_qr_svg, totp_uri,
@@ -78,6 +81,88 @@ def child_delete(child_id: int, db: Session = Depends(get_db)):
     db.delete(_get_or_404(db, Child, child_id))
     db.commit()
     return _redirect("/children")
+
+
+def _child_page(request: Request, db: Session, child: Child, status_code: int = 200, **ctx):
+    today = sch.today_local()
+    exceptions = db.scalars(select(DayException).where(
+        DayException.child_id == child.id, DayException.day >= today).order_by(DayException.day)).all()
+    ctx.setdefault("credit_day", today.isoformat())
+    return render(request, "child.html", status_code=status_code, child=child,
+                  rules=sch.rules_by_day(child), groups=sch.GROUPS, weekday_names=sch.WEEKDAY_NAMES,
+                  differs=sch.group_differs(child), exceptions=exceptions, today=today,
+                  fmt_minutes=sch.fmt_minutes, max_quota=sch.MAX_QUOTA, max_extra=sch.MAX_EXTRA, **ctx)
+
+
+@router.get("/children/{child_id}")
+def child_detail(child_id: int, request: Request, db: Session = Depends(get_db)):
+    return _child_page(request, db, _get_or_404(db, Child, child_id))
+
+
+@router.post("/children/{child_id}/mode", dependencies=[Depends(csrf_protect)])
+def child_mode(child_id: int, weekdays_same: str = Form(""), db: Session = Depends(get_db)):
+    """Schaltet nur die Darstellung um; die Regeln ändern sich erst beim Speichern."""
+    child = _get_or_404(db, Child, child_id)
+    child.weekdays_same = weekdays_same == "1"
+    db.commit()
+    return _redirect(f"/children/{child_id}")
+
+
+@router.post("/children/{child_id}/schedule", dependencies=[Depends(csrf_protect)])
+async def child_schedule(child_id: int, request: Request, db: Session = Depends(get_db)):
+    child = _get_or_404(db, Child, child_id)
+    try:
+        sch.apply_schedule(child, await request.form())
+    except sch.ScheduleError as e:
+        db.rollback()
+        return _child_page(request, db, child, status_code=400, error=str(e))
+    db.commit()
+    return _redirect(f"/children/{child_id}?saved=1")
+
+
+@router.post("/children/{child_id}/credit", dependencies=[Depends(csrf_protect)])
+def child_credit(child_id: int, request: Request, day: str = Form(...), extra_minutes: str = Form("0"),
+                 window_end: str = Form(""), db: Session = Depends(get_db)):
+    """Direkte Gutschrift ohne Anfrage = Tagesausnahme für genau ein Datum."""
+    child = _get_or_404(db, Child, child_id)
+    try:
+        try:
+            the_day = date.fromisoformat(day)
+        except ValueError:
+            raise sch.ScheduleError("Ungültiges Datum.") from None
+        if the_day < sch.today_local():
+            raise sch.ScheduleError("Gutschriften sind nur für heute oder künftige Tage möglich.")
+        extra = sch.parse_minutes(extra_minutes or "0", "Zusätzliche Minuten", sch.MAX_EXTRA)
+        override = sch.parse_time(window_end, "Fensterende") if window_end.strip() else None
+        if not extra and override is None:
+            raise sch.ScheduleError("Bitte Minuten und/oder ein späteres Fensterende angeben.")
+        rule = sch.rules_by_day(child).get(the_day.weekday())
+        if override is not None and rule is not None and override <= rule.window_end:
+            raise sch.ScheduleError(
+                f"Das Fensterende muss nach dem regulären Ende ({rule.window_end:%H:%M}) liegen.")
+    except sch.ScheduleError as e:
+        return _child_page(request, db, child, status_code=400, error=str(e), credit_day=day)
+
+    exc = db.scalar(select(DayException).where(
+        DayException.child_id == child.id, DayException.day == the_day))
+    if exc is None:
+        exc = DayException(child_id=child.id, day=the_day, extra_minutes=0)
+        db.add(exc)
+    exc.extra_minutes = min(exc.extra_minutes + extra, sch.MAX_QUOTA)
+    if override is not None:
+        exc.window_end_override = override
+    db.commit()
+    return _redirect(f"/children/{child_id}")
+
+
+@router.post("/children/{child_id}/exceptions/{exc_id}/delete", dependencies=[Depends(csrf_protect)])
+def child_exception_delete(child_id: int, exc_id: int, db: Session = Depends(get_db)):
+    exc = _get_or_404(db, DayException, exc_id)
+    if exc.child_id != child_id:
+        raise HTTPException(404)
+    db.delete(exc)
+    db.commit()
+    return _redirect(f"/children/{child_id}")
 
 
 # ---------- Geräte ----------

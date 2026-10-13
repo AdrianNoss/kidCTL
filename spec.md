@@ -1,6 +1,6 @@
 # Parental Control für Arch Linux – Spezifikation
 
-Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Server-Grundgerüst umgesetzt, Client noch nicht.
+Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Server-Grundgerüst und Bildschirmzeit-Konfiguration umgesetzt, Client noch nicht.
 Arbeitstitel: `kidctl` (Name noch nicht final). Deploy unter `kids.nossco.de` (Annahme).
 
 ## Hintergrund
@@ -65,6 +65,10 @@ Verlängerungsanfragen.
 ### Regeln
 - Pro Kind eine Wochenvorlage: je Wochentag **Kontingent** + **erlaubtes Zeitfenster**.
 - UI-Schalter „Werktage/Wochenende gleich“.
+  - An: zwei Zeilen (Mo–Fr, Sa–So), Speichern schreibt die Werte auf alle Tage der Gruppe.
+  - Umschalten ändert nur die Darstellung, nicht die gespeicherten Regeln; weichen Tage einer
+    Gruppe voneinander ab, zeigt das WebUI einen Hinweis (angezeigt: Werte von Mo bzw. Sa).
+- Zeitfenster innerhalb eines Kalendertags (Beginn < Ende), kein Fenster über Mitternacht.
 - Nutzung endet, wenn Kontingent aufgebraucht **oder** Zeitfenster geschlossen ist.
 - Tageswechsel um 00:00 Europe/Berlin.
 
@@ -86,6 +90,9 @@ Verlängerungsanfragen.
 - Kind fordert an: mehr Minuten und/oder späteres Fensterende, mit Begründung (Freitext).
 - Eltern: genehmigen, vor Genehmigung anpassen oder ablehnen.
 - Eltern können ohne Anfrage direkt Zeit gutschreiben.
+  - Nur für heute oder künftige Tage. Minuten werden zu einer bestehenden Ausnahme addiert,
+    ein neues Fensterende ersetzt das bisherige und muss nach dem regulären Ende liegen.
+  - Ausnahmen sind im WebUI einzeln entfernbar.
 - Technisch immer eine **Tagesausnahme**, gültig nur für das jeweilige Datum.
 
 ## Programm-Whitelist
@@ -207,3 +214,10 @@ Verlängerungsanfragen.
   gegen synthetisches Alt-Schema inkl. Hart-Abbruch) sowie Live-Smoke-Test mit uvicorn,
   CLI-Bootstrap, echtem HTTP-Login und `websockets`-Client. Docker-Build nicht getestet
   (kein Docker auf dem Entwicklungssystem).
+- 2026-10-13: Bildschirmzeit-Konfiguration im WebUI (`/children/<id>`): Wochenvorlage mit Schalter
+  „Werktage/Wochenende gleich“, direkte Gutschrift als Tagesausnahme (Minuten und/oder späteres
+  Fensterende), Liste heutiger/künftiger Ausnahmen mit Entfernen. Policy-Verteilung an Agenten
+  folgt später. Getestet: 6 neue pytest-Tests (Gruppenmodus, Einzeltage + Abweichungs-Hinweis,
+  Validierung ohne Teilspeicherung, Gutschrift addieren/ersetzen/entfernen, Validierung der
+  Gutschrift, CSRF) – gesamt 22 grün; Live-Smoke-Test mit uvicorn (Vorlage speichern,
+  Gutschrift, DB-Inhalt geprüft).

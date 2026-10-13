@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ child.name }} – kidctl{% endblock %}
+{% macro rule_row(key, label, rule) %}
+<tr>
+  <td>{{ label }}</td>
+  <td><input type="number" name="quota_{{ key }}" min="0" max="{{ max_quota }}" step="5" value="{{ rule.quota_minutes }}" class="short" required> min</td>
+  <td><input type="time" name="start_{{ key }}" value="{{ rule.window_start.strftime('%H:%M') }}" required></td>
+  <td><input type="time" name="end_{{ key }}" value="{{ rule.window_end.strftime('%H:%M') }}" required></td>
+</tr>
+{% endmacro %}
+{% block content %}
+<h1>{{ child.name }}</h1>
+{% if request.query_params.get("saved") %}<p class="success">Wochenvorlage gespeichert.</p>{% endif %}
+
+<section class="card">
+  <h2>Wochenvorlage</h2>
+  <form method="post" action="/children/{{ child.id }}/mode" class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <input type="hidden" name="weekdays_same" value="{{ '' if child.weekdays_same else '1' }}">
+    <span>Werktage/Wochenende gleich: <strong>{{ "an" if child.weekdays_same else "aus" }}</strong></span>
+    <button type="submit" class="small">{{ "Jeden Tag einzeln einstellen" if child.weekdays_same else "Werktage/Wochenende gleich" }}</button>
+  </form>
+  {% if child.weekdays_same and differs %}
+  <p class="warn">Unterschiedliche Tageswerte in: {{ differs | join(", ") }}. Angezeigt sind die Werte von Montag bzw. Samstag; beim Speichern gelten sie für alle Tage der Gruppe.</p>
+  {% endif %}
+  <form method="post" action="/children/{{ child.id }}/schedule">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <div class="scroll">
+    <table>
+      <tr><th></th><th>Kontingent</th><th>Fenster von</th><th>bis</th></tr>
+      {% if child.weekdays_same %}
+        {% for key, (label, days) in groups.items() %}{{ rule_row(key, label, rules[days[0]]) }}{% endfor %}
+      {% else %}
+        {% for d in range(7) %}{{ rule_row(d, weekday_names[d], rules[d]) }}{% endfor %}
+      {% endif %}
+    </table>
+    </div>
+    <p class="muted">Nutzung endet, wenn das Kontingent aufgebraucht oder das Zeitfenster geschlossen ist. Tageswechsel 00:00 Uhr.</p>
+    <button type="submit">Speichern</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Zeit gutschreiben</h2>
+  <form method="post" action="/children/{{ child.id }}/credit" class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>Datum <input type="date" name="day" value="{{ credit_day }}" min="{{ today.isoformat() }}" required></label>
+    <label>Zusätzlich <input type="number" name="extra_minutes" min="0" max="{{ max_extra }}" step="5" value="0" class="short"> min</label>
+    <label>Fenster bis <input type="time" name="window_end"></label>
+    <button type="submit">Gutschreiben</button>
+  </form>
+  <p class="muted">Gilt nur für das gewählte Datum. Minuten werden zu einer bestehenden Gutschrift addiert.</p>
+  {% if exceptions %}
+  <table>
+    <tr><th>Datum</th><th>Zusätzlich</th><th>Fenster bis</th><th></th></tr>
+    {% for e in exceptions %}
+    <tr>
+      <td>{{ weekday_names[e.day.weekday()][:2] }} {{ e.day.strftime("%d.%m.%Y") }}{% if e.day == today %} (heute){% endif %}</td>
+      <td>{{ fmt_minutes(e.extra_minutes) if e.extra_minutes else "–" }}</td>
+      <td>{{ e.window_end_override.strftime("%H:%M") if e.window_end_override else "–" }}</td>
+      <td class="right">
+        <form method="post" action="/children/{{ child.id }}/exceptions/{{ e.id }}/delete" class="inline">
+          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+          <button type="submit" class="danger small">Entfernen</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</section>
+{% endblock %}
