@@ -1,0 +1,66 @@
+# Test-VM für den kidctl-Client
+
+Arch Linux mit KDE Plasma (Wayland) unter QEMU/KVM – zum gefahrlosen Testen von Agent, PAM,
+nftables und Mounts. **Systemnahe Client-Teile nie auf dem Entwicklungsrechner scharf schalten.**
+
+## Einmalig auf dem Host
+
+```bash
+sudo pacman -S --needed qemu-desktop libisoburn openssl
+```
+
+`/dev/kvm` muss für den eigenen Benutzer beschreibbar sein (unter Arch Standard).
+
+## VM anlegen und starten
+
+```bash
+dev/vm/vm.sh create            # Dry-Run: zeigt, was passiert
+dev/vm/vm.sh create --apply    # lädt Arch-Cloud-Image (~550 MB), prüft SHA256, legt Disk + Seed an
+dev/vm/vm.sh start             # Fenster mit 3D-Beschleunigung (virgl)
+dev/vm/vm.sh wait              # wartet auf Paketinstallation (10–20 min beim ersten Start)
+dev/vm/vm.sh ssh sudo reboot   # danach erscheint die grafische Anmeldung (SDDM)
+dev/vm/vm.sh stop
+dev/vm/vm.sh snapshot basis --apply   # sauberen Grundzustand sichern
+```
+
+Probleme mit dem Grafikfenster: `vm.sh start --no-gl` (ohne 3D, Plasma läuft dann mit
+Software-Rendering). Ohne Fenster: `vm.sh start --headless` (nur SSH).
+
+## Zugänge
+
+| Benutzer | Passwort | Rolle |
+|---|---|---|
+| `admin` | `admin` | sudo ohne Passwort, SSH per eigenem Schlüssel (`vm.sh ssh`) |
+| `kind` | `kind` | Standard-Account ohne Rechte – wird später einem Kind zugeordnet |
+
+SSH-Passwort-Login ist aus, der Port ist nur lokal gebunden (`127.0.0.1:2222`).
+
+## Verbindung zu Repo und Server
+
+- Repo liegt schreibgeschützt unter `/opt/kidctl-src` (9p, live – Änderungen auf dem Host sind
+  sofort sichtbar).
+- Der Host ist aus der VM unter `10.0.2.2` erreichbar. Entwicklungsserver auf dem Host starten
+  (siehe `server/README.md`, Port 8000) → in der VM `http://10.0.2.2:8000`.
+
+## Snapshots (Rettung bei Aussperrung)
+
+```bash
+dev/vm/vm.sh stop
+dev/vm/vm.sh snapshots                 # Liste
+dev/vm/vm.sh restore basis --apply     # sichert vorher automatisch „vor-restore-<Zeit>“
+```
+
+Vor jedem Test von PAM-/nftables-Änderungen einen Snapshot anlegen. Der Admin-Account wird vom
+Agenten nie eingeschränkt (nicht zugeordnet), SSH bleibt damit als Zugang erhalten.
+
+## Dateien
+
+| Pfad | Zweck |
+|---|---|
+| `dev/vm/vm.sh` | Verwaltung auf dem Host |
+| `dev/vm/user-data.tmpl` | cloud-init: Benutzer, 9p-Mount, startet Provisionierung |
+| `dev/vm/provision.sh` | läuft in der VM: Pakete, Locale/Tastatur (de), SDDM unter Wayland |
+| `~/.local/share/kidctl-vm/` | Images, Disk, VM-eigener SSH-Schlüssel, Logs (`KIDCTL_VM_DIR`) |
+
+Neu aufsetzen: VM stoppen, `~/.local/share/kidctl-vm/disk.qcow2` und `seed.iso` löschen,
+`vm.sh create --apply` (Basis-Image wird wiederverwendet).

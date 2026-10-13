@@ -1,0 +1,36 @@
+#cloud-config
+# Vorlage – vm.sh ersetzt @…@-Platzhalter. Nur für die lokale Test-VM.
+hostname: kidctl-vm
+timezone: Europe/Berlin
+ssh_pwauth: false
+
+users:
+  # Admin: sudo ohne Passwort, SSH nur per Schlüssel; Konsolen-/SDDM-Passwort "admin"
+  - name: admin
+    gecos: Admin
+    groups: [wheel]
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    shell: /bin/bash
+    lock_passwd: false
+    hashed_passwd: "@ADMIN_HASH@"
+    ssh_authorized_keys:
+      - "@SSH_KEY@"
+  # Kind: Standard-Account ohne sudo; Passwort "kind"
+  - name: kind
+    gecos: Testkind
+    shell: /bin/bash
+    lock_passwd: false
+    hashed_passwd: "@KIND_HASH@"
+
+mounts:
+  # Repo vom Host, schreibgeschützt (9p)
+  - [kidctl, /opt/kidctl-src, 9p, "trans=virtio,version=9p2000.L,ro,nofail,x-systemd.automount", "0", "0"]
+
+write_files:
+  - path: /usr/local/sbin/kidctl-vm-provision
+    permissions: "0755"
+    encoding: b64
+    content: @PROVISION_B64@
+
+runcmd:
+  - [bash, -c, "/usr/local/sbin/kidctl-vm-provision --apply 2>&1 | tee /var/log/kidctl-provision.log"]

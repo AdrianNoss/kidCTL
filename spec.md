@@ -277,3 +277,11 @@ Verlängerungsanfragen.
   gesamt 41 grün; Live-Smoke-Test mit uvicorn gegen Alt-Datenbank (Migration im Log) und zwei
   `websockets`-Agenten (Policy, Ack, `usage_update` an das andere Gerät, Gutschrift an beide,
   Übersicht).
+- 2026-10-13: Test-VM vorbereitet (`dev/vm/`): Arch-Cloud-Image (SHA256 geprüft) + Overlay-Disk,
+  cloud-init mit Benutzern `admin` (sudo, SSH-Schlüssel) und `kind`, Provisionierung (Plasma
+  Wayland, SDDM unter Wayland, deutsche Locale/Tastatur, Python-Pakete aus offiziellen Repos),
+  Repo per 9p schreibgeschützt eingebunden, Snapshots mit automatischer Sicherung vor Restore.
+  Alle Skripte mit Dry-Run-Standard. Getestet: Bash-Syntax, Dry-Runs, alle 27 Paketnamen gegen
+  die Repos, erzeugtes cloud-init-YAML (parsebar, Platzhalter ersetzt, eingebettetes Skript
+  identisch), Erreichbarkeit des Cloud-Images. **Nicht getestet:** tatsächlicher VM-Start (QEMU
+  auf dem Host noch nicht installiert).

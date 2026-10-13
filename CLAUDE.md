@@ -23,6 +23,7 @@ agent/         Root-Agent (systemd), PAM-Helfer, nftables-/Resolver-Steuerung
 tray/          PySide6-Tray-App
 common/        Geteilte Datenmodelle (Policy-Schema, WebSocket-Nachrichten, Protokollversion)
 packaging/     PKGBUILD, systemd-Units, PAM-, nftables-, Browser-Policy-, Mount-Konfiguration
+dev/vm/        Test-VM (QEMU/KVM, Arch + KDE Plasma Wayland) für systemnahe Client-Tests
 spec.md
 CLAUDE.md
 ```
