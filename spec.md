@@ -1,6 +1,6 @@
 # Parental Control für Arch Linux – Spezifikation
 
-Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Serverseite für Bildschirmzeit, Chat/Verlängerungen, PWA/Web Push, Policy-Verteilung und Offline-Alarm umgesetzt; Agent Bildschirmzeit inkl. PAM-Login-Sperre umgesetzt.
+Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Serverseite für Bildschirmzeit, Chat/Verlängerungen, PWA/Web Push, Policy-Verteilung und Offline-Alarm umgesetzt; Agent (Bildschirmzeit, PAM-Login-Sperre), Tray-App und Paket umgesetzt.
 Arbeitstitel: `kidctl` (Name noch nicht final). Deploy unter `kids.nossco.de` (Annahme).
 
 ## Hintergrund
@@ -186,6 +186,14 @@ Verlängerungsanfragen.
   Genehmigen / Anpassen / Ablehnen.
 - Web Push an alle Push-Abos der Eltern bei neuer Nachricht/Anfrage.
 - Keine Bilder/Dateien, keine Lesebestätigungen.
+- Tray ↔ Agent: Unix-Socket `/run/kidctl/tray.sock` (0666), Identität ausschließlich per
+  `SO_PEERCRED`; nicht zugeordnete User/Admins erhalten nur „nicht eingeschränkt“. Agent hält
+  Chat-Verlauf (200 Nachrichten je Kind) und Ausgangs-Warteschlange persistent (offline-fähig,
+  Versand nach Wiederverbindung, Entfernen erst nach `ack`), holt Verlauf nach jeder Policy per
+  `chat_sync` nach. KDE-Benachrichtigung bei neuer Eltern-Nachricht und bei Entscheidung über
+  eine Anfrage (nicht beim allerersten Abgleich).
+- Vorwarnungen und Zeitende-Meldung haben den Knopf „Verlängerung anfordern“
+  (`notify-send --action … --wait`); Klick öffnet den Anfrage-Dialog der Tray-App.
 - Zustellung: Agent leitet Nachrichten der Tray-App per WebSocket weiter (`chat_send`,
   `extension_request`) und puffert sie offline; `client_msg_id` macht das Senden idempotent,
   der Server bestätigt mit `ack`. Server stellt neue/geänderte Einträge als `chat_message` an
@@ -369,3 +377,13 @@ Verlängerungsanfragen.
   sofort gesperrt trotz anfangs fehlendem Netz), `kill -9` (Sperrliste bleibt, Neustart durch
   systemd), `pacman -R` (system-login identisch mit Original, Theme/Dienst weg, Token bleibt),
   Neuinstallation.
+- 2026-10-13: Tray-App (`tray/`, PySide6) + Agent-Seite (Tray-Socket mit SO_PEERCRED, Chat-Cache,
+  Ausgangs-Warteschlange, Benachrichtigungen, Aktionsknopf), lokales Protokoll
+  `common/kidctl_common/tray.py` (Version 1), Paket 0.2.0 (`kidctl-tray`, XDG-Autostart, Abhängigkeit
+  `pyside6`). Getestet: Agent 35 pytest-Tests (neu: Tray-Socket hello/Verlauf, nicht zugeordneter
+  User, Offline-Warteschlange + Persistenz + Flush + Ack, Push/Benachrichtigungen inkl. kein Spam
+  beim Erstabgleich, chat_sync, Dialog-Aktion, ungültige Eingaben; E2E Tray → Agent → echter
+  Server → Eltern-Chat → Antwort/angepasste Genehmigung → Tray + Policy-Gutschrift); Tray 3
+  Text-Tests (Host) + 5 inkl. GUI offscreen gegen Fake-Agent (VM, PySide6 6.12). VM: Paket-Upgrade
+  (Agent per post_upgrade neu gestartet, Socket 0666), SO_PEERCRED mit echten Usern (`admin` →
+  nicht eingeschränkt + Chat abgelehnt; `kind` → Zustand „Max“, Nachricht beim Server).

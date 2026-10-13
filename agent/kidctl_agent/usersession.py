@@ -11,6 +11,8 @@ import pwd
 log = logging.getLogger("kidctl.usersession")
 
 TIMEOUT = 10  # Sekunden
+ACTION_TIMEOUT = 900  # so lange auf einen Klick in einer Benachrichtigung mit Knopf warten
+ACTION_REQUEST = "request"
 _tasks: set[asyncio.Task] = set()
 
 
@@ -32,22 +34,34 @@ class UserSession:
                 "env", f"DBUS_SESSION_BUS_ADDRESS=unix:path={runtime}/bus", f"XDG_RUNTIME_DIR={runtime}",
                 *cmd]
 
-    async def _spawn(self, cmd: list[str]) -> asyncio.subprocess.Process | None:
+    async def _spawn(self, cmd: list[str], capture: bool = False) -> asyncio.subprocess.Process | None:
         try:
             return await asyncio.create_subprocess_exec(
-                *cmd, stdin=asyncio.subprocess.DEVNULL, stdout=asyncio.subprocess.DEVNULL,
+                *cmd, stdin=asyncio.subprocess.DEVNULL,
+                stdout=asyncio.subprocess.PIPE if capture else asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.DEVNULL)
         except OSError:
             log.warning("%s nicht ausführbar", cmd[0], exc_info=True)
             return None
 
-    async def notify(self, user: str, uid: int, title: str, body: str, critical: bool = False) -> None:
-        cmd = self._as_user(user, uid, "notify-send", "-a", "kidctl", "-i", "chronometer",
-                            "-u", "critical" if critical else "normal", title, body)
-        if cmd and (proc := await self._spawn(cmd)):
-            task = asyncio.create_task(_reap(proc, f"notify-send für {user}"))
-            _tasks.add(task)
-            task.add_done_callback(_tasks.discard)
+    async def notify(self, user: str, uid: int, title: str, body: str, critical: bool = False,
+                     on_action=None) -> None:
+        """KDE-Benachrichtigung. Mit ``on_action`` zusätzlich Knopf „Verlängerung anfordern“;
+        ein Klick ruft ``on_action(user)`` auf."""
+        args = ["notify-send", "-a", "kidctl", "-i", "chronometer",
+                "-u", "critical" if critical else "normal"]
+        if on_action:
+            args += [f"--action={ACTION_REQUEST}=Verlängerung anfordern", "--wait"]
+        cmd = self._as_user(user, uid, *args, title, body)
+        if not cmd or not (proc := await self._spawn(cmd, capture=bool(on_action))):
+            return
+        if on_action:
+            coro = _await_action(proc, user, on_action)
+        else:
+            coro = _reap(proc, f"notify-send für {user}")
+        task = asyncio.create_task(coro)
+        _tasks.add(task)
+        task.add_done_callback(_tasks.discard)
 
     async def logout(self, user: str, uid: int) -> bool:
         """Bittet Plasma um Abmeldung ohne Rückfrage. So beendet sich sddm-helper regulär und
@@ -74,3 +88,18 @@ async def _reap(proc: asyncio.subprocess.Process, what: str) -> int | None:
         proc.kill()
         await proc.wait()
         return None
+
+
+async def _await_action(proc: asyncio.subprocess.Process, user: str, on_action) -> None:
+    """notify-send --wait gibt den Schlüssel der geklickten Aktion aus."""
+    try:
+        out, _ = await asyncio.wait_for(proc.communicate(), ACTION_TIMEOUT)
+    except asyncio.TimeoutError:
+        proc.kill()
+        await proc.wait()
+        return
+    if out.decode(errors="replace").strip() == ACTION_REQUEST:
+        try:
+            await on_action(user)
+        except Exception:
+            log.exception("Aktion für %s fehlgeschlagen", user)

@@ -22,7 +22,7 @@ class FakeNotifier:
         self.logouts = []
         self.dm_restarts = 0
 
-    async def notify(self, user, uid, title, body, critical=False):
+    async def notify(self, user, uid, title, body, critical=False, on_action=None):
         self.sent.append((user, title, body, critical))
 
     async def logout(self, user, uid):

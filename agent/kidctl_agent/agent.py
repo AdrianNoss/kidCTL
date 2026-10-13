@@ -1,4 +1,4 @@
-"""Steuerung: Takt (Zählen + Durchsetzen), Policy-Cache, Server-Synchronisation."""
+"""Steuerung: Takt (Zählen + Durchsetzen), Policy-Cache, Server-Synchronisation, Tray/Chat."""
 
 from __future__ import annotations
 
@@ -9,13 +9,16 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from kidctl_common import protocol as p
+from kidctl_common import tray as t
 
 from . import sdnotify, store
 from .accounting import Usage, boottime
+from .chat import NEW, ChatStore, Outbox, new_client_msg_id
 from .connection import Connection
 from .enforcer import Enforcer
 from .loginlock import LoginLock, is_admin
-from .rules import Decision, evaluate
+from .rules import Decision, day_limits, evaluate
+from .trayserver import TrayServer
 
 log = logging.getLogger("kidctl.agent")
 
@@ -34,10 +37,15 @@ def local_users() -> list[p.LocalUser]:
 
 
 class Agent:
-    def __init__(self, logind, desktop, device: dict | None = None) -> None:
+    def __init__(self, logind, desktop, device: dict | None = None, tray_path: str | None = None) -> None:
         self.logind = logind
-        self.enforcer = Enforcer(logind, desktop)
+        self.desktop = desktop
+        self.enforcer = Enforcer(logind, desktop, on_request=self.open_request_dialog)
         self.usage = Usage.load()
+        self.chat = ChatStore.load()
+        self.outbox = Outbox.load()
+        self.tray = TrayServer(self, tray_path)
+        self._sessions: list = []
         raw = store.load(store.POLICY_FILE)
         self.policy: p.Policy | None = p.Policy.model_validate(raw) if raw else None
         self.conn = Connection(device, self) if device else None
@@ -52,6 +60,13 @@ class Agent:
     def now_local(self) -> datetime:
         tz = self.policy.timezone if self.policy else DEFAULT_TZ
         return datetime.now(ZoneInfo(tz))
+
+    @property
+    def online(self) -> bool:
+        return self.conn is not None and self.conn.connected
+
+    def users_of(self, child_id: int) -> list[str]:
+        return [u for u, c in (self.policy.users.items() if self.policy else []) if c == child_id]
 
     def decisions(self, now: datetime) -> dict[str, Decision]:
         """Entscheidung je zugeordnetem User (nicht zugeordnete fehlen -> nie eingeschränkt)."""
@@ -78,6 +93,7 @@ class Agent:
 
     async def tick_once(self) -> None:
         sessions = await self.logind.sessions()
+        self._sessions = sessions
         now = self.now_local()
         decisions = self.decisions(now)  # nur zugeordnete Nicht-Admins
         counting = {s.user for s in sessions if s.counts and s.user in decisions}
@@ -87,6 +103,7 @@ class Agent:
         self.loginlock.update({u for u, d in decisions.items() if not d.allowed})
         if self._synced or boottime() - self._started >= STARTUP_SYNC:
             await self.enforcer.step(now.date(), sessions, decisions)
+        await self.tray.push_states(boottime())
         self._ticks += 1
         if self._ticks % SAVE_EVERY == 0:
             self.usage.prune(now.date())
@@ -124,6 +141,22 @@ class Agent:
     async def on_connected(self, conn: Connection) -> None:
         await conn.send(p.ReportUsers(users=local_users()))
         await self.send_usage()
+        await self.flush_outbox()
+
+    async def flush_outbox(self) -> None:
+        """Gepufferte Nachrichten/Anfragen senden; der Server ist idempotent (client_msg_id)."""
+        if not self.online:
+            return
+        for item in list(self.outbox.items.values()):
+            await self.conn.send(item)
+
+    async def sync_chat(self) -> None:
+        """Verlauf je Kind ab der höchsten bekannten Nachricht nachholen."""
+        if not (self.online and self.policy):
+            return
+        for child_id in sorted(set(self.policy.users.values())):
+            users = self.users_of(child_id)
+            await self.conn.send(p.ChatSync(username=users[0], after_id=self.chat.max_id(child_id)))
 
     async def on_message(self, msg) -> None:
         if isinstance(msg, p.Policy):
@@ -132,10 +165,91 @@ class Agent:
             store.save(store.POLICY_FILE, msg.model_dump(mode="json"))
             log.info("Policy %s übernommen (%d zugeordnete User)", msg.version, len(msg.users))
             await self.conn.send(p.PolicyAck(version=msg.version))
+            await self.sync_chat()
+        elif isinstance(msg, p.Ack):
+            self.outbox.remove(msg.client_msg_id)
+            if not msg.ok:
+                log.warning("Server verwirft Nachricht %s: %s", msg.client_msg_id, msg.error)
+        elif isinstance(msg, p.ChatMessage):
+            await self.on_chat_message(msg)
         elif isinstance(msg, p.UsageUpdate):
             self.usage.others[(msg.child_id, msg.day.isoformat())] = msg.others_seconds
         elif isinstance(msg, p.Ping):
             await self.conn.send(p.Pong())
+
+    # ---------- Chat ----------
+
+    async def on_chat_message(self, msg: p.ChatMessage) -> None:
+        had_history = self.chat.has_history(msg.child_id)
+        prev = self.chat.previous(msg)
+        change = self.chat.upsert(msg)
+        if change is None:
+            return
+        self.chat.save()
+        for user in self.users_of(msg.child_id):
+            await self.tray.send_to_user(user, t.TrayChatMessage(message=msg))
+        if had_history:  # beim allerersten Abgleich keine Flut alter Benachrichtigungen
+            await self._notify_chat(msg, prev, change)
+
+    async def _notify_chat(self, msg: p.ChatMessage, prev: p.ChatMessage | None, change: str) -> None:
+        if change == NEW and not msg.from_child:
+            title, body = f"Nachricht von {msg.sender_name}", msg.body
+        elif (msg.kind == "extension_request" and prev is not None and prev.status == "pending"
+              and msg.status in ("approved", "rejected")):
+            if msg.status == "approved":
+                parts = []
+                if msg.approved_minutes:
+                    parts.append(f"+{msg.approved_minutes} Minuten")
+                if msg.approved_window_end:
+                    parts.append(f"bis {msg.approved_window_end:%H:%M} Uhr")
+                title, body = "Verlängerung genehmigt", " und ".join(parts) or "Genehmigt."
+            else:
+                title, body = "Verlängerung abgelehnt", f"{msg.sender_name} hat die Anfrage abgelehnt."
+        else:
+            return
+        users = set(self.users_of(msg.child_id))
+        for s in self._sessions:
+            if s.is_user_session and s.user in users:
+                await self.desktop.notify(s.user, s.uid, title, body)
+                users.discard(s.user)  # je User nur einmal
+
+    async def open_request_dialog(self, user: str) -> None:
+        """Klick auf „Verlängerung anfordern“ in einer Warnung."""
+        if not await self.tray.send_to_user(user, t.TrayOpenRequestDialog()):
+            log.info("Verlängerung angefordert, aber keine Tray-App von %s verbunden", user)
+
+    # ---------- Tray-Schnittstelle (für TrayServer) ----------
+
+    def tray_state(self, user: str) -> t.TrayState:
+        now = self.now_local()
+        d = self.decisions(now).get(user)
+        if d is None:
+            return t.TrayState(restricted=False, online=self.online)
+        child_id = self.policy.users[user]
+        child = next(c for c in self.policy.children if c.id == child_id)
+        quota, start, end = day_limits(child, now.date())
+        same = self.users_of(child_id)
+        return t.TrayState(
+            restricted=True, child_name=child.name, allowed=d.allowed,
+            remaining_seconds=d.remaining_seconds, reason=d.reason,
+            used_seconds=self.usage.used_seconds(child_id, same, now.date()),
+            allowed_minutes=quota // 60, window_start=start, window_end=end,
+            online=self.online, pending_outbox=self.outbox.pending_for(same))
+
+    def tray_history(self, user: str) -> list[p.ChatMessage]:
+        return self.chat.history(self.policy.users[user]) if self.policy and user in self.policy.users else []
+
+    async def tray_chat_send(self, user: str, body: str) -> bool:
+        self.outbox.add(p.ChatSend(client_msg_id=new_client_msg_id(), username=user, body=body.strip()))
+        await self.flush_outbox()
+        return self.online
+
+    async def tray_request(self, user: str, req: t.TrayExtensionRequest) -> bool:
+        self.outbox.add(p.ExtensionRequest(
+            client_msg_id=new_client_msg_id(), username=user, day=self.now_local().date(),
+            minutes=req.minutes, window_end=req.window_end, reason=req.reason.strip()))
+        await self.flush_outbox()
+        return self.online
 
     # ---------- Lauf ----------
 
@@ -144,6 +258,10 @@ class Agent:
             log.warning("Gerät nicht gekoppelt – nur gecachte Policy wird durchgesetzt")
         if self.policy is None:
             log.warning("Keine Policy vorhanden – niemand wird eingeschränkt")
+        try:
+            await self.tray.start()
+        except OSError:
+            log.exception("Tray-Socket nicht verfügbar – Durchsetzung läuft ohne Tray weiter")
         tasks = [asyncio.create_task(self._tick_loop())]
         if self.conn is not None:
             tasks += [asyncio.create_task(self.conn.run_forever()),
@@ -151,6 +269,7 @@ class Agent:
         try:
             await asyncio.gather(*tasks)
         finally:
-            for t in tasks:
-                t.cancel()
+            for task in tasks:
+                task.cancel()
+            await self.tray.stop()
             self.usage.save()

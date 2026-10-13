@@ -22,9 +22,10 @@ RECOVER_DELAY = 10    # danach prüfen, ob SDDM wieder einen Anmeldebildschirm z
 
 
 class Enforcer:
-    def __init__(self, logind, desktop, clock=boottime) -> None:
+    def __init__(self, logind, desktop, clock=boottime, on_request=None) -> None:
         self.logind = logind
         self.desktop = desktop
+        self.on_request = on_request  # async (user) -> None: Klick auf „Verlängerung anfordern“
         self.clock = clock
         self.warned: dict[tuple[str, date], set[int]] = {}
         self.deadline: dict[str, float] = {}   # User -> Ende des Countdowns (BOOTTIME)
@@ -61,7 +62,7 @@ class Enforcer:
                 await self.desktop.notify(
                     user, uid, "Bildschirmzeit zu Ende",
                     f"{REASON_TEXT.get(d.reason, '')} Abmeldung in {GRACE_SECONDS} Sekunden – "
-                    "bitte jetzt speichern.", critical=True)
+                    "bitte jetzt speichern.", critical=True, on_action=self.on_request)
             elif user in self.deadline and now >= self.deadline[user]:
                 del self.deadline[user]
                 await self._end(user, uid, user_sessions, d.reason, now)
@@ -110,7 +111,7 @@ class Enforcer:
             warned.update(due)  # bei Anmeldung mit wenig Restzeit nur eine Warnung
             await self.desktop.notify(user, uid, "Bildschirmzeit",
                                        f"Noch {_fmt(remaining)} – danach wirst du abgemeldet.",
-                                       critical=min(due) == 1)
+                                       critical=min(due) == 1, on_action=self.on_request)
 
 
 def _fmt(seconds: int) -> str:
