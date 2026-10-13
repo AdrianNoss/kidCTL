@@ -1,0 +1,37 @@
+# kidctl – feste Basisliste der Programm-Whitelist (für Eltern unsichtbar).
+#
+#   pkg:<paket>   Wurzelpaket: alle ausführbaren Dateien (/usr/bin, /usr/lib) seiner gesamten
+#                 Abhängigkeitskette sind erlaubt – außer Programmen mit sichtbarem
+#                 .desktop-Eintrag (Apps = Eltern-Entscheidung), Shells/Interpreter und Ausschlüssen.
+#   <muster>      zusätzlich erlaubter Pfad (fnmatch-Glob)
+#   !<muster>     nie Basis (Eltern können es trotzdem einzeln freigeben)
+#
+# Der Agent berechnet die Liste beim Start und nach jedem pacman-Update neu.
+# /usr/lib/kidctl/* ist immer erlaubt, der dynamische Loader (ld-linux*) nie.
+
+# --- Plasma-Sitzung (Wayland) ---
+pkg:plasma-desktop
+pkg:plasma-workspace
+pkg:kwin
+pkg:xorg-xwayland
+pkg:plasma-nm
+pkg:plasma-pa
+pkg:kscreen
+pkg:kde-gtk-config
+pkg:breeze-gtk
+# --- Audio, Portale ---
+pkg:pipewire
+pkg:pipewire-pulse
+pkg:wireplumber
+pkg:xdg-desktop-portal-kde
+pkg:xdg-desktop-portal-gtk
+# --- Flatpak-Laufzeit (Apps selbst über App-ID geregelt) ---
+pkg:flatpak
+
+# --- Terminals nie als Basis ---
+!/usr/bin/konsole
+!/usr/bin/yakuake
+!/usr/bin/xterm
+!/usr/bin/alacritty
+!/usr/bin/kitty
+!/usr/bin/foot

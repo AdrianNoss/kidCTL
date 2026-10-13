@@ -70,4 +70,54 @@
   </table>
   {% endif %}
 </section>
+
+<section class="card" id="programme">
+  <h2>Programme</h2>
+  {% if request.query_params.get("programs") %}<p class="success">Programm-Einstellungen gespeichert.</p>{% endif %}
+  <form method="post" action="/children/{{ child.id }}/programs">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>Programmkontrolle
+      <select name="program_mode">
+        {% for key, label in program_modes.items() %}<option value="{{ key }}"{% if child.program_mode == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </label>
+    <p class="muted">„Nur protokollieren“ sperrt nichts, meldet aber, was gesperrt würde – zum gefahrlosen Einstieg.
+      Systemkomponenten (KDE/Plasma, kidctl) sind immer erlaubt. Terminals, Shells und Interpreter sind gesperrt,
+      solange sie nicht ausdrücklich freigegeben sind.</p>
+    {% if catalog %}
+    <div class="scroll">
+    <table>
+      <tr><th>Erlaubt</th><th>Programm</th><th></th></tr>
+      {% for app in catalog %}
+      <tr{% if app.missing %} class="muted"{% endif %}>
+        <td><input type="checkbox" name="app" value="{{ app.key }}"{% if app.allowed %} checked{% endif %} style="width:auto"></td>
+        <td>{{ app.name }}<br><small class="muted">{{ app.key }}</small></td>
+        <td class="right"><small class="muted">{% if app.missing %}nicht mehr installiert{% elif app.devices > 1 %}{{ app.devices }} Geräte{% endif %}</small></td>
+      </tr>
+      {% endfor %}
+    </table>
+    </div>
+    {% else %}<p class="muted">Noch keine Programmliste – sie erscheint, sobald ein Gerät mit zugeordnetem Benutzer verbunden ist.</p>{% endif %}
+    <button type="submit">Speichern</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Gesperrte Aktionen</h2>
+  {% if blocked %}
+  <div class="scroll">
+  <table>
+    <tr><th>Zeit</th><th>Programm</th><th>Benutzer</th><th></th></tr>
+    {% for e in blocked %}
+    <tr>
+      <td>{{ e.at | localtime }}</td>
+      <td>{{ e.name }}{% if e.detail %} <small class="muted">({{ e.detail }})</small>{% endif %}<br><small class="muted">{{ e.key }}</small></td>
+      <td>{{ e.username }}</td>
+      <td>{% if e.audit %}<small class="muted">nur protokolliert</small>{% else %}<span class="warn">gesperrt</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% else %}<p class="muted">Keine gesperrten Aktionen.</p>{% endif %}
+</section>
 {% endblock %}

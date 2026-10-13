@@ -73,6 +73,7 @@ class Child(Base):
     name: Mapped[str] = mapped_column(String(64), unique=True)
     weekdays_same: Mapped[bool] = mapped_column(Boolean, default=True)  # UI: Werktage/Wochenende gleich
     web_filter_mode: Mapped[str] = mapped_column(String(16), default="whitelist")  # whitelist | blacklist
+    program_mode: Mapped[str] = mapped_column(String(16), default="off")  # off | audit | enforce
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     rules: Mapped[list[WeekdayRule]] = relationship(
@@ -157,6 +158,46 @@ class UsageRecord(Base):
         ForeignKey("child.id", ondelete="CASCADE"), nullable=True, index=True)
     seconds: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class DeviceApp(Base):
+    """Vom Agenten gemeldete installierte Anwendung (systemweiter .desktop-Eintrag)."""
+    __tablename__ = "device_app"
+    __table_args__ = (UniqueConstraint("device_id", "key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    device_id: Mapped[int] = mapped_column(ForeignKey("device.id", ondelete="CASCADE"), index=True)
+    key: Mapped[str] = mapped_column(String(512))     # exe:<pfad> | flatpak:<app-id>
+    name: Mapped[str] = mapped_column(String(255))
+    icon: Mapped[str] = mapped_column(String(255), default="")
+    desktop_id: Mapped[str] = mapped_column(String(255), default="")
+
+
+class ChildProgram(Base):
+    """Von den Eltern freigegebenes Programm (App-Schlüssel) für ein Kind."""
+    __tablename__ = "child_program"
+    __table_args__ = (UniqueConstraint("child_id", "key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    child_id: Mapped[int] = mapped_column(ForeignKey("child.id", ondelete="CASCADE"), index=True)
+    key: Mapped[str] = mapped_column(String(512))
+
+
+class BlockedEvent(Base):
+    """Protokoll gesperrter Aktionen (kein Verlauf erlaubter Aktionen)."""
+    __tablename__ = "blocked_event"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    child_id: Mapped[int | None] = mapped_column(
+        ForeignKey("child.id", ondelete="CASCADE"), nullable=True, index=True)
+    device_id: Mapped[int | None] = mapped_column(ForeignKey("device.id", ondelete="SET NULL"), nullable=True)
+    username: Mapped[str] = mapped_column(String(64))
+    at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    kind: Mapped[str] = mapped_column(String(16), default="program")
+    key: Mapped[str] = mapped_column(String(512))
+    name: Mapped[str] = mapped_column(String(255))
+    detail: Mapped[str] = mapped_column(String(255), default="")
+    audit: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class PairingCode(Base):

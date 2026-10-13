@@ -57,7 +57,11 @@ def server(tmp_path):
     web.post("/children", data={"csrf_token": csrf, "name": "Max"})
     yield base, web, csrf
     proc.terminate()
-    proc.wait(5)
+    try:
+        proc.wait(5)
+    except subprocess.TimeoutExpired:  # uvicorn wartet ggf. auf offene WebSockets
+        proc.kill()
+        proc.wait(5)
 
 
 class FakeLogind:

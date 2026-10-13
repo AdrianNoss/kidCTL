@@ -14,6 +14,7 @@ from kidctl_common import protocol as p
 
 from . import schedule as sch
 from .chat import device_ids_for_child
+from .programs import allowed_keys
 from .config import settings
 from .models import Child, DayException, Device, DeviceUser, UsageRecord, utcnow
 from .ws import manager
@@ -42,6 +43,8 @@ def build_policy(db: Session, device_id: int) -> p.Policy:
                              window_start=r.window_start, window_end=r.window_end) for r in child.rules],
             exceptions=[p.DayOverride(day=e.day, extra_minutes=e.extra_minutes,
                                       window_end_override=e.window_end_override) for e in excs],
+            program_mode=child.program_mode,
+            allowed_programs=allowed_keys(db, child.id),
         ))
     body = p.Policy(version="", timezone=settings.timezone, users=users, children=children)
     digest = hashlib.sha256(body.model_dump_json(exclude={"version"}).encode()).hexdigest()[:16]

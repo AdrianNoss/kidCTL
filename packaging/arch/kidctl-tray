@@ -1,8 +1,3 @@
 #!/bin/sh
 # Tray-App (läuft als angemeldeter User; rein kosmetisch – Durchsetzung macht der Agent).
-exec /usr/bin/python3 -E -s -c '
-import sys
-sys.path.insert(0, "/usr/lib/kidctl")
-from kidctl_tray.app import main
-sys.exit(main())
-' "$@"
+exec /usr/bin/python3 -E -s /usr/lib/kidctl/kidctl-tray-main.py "$@"

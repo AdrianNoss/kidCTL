@@ -25,6 +25,8 @@ COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
     # 2026-10-13: Policy-Verteilung, Offline-Alarm
     ("device", "policy_version", "VARCHAR(64) NOT NULL DEFAULT ''"),
     ("device", "offline_alerted_at", "DATETIME"),
+    # 2026-10-13: Programm-Whitelist
+    ("child", "program_mode", "VARCHAR(16) NOT NULL DEFAULT 'off'"),
 ]
 
 

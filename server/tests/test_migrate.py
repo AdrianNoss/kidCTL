@@ -62,3 +62,13 @@ def test_device_columns_migrated_on_old_schema(tmp_path):
     with eng.connect() as c:
         assert {"policy_version", "offline_alerted_at"} <= set(migrate._columns(c, "device"))
         assert c.execute(text("SELECT policy_version FROM device")).scalar() == ""
+
+
+def test_child_program_mode_migrated(tmp_path):
+    eng = create_engine(f"sqlite:///{tmp_path}/alt.db")
+    with eng.begin() as c:
+        c.execute(text("CREATE TABLE child (id INTEGER PRIMARY KEY, name VARCHAR(64))"))
+        c.execute(text("INSERT INTO child (name) VALUES ('Max')"))
+    migrate.run_migrations(eng)
+    with eng.connect() as c:
+        assert c.execute(text("SELECT program_mode FROM child")).scalar() == "off"

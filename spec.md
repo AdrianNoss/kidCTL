@@ -149,6 +149,26 @@ Verlängerungsanfragen.
   2. **Eltern-Liste**: Auswahl aus den vom Client gemeldeten `.desktop`-Einträgen
      (Name, Icon, `Exec`-Pfad).
 - Shells, Terminals und Interpreter (Konsole, bash interaktiv, python …) standardmäßig gesperrt.
+- Umsetzung (Agent):
+  - Prüfung je Prozess zugeordneter Kinder: sofort per Netlink `PROC_EVENTS`, zusätzlich Scan
+    aller Kinder-Prozesse alle 5 s (falls Events verloren gehen). Gesperrt = `SIGKILL`,
+    KDE-Benachrichtigung „Programm gesperrt“, Eintrag im Sperrprotokoll.
+  - Modus je Kind: **Aus**, **Nur protokollieren** (meldet, was gesperrt würde – gefahrloser
+    Einstieg), **Sperren**. *(Ergänzung zur Spec, Bestätigung ausstehend.)*
+  - Basisliste wird aus Paketen berechnet: alle ausführbaren Dateien (/usr/bin, /usr/lib) der
+    Abhängigkeitskette von Plasma/KWin/Xwayland/Pipewire/Portalen/Flatpak
+    (`/usr/lib/kidctl/base-programs.txt`, `pkg:`-Zeilen), ohne Programme mit sichtbarem
+    .desktop-Eintrag (= Apps, Eltern-Entscheidung), ohne Shells/Interpreter/Terminals und ohne
+    dynamischen Loader (`ld-linux*`, startet sonst beliebige Programme). Neu berechnet beim Start
+    und nach pacman-Updates. Ist sie leer (Fehler), wird nur protokolliert – nie die Sitzung zerstört.
+  - Eltern-Liste: App-Schlüssel `exe:<pfad>` bzw. `flatpak:<app-id>` aus dem gemeldeten Katalog
+    (systemweite .desktop-Einträge; nicht `~/.local/share/applications`). Hilfsprogramme im
+    Verzeichnis einer freigegebenen App (z. B. `/usr/lib/firefox/*`) sind mit erlaubt.
+  - Shells nur ohne Steuerterminal (Skripte von Systemkomponenten); Interpreter nur mit
+    freigegebener Skriptdatei (kein `-c`/`-m`/`-e`, stdin, REPL). kidctl-Wrapper starten daher
+    Skriptdateien unter `/usr/lib/kidctl/`.
+- Server: Katalog je Gerät, Freigaben je Kind (`child_program`), Sperrprotokoll (`blocked_event`),
+  WebUI-Abschnitt „Programme“ und „Gesperrte Aktionen“ auf der Kind-Seite.
 - Browser: nur Firefox/Chromium mit gesetzter Policy sollten freigegeben werden.
 
 ### Programmquellen
@@ -392,3 +412,13 @@ Verlängerungsanfragen.
   als KDE-Benachrichtigung und im Chat, Genehmigung (+15 min) als Benachrichtigung, Status im Chat
   und sofort höhere Restzeit im Symbol. Noch nicht sichtbar geprüft: Klick auf den Knopf
   „Verlängerung anfordern“ in einer Warnung.
+- 2026-10-13: Programm-Whitelist Teil 1 (Server + Agent, Paket 0.3.0). Getestet: Server 44 pytest-
+  Tests (neu: Katalog/Auswahl → Policy, ungültige Schlüssel/Modus, Katalog-Ersatz, Sperrprotokoll
+  inkl. nicht zugeordneter User, Migration `child.program_mode`); Agent 49 (neu: Inline-Code-
+  Erkennung, Entscheidungsregeln inkl. App-Verzeichnis/Flatpak/Shell/Interpreter, .desktop-Parser,
+  Netlink-Parser, Watcher Sperren/Protokollieren/Aus/nicht zugeordnet, Policy-Wechsel, pacman-
+  Parser/Abhängigkeitskette/Filter, Ausschluss vs. Eltern-Freigabe, Rückfall auf Protokollieren
+  ohne Basisliste). VM: Netlink aktiv, Katalog (21 Apps) im WebUI, Basisliste 2156 Programme;
+  Mitschnitt einer laufenden Plasma-Sitzung von `kind` im Modus „Nur protokollieren“ meldet nur
+  noch die mit altem Wrapper (`python -c`) gestartete Tray-App. Noch ausstehend: Nutzung im
+  Protokollmodus, Modus „Sperren“ in der VM, Steam, `noexec`-Mounts.

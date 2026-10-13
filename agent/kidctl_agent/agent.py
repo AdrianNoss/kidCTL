@@ -18,13 +18,17 @@ from .connection import Connection
 from .enforcer import Enforcer
 from .loginlock import LoginLock, is_admin
 from .rules import Decision, day_limits, evaluate
+from .apps import scan_apps
+from .procs import ProcEvents
 from .trayserver import TrayServer
+from .watcher import ProgramWatcher
 
 log = logging.getLogger("kidctl.agent")
 
 TICK = 5.0            # Sekunden
 SAVE_EVERY = 6        # Takte (= 30 s)
 REPORT_EVERY = 60.0   # Sekunden
+APPS_EVERY = 6 * 3600.0  # installierte Anwendungen neu einlesen
 # Nach dem Start kurz auf die aktuelle Policy vom Server warten, bevor durchgesetzt wird –
 # sonst kann die (ältere) gecachte Policy einen Fehlalarm auslösen. Gezählt wird trotzdem.
 STARTUP_SYNC = 10.0   # Sekunden
@@ -45,6 +49,9 @@ class Agent:
         self.chat = ChatStore.load()
         self.outbox = Outbox.load()
         self.tray = TrayServer(self, tray_path)
+        self.programs = ProgramWatcher(self)
+        self.procevents = ProcEvents(self.programs.on_exec)
+        self.apps: list[p.AppEntry] = []
         self._sessions: list = []
         raw = store.load(store.POLICY_FILE)
         self.policy: p.Policy | None = p.Policy.model_validate(raw) if raw else None
@@ -103,6 +110,7 @@ class Agent:
         self.loginlock.update({u for u, d in decisions.items() if not d.allowed})
         if self._synced or boottime() - self._started >= STARTUP_SYNC:
             await self.enforcer.step(now.date(), sessions, decisions)
+            await self.programs.scan()
         await self.tray.push_states(boottime())
         self._ticks += 1
         if self._ticks % SAVE_EVERY == 0:
@@ -124,9 +132,28 @@ class Agent:
             await asyncio.sleep(TICK)
 
     async def _report_loop(self) -> None:
+        last_apps = boottime()
         while True:
             await asyncio.sleep(REPORT_EVERY)
             await self.send_usage()
+            await self.programs.flush(self.conn)
+            if boottime() - last_apps >= APPS_EVERY or self.programs.base_outdated():
+                last_apps = boottime()  # nach pacman-Updates: Apps und Basisliste neu
+                self.refresh_apps()
+                await self.programs.refresh_base(self.app_exes())
+                if self.online:
+                    await self.conn.send(p.ReportApps(apps=self.apps))
+
+    def refresh_apps(self) -> None:
+        try:
+            self.apps = scan_apps()
+        except OSError:
+            log.exception("Anwendungen nicht lesbar")
+            return
+        self.programs.names = {a.key: a.name for a in self.apps}
+
+    def app_exes(self) -> set[str]:
+        return {a.key[4:] for a in self.apps if a.key.startswith("exe:")}
 
     async def send_usage(self) -> None:
         if self.conn is None or not self.conn.connected:
@@ -140,8 +167,10 @@ class Agent:
 
     async def on_connected(self, conn: Connection) -> None:
         await conn.send(p.ReportUsers(users=local_users()))
+        await conn.send(p.ReportApps(apps=self.apps))
         await self.send_usage()
         await self.flush_outbox()
+        await self.programs.flush(conn)
 
     async def flush_outbox(self) -> None:
         """Gepufferte Nachrichten/Anfragen senden; der Server ist idempotent (client_msg_id)."""
@@ -162,6 +191,7 @@ class Agent:
         if isinstance(msg, p.Policy):
             self.policy = msg
             self._synced = True
+            self.programs.policy_changed()
             store.save(store.POLICY_FILE, msg.model_dump(mode="json"))
             log.info("Policy %s übernommen (%d zugeordnete User)", msg.version, len(msg.users))
             await self.conn.send(p.PolicyAck(version=msg.version))
@@ -258,6 +288,9 @@ class Agent:
             log.warning("Gerät nicht gekoppelt – nur gecachte Policy wird durchgesetzt")
         if self.policy is None:
             log.warning("Keine Policy vorhanden – niemand wird eingeschränkt")
+        self.refresh_apps()
+        await self.programs.refresh_base(self.app_exes())
+        self.procevents.start()
         try:
             await self.tray.start()
         except OSError:
@@ -272,4 +305,5 @@ class Agent:
             for task in tasks:
                 task.cancel()
             await self.tray.stop()
+            self.procevents.stop()
             self.usage.save()

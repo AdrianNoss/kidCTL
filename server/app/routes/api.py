@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from kidctl_common import protocol as p
 
-from .. import chat, policy
+from .. import chat, policy, programs
 from ..db import SessionLocal, get_db
 from ..models import Device, DeviceUser, PairingCode, utcnow
 from ..security import (
@@ -134,6 +134,10 @@ async def agent_ws(ws: WebSocket):
                     last_seen = dev.last_seen_at = utcnow()
                 if isinstance(msg, p.ReportUsers):
                     _apply_user_report(dev, msg)
+                elif isinstance(msg, p.ReportApps):
+                    programs.apply_app_report(db, dev, msg)
+                elif isinstance(msg, p.BlockedReport):
+                    programs.apply_blocked_report(db, dev, msg)
                 db.commit()
 
                 if isinstance(msg, p.Ping):

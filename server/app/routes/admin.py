@@ -17,7 +17,7 @@ from ..db import get_db
 from ..models import (
     Child, DayException, Device, Message, PairingCode, Parent, ParentSession, WeekdayRule, utcnow,
 )
-from .. import chat, policy
+from .. import chat, policy, programs
 from .. import schedule as sch
 from ..security import (
     csrf_protect, hash_password, new_pairing_code, new_totp_secret, require_session, token_hash,
@@ -97,6 +97,8 @@ def _child_page(request: Request, db: Session, child: Child, status_code: int = 
         DayException.child_id == child.id, DayException.day >= today).order_by(DayException.day)).all()
     ctx.setdefault("credit_day", today.isoformat())
     return render(request, "child.html", status_code=status_code, child=child,
+                  catalog=programs.catalog_for_child(db, child.id), program_modes=programs.MODES,
+                  blocked=programs.blocked_log(db, child.id),
                   rules=sch.rules_by_day(child), groups=sch.GROUPS, weekday_names=sch.WEEKDAY_NAMES,
                   differs=sch.group_differs(child), exceptions=exceptions, today=today,
                   fmt_minutes=sch.fmt_minutes, max_quota=sch.MAX_QUOTA, max_extra=sch.MAX_EXTRA, **ctx)
@@ -142,6 +144,21 @@ async def child_credit(child_id: int, request: Request, day: str = Form(...), ex
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
     return _redirect(f"/children/{child_id}")
+
+
+@router.post("/children/{child_id}/programs", dependencies=[Depends(csrf_protect)])
+async def child_programs(child_id: int, request: Request, db: Session = Depends(get_db)):
+    child = _get_or_404(db, Child, child_id)
+    form = await request.form()
+    mode = str(form.get("program_mode", "off"))
+    if mode not in programs.MODES:
+        raise HTTPException(400, "Ungültiger Modus")
+    child.program_mode = mode
+    keys = {str(k) for k in form.getlist("app") if str(k).startswith(("exe:", "flatpak:"))}
+    programs.set_allowed(db, child.id, keys)
+    db.commit()
+    await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
+    return _redirect(f"/children/{child_id}?programs=1#programme")
 
 
 @router.post("/children/{child_id}/exceptions/{exc_id}/delete", dependencies=[Depends(csrf_protect)])

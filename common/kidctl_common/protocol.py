@@ -179,11 +179,17 @@ class DayOverride(BaseModel):
     window_end_override: time | None = None
 
 
+ProgramMode = Literal["off", "audit", "enforce"]
+
+
 class ChildPolicy(BaseModel):
     id: int
     name: str
     rules: list[DayRule]
     exceptions: list[DayOverride] = []
+    # Programm-Whitelist: off = keine Kontrolle, audit = nur protokollieren, enforce = sperren
+    program_mode: ProgramMode = "off"
+    allowed_programs: list[str] = []  # App-Schlüssel (siehe AppEntry.key), zusätzlich zur Basisliste
 
 
 class Policy(BaseModel):
@@ -221,9 +227,43 @@ class UsageUpdate(BaseModel):
     others_seconds: int
 
 
+# ---------- Programme ----------
+# App-Schlüssel: "exe:<realpath>" (Pacman/AUR, Binary des .desktop-Eintrags) oder
+# "flatpak:<app-id>" (systemweites Flatpak).
+
+
+class AppEntry(BaseModel):
+    key: str = Field(max_length=512)
+    name: str = Field(max_length=255)
+    icon: str = Field(default="", max_length=255)
+    desktop_id: str = Field(default="", max_length=255)
+
+
+class ReportApps(BaseModel):
+    """Agent -> Server: installierte Anwendungen (systemweite .desktop-Einträge)."""
+    type: Literal["report_apps"] = "report_apps"
+    apps: list[AppEntry] = Field(max_length=2000)
+
+
+class BlockedEvent(BaseModel):
+    username: str = Field(max_length=64)
+    at: datetime  # UTC
+    kind: Literal["program"] = "program"
+    key: str = Field(max_length=512)    # App-Schlüssel bzw. "exe:<pfad>"
+    name: str = Field(max_length=255)   # Anzeigename (aus .desktop oder Dateiname)
+    detail: str = Field(default="", max_length=255)  # z. B. „interaktive Shell“
+    audit: bool = False                 # nur protokolliert, nicht gesperrt
+
+
+class BlockedReport(BaseModel):
+    """Agent -> Server: gesperrte (bzw. im Protokollmodus erkannte) Aktionen."""
+    type: Literal["blocked"] = "blocked"
+    events: list[BlockedEvent] = Field(max_length=500)
+
+
 AgentMessage = Annotated[
     Union[Hello, Ping, Pong, ReportUsers, ChatSend, ExtensionRequest, ChatSync, PolicyAck,
-          UsageReport],
+          UsageReport, ReportApps, BlockedReport],
     Field(discriminator="type")]
 ServerMessage = Annotated[
     Union[Welcome, Error, Ping, Pong, Ack, ChatMessage, Policy, UsageUpdate],
