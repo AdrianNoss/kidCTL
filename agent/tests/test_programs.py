@@ -267,3 +267,27 @@ def test_enforce_falls_back_to_audit_without_base():
     w.base_exact = frozenset()   # Berechnung fehlgeschlagen
     asyncio.run(w.scan())
     assert killed == [] and w.pending[0].audit is True
+
+
+def test_exec_after_allowed_program_is_checked_again():
+    """Regression: Apps aus Plasma starten als systemd-Unit: systemd-executor (erlaubt) -> exec(kate)
+    mit gleicher PID und Startzeit. Der zweite exec muss erneut geprüft werden."""
+    a = FakeAgent("enforce")
+    ps = {7: proc("/usr/bin/kwin_wayland", pid=7, uid=a.uid, start=42)}
+    w, killed, _ = make_watcher(a, ps)
+    asyncio.run(w.scan())
+    assert killed == []
+    ps[7] = proc("/usr/bin/kate", pid=7, uid=a.uid, start=42)          # exec: gleiche PID/Startzeit
+    asyncio.run(w.check_pid(7))                                        # Netlink-Event
+    assert killed == [(7, signal.SIGKILL)]
+
+
+def test_interpreter_exec_with_new_args_is_checked_again():
+    a = FakeAgent("enforce")
+    ok = proc("/usr/bin/python3.14", ["python3", "/usr/lib/kidctl/kidctl-tray-main.py"], pid=8, uid=a.uid)
+    ps = {8: ok}
+    w, killed, _ = make_watcher(a, ps)
+    asyncio.run(w.scan())
+    ps[8] = proc("/usr/bin/python3.14", ["python3", "-c", "boese"], pid=8, uid=a.uid)
+    asyncio.run(w.scan())
+    assert killed == [(8, signal.SIGKILL)]

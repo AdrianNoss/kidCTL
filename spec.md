@@ -422,3 +422,10 @@ Verlängerungsanfragen.
   Mitschnitt einer laufenden Plasma-Sitzung von `kind` im Modus „Nur protokollieren“ meldet nur
   noch die mit altem Wrapper (`python -c`) gestartete Tray-App. Noch ausstehend: Nutzung im
   Protokollmodus, Modus „Sperren“ in der VM, Steam, `noexec`-Mounts.
+- 2026-10-13: Programm-Whitelist Fehlerbehebung: Apps aus Plasma 6 starten als systemd-Unit
+  (`systemd --user` → fork → exec `systemd-executor` → exec App, gleiche PID/Startzeit). Prozesse
+  galten nach dem ersten (erlaubten) exec als geprüft – Apps aus dem Menü wurden nie erfasst.
+  Kennung „geprüft“ umfasst jetzt Programm und Argumente. Gefunden im VM-Test (Kate fehlte im
+  Protokoll, nur deren Kindprozess `git`). Getestet: 2 Regressionstests (gesamt 51); VM: Dolphin per
+  KIO in der Sitzung von `kind` gestartet → sofort protokolliert. Außerdem Log-Zeilen gedrosselt wie
+  das Sperrprotokoll.

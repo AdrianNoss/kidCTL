@@ -34,7 +34,7 @@ class ProgramWatcher:
         self.base_exact: frozenset[str] = frozenset()  # aus der Paketkette (refresh_base)
         self._pacman_mtime: float | None = None
         self.names: dict[str, str] = {}             # App-Schlüssel -> Anzeigename (aus .desktop)
-        self.handled: set[tuple[int, int]] = set()  # bereits geprüfte Prozesse (pid, start)
+        self.handled: set[tuple] = set()  # bereits geprüfte Prozesse (ProcInfo.ident)
         self.last_report: dict[tuple[str, str], float] = {}
         self.last_notify: dict[tuple[str, str], float] = {}
         self.pending: list[p.BlockedEvent] = [
@@ -89,7 +89,7 @@ class ProgramWatcher:
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
 
-    async def check_pid(self, pid: int) -> tuple[int, int] | None:
+    async def check_pid(self, pid: int) -> tuple | None:
         targets = self.targets()
         if not targets:
             return None
@@ -109,13 +109,14 @@ class ProgramWatcher:
         if mode == "enforce":
             try:
                 self.kill(pid, signal.SIGKILL)
-                log.warning("Gesperrt: %s (%s) von %s, PID %s", name, verdict.key, user, pid)
             except ProcessLookupError:
                 pass
             await self._notify(user, info.uid, verdict.key, name)
-        else:
-            log.info("Protokolliert (würde sperren): %s (%s) von %s", name, verdict.key, user)
-        self._record(user, verdict, name, audit=mode != "enforce")
+        new = self._record(user, verdict, name, audit=mode != "enforce")
+        # Log gedrosselt wie das Protokoll (z. B. Firefox startet viele Prozesse)
+        log.log(logging.WARNING if new else logging.DEBUG, "%s: %s (%s%s) von %s, PID %s",
+                "Gesperrt" if mode == "enforce" else "Protokolliert (würde sperren)", name, verdict.key,
+                f", {verdict.detail}" if verdict.detail else "", user, pid)
         return info.ident
 
     async def _notify(self, user: str, uid: int, key: str, name: str) -> None:
@@ -126,16 +127,18 @@ class ProgramWatcher:
         await self.agent.desktop.notify(user, uid, "Programm gesperrt",
                                         f"„{name}“ ist nicht freigegeben. Frag deine Eltern.")
 
-    def _record(self, user: str, verdict, name: str, audit: bool) -> None:
+    def _record(self, user: str, verdict, name: str, audit: bool) -> bool:
+        """Ins Protokoll aufnehmen (gedrosselt je User + Programm). True = neu aufgenommen."""
         now = self.clock()
         k = (user, verdict.key)
         if now - self.last_report.get(k, -1e9) < REPORT_DEDUP["audit" if audit else "enforce"]:
-            return
+            return False
         self.last_report[k] = now
         self.pending.append(p.BlockedEvent(username=user, at=datetime.now(timezone.utc), key=verdict.key[:512],
                                            name=name[:255], detail=verdict.detail, audit=audit))
         del self.pending[:-MAX_PENDING]
         self._save()
+        return True
 
     def _save(self) -> None:
         store.save(BLOCKED_FILE, {"events": [e.model_dump(mode="json") for e in self.pending]})

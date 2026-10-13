@@ -28,8 +28,10 @@ class ProcInfo:
     parent_exe: str = ""
 
     @property
-    def ident(self) -> tuple[int, int]:
-        return (self.pid, self.start)
+    def ident(self) -> tuple:
+        """Kennung für „schon geprüft“. Enthält Programm und Argumente: exec() ändert beides,
+        PID und Startzeit aber nicht (z. B. systemd-executor -> App beim Start aus Plasma)."""
+        return (self.pid, self.start, self.exe, self.argv)
 
 
 def _read(path: str) -> bytes | None:
