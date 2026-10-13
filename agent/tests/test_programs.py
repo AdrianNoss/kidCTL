@@ -17,7 +17,7 @@ BASE = ["/usr/bin/plasmashell", "/usr/lib/kf6/*", "/usr/bin/xdg-open", "/usr/lib
 
 
 def proc(exe, argv=None, tty=False, flatpak=None, pid=100, uid=1001, start=1):
-    return ProcInfo(pid=pid, uid=uid, ppid=1, start=start, exe=exe, argv=tuple(argv or [exe]), tty=tty,
+    return ProcInfo(pid=pid, uid=uid, ppid=1, start=start, exe=exe, argv=tuple([exe] if argv is None else argv), tty=tty,
                     flatpak_id=flatpak)
 
 
@@ -60,9 +60,19 @@ def test_flatpak():
 
 def test_shells_and_interpreters():
     a = allowed()
-    assert classify(proc("/usr/bin/bash", ["sh", "-c", "foo"]), a) is None       # Skript ohne TTY
+    assert classify(proc("/usr/bin/bash", ["sh", "-c", "foo"]), a) is None       # Befehl
     v = classify(proc("/usr/bin/bash", ["bash"], tty=True), a)
     assert v.detail == "interaktive Shell"
+    assert classify(proc("/usr/bin/bash", ["-bash"], tty=True), a).detail == "interaktive Shell"  # TTY-Login
+    assert classify(proc("/usr/bin/bash", ["bash", "-i"]), a).detail == "interaktive Shell"
+    assert classify(proc("/usr/bin/bash", ["bash", "-s"]), a).detail == "interaktive Shell"
+    # Regression: SDDM startet die Plasma-Sitzung so – mit Steuerterminal (tty2)
+    sddm = ["/bin/bash", "--login", "/usr/share/sddm/scripts/wayland-session",
+            "/usr/lib/plasma-dbus-run-session-if-needed", "/usr/bin/startplasma-wayland"]
+    assert classify(proc("/usr/bin/bash", sddm, tty=True), a) is None
+    assert classify(proc("/usr/bin/bash", ["/bin/sh", "/usr/bin/xdg-open", "x"]), a) is None
+    v = classify(proc("/usr/bin/bash", ["bash", "-o", "posix", "/home/kind/x.sh"]), a)
+    assert v.key == "exe:/home/kind/x.sh" and v.detail == "Skript (bash)"
     assert classify(proc("/usr/bin/python3.14", ["python3", "-E", "-s", "/usr/lib/kidctl/kidctl-tray.py"]), a) is None
     v = classify(proc("/usr/bin/python3.14", ["python3", "-c", "import os"]), a)
     assert v.key == "exe:/usr/bin/python3.14" and "Interpreter" in v.detail
@@ -291,3 +301,35 @@ def test_interpreter_exec_with_new_args_is_checked_again():
     ps[8] = proc("/usr/bin/python3.14", ["python3", "-c", "boese"], pid=8, uid=a.uid)
     asyncio.run(w.scan())
     assert killed == [(8, signal.SIGKILL)]
+
+
+def test_empty_argv_during_exec_is_reread(monkeypatch):
+    """Regression: Tray-Wrapper (/bin/sh /usr/bin/kidctl-tray) wurde beendet, weil die Argumente
+    mitten im exec() leer gelesen wurden und die Shell dadurch als interaktiv galt."""
+    import kidctl_agent.watcher as wmod
+    monkeypatch.setattr(wmod, "EMPTY_ARGV_DELAY", 0)
+    a = FakeAgent("enforce")
+    reads = iter([proc("/usr/bin/bash", (), pid=9, uid=a.uid),
+                  proc("/usr/bin/bash", ["/bin/sh", "/usr/bin/kidctl-tray"], pid=9, uid=a.uid)])
+    w, killed, _ = make_watcher(a, {})
+    w.read = lambda pid: next(reads)
+    asyncio.run(w.check_pid(9))
+    assert killed == []
+
+
+def test_persistently_empty_argv_shell_still_blocked(monkeypatch):
+    import kidctl_agent.watcher as wmod
+    monkeypatch.setattr(wmod, "EMPTY_ARGV_DELAY", 0)
+    a = FakeAgent("enforce")
+    w, killed, _ = make_watcher(a, {9: proc("/usr/bin/bash", (), pid=9, uid=a.uid)})
+    asyncio.run(w.check_pid(9))
+    assert killed == [(9, signal.SIGKILL)]
+
+
+def test_read_proc_rereads_when_exe_changes(monkeypatch):
+    exes = iter(["/usr/lib/systemd/systemd-executor", "/usr/bin/bash", "/usr/bin/bash", "/usr/bin/bash"])
+    monkeypatch.setattr(procs, "_exe", lambda pid: next(exes))
+    seen = []
+    monkeypatch.setattr(procs, "_read_once", lambda pid, exe: seen.append(exe) or proc(exe, ["sh"], pid=pid))
+    info = procs.read_proc(5)
+    assert info.exe == "/usr/bin/bash" and seen == ["/usr/lib/systemd/systemd-executor", "/usr/bin/bash"]

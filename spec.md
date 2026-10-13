@@ -437,3 +437,18 @@ Verlängerungsanfragen.
   Protokollmodus (Menü, KRunner, Sperrbildschirm, Lautstärke, Datei öffnen): nur Apps und deren
   Hilfsprogramme protokolliert, keine Plasma-Bestandteile. `git` (von Kate aufgerufen) bleibt
   bewusst gesperrt (Aliase/Hooks führen beliebige Befehle aus).
+- 2026-10-13: Programm-Whitelist – Login im Modus „Sperren“ repariert (Nutzer konnte sich nicht
+  mehr als `kind` anmelden). Ursachen und Behebung:
+  1. SDDM startet die Sitzung über `bash --login /usr/share/sddm/scripts/wayland-session` mit dem
+     Sitzungs-TTY als Steuerterminal → galt als interaktive Shell. Neue Shell-Regel nach Argumenten:
+     `-c` oder Skript aus /usr, /etc, /opt erlaubt; ohne Skript, `-i`, `-s` (z. B. TTY-Login) oder
+     Skript aus dem Home gesperrt.
+  2. Race beim Lesen von /proc während exec(): Programm und Argumente passten nicht zusammen bzw.
+     Argumente leer → Tray-Wrapper (`/bin/sh /usr/bin/kidctl-tray`) als interaktive Shell beendet.
+     Jetzt konsistentes Lesen (Programm vor/nach den Argumenten) und erneutes Lesen bei leeren
+     Argumenten; dauerhaft leer → weiterhin gesperrt.
+  3. `xrdb` (Xwayland-Start) ruft `cpp`/`cc1` auf, wenn gcc installiert ist → in die Basisliste.
+  Lehre: Der Mitschnitt im Protokollmodus muss einen kompletten Login enthalten. Getestet: 6 neue
+  Regressionstests (Agent gesamt 55); VM mit Autologin (nur für den Test): Login im Protokollmodus
+  (nur `cpp`/`cc1` gemeldet), dann Login im Modus „Sperren“: kwin, plasmashell, ksmserver, pipewire,
+  Xwayland und Tray-App laufen, nichts gesperrt.

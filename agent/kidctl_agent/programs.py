@@ -4,7 +4,9 @@ Reihenfolge:
 1. Flatpak (erkannt über die Cgroup ``app-flatpak-<id>-*.scope``): nur freigegebene App-IDs.
 2. Programm selbst freigegeben (Basisliste, Eltern-Liste oder im Verzeichnis einer freigegebenen
    App, z. B. Chromium-Hilfsprozesse) -> erlaubt.
-3. Shells: nur ohne Steuerterminal (Skripte von Systemkomponenten); interaktiv -> gesperrt.
+3. Shells: ``-c befehl`` oder Skriptdatei aus Systemverzeichnissen erlaubt; interaktiv (liest vom
+   Terminal/stdin, z. B. TTY-Login) oder Skript aus dem Home -> gesperrt. Ein Steuerterminal allein
+   sagt nichts: SDDM startet die Sitzung über ``bash --login wayland-session`` auf dem Sitzungs-TTY.
 4. Interpreter (python, perl, …): nur mit Skriptdatei, die selbst freigegeben ist;
    ``-c``/``-m``/``-e``, stdin oder interaktiv -> gesperrt.
 5. Sonst gesperrt.
@@ -32,6 +34,11 @@ INLINE_FLAGS = {"python": "cmi", "perl": "eE", "ruby": "e", "irb": "", "node": "
 INLINE_LONG = {"--eval", "--print", "--interactive", "--command", "--module"}
 # Optionen mit separatem Wert (überspringen)
 VALUE_OPTS = {"-W", "-X", "-I", "-r", "--require", "-l"}
+# Skripte aus diesen Verzeichnissen gehören root – das Kind kann dort nichts ablegen
+SYSTEM_SCRIPT_DIRS = ("/usr/", "/etc/", "/opt/")
+# Shell-Optionen mit separatem Wert
+SHELL_VALUE_OPTS = {"-o", "+o", "-O", "+O", "--rcfile", "--init-file"}
+
 # Verzeichnisse, in denen viele fremde Programme liegen – dort keine „App-Verzeichnis“-Regel
 GENERIC_DIRS = {"/usr/bin", "/usr/sbin", "/bin", "/sbin", "/usr/local/bin", "/usr/local/sbin",
                 "/usr/lib", "/usr/lib64", "/usr/libexec", "/usr/local/lib", "/opt", "/usr/share"}
@@ -183,6 +190,30 @@ def script_arg(interp: str, argv: tuple[str, ...]) -> str | None:
     return None
 
 
+def shell_mode(argv: tuple[str, ...]) -> tuple[str, str | None]:
+    """("command", None) bei ``-c``, ("script", pfad) bei Skriptdatei, sonst ("interactive", None)."""
+    args = list(argv[1:])
+    while args:
+        a = args.pop(0)
+        if a == "--":
+            return ("script", args[0]) if args else ("interactive", None)
+        if a in SHELL_VALUE_OPTS:
+            if args:
+                args.pop(0)
+            continue
+        if a.startswith("--"):
+            continue  # --login, --norc, --posix …
+        if a[:1] in "-+" and len(a) > 1:
+            letters = a[1:]
+            if "c" in letters:
+                return ("command", None)
+            if "s" in letters or "i" in letters:
+                return ("interactive", None)
+            continue
+        return ("script", a)
+    return ("interactive", None)
+
+
 def classify(info: ProcInfo, allowed: Allowed) -> Verdict | None:
     """``None`` = erlaubt, sonst ``Verdict`` (was gesperrt wird)."""
     if info.flatpak_id:
@@ -196,8 +227,14 @@ def classify(info: ProcInfo, allowed: Allowed) -> Verdict | None:
         return None
 
     if name in SHELLS or re.sub(r"[0-9.]+$", "", name) in SHELLS:
-        if not info.tty:
-            return None  # nicht interaktiv: Skripte von Systemkomponenten
+        mode, script = shell_mode(info.argv)
+        if mode == "command":
+            return None
+        if mode == "script":
+            real = os.path.realpath(script) if os.path.isabs(script) else script
+            if real.startswith(SYSTEM_SCRIPT_DIRS) or allowed.path_ok(real):
+                return None
+            return Verdict(f"exe:{real}", os.path.basename(real), f"Skript ({name})")
         return Verdict(f"exe:{exe}", name, "interaktive Shell")
 
     if INTERPRETER.match(name):

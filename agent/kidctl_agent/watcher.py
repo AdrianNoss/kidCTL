@@ -24,6 +24,9 @@ PACMAN_DB = "/var/lib/pacman/local"
 MAX_PENDING = 500
 REPORT_DEDUP = {"audit": 600.0, "enforce": 60.0}  # gleiche (User, Programm)-Meldung höchstens so oft
 NOTIFY_DEDUP = 60.0
+# Leere Argumentliste: meist mitten im exec() gelesen -> kurz warten und erneut lesen
+EMPTY_ARGV_RETRIES = 5
+EMPTY_ARGV_DELAY = 0.05  # Sekunden
 
 
 class ProgramWatcher:
@@ -94,6 +97,11 @@ class ProgramWatcher:
         if not targets:
             return None
         info = self.read(pid)
+        for _ in range(EMPTY_ARGV_RETRIES):
+            if info is None or info.uid not in targets or info.argv:
+                break
+            await asyncio.sleep(EMPTY_ARGV_DELAY)
+            info = self.read(pid)
         if info is None or info.uid not in targets:
             return None
         if info.ident in self.handled:

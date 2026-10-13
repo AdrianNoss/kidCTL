@@ -51,9 +51,19 @@ def _exe(pid: int) -> str | None:
 
 
 def read_proc(pid: int) -> ProcInfo | None:
+    """Liest /proc konsistent: Ändert sich das Programm während des Lesens (exec() läuft gerade),
+    wird erneut gelesen – sonst passen Programm und Argumente nicht zusammen."""
+    for _ in range(3):
+        exe = _exe(pid)
+        info = _read_once(pid, exe)
+        if info is None or _exe(pid) == exe:
+            return info
+    return None
+
+
+def _read_once(pid: int, exe: str | None) -> ProcInfo | None:
     stat = _read(f"/proc/{pid}/stat")
     status = _read(f"/proc/{pid}/status")
-    exe = _exe(pid)
     if stat is None or status is None or exe is None:
         return None
     # comm kann Leerzeichen/Klammern enthalten -> nach der letzten ")" aufteilen

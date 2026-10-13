@@ -32,6 +32,10 @@ pkg:flatpak
 /usr/bin/notify-send
 /usr/bin/busctl
 
+# --- xrdb (Start von Xwayland) ruft den C-Präprozessor auf, falls gcc installiert ist ---
+/usr/bin/cpp
+/usr/lib/gcc/*/*/cc1
+
 # --- Terminals nie als Basis ---
 !/usr/bin/konsole
 !/usr/bin/yakuake
