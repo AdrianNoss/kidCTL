@@ -28,6 +28,10 @@ pkg:xdg-desktop-portal-gtk
 # --- Flatpak-Laufzeit (Apps selbst über App-ID geregelt) ---
 pkg:flatpak
 
+# --- vom Agenten im Namen des Kindes gestartet (Benachrichtigung, Plasma-Abmeldung) ---
+/usr/bin/notify-send
+/usr/bin/busctl
+
 # --- Terminals nie als Basis ---
 !/usr/bin/konsole
 !/usr/bin/yakuake

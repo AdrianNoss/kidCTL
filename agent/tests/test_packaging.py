@@ -16,3 +16,14 @@ def test_unit_orders_agent_before_logins():
     assert "Type=notify" in unit and "systemd-user-sessions.service" in unit
     deps = [line for line in unit.splitlines() if line.startswith(("After=", "Wants=", "Requires="))]
     assert not any("network-online" in line for line in deps)  # offline keine Login-Verzögerung
+
+
+def test_base_list_contains_agent_helpers():
+    """Programme, die der Agent mit der UID des Kindes startet, dürfen nie gesperrt werden."""
+    from kidctl_agent import programs
+    spec = programs.load_base(ROOT / "packaging/arch/base-programs.txt")
+    a = programs.Allowed(spec.globs, set(), frozenset(), spec.excludes)
+    for helper in ("/usr/bin/notify-send", "/usr/bin/busctl", "/usr/lib/kidctl/kidctl-tray-main.py"):
+        assert a.path_ok(helper), helper
+    assert "plasma-desktop" in spec.packages
+    assert not a.path_ok("/usr/bin/konsole")

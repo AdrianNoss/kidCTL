@@ -429,3 +429,11 @@ Verlängerungsanfragen.
   Protokoll, nur deren Kindprozess `git`). Getestet: 2 Regressionstests (gesamt 51); VM: Dolphin per
   KIO in der Sitzung von `kind` gestartet → sofort protokolliert. Außerdem Log-Zeilen gedrosselt wie
   das Sperrprotokoll.
+- 2026-10-13: Programm-Whitelist Modus „Sperren“ in der VM: Plasma-Sitzung bleibt intakt
+  (kwin, plasmashell, ksmserver, pipewire, Xwayland), nicht freigegebene App (Dolphin, per KIO wie
+  aus dem Menü gestartet) sofort beendet. Fehler gefunden und behoben: der Agent sperrte sein
+  eigenes `notify-send` (läuft mit Kinder-UID, `libnotify` nicht in der Plasma-Kette) – `notify-send`
+  und `busctl` fest in der Basisliste, Test prüft das (Agent gesamt 52). Zweite Nutzungsrunde im
+  Protokollmodus (Menü, KRunner, Sperrbildschirm, Lautstärke, Datei öffnen): nur Apps und deren
+  Hilfsprogramme protokolliert, keine Plasma-Bestandteile. `git` (von Kate aufgerufen) bleibt
+  bewusst gesperrt (Aliase/Hooks führen beliebige Befehle aus).
