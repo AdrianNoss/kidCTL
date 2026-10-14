@@ -39,8 +39,11 @@ SSH-Passwort-Login ist aus, der Port ist nur lokal gebunden (`127.0.0.1:2222`).
 
 - Repo liegt schreibgeschützt unter `/opt/kidctl-src` (9p, live – Änderungen auf dem Host sind
   sofort sichtbar).
-- Der Host ist aus der VM unter `10.0.2.2` erreichbar. Entwicklungsserver auf dem Host starten
-  (siehe `server/README.md`, Port 8000) → in der VM `http://10.0.2.2:8000`.
+- Der Host ist aus der VM unter `10.0.2.2` erreichbar. Entwicklungsserver auf dem Host:
+  `dev/devserver.sh` (Port 8000, Daten dauerhaft in `~/.local/share/kidctl-dev`, Eltern-Account
+  `mama` wird beim ersten Start angelegt) → in der VM `http://10.0.2.2:8000`.
+- `dev/webctl.py` bedient das WebUI per Kommandozeile (Kind anlegen, koppeln, zuordnen, Gutschrift,
+  Programm-Modus …), z. B. `dev/webctl.py pair "VM"` → `sudo kidctl enroll http://10.0.2.2:8000 <code>`.
 
 ## Snapshots (Rettung bei Aussperrung)
 
