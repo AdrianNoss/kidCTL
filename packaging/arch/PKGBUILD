@@ -1,7 +1,7 @@
 # Lokaler Build aus dem Repo: cd packaging/arch && makepkg
 # (bei schreibgeschütztem Repo: BUILDDIR=/var/tmp/kb PKGDEST=/var/tmp/kb makepkg)
 pkgname=kidctl
-pkgver=0.3.0   # muss agent/kidctl_agent/__init__.py:__version__ entsprechen (Test prüft das)
+pkgver=0.4.0   # muss agent/kidctl_agent/__init__.py:__version__ entsprechen (Test prüft das)
 pkgrel=1
 pkgdesc="Parental Control für KDE Plasma – Agent (Bildschirmzeit, Login-Sperre) und Tray-App"
 arch=(any)
@@ -25,6 +25,8 @@ package() {
   find "$lib" -name __pycache__ -prune -exec rm -rf {} +
   chmod -R u=rwX,go=rX "$lib"
   install -Dm755 "$_root/packaging/pam/kidctl-pam.sh" "$lib/kidctl-pam.sh"
+  install -Dm755 "$_root/packaging/mounts/kidctl-noexec.sh" "$lib/kidctl-noexec.sh"
+  install -Dm644 "$_root/packaging/mounts/kidctl-noexec.service" "$pkgdir/usr/lib/systemd/system/kidctl-noexec.service"
   install -Dm644 "$srcdir/kidctl-main.py" "$lib/kidctl-main.py"
   install -Dm644 "$srcdir/kidctl-tray-main.py" "$lib/kidctl-tray-main.py"
   install -Dm644 "$srcdir/base-programs.txt" "$lib/base-programs.txt"

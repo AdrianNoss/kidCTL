@@ -19,4 +19,16 @@ def state_dir(tmp_path, monkeypatch):
     monkeypatch.setattr(loginlock, "is_admin", lambda u: False)  # Testsystem-User unabhängig
     from kidctl_agent import agent
     monkeypatch.setattr(agent, "is_admin", lambda u: False)
+    # Nie echte Mounts/systemd-Aufrufe auf dem Entwicklungsrechner (CLAUDE.md)
+    from kidctl_agent import kidmounts
+    calls = []
+
+    def fake_run(*cmd):
+        import subprocess
+        calls.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+    monkeypatch.setattr(kidmounts, "_run", fake_run)
+    monkeypatch.setattr(kidmounts.KidMounts.__init__, "__defaults__", (fake_run, lambda: set()))
+    monkeypatch.setattr(kidmounts, "STEAM_ROOT", tmp_path / "srv-steam")
+    monkeypatch.setattr(kidmounts, "STEAM_INSTALLED", tmp_path / "kein-steam")
     return d

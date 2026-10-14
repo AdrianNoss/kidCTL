@@ -15,6 +15,7 @@ from kidctl_common import protocol as p
 from . import store
 from .accounting import boottime
 from .procs import pids_of, read_proc
+from .kidmounts import STEAM_ROOT
 from .programs import Allowed, base_paths, classify, closure, load_base, parse_pacman_qi
 
 log = logging.getLogger("kidctl.programs")
@@ -69,7 +70,7 @@ class ProgramWatcher:
                         continue
                     out[uid] = (user, child.program_mode,
                                 Allowed(self.spec.globs, set(child.allowed_programs), self.base_exact,
-                                        self.spec.excludes))
+                                        self.spec.excludes, steam_root=f"{STEAM_ROOT}/{user}/"))
             self._targets = out
         return self._targets
 
@@ -110,7 +111,7 @@ class ProgramWatcher:
         user, mode, allowed = targets[info.uid]
         if mode == "enforce" and not self.base_exact:
             mode = "audit"  # Sicherung: ohne Basisliste nie beenden (würde die Sitzung zerstören)
-        verdict = classify(info, allowed)
+        verdict = classify(info, allowed, ancestors=lambda: self._ancestors(info))
         if verdict is None:
             return info.ident
         name = self.names.get(verdict.key, verdict.name)
@@ -150,6 +151,19 @@ class ProgramWatcher:
 
     def _save(self) -> None:
         store.save(BLOCKED_FILE, {"events": [e.model_dump(mode="json") for e in self.pending]})
+
+    def _ancestors(self, info):
+        pid = info.ppid
+        while pid > 1:
+            parent = self.read(pid)
+            if parent is None:
+                return
+            yield parent
+            pid = parent.ppid
+
+    def users(self) -> set[str]:
+        """Kinder mit Programmkontrolle (für noexec-Home und Steam-Bibliothek)."""
+        return {user for user, _mode, _allowed in self.targets().values()}
 
     # ---------- Basisliste aus der Paketkette ----------
 

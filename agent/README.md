@@ -32,6 +32,10 @@ Bis zum PKGBUILD: `sudo env PYTHONPATH=<repo>/agent:<repo>/common python3 -m kid
   PAM-Sitzung). Bei Zeitende 60 s Countdown, dann Abmeldung: Plasma-Sitzungen über
   `org.kde.Shutdown.logout` (nach 20 s hart, ggf. Neustart des Display-Managers, wenn seat0 leer
   ist), TTY/SSH per `TerminateSession`. Wird in der Zeit verlängert, wird abgebrochen.
+- Programm-Whitelist (`programs.py`, `watcher.py`): Netlink `PROC_EVENTS` + Scan alle 5 s, Basisliste
+  aus der Paketkette (`/usr/lib/kidctl/base-programs.txt`), Modi Aus/Protokollieren/Sperren,
+  Steam-Regeln mit Elternkette.
+- noexec-Kinder-Homes und Steam-Bibliothek (`kidmounts.py`) über `systemd-mount`.
 - Login-Sperre: schreibt `/run/kidctl/locked-users` + `locked-message` für PAM (siehe
   `packaging/pam/kidctl-pam.sh`). Admins (root, wheel/sudo/admin) werden nie eingeschränkt.
 - Nutzungsbericht an den Server alle 60 s und nach jedem Verbindungsaufbau.

@@ -1,0 +1,17 @@
+[Unit]
+Description=kidctl: noexec für /tmp, /var/tmp, /dev/shm
+Documentation=https://kids.nossco.de
+After=tmp.mount local-fs.target
+Before=systemd-user-sessions.service display-manager.service
+DefaultDependencies=no
+Conflicts=shutdown.target
+Before=shutdown.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/lib/kidctl/kidctl-noexec.sh apply --apply
+ExecStop=/usr/lib/kidctl/kidctl-noexec.sh revert --apply
+
+[Install]
+WantedBy=multi-user.target

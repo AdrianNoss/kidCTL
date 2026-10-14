@@ -21,6 +21,11 @@ post_upgrade() {
 
 pre_remove() {
   systemctl disable --now kidctl-agent.service 2>/dev/null || true
+  systemctl stop kidctl-noexec.service 2>/dev/null || true   # nimmt noexec zurück
+  # noexec-Homes (transiente Mounts des Agenten) aushängen
+  for u in $(systemctl list-units --type=mount --all --plain --no-legend 2>/dev/null | awk '{print $1}'); do
+    [ "$(systemctl show "$u" -p Description --value)" = "kidctl: noexec-Home" ] && systemctl stop "$u"
+  done
   _pam remove
   rm -rf /run/kidctl
 }

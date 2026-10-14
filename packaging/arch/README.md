@@ -1,7 +1,7 @@
 # Arch-Paket `kidctl` (Client)
 
-Enthält Agent, `kidctl`-Befehl, systemd-Unit, PAM-Login-Sperre und SDDM-Theme. Tray-App,
-nftables-, Browser- und Mount-Konfiguration folgen.
+Enthält Agent, Tray-App, `kidctl`-Befehl, systemd-Units, PAM-Login-Sperre, SDDM-Theme und
+noexec-Konfiguration. nftables- und Browser-Konfiguration folgen.
 
 ## Bauen und installieren
 
@@ -24,6 +24,8 @@ In der Test-VM ist das Repo schreibgeschützt eingebunden:
 | `/usr/bin/kidctl` | startet Python mit `-E -s` (keine PYTHON*-Variablen, keine User-Module – läuft als root) |
 | `/usr/lib/systemd/system/kidctl-agent.service` | `Type=notify`, bereit erst nach geschriebener Sperrliste; `Before=systemd-user-sessions.service`; `Restart=always`; State in `/var/lib/kidctl`, Sperrliste in `/run/kidctl` (bleibt bei Neustart des Dienstes erhalten) |
 | `/etc/pam.d/system-login` | kidctl-Block per Install-Skript (Sicherung `system-login.kidctl.bak`), beim Entfernen zurückgebaut |
+| `/usr/lib/systemd/system/kidctl-noexec.service` | noexec für `/tmp`, `/var/tmp`, `/dev/shm` (vom Agenten per `Wants=` gestartet; `ExecStop` nimmt es zurück) |
+| `/usr/lib/kidctl/base-programs.txt` | Basisliste der Programm-Whitelist (Wurzelpakete, Muster, Ausschlüsse) |
 | `/usr/share/sddm/themes/kidctl/`, `/etc/sddm.conf.d/zz-kidctl-theme.conf` | Anmeldebildschirm mit Hinweis der Login-Sperre |
 
 Der Dienst wird nicht automatisch aktiviert (Arch-Konvention). Beim Entfernen bleibt

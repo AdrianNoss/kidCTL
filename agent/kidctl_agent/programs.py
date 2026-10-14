@@ -9,7 +9,13 @@ Reihenfolge:
    sagt nichts: SDDM startet die Sitzung über ``bash --login wayland-session`` auf dem Sitzungs-TTY.
 4. Interpreter (python, perl, …): nur mit Skriptdatei, die selbst freigegeben ist;
    ``-c``/``-m``/``-e``, stdin oder interaktiv -> gesperrt.
-5. Sonst gesperrt.
+5. Steam (nur als Ganzes freigebbar): Programme aus der Steam-Bibliothek ``/srv/steam/<user>/``
+   nur, wenn Steam freigegeben ist und der Prozess von Steam abstammt (Elternkette); die
+   Einstiegspunkte ``steam.sh`` und ``ubuntu12_32/steam`` selbst sind dann erlaubt (der Starter
+   ruft ``steam.sh`` per exec auf – danach gibt es keinen Steam-Vorfahren). Ist Steam
+   freigegeben, sind auch Nachfahren von Steam außerhalb der Bibliothek erlaubt (Laufzeit-
+   Container, Proton) – bekannte Restlücke „Nicht-Steam-Spiel hinzufügen“.
+6. Sonst gesperrt.
 """
 
 from __future__ import annotations
@@ -17,6 +23,7 @@ from __future__ import annotations
 import fnmatch
 import os
 import re
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -42,6 +49,12 @@ SHELL_VALUE_OPTS = {"-o", "+o", "-O", "+O", "--rcfile", "--init-file"}
 # Verzeichnisse, in denen viele fremde Programme liegen – dort keine „App-Verzeichnis“-Regel
 GENERIC_DIRS = {"/usr/bin", "/usr/sbin", "/bin", "/sbin", "/usr/local/bin", "/usr/local/sbin",
                 "/usr/lib", "/usr/lib64", "/usr/libexec", "/usr/local/lib", "/opt", "/usr/share"}
+
+# Steam: Systemteil (Bootstrap) und Client innerhalb der Bibliothek
+STEAM_SYSTEM = "/usr/lib/steam/"
+STEAM_CLIENT = "ubuntu12_32/steam"
+STEAM_SCRIPT = "steam.sh"
+MAX_ANCESTORS = 64
 
 # Immer erlaubt (kidctl selbst) bzw. nie in der Basis (Loader startet beliebige Programme)
 BUILTIN_BASE = ["/usr/lib/kidctl/*"]
@@ -140,9 +153,12 @@ class Allowed:
     keys: set[str] = field(default_factory=set)                           # Eltern-Freigaben
     base_exact: frozenset[str] = frozenset()                              # aus der Paketkette
     excludes: list[str] = field(default_factory=lambda: list(BUILTIN_EXCLUDE))
+    steam_root: str = ""   # z. B. "/srv/steam/kind/" (Steam-Bibliothek dieses Kindes)
 
     def __post_init__(self) -> None:
         self.exes = {k[4:] for k in self.keys if k.startswith("exe:")}
+        # Steam gilt als freigegeben, wenn der Steam-Starter freigegeben ist
+        self.steam_enabled = any(e.startswith(STEAM_SYSTEM) or e == "/usr/bin/steam" for e in self.exes)
         self.flatpaks = {k[8:] for k in self.keys if k.startswith("flatpak:")}
         self.app_dirs = {d for d in (os.path.dirname(e) for e in self.exes) if d not in GENERIC_DIRS}
 
@@ -214,8 +230,29 @@ def shell_mode(argv: tuple[str, ...]) -> tuple[str, str | None]:
     return ("interactive", None)
 
 
-def classify(info: ProcInfo, allowed: Allowed) -> Verdict | None:
-    """``None`` = erlaubt, sonst ``Verdict`` (was gesperrt wird)."""
+def _program_path(info: ProcInfo) -> str:
+    """Programmdatei eines Prozesses: bei Shells/Interpretern die Skriptdatei, sonst das Binary."""
+    name = os.path.basename(info.exe)
+    script = None
+    if name in SHELLS or re.sub(r"[0-9.]+$", "", name) in SHELLS:
+        mode, script = shell_mode(info.argv)
+    elif INTERPRETER.match(name):
+        script = script_arg(name, info.argv)
+    if script and os.path.isabs(script):
+        return os.path.realpath(script)
+    return info.exe
+
+
+def is_steam_process(info: ProcInfo, steam_root: str) -> bool:
+    path = _program_path(info)
+    return (path.startswith(STEAM_SYSTEM) or path == "/usr/bin/steam"
+            or (bool(steam_root) and path in (steam_root + STEAM_CLIENT, steam_root + STEAM_SCRIPT)))
+
+
+def classify(info: ProcInfo, allowed: Allowed,
+             ancestors: Callable[[], Iterable[ProcInfo]] | None = None) -> Verdict | None:
+    """``None`` = erlaubt, sonst ``Verdict`` (was gesperrt wird). ``ancestors`` liefert die
+    Elternkette (nur für Steam gebraucht, daher lazy)."""
     if info.flatpak_id:
         if info.flatpak_id in allowed.flatpaks:
             return None
@@ -223,8 +260,22 @@ def classify(info: ProcInfo, allowed: Allowed) -> Verdict | None:
 
     exe = info.exe
     name = os.path.basename(exe)
+
+    def from_steam() -> bool:
+        return ancestors is not None and any(
+            is_steam_process(a, allowed.steam_root) for _, a in zip(range(MAX_ANCESTORS), ancestors()))
+
+    path = _program_path(info)
+    if allowed.steam_root and path.startswith(allowed.steam_root):
+        if allowed.steam_enabled and (is_steam_process(info, allowed.steam_root) or from_steam()):
+            return None
+        detail = "über Steam gestartet nötig" if allowed.steam_enabled else "Steam nicht freigegeben"
+        return Verdict(f"exe:{path}", os.path.basename(path), f"Steam-Bibliothek ({detail})")
+
     if allowed.path_ok(exe):
         return None
+    if allowed.steam_enabled and from_steam():
+        return None  # von Steam gestartet (Laufzeit-Container, Proton, …)
 
     if name in SHELLS or re.sub(r"[0-9.]+$", "", name) in SHELLS:
         mode, script = shell_mode(info.argv)

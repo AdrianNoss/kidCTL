@@ -19,6 +19,7 @@ from .enforcer import Enforcer
 from .loginlock import LoginLock, is_admin
 from .rules import Decision, day_limits, evaluate
 from .apps import scan_apps
+from .kidmounts import KidMounts
 from .procs import ProcEvents
 from .trayserver import TrayServer
 from .watcher import ProgramWatcher
@@ -50,6 +51,7 @@ class Agent:
         self.outbox = Outbox.load()
         self.tray = TrayServer(self, tray_path)
         self.programs = ProgramWatcher(self)
+        self.mounts = KidMounts()
         self.procevents = ProcEvents(self.programs.on_exec)
         self.apps: list[p.AppEntry] = []
         self._sessions: list = []
@@ -152,6 +154,15 @@ class Agent:
             return
         self.programs.names = {a.key: a.name for a in self.apps}
 
+    async def sync_mounts(self) -> None:
+        """noexec-Homes und Steam-Bibliotheken an die Policy angleichen (systemd, im Thread)."""
+        users = self.programs.users()
+        try:
+            await asyncio.to_thread(self.mounts.sync, users)
+            await asyncio.to_thread(self.mounts.ensure_steam, users)
+        except Exception:
+            log.exception("Mounts nicht angleichbar")
+
     def app_exes(self) -> set[str]:
         return {a.key[4:] for a in self.apps if a.key.startswith("exe:")}
 
@@ -192,6 +203,7 @@ class Agent:
             self.policy = msg
             self._synced = True
             self.programs.policy_changed()
+            await self.sync_mounts()
             store.save(store.POLICY_FILE, msg.model_dump(mode="json"))
             log.info("Policy %s übernommen (%d zugeordnete User)", msg.version, len(msg.users))
             await self.conn.send(p.PolicyAck(version=msg.version))
@@ -290,6 +302,7 @@ class Agent:
             log.warning("Keine Policy vorhanden – niemand wird eingeschränkt")
         self.refresh_apps()
         await self.programs.refresh_base(self.app_exes())
+        await self.sync_mounts()  # vor der Bereit-Meldung -> vor allen Logins
         self.procevents.start()
         try:
             await self.tray.start()

@@ -142,7 +142,15 @@ Verlängerungsanfragen.
 
 - Agent abonniert Prozess-Events über Netlink (`PROC_EVENTS`), löst `/proc/<pid>/exe` auf und
   beendet nicht erlaubte Prozesse von Kinder-UIDs.
-- `/home` und `/tmp` mit `noexec` gemountet.
+- `/home` und `/tmp` mit `noexec` gemountet. Umsetzung (entschieden 2026-10-14):
+  - **Kinder-Homes** (zugeordnete Nicht-Admins mit Programmkontrolle ≠ Aus) je per Bind-Mount
+    auf sich selbst mit `noexec,nosuid,nodev` – Admin-/Eltern-Homes bleiben ausführbar
+    (Grundregel). Der Agent legt die Mounts als transiente systemd-Units an (`systemd-mount`,
+    Beschreibung „kidctl: noexec-Home“), beim Start vor den Logins und bei Policy-Änderungen;
+    Programmkontrolle aus → Mount wird aufgehoben. Nur für Homes genau unter `/home/<name>`,
+    kein Symlink, Eigentümer = Kind.
+  - **Systemweit** `/tmp`, `/var/tmp` (Bind-Mount auf sich selbst) und `/dev/shm` mit `noexec`
+    (`kidctl-noexec.service`, vom Agenten per `Wants=` mitgestartet, `ExecStop` nimmt es zurück).
 - Whitelist besteht aus:
   1. **Fester Basisliste** (für Eltern unsichtbar): KDE/Plasma-Komponenten (`kwin_wayland`,
      `plasmashell`, `dbus`, `pipewire`, `xdg-desktop-portal*` usw.) und Tray-App.
@@ -176,10 +184,17 @@ Verlängerungsanfragen.
 - **Flatpak (nur systemweit):** Erkennung über App-ID (Cgroup `app-flatpak-<appid>-*.scope`
   bzw. `/proc/<pid>/root/.flatpak-info`). `flatpak --user` wird nicht unterstützt.
 - **Steam:** nur als Ganzes freigegeben/gesperrt.
-  - Bibliothek unter `/srv/steam/<user>` (ohne `noexec`), per Bind-Mount nach
-    `~/.local/share/Steam`.
+  - Bibliothek unter `/srv/steam/<user>` (ohne `noexec`, Eigentümer Kind, 0700).
+    `~/.local/share/Steam` ist ein **Symlink** dorthin statt eines Bind-Mounts (entschieden
+    2026-10-14): Ein Mount-Ziel im Kinder-Home ließe sich per Symlink auf Systempfade umlenken
+    (Weg zu Root-Rechten). Den Link legt der Agent mit den Rechten des Kindes an; ein vorhandenes
+    echtes `~/.local/share/Steam` wird nicht angefasst (Warnung im Log).
   - Prozesse unter diesem Präfix nur erlaubt, wenn Steam freigegeben ist **und** der Prozess
-    vom Steam-Hauptprozess abstammt (Elternkette über `/proc/<pid>/stat`).
+    vom Steam-Hauptprozess abstammt (Elternkette über `/proc/<pid>/stat`). Die Einstiegspunkte
+    `steam.sh` und `ubuntu12_32/steam` selbst sind bei Freigabe erlaubt (der Starter ruft
+    `steam.sh` per exec auf). Freigabe = Steam-Starter (`/usr/lib/steam/…`) in der Eltern-Liste.
+  - Bei Freigabe sind auch Nachfahren von Steam außerhalb der Bibliothek erlaubt
+    (Laufzeit-Container pressure-vessel, Proton).
   - Bekannte Restlücke: „Nicht-Steam-Spiel hinzufügen“ in der Steam-Oberfläche.
 
 ## Website-Filter
@@ -266,7 +281,16 @@ Verlängerungsanfragen.
 - Keine Leerlauferkennung.
 - Keine Unterstützung anderer Desktops als KDE Plasma (Wayland).
 - Kein `flatpak --user`, keine Pro-Spiel-Steuerung bei Steam.
-- „Nicht-Steam-Spiel hinzufügen“ als bekannte Restlücke.
+- „Nicht-Steam-Spiel hinzufügen“ als bekannte Restlücke. Gleiche Wirkung: Die Steam-Bibliothek
+  gehört dem Kind (Steam aktualisiert sich selbst) – `steam.sh`/Client sind ersetzbar. **Wer Steam
+  freigibt, gibt faktisch alles frei, was über Steam gestartet werden kann.**
+- Shell-Befehle (`sh -c …`) über KRunner o. Ä. sind erlaubt (Systemkomponenten brauchen das);
+  ausführbar sind damit aber nur erlaubte Programme – eigene Programme scheitern an `noexec`,
+  Interpreter-Code (`python -c`, Skripte aus dem Home) an der Interpreter-Regel.
+- Shell-Skripte aus `/usr`, `/etc`, `/opt` sind immer erlaubt (das Programm, das sie starten,
+  wird geprüft); reine Shell-Skript-Anwendungen unter `/usr` sind daher nicht sperrbar.
+- Programme, die freigegebene Apps intern aufrufen (z. B. `git` aus Kate), sind gesperrt, solange
+  sie nicht selbst freigegeben werden (`git` bewusst nicht in der Basisliste: Aliase/Hooks).
 - Keine IP-Bindung im ersten Release.
 - Kein Browserverlauf, keine Bilder/Dateien im Chat, keine Lesebestätigungen.
 - Kein Selbst-Update des Agenten (nur über Pacman).
@@ -456,3 +480,20 @@ Verlängerungsanfragen.
   freigegebene Apps (Dolphin, Systemeinstellungen, Konsole) werden sofort beendet mit
   Benachrichtigung, freigegebene (Firefox, Kate) funktionieren, Tray-App läuft, Ab-/Anmelden mit
   Passwort funktioniert. Sperrprotokoll im WebUI gefüllt.
+- 2026-10-14: Programm-Whitelist Teil 3 – noexec und Steam (Paket 0.4.0). Entscheidungen des Nutzers:
+  noexec nur für Kinder-Homes, zusätzlich `/var/tmp` und `/dev/shm`, Steam per Symlink statt
+  Bind-Mount. Agent: `kidmounts.py` (noexec-Homes über `systemd-mount`, Steam-Bibliothek + Link als
+  Kind), Steam-Regeln mit lazy ausgewerteter Elternkette; Paket: `kidctl-noexec.sh`/`.service`.
+  Fehler im VM-Test gefunden: Starter ruft `steam.sh` per exec auf → Einstiegspunkte bei Freigabe
+  erlaubt. Getestet: Agent 61 pytest-Tests (neu: sichere Home-Erkennung, Mount/Unmount nur eigener
+  Mounts, Steam-Bibliothek + Link als User, Steam-Regeln inkl. Regression exec-Starter; Tests
+  ersetzen alle Mount-Befehle durch Attrappen). VM (Snapshot `vor-noexec` vorher): `/tmp`, `/var/tmp`,
+  `/dev/shm` und Kinder-Home noexec (Start eigener Programme → Kernel „Permission denied“), Admin-Home
+  ausführbar; Plasma-Login mit noexec-Home inkl. Tray ohne Fehler; nach Neustart Reihenfolge noexec
+  6,0 s → Kinder-Home 9,66 s → Agent 9,68 s → Logins 9,70 s; Programmkontrolle aus → Mount aufgehoben.
+  Steam mit nachgebauter Struktur (Starter → steam.sh per exec → Client → Spiel): über Steam läuft,
+  Spiel direkt gestartet → gesperrt, Freigabe entzogen → Client/Spiel beendet und Neustart gesperrt;
+  Nachbau danach entfernt. **Nicht getestet:** echtes Steam mit Spiel (braucht multilib + Konto).
+  Außerdem dauerhafte Entwicklungsumgebung (`dev/devserver.sh`, `dev/webctl.py`), nachdem Scratch-
+  Daten unter /tmp beim Host-Neustart verloren gingen.
+
