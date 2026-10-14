@@ -10,6 +10,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import alarms, policy, webfilter
+from .config import settings
 from .db import init_db
 from .routes import admin, api, auth, pwa
 from .security import LoginRequired
@@ -40,6 +41,11 @@ async def _refresh_lists_forever() -> None:
 
 app = FastAPI(title="kidctl", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
+
+# Pacman-Repository (signiert; per kidctl-repo-publish.sh nach <data>/repo kopiert)
+_repo_dir = Path(settings.data_dir) / "repo"
+_repo_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/repo", StaticFiles(directory=str(_repo_dir)), name="repo")
 
 
 @app.exception_handler(LoginRequired)

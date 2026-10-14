@@ -190,3 +190,15 @@ def test_add_second_parent_shows_totp(client, parent):
                                     "password": "ein-langes-passwort",
                                     "totp": pyotp.TOTP(papa.totp_secret).now()}, follow_redirects=False)
     assert r.status_code == 303
+
+
+def test_repo_served_statically(client):
+    from pathlib import Path
+    from app.config import settings
+    repo = Path(settings.data_dir) / "repo"
+    (repo / "kidctl.db.tar.zst").write_bytes(b"db")
+    link = repo / "kidctl.db"
+    if not link.exists():
+        link.symlink_to("kidctl.db.tar.zst")          # wie von repo-add angelegt
+    assert client.get("/repo/kidctl.db").content == b"db"
+    assert client.get("/repo/../config.py").status_code == 404

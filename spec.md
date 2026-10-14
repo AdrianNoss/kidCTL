@@ -317,6 +317,13 @@ Verlängerungsanfragen.
   Firefox/Chromium-Policies, Mount-Konfiguration (`noexec`, Steam-Bind-Mount).
 - Eigenes, GPG-signiertes Pacman-Repository als statisches Verzeichnis im Docker/Traefik-Stack.
 - Updates über normales `pacman -Syu`.
+- Umsetzung (2026-10-14, entschieden: lokal bauen, eigener Schlüssel): `packaging/repo/`
+  - `kidctl-repo-key.sh`: Ed25519-Signierschlüssel in eigenem GPG-Ordner
+    (`~/.local/share/kidctl-repo/gnupg`), Export des öffentlichen Schlüssels.
+  - `kidctl-repo-build.sh`: `makepkg --sign` (mit `--nodeps`, reines Python) + `repo-add --sign`.
+  - `kidctl-repo-publish.sh`: `rsync` nach `./data/repo` des Stacks; Server liefert es unter `/repo/`.
+  - `kidctl-repo-client.sh`: Schlüssel holen, **gegen Fingerabdruck prüfen**, `pacman-key --lsign-key`,
+    `[kidctl]` mit `SigLevel = Required DatabaseRequired` (Sicherung `pacman.conf.kidctl.bak`).
 - Protokollversion im WebSocket-Handshake; Server unterstützt mindestens eine ältere Version.
   Zu alter Agent → Hinweis im WebUI, Durchsetzung läuft mit letzter Policy weiter.
 
@@ -589,4 +596,13 @@ Verlängerungsanfragen.
   korrigiert). VM: tiktok.com und dns.google als `kind` → je ein Protokolleintrag mit Quelle,
   Resolver-Log danach leer; bei gesperrtem Bildschirm keine Programmzeit, nach Entsperren Firefox
   erfasst und gemeldet.
+- 2026-10-14: Pacman-Repository (Skripte + Auslieferung unter `/repo/`, Paket 0.8.0). Getestet mit
+  Wegwerf-Schlüssel im Scratchpad (echter Schlüssel nicht angelegt): Schlüssel erzeugen (Dry-Run/
+  Apply), Bauen auf dem Entwicklungsrechner (ohne Installation; `--nodeps` nötig, da Laufzeit-
+  Abhängigkeiten dort fehlen), Paket- und DB-Signatur gültig, Veröffentlichen per rsync (Dry-Run/Apply),
+  Auslieferung inkl. Symlinks (pytest: 57 Server-Tests). VM (Snapshot `vor-repo`): falscher
+  Fingerabdruck abgelehnt; Einrichtung + `pacman -Syu` → Upgrade 0.7.0 → 0.8.0 „Validated By:
+  Signature“, Agent läuft; manipulierte DB-Signatur → pacman verweigert die Synchronisation. Danach
+  VM auf `vor-repo` zurückgesetzt (Testschlüssel nicht mehr vertraut). Außerdem `vm.sh stop` fährt
+  per SSH herunter (powerdevil fing den ACPI-Knopf bei angemeldeter Plasma-Sitzung ab).
 

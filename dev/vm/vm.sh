@@ -170,8 +170,13 @@ PY
 
 cmd_stop() {
   running || { info "VM läuft nicht."; return; }
-  info "Sende ACPI-Shutdown"
-  qmp system_powerdown
+  # Bevorzugt per SSH: Bei angemeldeter Plasma-Sitzung fängt powerdevil den ACPI-Knopf ab.
+  if [[ -f "$KEY" ]] && ssh $(ssh_opts) -o BatchMode=yes admin@127.0.0.1 "sudo systemctl poweroff" 2>/dev/null; then
+    info "Herunterfahren per SSH angestoßen"
+  else
+    info "Sende ACPI-Shutdown"
+    qmp system_powerdown
+  fi
   for _ in $(seq 60); do running || { info "VM aus."; return; }; sleep 1; done
   die "VM reagiert nicht – ggf. 'kill $(cat "$PIDFILE")'."
 }
