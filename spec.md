@@ -628,3 +628,7 @@ Verlängerungsanfragen.
   Zuordnung; WebUI-Einstellungen; Updates; Deinstallation). `kidctl-repo-build.sh` legt
   `kidctl-repo-client.sh` mit ins Repo (abrufbar unter `/repo/kidctl-repo-client.sh`; vorher
   wegen `rsync --delete` dort nicht dauerhaft ablegbar). Getestet: Syntaxprüfung (`bash -n`).
+- 2026-10-14: Fix Docker-Deployment: `httpx` (Sperrlisten-Download) fehlte in `server/requirements.txt`
+  (lokal nur als Testabhängigkeit installiert) → Container startete nicht. Zusätzlich `tzdata` für
+  `zoneinfo` im schlanken Image. Getestet: frische venv nur mit `requirements.txt`, Import aller Module,
+  uvicorn-Start („startup complete“), `/login` 200.
