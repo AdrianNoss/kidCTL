@@ -544,3 +544,6 @@ Verlängerungsanfragen.
   `AF_NETLINK` (getifaddrs) – dabei bestätigt: ohne Resolver hat das Kind kein DNS (sperrt
   geschlossen). **Nicht getestet:** Firefox/Chromium-Policy-Wirkung im Browser (Sichttest).
 
+- 2026-10-14: Website-Filter im Browser vom Nutzer bestätigt (VM, Firefox als `kind`, Blacklist +
+  SafeSearch): `about:policies` zeigt DNSOverHTTPS gesperrt, gesperrte Domain nicht erreichbar,
+  normale Seiten laden, Google-SafeSearch und YouTube eingeschränkt aktiv.
