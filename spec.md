@@ -20,7 +20,8 @@ Verlängerungsanfragen.
 - Abgewehrt werden naheliegende Umgehungen: anderer Browser, Programm umbenennen, eigene
   Binaries/AppImages im Home, WLAN abschalten, TTY-Login, Tray-App beenden.
 - Nicht im Scope: physischer Zugriff (Live-USB, GRUB-Parameter, BIOS). Wird nur als
-  Härtungs-Anleitung dokumentiert (BIOS-/Bootloader-Passwort, ggf. Secure Boot + Verschlüsselung).
+  Härtungs-Anleitung dokumentiert: `docs/haertung.md` (root sperren, Firmware-/Bootloader-Passwort,
+  optional Verschlüsselung, Secure Boot + TPM).
 - Nicht im Scope: aktive VPN-/DoH-Erkennung über das unten Beschriebene hinaus.
 - Durchsetzung ausschließlich auf Systemebene durch den Root-Agenten.
 
@@ -333,7 +334,7 @@ Verlängerungsanfragen.
 
 ## Bewusst nicht umgesetzt / Restlücken
 
-- Kein Schutz gegen physischen Zugriff (nur Härtungs-Anleitung).
+- Kein Schutz gegen physischen Zugriff (nur Härtungs-Anleitung `docs/haertung.md`).
 - Keine Leerlauferkennung.
 - Keine Unterstützung anderer Desktops als KDE Plasma (Wayland).
 - Kein `flatpak --user`, keine Pro-Spiel-Steuerung bei Steam.
@@ -613,3 +614,11 @@ Verlängerungsanfragen.
   und Installation nach `/usr/share/licenses/kidctl/`. Anzeigename „KidCTL“ in WebUI, PWA-Manifest,
   Push-Testnachricht, TOTP-Issuer (nur neue QR-Codes), Tray, .desktop und SDDM-Theme; Paket-, Befehls-,
   Pfad- und Unit-Namen bleiben `kidctl`. Getestet: Server-/Agent-/Tray-Tests, Paketbau mit Lizenzdatei.
+- 2026-10-14: Härtungs-Anleitung `docs/haertung.md`: Konten prüfen/root sperren, Firmware-Passwort und
+  Bootreihenfolge, Bootloader (GRUB-Passwort mit `--unrestricted`-Skript + Pacman-Hook, systemd-boot
+  `editor no`, Limine `editor_enabled: no`), optional LUKS und Secure Boot (sbctl, UKI) + TPM-Entsperrung
+  (PCR 7). Getestet in der VM (GRUB 2.16, BIOS): Standardeintrag startet ohne Passwort, `e`/`c`/
+  „Erweiterte Optionen“ verlangen Anmeldung, falsches Passwort abgelehnt; Neuinstallation von `grub`
+  setzt `10_linux` zurück, Hook stellt `--unrestricted` wieder her; gesperrtes root +
+  `systemd.unit=emergency.target` → keine Shell, normaler Start. Nicht getestet (UEFI/TPM nötig):
+  systemd-boot, Limine, Secure Boot, TPM. VM danach auf `vor-haertung` zurückgesetzt.
