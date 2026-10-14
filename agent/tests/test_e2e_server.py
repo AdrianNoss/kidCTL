@@ -93,11 +93,11 @@ async def wait_for(cond, timeout=10.0):
 def test_full_flow(server):
     base, web, csrf = server
     code = re.search(r"enroll \S+ (\w{8})", web.post("/devices/pair", data={"csrf_token": csrf, "name": "PC"}).text).group(1)
-    assert cli.enroll(base, code) == 0
+    assert cli.enroll(base, code, insecure_http=True) == 0
     device = store.load(store.DEVICE_FILE)
     assert device["server_url"] == base and device["token"]
     with pytest.raises(SystemExit):
-        cli.enroll(base, code)  # schon gekoppelt
+        cli.enroll(base, code, insecure_http=True)  # schon gekoppelt
 
     kind = SessionInfo(id="5", uid=1001, user="kind", session_class="user", active=True,
                        locked=False, state="active")
@@ -154,7 +154,7 @@ def test_offline_start_uses_cached_policy(server):
         id=1, name="Max", rules=[p.DayRule(weekday=d, quota_minutes=0, window_start=t(0),
                                           window_end=t(23, 59)) for d in range(7)])])
     store.save(store.POLICY_FILE, pol.model_dump(mode="json"))
-    dead = {"server_url": "http://127.0.0.1:1", "device_id": 1, "token": "x"}
+    dead = {"server_url": "http://127.0.0.1:1", "device_id": 1, "token": "x", "insecure_http": True}
     agent = Agent(FakeLogind([]), FakeNotifier(), dead)
     d = agent.decisions(agent.now_local())
     assert not d["kind"].allowed

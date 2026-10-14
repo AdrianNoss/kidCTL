@@ -26,11 +26,12 @@ def _require_root() -> None:
         sys.exit("Muss als root laufen (sudo).")
 
 
-def enroll(server_url: str, code: str, force: bool = False) -> int:
+def enroll(server_url: str, code: str, force: bool = False, insecure_http: bool = False) -> int:
     _require_root()
     server_url = server_url.rstrip("/")
-    if not server_url.startswith(("https://", "http://")):
-        sys.exit("Server-URL muss mit https:// (oder http:// für Tests) beginnen.")
+    # Ohne TLS gingen Kopplungscode und Geräte-Token im Klartext übers Netz -> nur zum Testen
+    if not (server_url.startswith("https://") or (insecure_http and server_url.startswith("http://"))):
+        sys.exit("Server-URL muss mit https:// beginnen (http:// nur zum Testen mit --insecure-http).")
     if store.load(store.DEVICE_FILE) and not force:
         sys.exit("Gerät ist bereits gekoppelt. Neu koppeln mit --force.")
 
@@ -51,7 +52,7 @@ def enroll(server_url: str, code: str, force: bool = False) -> int:
         sys.exit(f"Server nicht erreichbar: {e.reason}")
 
     store.save(store.DEVICE_FILE, {"server_url": server_url, "device_id": res.device_id,
-                                   "token": res.token})
+                                   "token": res.token, "insecure_http": insecure_http})
     print(f"Gekoppelt als Gerät {res.device_id}. Agent (neu) starten: systemctl restart kidctl-agent")
     return 0
 
@@ -107,11 +108,13 @@ def main() -> int:
     e.add_argument("server_url")
     e.add_argument("code")
     e.add_argument("--force", action="store_true", help="bestehende Kopplung ersetzen")
+    e.add_argument("--insecure-http", action="store_true",
+                   help="http:// erlauben (nur Test-Server, Token unverschlüsselt)")
     sub.add_parser("run", help="Agent starten (systemd)")
     sub.add_parser("status", help="Policy und heutige Nutzung anzeigen")
     args = ap.parse_args()
     if args.cmd == "enroll":
-        return enroll(args.server_url, args.code, args.force)
+        return enroll(args.server_url, args.code, args.force, args.insecure_http)
     if args.cmd == "run":
         return run()
     return status()

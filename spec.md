@@ -279,6 +279,29 @@ Verlängerungsanfragen.
 - CSRF-Schutz auf allen Formularen/Aktionen.
 - Push-Abos pro Account und Endgerät.
 
+## Sicherheit Agent ↔ Server
+
+- Transport nur TLS: `kidctl enroll` verlangt `https://` (`--insecure-http` nur für Test-Server,
+  wird in `device.json` vermerkt); der Agent baut ohne diesen Vermerk keine `ws://`-Verbindung auf.
+  Zertifikatsprüfung über die System-CAs (websockets/urllib, Standard).
+- Kopplung: 8-Zeichen-Code (≈ 40 Bit), 10 min, einmalig, Rate-Limit je IP; danach 256-Bit-Geräte-Token,
+  serverseitig nur als HMAC(SECRET_KEY) gespeichert, auf dem Client `root:root 0600`. Widerruf
+  wirkt sofort (Prüfung bei jeder Nachricht).
+- Server ordnet alle Agent-Meldungen (Chat, Nutzung, Programme) nur den Benutzern **dieses**
+  Geräts zu; ein Gerät kann keine Daten anderer Geräte/Kinder lesen oder schreiben.
+- Grundsatz: Der Server steuert nur die Policy, nie das System. Werte, die der Agent in Dateien,
+  Pfade oder Konfigurationen schreibt, sind streng geprüft:
+  - Benutzernamen `^[A-Za-z0-9_][A-Za-z0-9_.-]{0,31}$?$` (kein Zeilenumbruch → keine zusätzlichen
+    Einträge in der PAM-Sperrliste); Sperrliste zusätzlich ohne Admins.
+  - Sperrlisten-IDs `^[a-z0-9][a-z0-9-]{0,63}$` (Dateiname im Cache, kein Pfad).
+  - Kind-IDs 1–60000 (Resolver-Port 5300 + ID).
+  - Domains (Freigaben, Sperren, Sperrlisten) nur als gültige Hostnamen in die Unbound-Konfiguration.
+  - Sperrlisten-Download folgt keinen Weiterleitungen (Token nur an den eigenen Server).
+  - Texte (Chat, Benachrichtigungen) nur als Daten: Tray maskiert HTML, `notify-send` mit `--`.
+- Restrisiko: Wer den Server oder einen Eltern-Account übernimmt, kann die Einschränkungen der
+  Kinder ändern (lockern/verschärfen) – aber keine Admins sperren, keine Programme als root starten
+  und keine Systemdateien verändern.
+
 ## Geräteverwaltung
 
 - „Gerät hinzufügen“ im WebUI erzeugt Kopplungscode (8 Zeichen, 10 min gültig, einmalig).
@@ -632,3 +655,13 @@ Verlängerungsanfragen.
   (lokal nur als Testabhängigkeit installiert) → Container startete nicht. Zusätzlich `tzdata` für
   `zoneinfo` im schlanken Image. Getestet: frische venv nur mit `requirements.txt`, Import aller Module,
   uvicorn-Start („startup complete“), `/login` 200.
+- 2026-10-14: Sicherheitsprüfung Agent ↔ Server (Abschnitt „Sicherheit Agent ↔ Server“). Behoben:
+  (1) Benutzernamen aus der Policy ungeprüft in die PAM-Sperrliste – mit Zeilenumbruch hätte ein
+  kompromittierter Server root/Admins aussperren können; (2) Sperrlisten-ID ungeprüft als Dateiname
+  (`../` → Schreiben außerhalb des Caches als root); (3) Domains ungeprüft in der Unbound-Konfiguration
+  (eingeschleuste Anweisungen); (4) Kind-ID ohne Obergrenze (Port-Überlauf → nftables-Fehler, Filter
+  aus); (5) Kopplung/Verbindung per `http://` möglich (Token im Klartext) – jetzt nur mit
+  `--insecure-http`; (6) Sperrlisten-Download folgte Weiterleitungen samt Token; (7) `notify-send` ohne
+  `--`. Server verteilt keine ungültigen Benutzernamen. Version 0.9.0. Getestet: 30 neue Agent-Tests
+  (`test_hardening.py`: Ablehnung der Angriffswerte, Sperrliste ohne eingeschleuste Namen/Admins,
+  Unbound-Zonen nur gültige Domains, HTTPS-Pflicht, keine Weiterleitung), Agent 110, Server 57.

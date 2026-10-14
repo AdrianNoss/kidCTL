@@ -36,6 +36,8 @@ class Connection:
 
     def __init__(self, device: dict, handler) -> None:
         self.url = ws_url(device["server_url"])
+        if not self.url.startswith("wss://") and not device.get("insecure_http"):
+            raise ValueError(f"unverschlüsselte Serveradresse {device['server_url']} – neu koppeln mit https://")
         self.token = device["token"]
         self.handler = handler
         self._ws = None

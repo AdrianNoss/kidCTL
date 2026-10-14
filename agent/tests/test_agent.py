@@ -52,7 +52,7 @@ def make_agent(monkeypatch, clock):
     store.save(store.POLICY_FILE, policy(0, "alt").model_dump(mode="json"))  # Cache: kein Kontingent
     monkeypatch.setattr(agent_mod, "boottime", lambda: clock[0])
     nt = FakeNotifier()
-    a = Agent(FakeLogind(), nt, {"server_url": "http://x", "device_id": 1, "token": "t"})
+    a = Agent(FakeLogind(), nt, {"server_url": "https://x", "device_id": 1, "token": "t"})
     a.conn = FakeConn()
     return a, nt
 

@@ -12,7 +12,15 @@ from __future__ import annotations
 from datetime import date, datetime, time
 from typing import Annotated, Literal, Union
 
-from pydantic import BaseModel, Field, TypeAdapter
+from pydantic import BaseModel, Field, StringConstraints, TypeAdapter
+
+# Strenge Formate für Werte, die der Agent in Dateien, Pfade oder PAM-Listen schreibt – ein
+# fehlerhafter oder kompromittierter Server darf darüber nichts außerhalb der Policy bewirken
+# (z. B. Zeilenumbruch im Benutzernamen -> weitere Einträge in der PAM-Sperrliste).
+USERNAME_PATTERN = r"^[A-Za-z0-9_][A-Za-z0-9_.-]{0,31}\$?$"
+UserName = Annotated[str, StringConstraints(pattern=USERNAME_PATTERN)]
+# Kind-IDs bestimmen den Resolver-Port (5300 + ID) -> nach oben begrenzt
+ChildId = Annotated[int, Field(ge=1, le=60000)]
 
 PROTOCOL_VERSION = 1
 # Bei Version 2 hier {1, 2} eintragen – mindestens eine ältere Version bleibt unterstützt.
@@ -76,7 +84,7 @@ class Pong(BaseModel):
 
 
 class LocalUser(BaseModel):
-    username: str = Field(max_length=64)
+    username: UserName
     uid: int = Field(ge=1000)
     full_name: str = Field(default="", max_length=255)
 
@@ -186,7 +194,7 @@ WebMode = Literal["off", "whitelist", "blacklist"]
 
 class BlocklistRef(BaseModel):
     """Sperrliste, die der Agent unter ``LISTS_PATH/<id>`` abholt (eine Domain je Zeile)."""
-    id: str = Field(max_length=64)
+    id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{0,63}$")  # auch Dateiname im Cache
     sha256: str = ""  # leer = auf dem Server noch nicht verfügbar
     name: str = ""
     report: bool = True  # Treffer ins Sperrprotokoll (False bei Werbe-/Tracker-Listen: zu viele)
@@ -203,7 +211,7 @@ class WebFilter(BaseModel):
 
 
 class ChildPolicy(BaseModel):
-    id: int
+    id: ChildId
     name: str
     rules: list[DayRule]
     exceptions: list[DayOverride] = []
@@ -218,7 +226,7 @@ class Policy(BaseModel):
     type: Literal["policy"] = "policy"
     version: str
     timezone: str  # Tageswechsel/Zeitfenster in dieser Zone (z. B. Europe/Berlin)
-    users: dict[str, int]  # Linux-Username -> Kind-ID
+    users: dict[UserName, ChildId]  # Linux-Username -> Kind-ID
     children: list[ChildPolicy]
 
 

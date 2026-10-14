@@ -45,7 +45,7 @@ def test_agent_writes_lock_immediately_and_spares_admins(monkeypatch, tmp_path):
     store.save(store.POLICY_FILE, policy({"kind": 1, "papa": 1}).model_dump(mode="json"))
     monkeypatch.setattr(loginlock, "RUN_DIR", tmp_path / "run2")
     monkeypatch.setattr(agent_mod, "is_admin", lambda u: u == "papa")
-    a = Agent(FakeLogind(), FakeNotifier(), {"server_url": "http://x", "device_id": 1, "token": "t"})
+    a = Agent(FakeLogind(), FakeNotifier(), {"server_url": "https://x", "device_id": 1, "token": "t"})
     asyncio.run(a.tick_once())  # noch innerhalb der Start-Wartezeit
     assert (tmp_path / "run2" / loginlock.LOCKED_FILE).read_text() == "kind\n"  # papa (Admin) nie
     assert "papa" not in a.decisions(a.now_local())

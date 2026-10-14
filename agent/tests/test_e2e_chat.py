@@ -19,7 +19,7 @@ ME = getpass.getuser()
 def test_chat_and_request_roundtrip(server):  # noqa: F811
     base, web, csrf = server
     code = re.search(r"enroll \S+ (\w{8})", web.post("/devices/pair", data={"csrf_token": csrf, "name": "PC"}).text).group(1)
-    cli.enroll(base, code)
+    cli.enroll(base, code, insecure_http=True)
     device = store.load(store.DEVICE_FILE)
     agent_mod.local_users = lambda: [p.LocalUser(username=ME, uid=1001)]
 

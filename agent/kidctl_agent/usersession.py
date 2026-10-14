@@ -52,7 +52,7 @@ class UserSession:
                 "-u", "critical" if critical else "normal"]
         if on_action:
             args += [f"--action={ACTION_REQUEST}=Verlängerung anfordern", "--wait"]
-        cmd = self._as_user(user, uid, *args, title, body)
+        cmd = self._as_user(user, uid, *args, "--", title, body)  # Texte nie als Optionen
         if not cmd or not (proc := await self._spawn(cmd, capture=bool(on_action))):
             return
         if on_action:

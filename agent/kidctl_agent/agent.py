@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import pwd
+import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -40,7 +41,8 @@ DEFAULT_TZ = "Europe/Berlin"
 
 def local_users() -> list[p.LocalUser]:
     return [p.LocalUser(username=u.pw_name, uid=u.pw_uid, full_name=u.pw_gecos.split(",")[0][:255])
-            for u in pwd.getpwall() if 1000 <= u.pw_uid < 60000]
+            for u in pwd.getpwall()
+            if 1000 <= u.pw_uid < 60000 and re.fullmatch(p.USERNAME_PATTERN, u.pw_name)]
 
 
 class Agent:
@@ -64,7 +66,11 @@ class Agent:
         self._sessions: list = []
         raw = store.load(store.POLICY_FILE)
         self.policy: p.Policy | None = p.Policy.model_validate(raw) if raw else None
-        self.conn = Connection(device, self) if device else None
+        try:
+            self.conn = Connection(device, self) if device else None
+        except ValueError as e:  # z. B. http:// ohne --insecure-http: offline weiter durchsetzen
+            log.error("Keine Serververbindung: %s", e)
+            self.conn = None
         self._ticks = 0
         self.loginlock = LoginLock()
         self._admin_warned: set[str] = set()

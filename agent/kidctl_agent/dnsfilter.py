@@ -14,6 +14,7 @@ import hashlib
 import logging
 import os
 import pwd
+import re
 import subprocess
 import tempfile
 import urllib.error
@@ -53,6 +54,25 @@ SAFESEARCH = {
 }
 
 
+# Nur gültige Hostnamen gelangen in die Unbound-Konfiguration (keine Anführungszeichen,
+# Leerzeichen oder Zeilenumbrüche -> keine eingeschleusten Unbound-Anweisungen).
+_DOMAIN = re.compile(r"(?=.{1,253}\Z)(?:[a-z0-9_](?:[a-z0-9_-]{0,61}[a-z0-9_])?\.)+"
+                     r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\Z")
+
+
+def valid_domain(name: str) -> bool:
+    return bool(_DOMAIN.match(name))
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Sperrlisten nur direkt vom Server – kein Weiterreichen des Geräte-Tokens an andere Ziele."""
+    def redirect_request(self, *args, **kwargs):
+        return None
+
+
+_opener = urllib.request.build_opener(_NoRedirect)
+
+
 def covered(name: str, domains: set[str]) -> bool:
     """``name`` ist ``domains`` oder Subdomain davon."""
     parts = name.split(".")
@@ -63,7 +83,7 @@ def build_zones(web: p.WebFilter, lists: dict[str, list[str]]) -> list[str]:
     """Unbound-Zeilen (local-zone/local-data) mit fester Rangfolge, ohne Doppelte."""
     zones: dict[str, str] = {}  # Name -> Typ
     data: list[str] = []
-    allow = set(web.allow)
+    allow = {d for d in web.allow if valid_domain(d)}
     for d in DOH_DOMAINS:
         zones[d] = "always_nxdomain"
     if web.safesearch:
@@ -77,10 +97,12 @@ def build_zones(web: p.WebFilter, lists: dict[str, list[str]]) -> list[str]:
         zones.setdefault(d, "transparent")
     if web.mode == "blacklist":
         for d in web.deny:
-            zones.setdefault(d, "always_nxdomain")
+            if valid_domain(d):
+                zones.setdefault(d, "always_nxdomain")
         for ref in web.lists:
             for d in lists.get(ref.id, ()):
-                zones.setdefault(d, "always_nxdomain")
+                if valid_domain(d):
+                    zones.setdefault(d, "always_nxdomain")
     lines = [f'local-zone: "{name}." {typ}' for name, typ in zones.items()]
     return lines + data
 
@@ -208,7 +230,7 @@ class DnsFilter:
             url = f"{device['server_url'].rstrip('/')}{p.LISTS_PATH}/{ref.id}"
             req = urllib.request.Request(url, headers={"Authorization": f"Bearer {device['token']}"})
             try:
-                with urllib.request.urlopen(req, timeout=60) as resp:
+                with _opener.open(req, timeout=60) as resp:
                     body = resp.read()
             except (urllib.error.URLError, OSError) as e:
                 log.warning("Sperrliste %s nicht abrufbar (%s) – nutze Cache", ref.id, e)

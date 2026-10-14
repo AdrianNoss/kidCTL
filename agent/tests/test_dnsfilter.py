@@ -73,7 +73,7 @@ def test_fetch_lists_verifies_sha_and_keeps_cache(monkeypatch):
     def fake_urlopen(req, timeout):
         seen.append((req.full_url, req.headers.get("Authorization")))
         return io.BytesIO(served["body"])
-    monkeypatch.setattr(dnsfilter.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(dnsfilter._opener, "open", fake_urlopen)
     f = DnsFilter(run=lambda *a, **k: None)
     dev = {"server_url": "https://kids.example/", "token": "T"}
     f.fetch_lists([p.BlocklistRef(id="l", sha256=sha)], dev)

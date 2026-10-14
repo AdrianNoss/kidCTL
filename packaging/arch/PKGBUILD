@@ -1,7 +1,7 @@
 # Lokaler Build aus dem Repo: cd packaging/arch && makepkg
 # (bei schreibgeschütztem Repo: BUILDDIR=/var/tmp/kb PKGDEST=/var/tmp/kb makepkg)
 pkgname=kidctl
-pkgver=0.8.0   # muss agent/kidctl_agent/__init__.py:__version__ entsprechen (Test prüft das)
+pkgver=0.9.0   # muss agent/kidctl_agent/__init__.py:__version__ entsprechen (Test prüft das)
 pkgrel=1
 pkgdesc="Parental Control für KDE Plasma – Agent (Bildschirmzeit, Login-Sperre) und Tray-App"
 arch=(any)

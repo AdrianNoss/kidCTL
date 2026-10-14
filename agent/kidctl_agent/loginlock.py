@@ -11,8 +11,11 @@ import grp
 import logging
 import os
 import pwd
+import re
 import tempfile
 from pathlib import Path
+
+from kidctl_common.protocol import USERNAME_PATTERN
 
 log = logging.getLogger("kidctl.loginlock")
 
@@ -61,7 +64,8 @@ class LoginLock:
         self._current: list[str] | None = None
 
     def update(self, locked: set[str]) -> None:
-        users = sorted(locked)
+        # Doppelte Absicherung: nur gültige Namen (eine Zeile je User) und nie Admins
+        users = sorted(u for u in locked if re.fullmatch(USERNAME_PATTERN, u) and not is_admin(u))
         if users == self._current:
             return
         if self._current is None:

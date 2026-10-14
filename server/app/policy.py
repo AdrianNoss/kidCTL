@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
 from dataclasses import dataclass
 from datetime import date, timedelta
 
@@ -33,7 +34,8 @@ def build_policy(db: Session, device_id: int) -> p.Policy:
     mapped = db.execute(select(DeviceUser.username, DeviceUser.child_id).where(
         DeviceUser.device_id == device_id, DeviceUser.child_id.is_not(None))
         .order_by(DeviceUser.username)).all()
-    users = {u: c for u, c in mapped}
+    # Ungültige Namen (z. B. von älteren Agenten gemeldet) nie verteilen – das Protokoll lehnt sie ab
+    users = {u: c for u, c in mapped if re.fullmatch(p.USERNAME_PATTERN, u)}
     since = sch.today_local() - timedelta(days=1)  # Puffer für Uhr-/Zeitzonenränder
     children = []
     for child in db.scalars(select(Child).where(Child.id.in_(set(users.values()))).order_by(Child.id)):
