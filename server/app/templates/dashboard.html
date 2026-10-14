@@ -13,7 +13,7 @@
       <td>{% if st.overrun_minutes %}<span class="warn">überzogen um {{ st.overrun_minutes }} min</span>
           {% else %}{{ fmt_minutes(st.remaining_minutes) }}{% endif %}</td>
       <td>{% if st.window_start %}{{ st.window_start.strftime("%H:%M") }}–{{ st.window_end.strftime("%H:%M") }}{% endif %}</td>
-      <td class="right"><a href="/children/{{ c.id }}/chat">Chat</a>{% if pending.get(c.id) %} <span class="badge">{{ pending[c.id] }} Anfrage(n) offen</span>{% endif %}</td>
+      <td class="right"><a href="/children/{{ c.id }}/stats">Statistik</a> · <a href="/children/{{ c.id }}/chat">Chat</a>{% if pending.get(c.id) %} <span class="badge">{{ pending[c.id] }} Anfrage(n) offen</span>{% endif %}</td>
     </tr>
     {% endfor %}
   </table>

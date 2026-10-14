@@ -27,6 +27,7 @@ from . import loginlock, store
 log = logging.getLogger("kidctl.dns")
 
 BASE_PORT = 5300
+LOG_DIR = "/run/kidctl-dns"   # RuntimeDirectory der Resolver-Unit (schreibbar für DynamicUser)
 UNIT = "kidctl-dns@{}.service"
 NFT_TABLE = "kidctl_dns"
 RESOLV_CONF = "/etc/resolv.conf"
@@ -84,6 +85,36 @@ def build_zones(web: p.WebFilter, lists: dict[str, list[str]]) -> list[str]:
     return lines + data
 
 
+def report_sources(web: p.WebFilter, lists: dict[str, list[str]]) -> dict[str, str]:
+    """Zonen, deren Treffer ins Sperrprotokoll sollen, mit Quelle. Werbe-/Tracker-Listen
+    (``report=False``) nicht – sonst Hunderte Einträge je Seitenaufruf."""
+    src: dict[str, str] = {}
+    if web.mode == "whitelist":
+        src["."] = "nicht freigegeben"
+    if web.mode == "blacklist":
+        for ref in web.lists:
+            if ref.report:
+                for d in lists.get(ref.id, ()):
+                    src.setdefault(d, f"Sperrliste {ref.name or ref.id}")
+        for d in web.deny:
+            src[d] = "von Eltern gesperrt"
+    for d in DOH_DOMAINS:
+        src[d] = "DNS-over-HTTPS-Anbieter"
+    return src
+
+
+def parse_blocked(line: str) -> tuple[str, str] | None:
+    """Unbound log-local-actions: ``info: <zone> always_nxdomain <client> <anfrage> <typ> <klasse>``."""
+    parts = line.split()
+    try:
+        i = parts.index("always_nxdomain")
+    except ValueError:
+        return None
+    if i < 1 or len(parts) < i + 3:
+        return None
+    return parts[i - 1].rstrip(".") or ".", parts[i + 2].rstrip(".")
+
+
 def upstreams() -> list[str]:
     """Nameserver des Systems (meist systemd-resolved 127.0.0.53)."""
     out = []
@@ -97,8 +128,12 @@ def upstreams() -> list[str]:
     return out or ["127.0.0.53"]
 
 
-def unbound_conf(port: int, web: p.WebFilter, zones_file: str) -> str:
+def unbound_conf(port: int, web: p.WebFilter, zones_file: str, log_file: str = "") -> str:
+    """``log_file``: lokale Aktionen (Treffer der Zonen) dorthin statt ins Journal – der Agent liest
+    daraus gesperrte Anfragen und leert die Datei (erlaubte Anfragen werden nie gespeichert)."""
     fwd = "\n".join(f"  forward-addr: {a}" for a in upstreams())
+    logging_ = (f'  use-syslog: no\n  logfile: "{log_file}"\n  log-local-actions: yes\n'
+                if log_file else "  use-syslog: yes\n")
     root = '  local-zone: "." always_nxdomain\n' if web.mode == "whitelist" else ""
     return f"""# kidctl – automatisch erzeugt, nicht bearbeiten
 server:
@@ -110,8 +145,7 @@ server:
   directory: ""
   pidfile: ""
   do-daemonize: no
-  use-syslog: yes
-  verbosity: 0
+{logging_}  verbosity: 0
   module-config: "iterator"
   do-not-query-localhost: no
   access-control: 127.0.0.0/8 allow
@@ -156,6 +190,8 @@ class DnsFilter:
         self.dns_dir = loginlock.RUN_DIR / "dns"
         self.lists_dir = store.STATE_DIR / "lists"
         self._applied: dict[int, str] = {}   # Kind -> Hash der laufenden Konfiguration
+        self.reportable: dict[int, dict[str, str]] = {}  # Kind -> Zone -> Quelle (fürs Protokoll)
+        self.log_dir = Path(LOG_DIR)
         self._nft = None
 
     # ---------- Sperrlisten ----------
@@ -202,7 +238,8 @@ class DnsFilter:
             zones_file = str(self.dns_dir / f"{cid}.zones")
             lists = {r.id: self.load_list(r.id) for r in web.lists}
             zones = "\n".join(build_zones(web, lists)) + "\n"
-            conf = unbound_conf(port, web, zones_file)
+            conf = unbound_conf(port, web, zones_file, f"{LOG_DIR}/{cid}/blocked.log")
+            self.reportable[cid] = report_sources(web, lists)
             digest = _sha((conf + zones).encode())
             if self._applied.get(cid) == digest and self._unit_active(cid):
                 continue
@@ -236,6 +273,28 @@ class DnsFilter:
                 log.info("nftables: DNS-Umleitung für %d Benutzer", len(ports))
             else:
                 log.error("nftables-Regeln nicht anwendbar: %s", r.stderr.strip())
+
+    def collect_blocked(self) -> list[tuple[int, str, str]]:
+        """Gesperrte Anfragen seit dem letzten Aufruf: (Kind, Domain, Quelle). Liest und leert die
+        Logdateien der Resolver; erlaubte Anfragen (transparent) werden verworfen, nie gespeichert."""
+        out = []
+        for cid, sources in self.reportable.items():
+            path = self.log_dir / str(cid) / "blocked.log"
+            try:
+                with open(path, "r+") as f:
+                    lines = f.read().splitlines()
+                    f.seek(0)
+                    f.truncate()
+            except OSError:
+                continue
+            for line in lines:
+                hit = parse_blocked(line)
+                if hit is None:
+                    continue
+                zone, qname = hit
+                if zone in sources:
+                    out.append((cid, qname if zone == "." else zone, sources[zone]))
+        return out
 
     def reset(self) -> None:
         """Gemerkten Zustand vergessen -> nächstes apply() schreibt alles neu (Reparatur)."""

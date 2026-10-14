@@ -10,7 +10,7 @@
 {% endmacro %}
 {% block content %}
 <h1>{{ child.name }}</h1>
-<p><a href="/children/{{ child.id }}/chat">Chat mit {{ child.name }}</a></p>
+<p><a href="/children/{{ child.id }}/chat">Chat mit {{ child.name }}</a> · <a href="/children/{{ child.id }}/stats">Statistik</a></p>
 {% if request.query_params.get("saved") %}<p class="success">Wochenvorlage gespeichert.</p>{% endif %}
 
 <section class="card">
@@ -145,7 +145,7 @@
     {% for e in blocked %}
     <tr>
       <td>{{ e.at | localtime }}</td>
-      <td>{{ e.name }}{% if e.detail %} <small class="muted">({{ e.detail }})</small>{% endif %}<br><small class="muted">{{ e.key }}</small></td>
+      <td>{% if e.kind == "domain" %}<small class="muted">Website</small> {% endif %}{{ e.name }}{% if e.detail %} <small class="muted">({{ e.detail }})</small>{% endif %}<br><small class="muted">{{ e.key }}</small></td>
       <td>{{ e.username }}</td>
       <td>{% if e.audit %}<small class="muted">nur protokolliert</small>{% else %}<span class="warn">gesperrt</span>{% endif %}</td>
     </tr>

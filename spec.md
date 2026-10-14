@@ -286,7 +286,19 @@ Verlängerungsanfragen.
 
 - Status: aktuelle Restzeit pro Kind, Online-Status pro Gerät.
 - Nutzungsstatistik pro Tag/Woche (Diagramm) und Zeit pro Programm.
+  - Seite „Statistik“ je Kind: Kacheln (diese Woche, letzte Woche, Ø pro Tag), Säulen der letzten
+    14 Tage mit Markierung des erlaubten Kontingents (Tooltip, Tabellenansicht), Programmzeit als
+    Balken (heute / letzte 7 Tage). Reine CSS-Diagramme ohne JavaScript.
+  - **Zeit pro Programm = „geöffnet“** (entschieden 2026-10-14): Zeit, in der eine App aus dem
+    Katalog während gezählter Bildschirmzeit mindestens einen Prozess hatte; parallel geöffnete Apps
+    zählen jeweils voll. Hilfsprozesse im App-Verzeichnis zählen zur App, Spiele aus der
+    Steam-Bibliothek zu Steam. Vordergrundzeit (KWin-Skript) ggf. später.
 - Protokoll **blockierter** Aktionen (gesperrtes Programm, gesperrte Domain).
+  - Domains: Unbound protokolliert lokale Aktionen in eine Datei im RAM (`/run/kidctl-dns/<kind>`);
+    der Agent liest und leert sie alle 5 s und übernimmt nur Sperren – erlaubte Anfragen werden
+    verworfen, nie gespeichert. Ins Protokoll: eigene Sperren, DoH-Anbieter, Inhaltslisten
+    (NSFW/Glücksspiel/Porn), im Whitelist-Modus alles Nicht-Freigegebene; **nicht** Werbe-/Tracker-
+    Listen (zu viele Einträge). Je Domain höchstens alle 10 min.
 - **Kein** Verlauf erlaubter Websites.
 - Push-Alarme:
   - Gerät hat sich länger als X Stunden nicht gemeldet (Standard 48 h, pro Gerät einstellbar).
@@ -565,4 +577,16 @@ Verlängerungsanfragen.
   wiederhergestellt, tiktok.com für `kind` wieder gesperrt; PAM-Block entfernt → im nächsten Takt
   gemeldet, Server protokolliert Integritätsfehler und löst Alarm aus (Push im Dev-Server nicht
   konfiguriert); nach Wiederherstellung wieder „keine Fehler“.
+- 2026-10-14: Auswertung (Server + Agent, Paket 0.7.0): Programmzeit, Statistikseite, gesperrte
+  Domains im Sperrprotokoll. Getestet: Agent 80 pytest-Tests (neu: Zuordnung Prozess → App inkl.
+  App-Verzeichnis/Flatpak/Skript/Steam, Programmzeit nur einmal je App und nur für gezählte User,
+  Persistenz, Unbound-Logzeilen, Protokollquellen ohne Werbelisten, Log lesen + leeren, Drosselung);
+  Server 56 (neu: Programmzeit-Bericht mit Maximum-Regel/nicht zugeordnet/zu alt, Statistikseite mit
+  14 Säulen, Tooltip inkl. Überziehung, Programmliste je Zeitraum, Domain-Einträge im Protokoll,
+  Listen-Merkmal „ins Protokoll“). Diagrammfarbe `#2a78d6` auf Weiß 4,42:1, Kontingent-Markierung
+  7,94:1 (WCAG berechnet; Node für den Palettenvalidator nicht vorhanden – bei einer Reihe nur
+  Kontrast relevant). Gerendert mit Beispieldaten und angesehen (Achsenbeschriftung abgeschnitten →
+  korrigiert). VM: tiktok.com und dns.google als `kind` → je ein Protokolleintrag mit Quelle,
+  Resolver-Log danach leer; bei gesperrtem Bildschirm keine Programmzeit, nach Entsperren Firefox
+  erfasst und gemeldet.
 

@@ -16,14 +16,14 @@ from . import store
 from .accounting import boottime
 from .procs import pids_of, read_proc
 from .kidmounts import STEAM_ROOT
-from .programs import Allowed, base_paths, classify, closure, load_base, parse_pacman_qi
+from .programs import Allowed, Verdict, base_paths, classify, closure, load_base, parse_pacman_qi
 
 log = logging.getLogger("kidctl.programs")
 
 BLOCKED_FILE = "blocked.json"
 PACMAN_DB = "/var/lib/pacman/local"
 MAX_PENDING = 500
-REPORT_DEDUP = {"audit": 600.0, "enforce": 60.0}  # gleiche (User, Programm)-Meldung höchstens so oft
+REPORT_DEDUP = {"audit": 600.0, "enforce": 60.0, "domain": 600.0}  # gleiche Meldung höchstens so oft
 NOTIFY_DEDUP = 60.0
 # Leere Argumentliste: meist mitten im exec() gelesen -> kurz warten und erneut lesen
 EMPTY_ARGV_RETRIES = 5
@@ -136,15 +136,17 @@ class ProgramWatcher:
         await self.agent.desktop.notify(user, uid, "Programm gesperrt",
                                         f"„{name}“ ist nicht freigegeben. Frag deine Eltern.")
 
-    def _record(self, user: str, verdict, name: str, audit: bool) -> bool:
-        """Ins Protokoll aufnehmen (gedrosselt je User + Programm). True = neu aufgenommen."""
+    def _record(self, user: str, verdict, name: str, audit: bool, kind: str = "program") -> bool:
+        """Ins Protokoll aufnehmen (gedrosselt je User + Schlüssel). True = neu aufgenommen."""
         now = self.clock()
         k = (user, verdict.key)
-        if now - self.last_report.get(k, -1e9) < REPORT_DEDUP["audit" if audit else "enforce"]:
+        dedup = REPORT_DEDUP["domain" if kind == "domain" else "audit" if audit else "enforce"]
+        if now - self.last_report.get(k, -1e9) < dedup:
             return False
         self.last_report[k] = now
-        self.pending.append(p.BlockedEvent(username=user, at=datetime.now(timezone.utc), key=verdict.key[:512],
-                                           name=name[:255], detail=verdict.detail, audit=audit))
+        self.pending.append(p.BlockedEvent(username=user, at=datetime.now(timezone.utc), kind=kind,
+                                           key=verdict.key[:512], name=name[:255], detail=verdict.detail[:255],
+                                           audit=audit))
         del self.pending[:-MAX_PENDING]
         self._save()
         return True
@@ -164,6 +166,9 @@ class ProgramWatcher:
     def users(self) -> set[str]:
         """Kinder mit Programmkontrolle (für noexec-Home und Steam-Bibliothek)."""
         return {user for user, _mode, _allowed in self.targets().values()}
+
+    def record_domain(self, user: str, domain: str, detail: str) -> bool:
+        return self._record(user, Verdict(f"domain:{domain}", domain, detail), domain, audit=False, kind="domain")
 
     # ---------- Basisliste aus der Paketkette ----------
 

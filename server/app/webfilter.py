@@ -65,25 +65,28 @@ class Blocklist:
     name: str
     url: str
     description: str = ""
+    report: bool = True  # Treffer ins Sperrprotokoll (Werbe-/Tracker-Listen: nein, zu viele)
 
 
 BLOCKLISTS = {b.id: b for b in [
     Blocklist("hagezi-multi", "HaGeZi Multi Normal",
               "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/multi-onlydomains.txt",
-              "Werbung, Tracking, Malware"),
+              "Werbung, Tracking, Malware", report=False),
     Blocklist("hagezi-pro", "HaGeZi Multi Pro",
               "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro-onlydomains.txt",
-              "wie Normal, strenger"),
+              "wie Normal, strenger", report=False),
     Blocklist("hagezi-nsfw", "HaGeZi NSFW",
               "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt",
               "Erwachseneninhalte"),
     Blocklist("hagezi-gambling", "HaGeZi Glücksspiel",
               "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/gambling-onlydomains.txt",
               "Glücksspiel"),
-    Blocklist("oisd-big", "OISD big", "https://big.oisd.nl/domainswild2", "Werbung, Tracking, Malware"),
+    Blocklist("oisd-big", "OISD big", "https://big.oisd.nl/domainswild2", "Werbung, Tracking, Malware",
+              report=False),
     Blocklist("oisd-nsfw", "OISD NSFW", "https://nsfw.oisd.nl/domainswild2", "Erwachseneninhalte"),
     Blocklist("stevenblack", "StevenBlack Unified",
-              "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", "Werbung, Malware"),
+              "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", "Werbung, Malware",
+              report=False),
     Blocklist("stevenblack-porn", "StevenBlack Porn",
               "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/porn-only/hosts",
               "Erwachseneninhalte"),
@@ -244,7 +247,9 @@ def web_policy(db: Session, child: Child) -> p.WebFilter:
     if child.web_mode == "blacklist":
         for list_id in sorted(s["lists"]):
             state = db.get(BlocklistState, list_id)
-            refs.append(p.BlocklistRef(id=list_id, sha256=state.sha256 if state else ""))
+            bl = BLOCKLISTS.get(list_id)
+            refs.append(p.BlocklistRef(id=list_id, sha256=state.sha256 if state else "",
+                                       name=bl.name if bl else list_id, report=bl.report if bl else True))
     return p.WebFilter(mode=child.web_mode, allow=sorted(allow),
                        deny=s["deny"] if child.web_mode == "blacklist" else [],
                        lists=refs, safesearch=child.safesearch)

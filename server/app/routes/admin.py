@@ -19,7 +19,7 @@ from ..models import (
     BlocklistState, Child, DayException, Device, Message, PairingCode, Parent, ParentSession, WeekdayRule,
     utcnow,
 )
-from .. import chat, policy, programs, webfilter
+from .. import chat, policy, programs, stats, webfilter
 from .. import schedule as sch
 from ..security import (
     csrf_protect, hash_password, new_pairing_code, new_totp_secret, require_session, token_hash,
@@ -165,6 +165,18 @@ async def child_programs(child_id: int, request: Request, db: Session = Depends(
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
     return _redirect(f"/children/{child_id}?programs=1#programme")
+
+
+@router.get("/children/{child_id}/stats")
+def child_stats(child_id: int, request: Request, range: int = 7, db: Session = Depends(get_db)):
+    child = _get_or_404(db, Child, child_id)
+    app_days = 1 if range == 1 else 7
+    bars = stats.daily(db, child)
+    scale = max([b.used_minutes for b in bars] + [b.allowed_minutes for b in bars] + [1])
+    app_rows = stats.apps(db, child, app_days)
+    return render(request, "stats.html", child=child, bars=bars, scale=scale, sums=stats.week_sums(bars),
+                  apps=app_rows, app_days=app_days, app_scale=max([r.minutes for r in app_rows] + [1]),
+                  fmt_minutes=sch.fmt_minutes, weekday_names=sch.WEEKDAY_NAMES)
 
 
 @router.post("/children/{child_id}/web", dependencies=[Depends(csrf_protect)])

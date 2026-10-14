@@ -45,3 +45,35 @@ input[type=time], input[type=date] { width:auto; }
 .msg details { width:100%; }
 textarea { font:inherit; padding:.4rem .5rem; border:1px solid #cbd5e1; border-radius:.3rem; flex:1; min-width:12rem; }
 .badge { background:var(--warn); color:#fff; border-radius:1rem; padding:0 .5rem; font-size:.8em; }
+/* ---- Statistik (eine Datenreihe: --series-1; Text nie in Datenfarbe) ---- */
+:root { --series-1:#2a78d6; --ink-2:#52514e; --grid:#e5e7eb; }
+.tiles { display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1rem; }
+.tile { background:var(--card); border:1px solid #e5e7eb; border-radius:.5rem; padding:.7rem 1rem; min-width:9rem; flex:1; }
+.tile-label { color:var(--muted); font-size:.85em; }
+.tile-value { font-size:1.6rem; font-weight:600; }
+.legend { display:flex; gap:1.2rem; flex-wrap:wrap; font-size:.85em; color:var(--ink-2); margin-bottom:.5rem; }
+.legend i { display:inline-block; vertical-align:middle; margin-right:.35rem; }
+.key-bar { width:10px; height:10px; background:var(--series-1); border-radius:2px; }
+.key-line { width:14px; height:2px; background:var(--ink-2); }
+.columns { display:flex; align-items:stretch; gap:2px; height:215px; overflow-x:auto; padding-top:1.2em; }
+.col { flex:1; min-width:22px; display:flex; flex-direction:column; position:relative; outline:none; }
+.col .plot { flex:1; position:relative; border-bottom:1px solid var(--grid); }
+.col .bar { position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:min(24px, 70%);
+            background:var(--series-1); border-radius:4px 4px 0 0; }
+.col .quota { position:absolute; left:15%; right:15%; height:2px; background:var(--ink-2); }
+.col .value { position:absolute; left:50%; transform:translate(-50%, -2px); font-size:.8em; color:var(--fg); white-space:nowrap; }
+.col .xlabel { text-align:center; font-size:.72em; color:var(--muted); line-height:1.25; padding-top:.25rem; height:2.9em; }
+.col:hover .bar, .col:focus .bar { filter:brightness(1.15); }
+.hbars { display:flex; flex-direction:column; gap:.45rem; }
+.hrow { display:grid; grid-template-columns:minmax(6rem, 12rem) 1fr; gap:.6rem; align-items:center; outline:none; }
+.hname { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.htrack { display:flex; align-items:center; gap:.4rem; }
+.hbar { height:14px; background:var(--series-1); border-radius:0 4px 4px 0; min-width:2px; }
+.hval { font-size:.85em; color:var(--ink-2); white-space:nowrap; }
+.hrow:hover .hbar, .hrow:focus .hbar { filter:brightness(1.15); }
+/* Tooltip ohne JavaScript: Hover und Tastaturfokus */
+[data-tip] { position:relative; }
+[data-tip]:hover::after, [data-tip]:focus::after { content:attr(data-tip); position:absolute; z-index:5; bottom:calc(100% + 4px);
+  left:50%; transform:translateX(-50%); background:#1d2330; color:#fff; font-size:.8rem; padding:.3rem .5rem;
+  border-radius:.3rem; white-space:nowrap; pointer-events:none; }
+.hrow[data-tip]:hover::after, .hrow[data-tip]:focus::after { left:auto; right:0; transform:none; }

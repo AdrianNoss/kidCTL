@@ -9,6 +9,9 @@ ExecStart=/usr/bin/unbound -d -p -c /run/kidctl/dns/%i.conf
 Restart=on-failure
 RestartSec=2
 DynamicUser=yes
+# Logdatei der gesperrten Anfragen (liest und leert der Agent; liegt im RAM)
+RuntimeDirectory=kidctl-dns/%i
+RuntimeDirectoryMode=0700
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes

@@ -257,6 +257,21 @@ class BlocklistState(Base):
     error: Mapped[str] = mapped_column(String(255), default="")
 
 
+class AppUsage(Base):
+    """Programmzeit (geöffnet während gezählter Bildschirmzeit) je (Gerät, User, Tag, App)."""
+    __tablename__ = "app_usage"
+    __table_args__ = (UniqueConstraint("device_id", "username", "day", "key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    device_id: Mapped[int] = mapped_column(ForeignKey("device.id", ondelete="CASCADE"))
+    username: Mapped[str] = mapped_column(String(64))
+    day: Mapped[date] = mapped_column(Date, index=True)
+    key: Mapped[str] = mapped_column(String(512))
+    child_id: Mapped[int | None] = mapped_column(
+        ForeignKey("child.id", ondelete="CASCADE"), nullable=True, index=True)
+    seconds: Mapped[int] = mapped_column(Integer, default=0)
+
+
 class PairingCode(Base):
     """Einmaliger Kopplungscode (8 Zeichen, 10 min gültig). Gespeichert wird nur der Hash."""
     __tablename__ = "pairing_code"

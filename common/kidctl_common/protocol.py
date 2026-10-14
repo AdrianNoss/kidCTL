@@ -188,6 +188,8 @@ class BlocklistRef(BaseModel):
     """Sperrliste, die der Agent unter ``LISTS_PATH/<id>`` abholt (eine Domain je Zeile)."""
     id: str = Field(max_length=64)
     sha256: str = ""  # leer = auf dem Server noch nicht verfügbar
+    name: str = ""
+    report: bool = True  # Treffer ins Sperrprotokoll (False bei Werbe-/Tracker-Listen: zu viele)
 
 
 class WebFilter(BaseModel):
@@ -267,8 +269,8 @@ class ReportApps(BaseModel):
 class BlockedEvent(BaseModel):
     username: str = Field(max_length=64)
     at: datetime  # UTC
-    kind: Literal["program"] = "program"
-    key: str = Field(max_length=512)    # App-Schlüssel bzw. "exe:<pfad>"
+    kind: Literal["program", "domain"] = "program"
+    key: str = Field(max_length=512)    # App-Schlüssel, "exe:<pfad>" bzw. "domain:<name>"
     name: str = Field(max_length=255)   # Anzeigename (aus .desktop oder Dateiname)
     detail: str = Field(default="", max_length=255)  # z. B. „interaktive Shell“
     audit: bool = False                 # nur protokolliert, nicht gesperrt
@@ -278,6 +280,23 @@ class BlockedReport(BaseModel):
     """Agent -> Server: gesperrte (bzw. im Protokollmodus erkannte) Aktionen."""
     type: Literal["blocked"] = "blocked"
     events: list[BlockedEvent] = Field(max_length=500)
+
+
+# ---------- Programmzeit ----------
+# Wie lange eine App während gezählter Bildschirmzeit geöffnet war (parallel geöffnete Apps
+# zählen jeweils). Absolute Zählerstände je (User, Tag, App) wie bei usage_report.
+
+
+class AppUsageEntry(BaseModel):
+    username: str = Field(max_length=64)
+    day: date
+    key: str = Field(max_length=512)
+    seconds: int = Field(ge=0, le=2 * 86400)
+
+
+class AppUsageReport(BaseModel):
+    type: Literal["app_usage_report"] = "app_usage_report"
+    entries: list[AppUsageEntry] = Field(max_length=2000)
 
 
 # ---------- Integrität ----------
@@ -300,7 +319,7 @@ class IntegrityReport(BaseModel):
 
 AgentMessage = Annotated[
     Union[Hello, Ping, Pong, ReportUsers, ChatSend, ExtensionRequest, ChatSync, PolicyAck,
-          UsageReport, ReportApps, BlockedReport, IntegrityReport],
+          UsageReport, ReportApps, BlockedReport, IntegrityReport, AppUsageReport],
     Field(discriminator="type")]
 ServerMessage = Annotated[
     Union[Welcome, Error, Ping, Pong, Ack, ChatMessage, Policy, UsageUpdate],

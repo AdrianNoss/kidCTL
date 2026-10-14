@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Statistik {{ child.name }} – kidctl{% endblock %}
+{% block content %}
+<h1>Statistik: {{ child.name }}</h1>
+<p><a href="/children/{{ child.id }}">Einstellungen</a> · <a href="/children/{{ child.id }}/chat">Chat</a></p>
+
+<div class="tiles">
+  <div class="tile"><div class="tile-label">Diese Woche</div><div class="tile-value">{{ fmt_minutes(sums.this_week) }}</div></div>
+  <div class="tile"><div class="tile-label">Letzte Woche</div><div class="tile-value">{{ fmt_minutes(sums.last_week) }}</div></div>
+  <div class="tile"><div class="tile-label">Ø pro Tag (14 Tage)</div><div class="tile-value">{{ fmt_minutes(sums.avg) }}</div></div>
+</div>
+
+<section class="card viz">
+  <h2>Bildschirmzeit je Tag</h2>
+  <div class="legend">
+    <span><i class="key-bar"></i>genutzt (alle Geräte)</span>
+    <span><i class="key-line"></i>erlaubt</span>
+  </div>
+  <div class="columns" role="img" aria-label="Bildschirmzeit der letzten {{ bars|length }} Tage">
+    {% for b in bars %}{% set wd = weekday_names[b.day.weekday()][:2] %}
+    <div class="col" tabindex="0"
+         data-tip="{{ wd }} {{ b.day.strftime('%d.%m.') }}: {{ fmt_minutes(b.used_minutes) }} von {{ fmt_minutes(b.allowed_minutes) }}{% if b.over %} – überzogen um {{ b.used_minutes - b.allowed_minutes }} min{% endif %}">
+      <div class="plot">
+        <div class="bar" style="height: {{ (100 * b.used_minutes / scale) | round(1) }}%"></div>
+        <div class="quota" style="bottom: {{ (100 * b.allowed_minutes / scale) | round(1) }}%"></div>
+        {% if loop.last %}<div class="value" style="bottom: {{ (100 * b.used_minutes / scale) | round(1) }}%">{{ fmt_minutes(b.used_minutes) }}</div>{% endif %}
+      </div>
+      <div class="xlabel">{{ wd }}<br>{{ b.day.day }}.</div>
+    </div>
+    {% endfor %}
+  </div>
+  <details>
+    <summary>Als Tabelle</summary>
+    <table>
+      <tr><th>Tag</th><th class="right">genutzt</th><th class="right">erlaubt</th><th></th></tr>
+      {% for b in bars|reverse %}
+      <tr><td>{{ weekday_names[b.day.weekday()][:2] }} {{ b.day.strftime('%d.%m.') }}</td>
+          <td class="right">{{ fmt_minutes(b.used_minutes) }}</td><td class="right">{{ fmt_minutes(b.allowed_minutes) }}</td>
+          <td>{% if b.over %}<span class="warn">überzogen um {{ b.used_minutes - b.allowed_minutes }} min</span>{% endif %}</td></tr>
+      {% endfor %}
+    </table>
+  </details>
+</section>
+
+<section class="card viz">
+  <h2>Programme</h2>
+  <p class="row">
+    {% if app_days == 1 %}<strong>Heute</strong> · <a href="?range=7">Letzte 7 Tage</a>
+    {% else %}<a href="?range=1">Heute</a> · <strong>Letzte 7 Tage</strong>{% endif %}
+  </p>
+  <p class="muted">Zeit, in der ein Programm während der Bildschirmzeit geöffnet war. Parallel geöffnete Programme zählen jeweils voll.</p>
+  {% if apps %}
+  <div class="hbars">
+    {% for a in apps %}
+    <div class="hrow" tabindex="0" data-tip="{{ a.name }}: {{ fmt_minutes(a.minutes) }}">
+      <div class="hname">{{ a.name }}</div>
+      <div class="htrack"><div class="hbar" style="width: {{ (100 * a.minutes / app_scale) | round(1) }}%"></div>
+        <span class="hval">{{ fmt_minutes(a.minutes) }}</span></div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}<p class="muted">Noch keine Programmzeit erfasst.</p>{% endif %}
+</section>
+{% endblock %}

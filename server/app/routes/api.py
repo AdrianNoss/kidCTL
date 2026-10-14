@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from kidctl_common import protocol as p
 
-from .. import chat, integrity, policy, programs, webfilter
+from .. import chat, integrity, policy, programs, stats, webfilter
 from ..db import SessionLocal, get_db
 from ..models import BlocklistState, Device, DeviceUser, PairingCode, utcnow
 from ..security import (
@@ -159,6 +159,8 @@ async def agent_ws(ws: WebSocket):
                     programs.apply_app_report(db, dev, msg)
                 elif isinstance(msg, p.BlockedReport):
                     programs.apply_blocked_report(db, dev, msg)
+                elif isinstance(msg, p.AppUsageReport):
+                    stats.apply_app_report(db, dev, msg)
                 elif isinstance(msg, p.IntegrityReport):
                     integrity.alarm(dev, integrity.apply_report(dev, msg))
                 db.commit()

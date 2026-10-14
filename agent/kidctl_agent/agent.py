@@ -11,18 +11,18 @@ from zoneinfo import ZoneInfo
 from kidctl_common import protocol as p
 from kidctl_common import tray as t
 
-from . import sdnotify, store
+from . import integrity, sdnotify, store
 from .accounting import Usage, boottime
+from .apps import scan_apps
+from .apptime import AppIndex, AppTime
 from .chat import NEW, ChatStore, Outbox, new_client_msg_id
 from .connection import Connection
-from .enforcer import Enforcer
-from .loginlock import LoginLock, is_admin
-from .rules import Decision, day_limits, evaluate
-from . import integrity
-from .apps import scan_apps
 from .dnsfilter import DnsFilter
-from .kidmounts import KidMounts
-from .procs import ProcEvents
+from .enforcer import Enforcer
+from .kidmounts import STEAM_ROOT, KidMounts
+from .loginlock import LoginLock, is_admin
+from .procs import ProcEvents, pids_of, read_proc
+from .rules import Decision, day_limits, evaluate
 from .trayserver import TrayServer
 from .watcher import ProgramWatcher
 
@@ -49,6 +49,8 @@ class Agent:
         self.desktop = desktop
         self.enforcer = Enforcer(logind, desktop, on_request=self.open_request_dialog)
         self.usage = Usage.load()
+        self.apptime = AppTime.load()
+        self.app_index = AppIndex(set())
         self.chat = ChatStore.load()
         self.outbox = Outbox.load()
         self.tray = TrayServer(self, tray_path)
@@ -111,7 +113,10 @@ class Agent:
         now = self.now_local()
         decisions = self.decisions(now)  # nur zugeordnete Nicht-Admins
         counting = {s.user for s in sessions if s.counts and s.user in decisions}
-        self.usage.tick(counting, now.date())
+        delta = self.usage.tick(counting, now.date())
+        if delta:
+            self._count_apps(counting, now.date(), delta)
+        self._collect_blocked_domains()
         # Login-Sperre sofort (auch mit gecachter Policy) – sonst wäre direkt nach dem Booten
         # kurz eine Anmeldung möglich. Gilt auch ohne laufende Sitzung.
         self.loginlock.update({u for u, d in decisions.items() if not d.allowed})
@@ -123,6 +128,8 @@ class Agent:
         if self._ticks % SAVE_EVERY == 0:
             self.usage.prune(now.date())
             self.usage.save()
+            self.apptime.prune(now.date())
+            self.apptime.save()
 
     async def _tick_loop(self) -> None:
         ready = False
@@ -159,6 +166,7 @@ class Agent:
             log.exception("Anwendungen nicht lesbar")
             return
         self.programs.names = {a.key: a.name for a in self.apps}
+        self.app_index = AppIndex({a.key for a in self.apps})
 
     async def sync_mounts(self) -> None:
         """noexec-Homes und Steam-Bibliotheken an die Policy angleichen (systemd, im Thread)."""
@@ -227,10 +235,34 @@ class Agent:
     async def send_usage(self) -> None:
         if self.conn is None or not self.conn.connected:
             return
-        entries = [p.UsageEntry(username=u, day=d, seconds=s)
-                   for u, d, s in self.usage.report_entries(self.now_local().date())]
+        today = self.now_local().date()
+        entries = [p.UsageEntry(username=u, day=d, seconds=s) for u, d, s in self.usage.report_entries(today)]
         if entries:
             await self.conn.send(p.UsageReport(entries=entries))
+        apps = [p.AppUsageEntry(username=u, day=d, key=k, seconds=s)
+                for u, d, k, s in self.apptime.report_entries(today)]
+        if apps:
+            await self.conn.send(p.AppUsageReport(entries=apps[:2000]))
+
+    def _count_apps(self, users: set[str], day, delta: float) -> None:
+        """Programmzeit: je User die Apps mit mindestens einem laufenden Prozess."""
+        for user in users:
+            try:
+                uid = pwd.getpwnam(user).pw_uid
+            except KeyError:
+                continue
+            keys = set()
+            for pid in pids_of({uid}):
+                info = read_proc(pid)
+                if info is not None and (k := self.app_index.key_for(info, f"{STEAM_ROOT}/{user}/")):
+                    keys.add(k)
+            self.apptime.add(user, day, keys, delta)
+
+    def _collect_blocked_domains(self) -> None:
+        for cid, domain, source in self.dns.collect_blocked():
+            users = sorted(self.users_of(cid))
+            if users:
+                self.programs.record_domain(users[0], domain, source)
 
     # ---------- Server-Ereignisse ----------
 
@@ -382,3 +414,4 @@ class Agent:
             await self.tray.stop()
             self.procevents.stop()
             self.usage.save()
+            self.apptime.save()
