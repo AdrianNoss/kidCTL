@@ -36,7 +36,7 @@ erhöhen (ein Test prüft die Übereinstimmung). Der Server liefert `./data/repo
 ## Kinderrechner: Repo einrichten (einmalig, als root)
 
 ```bash
-curl -O https://kids.nossco.de/repo/kidctl-repo-client.sh   # oder aus dem Repo-Checkout
+curl -O https://kids.nossco.de/repo/kidctl-repo-client.sh   # liefert kidctl-repo-build.sh mit aus
 sudo bash kidctl-repo-client.sh https://kids.nossco.de/repo <FINGERABDRUCK>          # Dry-Run
 sudo bash kidctl-repo-client.sh https://kids.nossco.de/repo <FINGERABDRUCK> --apply
 sudo pacman -S kidctl        # Erstinstallation; danach Updates mit pacman -Syu
@@ -45,6 +45,3 @@ sudo pacman -S kidctl        # Erstinstallation; danach Updates mit pacman -Syu
 Das Skript prüft den heruntergeladenen Schlüssel gegen den Fingerabdruck, vertraut ihm lokal
 (`pacman-key --lsign-key`) und trägt `[kidctl]` mit `SigLevel = Required DatabaseRequired` in
 `/etc/pacman.conf` ein (Sicherung `pacman.conf.kidctl.bak`).
-
-> Hinweis: `kidctl-repo-client.sh` liegt nicht automatisch im Repo-Verzeichnis – bei Bedarf mit
-> nach `data/repo/` kopieren oder aus dem Git-Checkout verwenden.

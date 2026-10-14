@@ -4,7 +4,10 @@ FastAPI-App mit Eltern-WebUI und Agent-API (Kopplung + WebSocket).
 
 ## Betrieb (Docker/Traefik)
 
-1. `.env` aus `.env.example` anlegen, `SECRET_KEY` setzen.
+Ausführlich: [`docs/installation.md`](../docs/installation.md).
+
+1. `mkdir -p data && sudo chown 10001:10001 data` (Container läuft als UID 10001);
+   `.env` aus `.env.example` anlegen, `SECRET_KEY` setzen.
 2. In `docker-compose.yml` Traefik-Netzwerknamen und Host prüfen.
 3. `docker compose up -d --build`
 4. Optional Web Push: `docker compose run --rm kidctl python -m app.cli vapid-keys` → Ausgabe in

@@ -4,7 +4,7 @@
 #   kidctl-repo-build.sh [--apply]
 #
 # Ergebnis: ${KIDCTL_REPO_HOME:-~/.local/share/kidctl-repo}/repo mit kidctl.db (signiert),
-# Paket + .sig und dem öffentlichen Schlüssel kidctl-repo.asc. Ältere Paketversionen werden
+# Paket + .sig, dem öffentlichen Schlüssel kidctl-repo.asc und kidctl-repo-client.sh. Ältere Paketversionen werden
 # entfernt (repo-add -R). Danach: kidctl-repo-publish.sh.
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -26,5 +26,7 @@ run mkdir -p "$REPO_DIR"
    makepkg --force --cleanbuild --nodeps --sign --key "$fpr")
 run repo-add --remove --sign --key "$fpr" "$REPO_DIR/$REPO_NAME.db.tar.zst" "$REPO_DIR/$pkg"
 run cp "$REPO_HOME/$PUBKEY_NAME" "$REPO_DIR/$PUBKEY_NAME"
+# Einrichtungsskript für Kinderrechner mit ausliefern (…/repo/kidctl-repo-client.sh)
+run install -m644 "$HERE/kidctl-repo-client.sh" "$REPO_DIR/kidctl-repo-client.sh"
 (( APPLY )) && { echo "Repo:"; ls -1 "$REPO_DIR"; }
 true

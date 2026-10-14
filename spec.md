@@ -622,3 +622,9 @@ Verlängerungsanfragen.
   setzt `10_linux` zurück, Hook stellt `--unrestricted` wieder her; gesperrtes root +
   `systemd.unit=emergency.target` → keine Shell, normaler Start. Nicht getestet (UEFI/TPM nötig):
   systemd-boot, Limine, Secure Boot, TPM. VM danach auf `vor-haertung` zurückgesetzt.
+- 2026-10-14: Dokumentation: `README.md` (Überblick, Funktionen, Architektur, Struktur, Entwicklung,
+  Lizenz) und `docs/installation.md` (Server mit Docker/Traefik inkl. Datenordner-Rechten, .env,
+  VAPID, erster Eltern-Account, PWA; Pacman-Repo; Kinderrechner: Accounts, Repo, Paket, Kopplung,
+  Zuordnung; WebUI-Einstellungen; Updates; Deinstallation). `kidctl-repo-build.sh` legt
+  `kidctl-repo-client.sh` mit ins Repo (abrufbar unter `/repo/kidctl-repo-client.sh`; vorher
+  wegen `rsync --delete` dort nicht dauerhaft ablegbar). Getestet: Syntaxprüfung (`bash -n`).
