@@ -665,3 +665,9 @@ Verlängerungsanfragen.
   `--`. Server verteilt keine ungültigen Benutzernamen. Version 0.9.0. Getestet: 30 neue Agent-Tests
   (`test_hardening.py`: Ablehnung der Angriffswerte, Sperrliste ohne eingeschleuste Namen/Admins,
   Unbound-Zonen nur gültige Domains, HTTPS-Pflicht, keine Weiterleitung), Agent 110, Server 57.
+- 2026-10-14: WebUI neu gestaltet: warmes Papier-Grau, ein Akzent (Tannengrün), Serifen-Überschriften,
+  Systemschriften (keine Webfonts/Drittanfragen), automatischer Dunkelmodus. Aktionen als Buttons statt
+  Text-Links (Navigation, Chat/Statistik/Einstellungen, Zurück), Status als Pills, einheitlich gezeichnete
+  Checkboxen; Bundles/Sperrlisten als Auswahlkacheln, je nach Filtermodus nur die passenden Abschnitte
+  (reines CSS `:has`). Getestet: Server-Tests (57, Markup-Prüfungen angepasst), Screenshots hell/dunkel/
+  Handy (Firefox headless) von Übersicht, Kind, Statistik, Gerät, Chat.

@@ -1,27 +1,32 @@
 {% extends "base.html" %}
 {% block title %}Geräte – KidCTL{% endblock %}
 {% block content %}
-<h1>Geräte</h1>
+<div class="page-head"><h1>Geräte</h1></div>
 <section class="card">
   {% if devices %}
+  <div class="scroll">
   <table>
     <tr><th>Gerät</th><th>Host</th><th>Status</th><th>Zuletzt gesehen</th></tr>
     {% for d in devices %}
     <tr{% if d.revoked_at %} class="muted"{% endif %}>
-      <td><a href="/devices/{{ d.id }}">{{ d.name }}</a></td>
+      <td><a href="/devices/{{ d.id }}" class="entity">{{ d.name }}</a></td>
       <td>{{ d.hostname }}</td>
-      <td>{% if d.revoked_at %}widerrufen{% elif online(d.id) %}<span class="ok">online</span>{% else %}offline{% endif %}
-          {% if d.integrity_failed %}<span class="warn">Integritätsfehler</span>{% endif %}
-          {% if d.protocol_unsupported and not d.revoked_at %}<span class="warn">Agent veraltet</span>{% endif %}</td>
-      <td>{{ d.last_seen_at | localtime }}</td>
+      <td>{% if d.revoked_at %}<span class="pill danger">widerrufen</span>{% elif online(d.id) %}<span class="pill ok">online</span>{% else %}<span class="pill">offline</span>{% endif %}
+          {% if d.integrity_failed %}<span class="pill warn">Integritätsfehler</span>{% endif %}
+          {% if d.protocol_unsupported and not d.revoked_at %}<span class="pill warn">Agent veraltet</span>{% endif %}</td>
+      <td class="num">{{ d.last_seen_at | localtime }}</td>
     </tr>
     {% endfor %}
   </table>
+  </div>
   {% else %}<p class="muted">Noch keine Geräte gekoppelt.</p>{% endif %}
 </section>
-<form method="post" action="/devices/pair" class="card row">
-  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-  <input name="name" placeholder="Gerätename, z. B. Laptop Max" maxlength="128">
-  <button type="submit">Gerät hinzufügen</button>
+<form method="post" action="/devices/pair" class="card">
+  <h2>Gerät hinzufügen</h2>
+  <div class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <input name="name" placeholder="Gerätename, z. B. Laptop Max" maxlength="128" aria-label="Gerätename">
+    <button type="submit">Kopplungscode erzeugen</button>
+  </div>
 </form>
 {% endblock %}

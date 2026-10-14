@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Eltern – KidCTL{% endblock %}
 {% block content %}
-<h1>Eltern-Accounts</h1>
+<div class="page-head"><h1>Eltern-Accounts</h1></div>
 <section class="card">
   <table>
     {% for p in parents %}
     <tr>
-      <td>{{ p.username }}{% if p.display_name %} ({{ p.display_name }}){% endif %}</td>
+      <td><strong>{{ p.username }}</strong>{% if p.display_name %} <span class="muted">{{ p.display_name }}</span>{% endif %}</td>
       <td class="right">
         {% if p.id != current_parent.id %}
         <form method="post" action="/parents/{{ p.id }}/delete" class="inline"
@@ -14,7 +14,7 @@
           <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
           <button type="submit" class="danger small">Löschen</button>
         </form>
-        {% else %}<span class="muted">angemeldet</span>{% endif %}
+        {% else %}<span class="pill ok">angemeldet</span>{% endif %}
       </td>
     </tr>
     {% endfor %}

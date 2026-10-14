@@ -6,27 +6,29 @@
   <title>{% block title %}KidCTL{% endblock %}</title>
   <link rel="stylesheet" href="/static/style.css">
   <link rel="manifest" href="/manifest.webmanifest">
-  <meta name="theme-color" content="#2563eb">
+  <meta name="theme-color" content="#fffdf8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1d1c19" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="/static/icon-192.png">
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <script src="/static/app.js" defer></script>
 </head>
 <body>
-{% if current_parent %}
-<header>
-  <nav>
-    <a href="/" class="brand">KidCTL</a>
-    <a href="/children">Kinder</a>
-    <a href="/devices">Geräte</a>
-    <a href="/parents">Eltern</a>
-    <a href="/settings">Benachrichtigungen</a>
-  </nav>
-  <form method="post" action="/logout" class="inline">
-    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-    <span class="muted">{{ current_parent.display_name or current_parent.username }}</span>
-    <button type="submit" class="link">Abmelden</button>
-  </form>
+{% if current_parent %}{% set path = request.url.path %}
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="/" class="brand"><span class="mark" aria-hidden="true"></span>KidCTL</a>
+    <nav class="nav">
+      {% for href, label in [("/", "Übersicht"), ("/children", "Kinder"), ("/devices", "Geräte"), ("/parents", "Eltern"), ("/settings", "Benachrichtigungen")] %}
+      <a href="{{ href }}" class="btn ghost small{% if (href == '/' and path == '/') or (href != '/' and path.startswith(href)) %} active{% endif %}">{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <form method="post" action="/logout" class="who">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <span class="muted">{{ current_parent.display_name or current_parent.username }}</span>
+      <button type="submit" class="secondary small">Abmelden</button>
+    </form>
+  </div>
 </header>
 {% endif %}
 <main>

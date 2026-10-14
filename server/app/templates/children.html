@@ -1,29 +1,33 @@
 {% extends "base.html" %}
 {% block title %}Kinder – KidCTL{% endblock %}
 {% block content %}
-<h1>Kinder</h1>
+<div class="page-head"><h1>Kinder</h1></div>
 <section class="card">
   {% if children %}
   <table>
     {% for c in children %}
     <tr>
-      <td><a href="/children/{{ c.id }}">{{ c.name }}</a></td>
-      <td><a href="/children/{{ c.id }}/chat">Chat</a>{% if (pending or {}).get(c.id) %} <span class="badge">{{ pending[c.id] }} offen</span>{% endif %}</td>
-      <td class="right">
+      <td><a href="/children/{{ c.id }}" class="entity">{{ c.name }}</a></td>
+      <td class="right"><div class="actions">
+        <a href="/children/{{ c.id }}" class="btn secondary small">Einstellungen</a>
+        <a href="/children/{{ c.id }}/chat" class="btn secondary small">Chat{% if (pending or {}).get(c.id) %} <span class="count" title="offene Anfragen">{{ pending[c.id] }}</span>{% endif %}</a>
         <form method="post" action="/children/{{ c.id }}/delete" class="inline"
               onsubmit="return confirm('Kind mit allen Regeln löschen?')">
           <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
           <button type="submit" class="danger small">Löschen</button>
         </form>
-      </td>
+      </div></td>
     </tr>
     {% endfor %}
   </table>
   {% else %}<p class="muted">Noch keine Kinder angelegt.</p>{% endif %}
 </section>
-<form method="post" action="/children" class="card row">
-  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-  <input name="name" placeholder="Name" required maxlength="64">
-  <button type="submit">Kind anlegen</button>
+<form method="post" action="/children" class="card">
+  <h2>Kind anlegen</h2>
+  <div class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <input name="name" placeholder="Name" required maxlength="64" aria-label="Name">
+    <button type="submit">Anlegen</button>
+  </div>
 </form>
 {% endblock %}

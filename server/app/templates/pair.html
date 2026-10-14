@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Gerät koppeln – KidCTL{% endblock %}
 {% block content %}
-<h1>Gerät koppeln: {{ name }}</h1>
+<div class="page-head"><div><span class="eyebrow">Gerät koppeln</span><h1>{{ name }}</h1></div></div>
 <section class="card">
   <p>Kopplungscode (einmalig, {{ minutes }} Minuten gültig bis {{ expires_at | localtime("%H:%M") }} Uhr):</p>
   <p class="code">{{ code[:4] }}-{{ code[4:] }}</p>
   <p>Auf dem Kinderrechner ausführen:</p>
   <pre>sudo kidctl enroll {{ base_url }} {{ code }}</pre>
-  <p><a href="/devices">Zurück zu den Geräten</a></p>
+  <a href="/devices" class="btn secondary">Zurück zu den Geräten</a>
 </section>
 {% endblock %}

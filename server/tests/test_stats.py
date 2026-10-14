@@ -61,7 +61,7 @@ def test_domain_events_in_log(client, parent):
             name="tiktok.com", detail="von Eltern gesperrt")]).model_dump_json())
         _sync(ws)
     page = client.get(f"/children/{cid}").text
-    assert re.search(r"Website</small>\s*tiktok\.com", page) and "von Eltern gesperrt" in page
+    assert re.search(r"Website</span>\s*tiktok\.com", page) and "von Eltern gesperrt" in page
 
 
 def test_blocklist_refs_carry_name_and_report_flag(client, parent, monkeypatch):

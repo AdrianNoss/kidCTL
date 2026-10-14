@@ -31,16 +31,16 @@
           <input type="hidden" name="action" value="approve">
           <label>+ <input type="number" name="minutes" min="0" max="{{ max_extra }}" step="5" value="{{ m.requested_minutes or 0 }}" class="short"> min</label>
           <label>bis <input type="time" name="window_end" value="{{ m.requested_window_end.strftime('%H:%M') if m.requested_window_end else '' }}"></label>
-          <button type="submit" class="small">Angepasst genehmigen</button>
+          <button type="submit" class="small secondary">Angepasst genehmigen</button>
         </form>
       </details>
     </div>
     {% elif m.status == "approved" %}
-    <div class="ok">Genehmigt{% if m.approved_minutes %}: +{{ m.approved_minutes }} min{% endif %}{% if m.approved_window_end %}{{ "," if m.approved_minutes else ":" }} bis {{ m.approved_window_end.strftime("%H:%M") }} Uhr{% endif %}</div>
+    <div><span class="pill ok">Genehmigt</span> <span class="muted">{% if m.approved_minutes %}: +{{ m.approved_minutes }} min{% endif %}{% if m.approved_window_end %}{{ "," if m.approved_minutes else ":" }} bis {{ m.approved_window_end.strftime("%H:%M") }} Uhr{% endif %}</span></div>
     {% elif m.status == "rejected" %}
-    <div class="warn">Abgelehnt</div>
+    <div><span class="pill warn">Abgelehnt</span></div>
     {% elif m.status == "expired" %}
-    <div class="muted">Verfallen (Tag vorbei)</div>
+    <div><span class="pill">Verfallen (Tag vorbei)</span></div>
     {% endif %}
   {% else %}
     <div class="body">{{ m.body }}</div>

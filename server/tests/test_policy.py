@@ -141,7 +141,7 @@ def test_usage_summed_across_devices(client, parent):
 
         # 25 + 50 = 75 min bei 60 min Kontingent -> Überziehung angezeigt
         dash = client.get("/").text
-        assert "1:15 h von 1:00 h" in dash and "überzogen um 15 min" in dash
+        assert "1:15 h <span class=\"muted\">von 1:00 h" in dash and "überzogen um 15 min" in dash
 
 
 def test_reconnect_gets_usage_of_other_devices(client, parent):

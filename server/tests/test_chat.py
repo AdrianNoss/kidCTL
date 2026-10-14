@@ -97,7 +97,7 @@ def test_request_approve_adjusted(client, parent):
         req = _request(ws, today, minutes=60, window_end=time(21, 0))
         assert req.status == "pending" and req.kind == "extension_request"
 
-        assert "1 Anfrage(n) offen" in client.get("/").text
+        assert 'title="offene Anfragen">1<' in client.get("/").text
         page = client.get(f"/children/{child_id}/chat").text
         assert "Genehmigen" in page and "Hausaufgaben fertig" in page
 

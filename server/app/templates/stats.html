@@ -1,8 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Statistik {{ child.name }} – KidCTL{% endblock %}
 {% block content %}
-<h1>Statistik: {{ child.name }}</h1>
-<p><a href="/children/{{ child.id }}">Einstellungen</a> · <a href="/children/{{ child.id }}/chat">Chat</a></p>
+<div class="page-head">
+  <div><span class="eyebrow">Statistik</span><h1>{{ child.name }}</h1></div>
+  <div class="actions">
+    <a href="/children/{{ child.id }}" class="btn secondary">Einstellungen</a>
+    <a href="/children/{{ child.id }}/chat" class="btn secondary">Chat</a>
+  </div>
+</div>
 
 <div class="tiles">
   <div class="tile"><div class="tile-label">Diese Woche</div><div class="tile-value">{{ fmt_minutes(sums.this_week) }}</div></div>
@@ -44,11 +49,11 @@
 
 <section class="card viz">
   <h2>Programme</h2>
-  <p class="row">
-    {% if app_days == 1 %}<strong>Heute</strong> · <a href="?range=7">Letzte 7 Tage</a>
-    {% else %}<a href="?range=1">Heute</a> · <strong>Letzte 7 Tage</strong>{% endif %}
-  </p>
-  <p class="muted">Zeit, in der ein Programm während der Bildschirmzeit geöffnet war. Parallel geöffnete Programme zählen jeweils voll.</p>
+  <div class="segmented">
+    {% if app_days == 1 %}<span class="active">Heute</span><a href="?range=7">Letzte 7 Tage</a>
+    {% else %}<a href="?range=1">Heute</a><span class="active">Letzte 7 Tage</span>{% endif %}
+  </div>
+  <p class="muted"><small>Zeit, in der ein Programm während der Bildschirmzeit geöffnet war. Parallel geöffnete Programme zählen jeweils voll.</small></p>
   {% if apps %}
   <div class="hbars">
     {% for a in apps %}
