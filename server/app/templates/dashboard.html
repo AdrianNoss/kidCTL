@@ -29,6 +29,7 @@
     <tr>
       <td><a href="/devices/{{ d.id }}">{{ d.name }}</a></td>
       <td>{% if online(d.id) %}<span class="ok">online</span>{% else %}<span class="muted">offline</span>{% endif %}
+          {% if d.integrity_failed %}<span class="warn">Integritätsfehler</span>{% endif %}
           {% if d.protocol_unsupported %}<span class="warn">Agent veraltet</span>{% endif %}</td>
       <td>{{ d.last_seen_at | localtime }}</td>
     </tr>

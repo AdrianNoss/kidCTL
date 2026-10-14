@@ -34,4 +34,7 @@ def state_dir(tmp_path, monkeypatch):
     # Ebenso nie echte nft-/systemctl-Aufrufe für den DNS-Filter
     from kidctl_agent import dnsfilter
     monkeypatch.setattr(dnsfilter.DnsFilter.__init__, "__defaults__", (fake_run,))
+    from kidctl_agent import integrity
+    monkeypatch.setattr(integrity, "_run", fake_run)
+    monkeypatch.setattr(integrity.check_dns, "__defaults__", (fake_run,))
     return d

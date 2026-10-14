@@ -14,6 +14,21 @@
   </dl>
 </section>
 
+{% if device.integrity_at %}
+<section class="card">
+  <h2>Integrität</h2>
+  <p class="muted">Stand {{ device.integrity_at | localtime }}{% if not device.integrity_failed %} – alle Schutzmaßnahmen intakt{% endif %}</p>
+  <table>
+    {% for c in device.integrity_checks %}
+    <tr>
+      <td>{% if c.ok %}<span class="ok">✔</span>{% else %}<span class="warn">✘</span>{% endif %}</td>
+      <td>{{ c.label }}{% if c.detail %}<br><small class="{{ 'warn' if not c.ok else 'muted' }}">{{ c.detail }}</small>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endif %}
+
 <section class="card">
   <h2>Benutzer-Zuordnung</h2>
   <p class="muted">Nicht zugeordnete Linux-Benutzer werden nie eingeschränkt.</p>

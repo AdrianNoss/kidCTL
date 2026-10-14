@@ -280,9 +280,27 @@ class BlockedReport(BaseModel):
     events: list[BlockedEvent] = Field(max_length=500)
 
 
+# ---------- Integrität ----------
+# Der Agent prüft regelmäßig, ob seine Schutzmaßnahmen intakt sind, repariert, was er selbst
+# verwaltet (nftables, Resolver, Mounts), und meldet den Zustand bei Änderung und nach jedem
+# Verbindungsaufbau. Der Server alarmiert die Eltern bei neu fehlschlagenden Prüfungen.
+
+
+class IntegrityCheck(BaseModel):
+    id: str = Field(max_length=64)       # z. B. "pam", "nsswitch", "dns:1"
+    label: str = Field(max_length=255)
+    ok: bool
+    detail: str = Field(default="", max_length=500)
+
+
+class IntegrityReport(BaseModel):
+    type: Literal["integrity"] = "integrity"
+    checks: list[IntegrityCheck] = Field(max_length=100)
+
+
 AgentMessage = Annotated[
     Union[Hello, Ping, Pong, ReportUsers, ChatSend, ExtensionRequest, ChatSync, PolicyAck,
-          UsageReport, ReportApps, BlockedReport],
+          UsageReport, ReportApps, BlockedReport, IntegrityReport],
     Field(discriminator="type")]
 ServerMessage = Annotated[
     Union[Welcome, Error, Ping, Pong, Ack, ChatMessage, Policy, UsageUpdate],

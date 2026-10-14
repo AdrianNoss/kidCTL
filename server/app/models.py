@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from datetime import date, datetime, time, timezone
 
 from sqlalchemy import (
@@ -126,6 +128,16 @@ class Device(Base):
     alert_after_hours: Mapped[int] = mapped_column(Integer, default=48)
     policy_version: Mapped[str] = mapped_column(String(64), default="")  # vom Agenten bestätigt
     offline_alerted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    integrity_json: Mapped[str] = mapped_column(Text, default="")  # letzte IntegrityReport.checks
+    integrity_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    @property
+    def integrity_checks(self) -> list[dict]:
+        return json.loads(self.integrity_json) if self.integrity_json else []
+
+    @property
+    def integrity_failed(self) -> list[dict]:
+        return [c for c in self.integrity_checks if not c.get("ok")]
 
     users: Mapped[list[DeviceUser]] = relationship(
         back_populates="device", cascade="all, delete-orphan", order_by="DeviceUser.username")

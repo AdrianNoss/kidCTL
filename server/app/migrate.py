@@ -30,6 +30,9 @@ COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
     # 2026-10-14: Website-Filter (neue Spalte statt web_filter_mode, deren Standard „whitelist“ war)
     ("child", "web_mode", "VARCHAR(16) NOT NULL DEFAULT 'off'"),
     ("child", "safesearch", "BOOLEAN NOT NULL DEFAULT 1"),
+    # 2026-10-14: Integritätsprüfung
+    ("device", "integrity_json", "TEXT NOT NULL DEFAULT ''"),
+    ("device", "integrity_at", "DATETIME"),
 ]
 
 

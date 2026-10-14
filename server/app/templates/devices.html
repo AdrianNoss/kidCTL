@@ -11,6 +11,7 @@
       <td><a href="/devices/{{ d.id }}">{{ d.name }}</a></td>
       <td>{{ d.hostname }}</td>
       <td>{% if d.revoked_at %}widerrufen{% elif online(d.id) %}<span class="ok">online</span>{% else %}offline{% endif %}
+          {% if d.integrity_failed %}<span class="warn">Integritätsfehler</span>{% endif %}
           {% if d.protocol_unsupported and not d.revoked_at %}<span class="warn">Agent veraltet</span>{% endif %}</td>
       <td>{{ d.last_seen_at | localtime }}</td>
     </tr>

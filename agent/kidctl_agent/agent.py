@@ -18,6 +18,7 @@ from .connection import Connection
 from .enforcer import Enforcer
 from .loginlock import LoginLock, is_admin
 from .rules import Decision, day_limits, evaluate
+from . import integrity
 from .apps import scan_apps
 from .dnsfilter import DnsFilter
 from .kidmounts import KidMounts
@@ -55,6 +56,7 @@ class Agent:
         self.mounts = KidMounts()
         self.dns = DnsFilter()
         self.device = device
+        self._integrity: list[p.IntegrityCheck] | None = None  # zuletzt gemeldet
         self.procevents = ProcEvents(self.programs.on_exec)
         self.apps: list[p.AppEntry] = []
         self._sessions: list = []
@@ -142,6 +144,7 @@ class Agent:
             await asyncio.sleep(REPORT_EVERY)
             await self.send_usage()
             await self.programs.flush(self.conn)
+            await self.check_integrity()
             if boottime() - last_apps >= APPS_EVERY or self.programs.base_outdated():
                 last_apps = boottime()  # nach pacman-Updates: Apps und Basisliste neu
                 self.refresh_apps()
@@ -180,6 +183,44 @@ class Agent:
         except Exception:
             log.exception("Website-Filter nicht anwendbar")
 
+    def web_children(self) -> dict[int, set[str]]:
+        if self.policy is None:
+            return {}
+        eligible = self.decisions(self.now_local())
+        out = {}
+        for c in self.policy.children:
+            users = {u for u in self.users_of(c.id) if u in eligible}
+            if c.web.mode != "off" and users:
+                out[c.id] = users
+        return out
+
+    def _run_checks(self) -> list[p.IntegrityCheck]:
+        return ([integrity.check_pam(), integrity.check_nsswitch(), integrity.check_browser_policies()]
+                + integrity.check_noexec(self.programs.users())
+                + integrity.check_dns(self.web_children()))
+
+    async def check_integrity(self) -> None:
+        """Prüfen, Selbstverwaltetes (nftables, Resolver, Mounts) reparieren, bei Änderung melden."""
+        try:
+            checks = await asyncio.to_thread(self._run_checks)
+            broken = [c for c in checks if not c.ok and c.id.split(":")[0] in ("dns", "home", "noexec")]
+            if broken:
+                log.warning("Integrität: %s – versuche Wiederherstellung",
+                            "; ".join(f"{c.label}: {c.detail}" for c in broken))
+                self.dns.reset()
+                await self.sync_mounts()
+                await self.sync_dns()
+                checks = await asyncio.to_thread(self._run_checks)
+        except Exception:
+            log.exception("Integritätsprüfung fehlgeschlagen")
+            return
+        failed = [c for c in checks if not c.ok]
+        if checks != self._integrity:
+            for c in failed:
+                log.error("Integrität verletzt: %s – %s", c.label, c.detail)
+            if self.online and await self.conn.send(p.IntegrityReport(checks=checks)):
+                self._integrity = checks
+
     def app_exes(self) -> set[str]:
         return {a.key[4:] for a in self.apps if a.key.startswith("exe:")}
 
@@ -199,6 +240,8 @@ class Agent:
         await self.send_usage()
         await self.flush_outbox()
         await self.programs.flush(conn)
+        self._integrity = None  # nach Verbindungsaufbau immer melden
+        await self.check_integrity()
 
     async def flush_outbox(self) -> None:
         """Gepufferte Nachrichten/Anfragen senden; der Server ist idempotent (client_msg_id)."""

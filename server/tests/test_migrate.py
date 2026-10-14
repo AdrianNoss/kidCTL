@@ -84,3 +84,13 @@ def test_child_web_columns_migrated(tmp_path):
     migrate.run_migrations(eng)
     with eng.connect() as c:
         assert c.execute(text("SELECT web_mode, safesearch FROM child")).one() == ("off", 1)
+
+
+def test_device_integrity_columns_migrated(tmp_path):
+    eng = create_engine(f"sqlite:///{tmp_path}/alt.db")
+    with eng.begin() as c:
+        c.execute(text("CREATE TABLE device (id INTEGER PRIMARY KEY, name VARCHAR(128))"))
+        c.execute(text("INSERT INTO device (name) VALUES ('alt')"))
+    migrate.run_migrations(eng)
+    with eng.connect() as c:
+        assert c.execute(text("SELECT integrity_json, integrity_at FROM device")).one() == ("", None)

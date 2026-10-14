@@ -292,6 +292,12 @@ Verlängerungsanfragen.
   - Gerät hat sich länger als X Stunden nicht gemeldet (Standard 48 h, pro Gerät einstellbar).
     Prüfung alle 5 min, ein Alarm pro Offline-Phase (erneut erst nach erneuter Meldung).
   - Integritätsfehler des Agenten (z. B. nftables-Regeln fehlen, PAM-Konfiguration verändert).
+    Umsetzung: Agent prüft alle 60 s (und nach jedem Verbindungsaufbau) PAM-Block, nsswitch,
+    Browser-Policies, noexec (`/tmp`, `/var/tmp`, `/dev/shm`, Kinder-Homes), Resolver je Kind und
+    nftables-Umleitung/DoT-Sperre je Kind-UID. Selbst verwaltete Teile (nftables, Resolver, Mounts)
+    stellt er sofort wieder her; Dateien unter `/etc` meldet er nur (Agent läuft mit
+    `ProtectSystem`). Meldung an den Server nur bei Änderung; Push-Alarm nur für **neu**
+    fehlschlagende Prüfungen. WebUI: Abschnitt „Integrität“ je Gerät, Hinweis in Übersicht/Geräteliste.
 
 ## Verteilung & Updates
 
@@ -322,6 +328,9 @@ Verlängerungsanfragen.
   DNS-Filter.
 - Programme, die systemd-resolved über D-Bus/Varlink fragen (z. B. `resolvectl`), umgehen die
   Umleitung; Browser und glibc-Programme nicht (nsswitch angepasst).
+- Zwischen zwei Integritätsprüfungen (≤ 60 s) kann eine entfernte nftables-Tabelle den DNS-Filter
+  offen lassen. Hinweis: `nftables.service` leert beim (Neu-)Laden den gesamten Regelsatz
+  (`flush ruleset`) – der Agent stellt seine Tabelle danach im nächsten Takt wieder her.
 - Eine Freigabe-Ausnahme im Blacklist-Modus gilt nicht für spezifischere Einträge einer Sperrliste
   (z. B. Ausnahme `example.com`, Liste sperrt `ads.example.com`).
 - Kein Browserverlauf, keine Bilder/Dateien im Chat, keine Lesebestätigungen.
@@ -547,3 +556,13 @@ Verlängerungsanfragen.
 - 2026-10-14: Website-Filter im Browser vom Nutzer bestätigt (VM, Firefox als `kind`, Blacklist +
   SafeSearch): `about:policies` zeigt DNSOverHTTPS gesperrt, gesperrte Domain nicht erreichbar,
   normale Seiten laden, Google-SafeSearch und YouTube eingeschränkt aktiv.
+- 2026-10-14: Integritätsprüfung (Agent + Server, Paket 0.6.0). Getestet: Agent 72 pytest-Tests (neu:
+  Dateiprüfungen PAM/nsswitch/Browser-Policies ok/kaputt/fehlend, noexec-Prüfungen, nftables-Regel
+  nur zusammenhängend gültig, Reparatur + Meldung nur bei Änderung, /etc-Fehler nur gemeldet);
+  Server 53 (neu: Alarm nur bei neu fehlschlagender Prüfung, erneuter Alarm nach Behebung +
+  Wiederauftreten, Anzeige Geräteseite/Liste/Übersicht, Migration `device.integrity_*`). VM: nach
+  Upgrade alle 6 Prüfungen grün; nftables-Tabelle gelöscht → nach ≈ 45 s vom Agenten
+  wiederhergestellt, tiktok.com für `kind` wieder gesperrt; PAM-Block entfernt → im nächsten Takt
+  gemeldet, Server protokolliert Integritätsfehler und löst Alarm aus (Push im Dev-Server nicht
+  konfiguriert); nach Wiederherstellung wieder „keine Fehler“.
+

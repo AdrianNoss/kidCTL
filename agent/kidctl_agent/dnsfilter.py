@@ -237,6 +237,11 @@ class DnsFilter:
             else:
                 log.error("nftables-Regeln nicht anwendbar: %s", r.stderr.strip())
 
+    def reset(self) -> None:
+        """Gemerkten Zustand vergessen -> nächstes apply() schreibt alles neu (Reparatur)."""
+        self._applied.clear()
+        self._nft = None
+
     def _unit_active(self, cid: int) -> bool:
         return self.run("systemctl", "is-active", "--quiet", UNIT.format(cid)).returncode == 0
 
