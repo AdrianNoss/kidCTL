@@ -39,7 +39,7 @@ async def _refresh_lists_forever() -> None:
         await asyncio.sleep(webfilter.REFRESH_SECONDS)
 
 
-app = FastAPI(title="kidctl", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(title="KidCTL", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
 
 # Pacman-Repository (signiert; per kidctl-repo-publish.sh nach <data>/repo kopiert)

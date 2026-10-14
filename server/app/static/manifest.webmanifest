@@ -1,6 +1,6 @@
 {
-  "name": "kidctl",
-  "short_name": "kidctl",
+  "name": "KidCTL",
+  "short_name": "KidCTL",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

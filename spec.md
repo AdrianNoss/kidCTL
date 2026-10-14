@@ -1,7 +1,11 @@
 # Parental Control für Arch Linux – Spezifikation
 
 Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Serverseite für Bildschirmzeit, Chat/Verlängerungen, PWA/Web Push, Policy-Verteilung und Offline-Alarm umgesetzt; Agent (Bildschirmzeit, PAM-Login-Sperre), Tray-App und Paket umgesetzt.
-Arbeitstitel: `kidctl` (Name noch nicht final). Deploy unter `kids.nossco.de` (Annahme).
+Projektname: **KidCTL** (Paket, Befehle und Pfade technisch `kidctl`). Deploy unter `kids.nossco.de` (Annahme).
+Lizenz: PolyForm Noncommercial 1.0.0 (`LICENSE`) – Nutzung, Änderung und Weitergabe frei, außer zu
+kommerziellen Zwecken; der „Required Notice“ mit Adrian Noss als ursprünglichem Autor muss bei jeder
+Weitergabe erhalten bleiben. Hinweis: Wegen des Verbots kommerzieller Nutzung ist das im Sinne der
+OSI „source-available“, nicht „Open Source“.
 
 ## Hintergrund
 
@@ -357,8 +361,7 @@ Verlängerungsanfragen.
 
 ## Offene Punkte
 
-- Finaler Projektname (Arbeitstitel `kidctl`) und Subdomain (Annahme `kids.nossco.de`).
-- Lizenz (PKGBUILD derzeit Platzhalter `LicenseRef-kidctl`).
+- Subdomain (Annahme `kids.nossco.de`).
 
 ## Changelog
 
@@ -605,4 +608,8 @@ Verlängerungsanfragen.
   Signature“, Agent läuft; manipulierte DB-Signatur → pacman verweigert die Synchronisation. Danach
   VM auf `vor-repo` zurückgesetzt (Testschlüssel nicht mehr vertraut). Außerdem `vm.sh stop` fährt
   per SSH herunter (powerdevil fing den ACPI-Knopf bei angemeldeter Plasma-Sitzung ab).
-
+- 2026-10-14: Projektname KidCTL und Lizenz PolyForm Noncommercial 1.0.0 festgelegt: `LICENSE` mit
+  „Required Notice“ (Adrian Noss als ursprünglicher Autor), PKGBUILD `license=(PolyForm-Noncommercial-1.0.0)`
+  und Installation nach `/usr/share/licenses/kidctl/`. Anzeigename „KidCTL“ in WebUI, PWA-Manifest,
+  Push-Testnachricht, TOTP-Issuer (nur neue QR-Codes), Tray, .desktop und SDDM-Theme; Paket-, Befehls-,
+  Pfad- und Unit-Namen bleiben `kidctl`. Getestet: Server-/Agent-/Tray-Tests, Paketbau mit Lizenzdatei.

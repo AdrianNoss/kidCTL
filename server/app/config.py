@@ -50,7 +50,7 @@ def load_settings() -> Settings:
         cookie_secure=_bool("COOKIE_SECURE", not dev),
         base_url=os.environ.get("BASE_URL", "https://kids.nossco.de").rstrip("/"),
         timezone=os.environ.get("TZ_HOME", "Europe/Berlin"),
-        totp_issuer=os.environ.get("TOTP_ISSUER", "kidctl"),
+        totp_issuer=os.environ.get("TOTP_ISSUER", "KidCTL"),
         vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY", ""),
         vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY", ""),
         vapid_subject=os.environ.get("VAPID_SUBJECT", ""),

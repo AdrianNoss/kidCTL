@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Anmelden – kidctl{% endblock %}
+{% block title %}Anmelden – KidCTL{% endblock %}
 {% block content %}
 <form method="post" action="/login" class="card narrow">
-  <h1>kidctl</h1>
+  <h1>KidCTL</h1>
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
   <label>Benutzername <input name="username" value="{{ username or '' }}" autocomplete="username" required autofocus></label>
   <label>Passwort <input type="password" name="password" autocomplete="current-password" required></label>

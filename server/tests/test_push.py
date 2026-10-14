@@ -113,7 +113,7 @@ def test_test_push_is_encrypted_and_signed(client, parent, monkeypatch):
     assert vapid.startswith("vapid t=") and f"k={os.environ['VAPID_PUBLIC_KEY']}" in vapid
     payload = json.loads(http_ece.decrypt(req["data"], private_key=key, auth_secret=auth,
                                           version="aes128gcm"))
-    assert payload["title"] == "kidctl" and payload["url"] == "/settings"
+    assert payload["title"] == "KidCTL" and payload["url"] == "/settings"
 
 
 def test_child_message_triggers_push(client, parent, monkeypatch):

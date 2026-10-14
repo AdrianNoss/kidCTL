@@ -6,7 +6,7 @@ pkgrel=1
 pkgdesc="Parental Control für KDE Plasma – Agent (Bildschirmzeit, Login-Sperre) und Tray-App"
 arch=(any)
 url="https://kids.nossco.de"
-license=(LicenseRef-kidctl)
+license=(PolyForm-Noncommercial-1.0.0)
 depends=(
   python python-pydantic python-websockets python-dbus-next pyside6
   libnotify util-linux systemd pam sddm plasma-desktop unbound nftables
@@ -25,6 +25,7 @@ package() {
   find "$lib" -name __pycache__ -prune -exec rm -rf {} +
   chmod -R u=rwX,go=rX "$lib"
   install -Dm755 "$_root/packaging/pam/kidctl-pam.sh" "$lib/kidctl-pam.sh"
+  install -Dm644 "$_root/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   install -Dm755 "$_root/packaging/mounts/kidctl-noexec.sh" "$lib/kidctl-noexec.sh"
   install -Dm644 "$_root/packaging/mounts/kidctl-noexec.service" "$pkgdir/usr/lib/systemd/system/kidctl-noexec.service"
 

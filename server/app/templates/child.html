@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ child.name }} – kidctl{% endblock %}
+{% block title %}{{ child.name }} – KidCTL{% endblock %}
 {% macro rule_row(key, label, rule) %}
 <tr>
   <td>{{ label }}</td>
@@ -116,7 +116,7 @@
       </select>
     </label>
     <p class="muted">„Nur protokollieren“ sperrt nichts, meldet aber, was gesperrt würde – zum gefahrlosen Einstieg.
-      Systemkomponenten (KDE/Plasma, kidctl) sind immer erlaubt. Terminals, Shells und Interpreter sind gesperrt,
+      Systemkomponenten (KDE/Plasma, KidCTL) sind immer erlaubt. Terminals, Shells und Interpreter sind gesperrt,
       solange sie nicht ausdrücklich freigegeben sind.</p>
     {% if catalog %}
     <div class="scroll">

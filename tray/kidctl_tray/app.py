@@ -21,7 +21,7 @@ class TrayApp:
         self.client = AgentClient(socket_path)
         self.window = ChatWindow()
         self.tray = QSystemTrayIcon(render_icon("…", "offline"))
-        self.tray.setToolTip("kidctl")
+        self.tray.setToolTip("KidCTL")
 
         self.menu = QMenu()
         self.status_action = QAction("Verbinde …", enabled=False)
@@ -38,7 +38,7 @@ class TrayApp:
         c.historyReceived.connect(self.window.set_history)
         c.messageReceived.connect(self.window.upsert)
         c.openRequestDialog.connect(self.request_extension)
-        c.errorReceived.connect(lambda msg: self.tray.showMessage("kidctl", msg))
+        c.errorReceived.connect(lambda msg: self.tray.showMessage("KidCTL", msg))
         self.window.sendText.connect(lambda text: c.send(t.TrayChatSend(body=text)))
         self.window.requestExtension.connect(self.request_extension)
         c.connect_to_agent()

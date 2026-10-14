@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=kidctl
+Name=KidCTL
 GenericName=Bildschirmzeit
 Comment=Restzeit, Nachrichten an die Eltern, Verlängerung anfordern
 Exec=/usr/bin/kidctl-tray

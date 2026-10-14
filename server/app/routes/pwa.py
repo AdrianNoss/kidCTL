@@ -84,6 +84,6 @@ def push_unsubscribe(sub: UnsubscribeIn, sess: ParentSession = Depends(csrf_prot
 
 @router.post("/push/test")
 def push_test(sess: ParentSession = Depends(csrf_protect)):
-    n = send_to_parents_sync("kidctl", "Test-Benachrichtigung – Push funktioniert.", "/settings",
+    n = send_to_parents_sync("KidCTL", "Test-Benachrichtigung – Push funktioniert.", "/settings",
                              tag="test", parent_id=sess.parent_id)
     return RedirectResponse(f"/settings?sent={n}", status_code=303)
