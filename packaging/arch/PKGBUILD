@@ -5,7 +5,7 @@ pkgver=0.8.0   # muss agent/kidctl_agent/__init__.py:__version__ entsprechen (Te
 pkgrel=1
 pkgdesc="Parental Control für KDE Plasma – Agent (Bildschirmzeit, Login-Sperre) und Tray-App"
 arch=(any)
-url="https://kids.nossco.de"
+url="https://github.com/AdrianNoss/kidCTL"
 license=(PolyForm-Noncommercial-1.0.0)
 depends=(
   python python-pydantic python-websockets python-dbus-next pyside6

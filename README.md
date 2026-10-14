@@ -58,6 +58,8 @@ Grundregel: root und Accounts in `wheel`/`sudo`/`admin` werden **nie** eingeschr
 
 ## Installation
 
+Quellcode: <https://github.com/AdrianNoss/kidCTL>
+
 Schritt für Schritt in **[docs/installation.md](docs/installation.md)**: Server, Pacman-Repository,
 Kinderrechner und WebUI. Kurzfassung:
 

@@ -25,7 +25,7 @@ In den Beispielen steht `kids.example.org` für die eigene Subdomain.
 ### 1.1 Code holen und Datenordner anlegen
 
 ```bash
-git clone <repo-url> /srv/kidctl
+git clone https://github.com/AdrianNoss/kidCTL.git /srv/kidctl
 cd /srv/kidctl
 mkdir -p data
 sudo chown 10001:10001 data     # der Container läuft als Benutzer 10001
