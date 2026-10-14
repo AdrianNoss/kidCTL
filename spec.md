@@ -211,6 +211,33 @@ Verlängerungsanfragen.
   - DNS-over-TLS (Port 853) für Kinder-UIDs gesperrt.
   - DNS-over-HTTPS in Firefox (`policies.json`) und Chromium per Policy deaktiviert.
 - Später optional: IP-Bindung im Whitelist-Modus (nftables-Set aus Resolver-Antworten).
+- Umsetzung (2026-10-14):
+  - Modus je Kind zusätzlich **Aus** (Standard; bestehende Kinder bleiben aus, bis Eltern
+    konfigurieren). Neue Spalte `child.web_mode` statt der nie genutzten `web_filter_mode`.
+  - Resolver: **Unbound** statt Blocky (Blocky gibt es nur im AUR; Unbound aus `extra`):
+    `kidctl-dns@<kind>.service` (DynamicUser, gehärtet), Port 5300 + Kind-ID, Konfiguration vom
+    Agenten unter `/run/kidctl/dns`. Whitelist: `local-zone "." always_nxdomain` + freigegebene
+    Domains `transparent` (inkl. Subdomains; CNAME-Ziele löst Unbound mit auf). Blacklist:
+    Listen/eigene Sperren `always_nxdomain`, eigene Freigaben als Ausnahmen. Rangfolge ohne
+    Doppelte: DoH-Anbieter > SafeSearch > Freigaben > Sperren/Listen.
+  - nftables-Tabelle `inet kidctl_dns`: Port 53 (TCP/UDP) der Kinder-UIDs → Resolver des Kindes,
+    Port 853 (TCP/UDP) gesperrt. Admins/nicht zugeordnete User unberührt.
+  - `nss-resolve` aus `/etc/nsswitch.conf` entfernt (`kidctl-nsswitch.sh`, Dry-Run/.bak, beim
+    Entfernen wiederhergestellt): sonst lösen glibc-Programme (z. B. Firefox) über den
+    resolved-Socket statt Port 53 auf und umgehen die Umleitung.
+  - Bekannte DoH-Anbieter immer gesperrt, inkl. `use-application-dns.net` (schaltet Firefox-Auto-
+    DoH ab); Browser-Policies: Firefox `DNSOverHTTPS` aus/gesperrt, Chromium `DnsOverHttpsMode=off`.
+  - **Dienst-Bundles** (entschieden 2026-10-14): YouTube, Wikipedia, ANTON, Scratch, Khan Academy,
+    Microsoft 365/Teams. Schulplattform: Eltern tragen die Domain selbst ein.
+  - **Sperrlisten**: HaGeZi Multi Normal/Pro/NSFW/Glücksspiel, OISD big/NSFW, StevenBlack
+    Unified/Porn/Glücksspiel; Vorauswahl **HaGeZi Multi Normal + NSFW** (entschieden 2026-10-14).
+    Server lädt benutzte Listen täglich (und sofort bei erster Auswahl), normalisiert sie (Domains,
+    hosts, Adblock) und verteilt sie unter `/api/v1/lists/<id>` (Geräte-Token, ETag/SHA-256); der
+    Agent prüft die Prüfsumme und cacht sie (offline nutzbar).
+  - **SafeSearch** je Kind, Standard an (Ergänzung, entschieden 2026-10-14): Google, Bing,
+    DuckDuckGo per CNAME, YouTube „eingeschränkt (moderat)“. Im Whitelist-Modus nur für
+    freigegebene Domains (keine Hintertür).
+  - Ressourcen: Vorauswahl ≈ 250 000 Domains → ≈ 110 MB RAM je Kind, Start < 1 s.
 
 ## Messenger
 
@@ -291,7 +318,12 @@ Verlängerungsanfragen.
   wird geprüft); reine Shell-Skript-Anwendungen unter `/usr` sind daher nicht sperrbar.
 - Programme, die freigegebene Apps intern aufrufen (z. B. `git` aus Kate), sind gesperrt, solange
   sie nicht selbst freigegeben werden (`git` bewusst nicht in der Basisliste: Aliase/Hooks).
-- Keine IP-Bindung im ersten Release.
+- Keine IP-Bindung im ersten Release: direkte IP-Adressen (auch DoH über IP) umgehen den
+  DNS-Filter.
+- Programme, die systemd-resolved über D-Bus/Varlink fragen (z. B. `resolvectl`), umgehen die
+  Umleitung; Browser und glibc-Programme nicht (nsswitch angepasst).
+- Eine Freigabe-Ausnahme im Blacklist-Modus gilt nicht für spezifischere Einträge einer Sperrliste
+  (z. B. Ausnahme `example.com`, Liste sperrt `ads.example.com`).
 - Kein Browserverlauf, keine Bilder/Dateien im Chat, keine Lesebestätigungen.
 - Kein Selbst-Update des Agenten (nur über Pacman).
 
@@ -299,7 +331,6 @@ Verlängerungsanfragen.
 
 - Finaler Projektname (Arbeitstitel `kidctl`) und Subdomain (Annahme `kids.nossco.de`).
 - Lizenz (PKGBUILD derzeit Platzhalter `LicenseRef-kidctl`).
-- Inhalt der Dienst-Bundles und Vorauswahl der Sperrlisten.
 
 ## Changelog
 
@@ -496,4 +527,20 @@ Verlängerungsanfragen.
   Nachbau danach entfernt. **Nicht getestet:** echtes Steam mit Spiel (braucht multilib + Konto).
   Außerdem dauerhafte Entwicklungsumgebung (`dev/devserver.sh`, `dev/webctl.py`), nachdem Scratch-
   Daten unter /tmp beim Host-Neustart verloren gingen.
+- 2026-10-14: Website-Filter (Server + Agent, Paket 0.5.0). Entscheidungen: Bundles YouTube,
+  Wikipedia, Lern-Apps, Microsoft 365; Schulplattform später; Vorauswahl HaGeZi Multi + NSFW;
+  SafeSearch je Kind (Standard an); Unbound statt Blocky (offizielle Repos). Getestet: Server 51
+  pytest-Tests (neu: Domain-Normalisierung, Listenformate, Einstellungen → Policy für
+  Whitelist/Blacklist/Aus, ungültige Eingaben, Listen-Download über simulierten HTTP-Server, Abruf
+  nur mit Geräte-Token + ETag/304, Migration `web_mode`/`safesearch` mit Alt-Schema); Agent 68
+  (neu: Zonen-Rangfolge ohne Doppelte, SafeSearch nur für Freigegebenes, Unbound-Konfiguration,
+  nftables-Regeln, Upstream aus resolv.conf, Listenabruf mit Prüfsumme/Cache, Anwenden mit Neustart
+  nur bei Änderung und Aufräumen). VM (Snapshot `vor-dns`): nsswitch angepasst, Policies installiert;
+  Whitelist (Wikipedia + google.com): Wikipedia ja, example.com/dns.google/YouTube nein,
+  www.google.com → forcesafesearch; DoT für `kind` verweigert, für `admin` möglich; Blacklist mit
+  echten Listen (250 844 Regeln, ≈ 110 MB, Start 0,4 s): Werbe-/NSFW-Domain und tiktok.com gesperrt,
+  example.com erreichbar, YouTube eingeschränkt, Bing strict; nach Neustart Filter aus dem Cache vor
+  Serververbindung aktiv (Resolver 9,66 s, Logins 9,79 s). Fehler gefunden: Unbound brauchte
+  `AF_NETLINK` (getifaddrs) – dabei bestätigt: ohne Resolver hat das Kind kein DNS (sperrt
+  geschlossen). **Nicht getestet:** Firefox/Chromium-Policy-Wirkung im Browser (Sichttest).
 

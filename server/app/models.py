@@ -72,7 +72,10 @@ class Child(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(64), unique=True)
     weekdays_same: Mapped[bool] = mapped_column(Boolean, default=True)  # UI: Werktage/Wochenende gleich
-    web_filter_mode: Mapped[str] = mapped_column(String(16), default="whitelist")  # whitelist | blacklist
+    # Veraltet (nie benutzt, Standard war „whitelist“) – ersetzt durch web_mode
+    web_filter_mode: Mapped[str] = mapped_column(String(16), default="whitelist")
+    web_mode: Mapped[str] = mapped_column(String(16), default="off")  # off | whitelist | blacklist
+    safesearch: Mapped[bool] = mapped_column(Boolean, default=True)
     program_mode: Mapped[str] = mapped_column(String(16), default="off")  # off | audit | enforce
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
@@ -198,6 +201,48 @@ class BlockedEvent(Base):
     name: Mapped[str] = mapped_column(String(255))
     detail: Mapped[str] = mapped_column(String(255), default="")
     audit: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class ChildWebBundle(Base):
+    """Gewähltes Dienst-Bundle (Whitelist-Modus)."""
+    __tablename__ = "child_web_bundle"
+    __table_args__ = (UniqueConstraint("child_id", "bundle"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    child_id: Mapped[int] = mapped_column(ForeignKey("child.id", ondelete="CASCADE"), index=True)
+    bundle: Mapped[str] = mapped_column(String(64))
+
+
+class ChildDomain(Base):
+    """Eigene Domain-Regel: allow (Whitelist/Ausnahme) bzw. deny (Blacklist)."""
+    __tablename__ = "child_domain"
+    __table_args__ = (UniqueConstraint("child_id", "domain", "action"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    child_id: Mapped[int] = mapped_column(ForeignKey("child.id", ondelete="CASCADE"), index=True)
+    domain: Mapped[str] = mapped_column(String(253))
+    action: Mapped[str] = mapped_column(String(8))  # allow | deny
+
+
+class ChildBlocklist(Base):
+    """Gewählte Sperrliste (Blacklist-Modus)."""
+    __tablename__ = "child_blocklist"
+    __table_args__ = (UniqueConstraint("child_id", "list_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    child_id: Mapped[int] = mapped_column(ForeignKey("child.id", ondelete="CASCADE"), index=True)
+    list_id: Mapped[str] = mapped_column(String(64))
+
+
+class BlocklistState(Base):
+    """Download-Stand einer Sperrliste (Datei unter <data>/lists/<id>.txt)."""
+    __tablename__ = "blocklist_state"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    sha256: Mapped[str] = mapped_column(String(64), default="")
+    count: Mapped[int] = mapped_column(Integer, default=0)
+    fetched_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    error: Mapped[str] = mapped_column(String(255), default="")
 
 
 class PairingCode(Base):

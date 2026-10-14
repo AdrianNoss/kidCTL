@@ -23,7 +23,7 @@ def state_dir(tmp_path, monkeypatch):
     from kidctl_agent import kidmounts
     calls = []
 
-    def fake_run(*cmd):
+    def fake_run(*cmd, **kw):
         import subprocess
         calls.append(cmd)
         return subprocess.CompletedProcess(cmd, 0, "", "")
@@ -31,4 +31,7 @@ def state_dir(tmp_path, monkeypatch):
     monkeypatch.setattr(kidmounts.KidMounts.__init__, "__defaults__", (fake_run, lambda: set()))
     monkeypatch.setattr(kidmounts, "STEAM_ROOT", tmp_path / "srv-steam")
     monkeypatch.setattr(kidmounts, "STEAM_INSTALLED", tmp_path / "kein-steam")
+    # Ebenso nie echte nft-/systemctl-Aufrufe für den DNS-Filter
+    from kidctl_agent import dnsfilter
+    monkeypatch.setattr(dnsfilter.DnsFilter.__init__, "__defaults__", (fake_run,))
     return d

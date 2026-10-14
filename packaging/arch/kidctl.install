@@ -1,9 +1,11 @@
 # pacman-Install-Skript für kidctl
 
 _pam() { /usr/lib/kidctl/kidctl-pam.sh "$1" --apply >/dev/null; }
+_nss() { /usr/lib/kidctl/kidctl-nsswitch.sh "$1" --apply >/dev/null; }
 
 post_install() {
   _pam install
+  _nss install
   cat <<'MSG'
 ==> kidctl installiert. Login-Sperre in /etc/pam.d/system-login eingetragen
     (Sicherung: system-login.kidctl.bak), SDDM-Theme „kidctl“ aktiv ab nächstem Anmeldebildschirm.
@@ -15,6 +17,7 @@ MSG
 
 post_upgrade() {
   _pam install
+  _nss install
   systemctl daemon-reload
   systemctl try-restart kidctl-agent.service
 }
@@ -27,6 +30,9 @@ pre_remove() {
     [ "$(systemctl show "$u" -p Description --value)" = "kidctl: noexec-Home" ] && systemctl stop "$u"
   done
   _pam remove
+  _nss remove
+  systemctl stop 'kidctl-dns@*.service' 2>/dev/null || true
+  nft delete table inet kidctl_dns 2>/dev/null || true
   rm -rf /run/kidctl
 }
 

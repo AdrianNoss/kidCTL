@@ -11,6 +11,7 @@ an (TOTP aus ~/.local/share/kidctl-dev/secret.txt) und merkt sich die Session.
     dev/webctl.py device GERAET_ID
     dev/webctl.py programs CID MODUS [SCHLÜSSEL …]
     dev/webctl.py blocked CID
+    dev/webctl.py web CID MODUS [bundles=a,b] [allow=x.de,y.de] [deny=…] [lists=a,b] [safesearch=0|1]
     dev/webctl.py dash
 """
 
@@ -77,6 +78,14 @@ def main(cmd: str, *args: str) -> None:
     elif cmd == "programs":
         print(c.post(f"/children/{args[0]}/programs", data={
             "csrf_token": csrf, "program_mode": args[1], "app": list(args[2:])}).status_code)
+    elif cmd == "web":
+        opts = dict(a.split("=", 1) for a in args[2:])
+        split = lambda k: [x for x in opts.get(k, "").split(",") if x]  # noqa: E731
+        data = {"csrf_token": csrf, "web_mode": args[1], "bundle": split("bundles"), "list": split("lists"),
+                "allow": "\n".join(split("allow")), "deny": "\n".join(split("deny"))}
+        if opts.get("safesearch", "1") == "1":
+            data["safesearch"] = "1"
+        print(c.post(f"/children/{args[0]}/web", data=data).status_code)
     elif cmd == "blocked":
         page = c.get(f"/children/{args[0]}").text.split("Gesperrte Aktionen")[1]
         for row in re.findall(r"<tr>\s*<td>[^<]*</td>\s*<td>(.*?)</td>", page, re.S):

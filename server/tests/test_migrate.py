@@ -72,3 +72,15 @@ def test_child_program_mode_migrated(tmp_path):
     migrate.run_migrations(eng)
     with eng.connect() as c:
         assert c.execute(text("SELECT program_mode FROM child")).scalar() == "off"
+
+
+def test_child_web_columns_migrated(tmp_path):
+    """Bestehende Kinder bekommen web_mode='off' (nicht die alte Vorgabe 'whitelist')."""
+    eng = create_engine(f"sqlite:///{tmp_path}/alt.db")
+    with eng.begin() as c:
+        c.execute(text("CREATE TABLE child (id INTEGER PRIMARY KEY, name VARCHAR(64), "
+                       "web_filter_mode VARCHAR(16) DEFAULT 'whitelist')"))
+        c.execute(text("INSERT INTO child (name, web_filter_mode) VALUES ('Max', 'whitelist')"))
+    migrate.run_migrations(eng)
+    with eng.connect() as c:
+        assert c.execute(text("SELECT web_mode, safesearch FROM child")).one() == ("off", 1)

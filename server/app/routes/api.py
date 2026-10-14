@@ -6,16 +6,17 @@ import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from kidctl_common import protocol as p
 
-from .. import chat, policy, programs
+from .. import chat, policy, programs, webfilter
 from ..db import SessionLocal, get_db
-from ..models import Device, DeviceUser, PairingCode, utcnow
+from ..models import BlocklistState, Device, DeviceUser, PairingCode, utcnow
 from ..security import (
     client_ip, is_rate_limited, new_token, normalize_pairing_code, record_failure, token_hash,
 )
@@ -26,6 +27,26 @@ router = APIRouter()
 
 HELLO_TIMEOUT = 10  # Sekunden
 LAST_SEEN_INTERVAL = timedelta(seconds=60)
+
+
+@router.get(p.LISTS_PATH + "/{list_id}")
+def blocklist_download(list_id: str, request: Request, db: Session = Depends(get_db)):
+    """Sperrliste für Agenten (Geräte-Token). ETag = SHA-256, damit unveränderte Listen nicht
+    erneut übertragen werden."""
+    auth = request.headers.get("authorization", "")
+    dev = None
+    if auth.lower().startswith("bearer "):
+        dev = db.scalar(select(Device).where(Device.token_hash == token_hash(auth[7:].strip())))
+    if dev is None or dev.revoked_at is not None:
+        raise HTTPException(401, "Geräte-Token ungültig")
+    state = db.get(BlocklistState, list_id)
+    path = webfilter.list_file(list_id) if list_id in webfilter.BLOCKLISTS else None
+    if state is None or not state.sha256 or path is None or not path.exists():
+        raise HTTPException(404, "Liste nicht verfügbar")
+    etag = f'"{state.sha256}"'
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers={"ETag": etag})
+    return FileResponse(path, media_type="text/plain", headers={"ETag": etag})
 
 
 @router.post(p.ENROLL_PATH, response_model=p.EnrollResponse)

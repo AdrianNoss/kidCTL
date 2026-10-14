@@ -27,6 +27,9 @@ COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
     ("device", "offline_alerted_at", "DATETIME"),
     # 2026-10-13: Programm-Whitelist
     ("child", "program_mode", "VARCHAR(16) NOT NULL DEFAULT 'off'"),
+    # 2026-10-14: Website-Filter (neue Spalte statt web_filter_mode, deren Standard „whitelist“ war)
+    ("child", "web_mode", "VARCHAR(16) NOT NULL DEFAULT 'off'"),
+    ("child", "safesearch", "BOOLEAN NOT NULL DEFAULT 1"),
 ]
 
 

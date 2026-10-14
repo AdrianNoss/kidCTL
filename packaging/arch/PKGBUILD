@@ -1,7 +1,7 @@
 # Lokaler Build aus dem Repo: cd packaging/arch && makepkg
 # (bei schreibgeschütztem Repo: BUILDDIR=/var/tmp/kb PKGDEST=/var/tmp/kb makepkg)
 pkgname=kidctl
-pkgver=0.4.0   # muss agent/kidctl_agent/__init__.py:__version__ entsprechen (Test prüft das)
+pkgver=0.5.0   # muss agent/kidctl_agent/__init__.py:__version__ entsprechen (Test prüft das)
 pkgrel=1
 pkgdesc="Parental Control für KDE Plasma – Agent (Bildschirmzeit, Login-Sperre) und Tray-App"
 arch=(any)
@@ -9,7 +9,7 @@ url="https://kids.nossco.de"
 license=(LicenseRef-kidctl)
 depends=(
   python python-pydantic python-websockets python-dbus-next pyside6
-  libnotify util-linux systemd pam sddm plasma-desktop
+  libnotify util-linux systemd pam sddm plasma-desktop unbound nftables
 )
 install=kidctl.install
 source=(kidctl kidctl-main.py kidctl-agent.service kidctl-tray kidctl-tray-main.py kidctl-tray.desktop
@@ -27,6 +27,12 @@ package() {
   install -Dm755 "$_root/packaging/pam/kidctl-pam.sh" "$lib/kidctl-pam.sh"
   install -Dm755 "$_root/packaging/mounts/kidctl-noexec.sh" "$lib/kidctl-noexec.sh"
   install -Dm644 "$_root/packaging/mounts/kidctl-noexec.service" "$pkgdir/usr/lib/systemd/system/kidctl-noexec.service"
+
+  # Website-Filter: Resolver je Kind, NSS über Port 53, DoH in Browsern aus
+  install -Dm644 "$_root/packaging/dns/kidctl-dns@.service" "$pkgdir/usr/lib/systemd/system/kidctl-dns@.service"
+  install -Dm755 "$_root/packaging/dns/kidctl-nsswitch.sh" "$lib/kidctl-nsswitch.sh"
+  install -Dm644 "$_root/packaging/dns/firefox-policies.json" "$pkgdir/etc/firefox/policies/policies.json"
+  install -Dm644 "$_root/packaging/dns/chromium-policies.json" "$pkgdir/etc/chromium/policies/managed/kidctl.json"
   install -Dm644 "$srcdir/kidctl-main.py" "$lib/kidctl-main.py"
   install -Dm644 "$srcdir/kidctl-tray-main.py" "$lib/kidctl-tray-main.py"
   install -Dm644 "$srcdir/base-programs.txt" "$lib/base-programs.txt"

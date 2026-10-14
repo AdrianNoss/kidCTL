@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import alarms
+from . import alarms, policy, webfilter
 from .db import init_db
 from .routes import admin, api, auth, pwa
 from .security import LoginRequired
@@ -20,9 +20,22 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_db()
-    task = asyncio.create_task(alarms.run_forever())
+    tasks = [asyncio.create_task(alarms.run_forever()), asyncio.create_task(_refresh_lists_forever())]
     yield
-    task.cancel()
+    for t in tasks:
+        t.cancel()
+
+
+async def _refresh_lists_forever() -> None:
+    """Sperrlisten täglich aktualisieren; geänderte an die betroffenen Geräte melden."""
+    while True:
+        try:
+            changed = await webfilter.refresh_lists()
+            if changed:
+                await policy.push_for_lists(changed)
+        except Exception:
+            logging.getLogger("kidctl.webfilter").exception("Aktualisierung der Sperrlisten fehlgeschlagen")
+        await asyncio.sleep(webfilter.REFRESH_SECONDS)
 
 
 app = FastAPI(title="kidctl", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)

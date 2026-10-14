@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import date, time, timedelta
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -15,9 +16,10 @@ from kidctl_common.protocol import CLOSE_REVOKED, MAX_BODY, SUPPORTED_VERSIONS
 from ..config import settings
 from ..db import get_db
 from ..models import (
-    Child, DayException, Device, Message, PairingCode, Parent, ParentSession, WeekdayRule, utcnow,
+    BlocklistState, Child, DayException, Device, Message, PairingCode, Parent, ParentSession, WeekdayRule,
+    utcnow,
 )
-from .. import chat, policy, programs
+from .. import chat, policy, programs, webfilter
 from .. import schedule as sch
 from ..security import (
     csrf_protect, hash_password, new_pairing_code, new_totp_secret, require_session, token_hash,
@@ -98,6 +100,10 @@ def _child_page(request: Request, db: Session, child: Child, status_code: int = 
     ctx.setdefault("credit_day", today.isoformat())
     return render(request, "child.html", status_code=status_code, child=child,
                   catalog=programs.catalog_for_child(db, child.id), program_modes=programs.MODES,
+                  web=webfilter.child_settings(db, child.id), web_modes=webfilter.MODES,
+                  bundles=webfilter.BUNDLES, blocklists=webfilter.BLOCKLISTS,
+                  default_lists=webfilter.DEFAULT_LISTS,
+                  list_states={s.id: s for s in db.scalars(select(BlocklistState))},
                   blocked=programs.blocked_log(db, child.id),
                   rules=sch.rules_by_day(child), groups=sch.GROUPS, weekday_names=sch.WEEKDAY_NAMES,
                   differs=sch.group_differs(child), exceptions=exceptions, today=today,
@@ -159,6 +165,42 @@ async def child_programs(child_id: int, request: Request, db: Session = Depends(
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
     return _redirect(f"/children/{child_id}?programs=1#programme")
+
+
+@router.post("/children/{child_id}/web", dependencies=[Depends(csrf_protect)])
+async def child_web(child_id: int, request: Request, db: Session = Depends(get_db)):
+    child = _get_or_404(db, Child, child_id)
+    form = await request.form()
+    mode = str(form.get("web_mode", "off"))
+    if mode not in webfilter.MODES:
+        raise HTTPException(400, "Ungültiger Modus")
+    allow, bad_allow = webfilter.parse_domain_input(str(form.get("allow", "")))
+    deny, bad_deny = webfilter.parse_domain_input(str(form.get("deny", "")))
+    if bad_allow or bad_deny:
+        return _child_page(request, db, child, status_code=400,
+                           error="Ungültige Domain(s): " + ", ".join((bad_allow + bad_deny)[:10]))
+    lists = {str(x) for x in form.getlist("list")}
+    webfilter.save_child_settings(db, child, mode, form.get("safesearch") == "1",
+                                  {str(x) for x in form.getlist("bundle")}, allow, deny, lists)
+    db.commit()
+    await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
+    # Noch nie geladene Listen sofort holen (Agent erhält danach eine aktualisierte Policy)
+    missing = {x for x in lists & webfilter.BLOCKLISTS.keys()
+               if not getattr(db.get(BlocklistState, x), "sha256", "")}
+    if mode == "blacklist" and missing:
+        task = asyncio.create_task(_fetch_and_push(missing))
+        _background.add(task)
+        task.add_done_callback(_background.discard)
+    return _redirect(f"/children/{child_id}?web=1#internet")
+
+
+_background: set[asyncio.Task] = set()
+
+
+async def _fetch_and_push(list_ids: set[str]) -> None:
+    changed = await webfilter.refresh_lists(list_ids)
+    if changed:
+        await policy.push_for_lists(changed)
 
 
 @router.post("/children/{child_id}/exceptions/{exc_id}/delete", dependencies=[Depends(csrf_protect)])

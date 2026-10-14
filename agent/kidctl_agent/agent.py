@@ -19,6 +19,7 @@ from .enforcer import Enforcer
 from .loginlock import LoginLock, is_admin
 from .rules import Decision, day_limits, evaluate
 from .apps import scan_apps
+from .dnsfilter import DnsFilter
 from .kidmounts import KidMounts
 from .procs import ProcEvents
 from .trayserver import TrayServer
@@ -52,6 +53,8 @@ class Agent:
         self.tray = TrayServer(self, tray_path)
         self.programs = ProgramWatcher(self)
         self.mounts = KidMounts()
+        self.dns = DnsFilter()
+        self.device = device
         self.procevents = ProcEvents(self.programs.on_exec)
         self.apps: list[p.AppEntry] = []
         self._sessions: list = []
@@ -163,6 +166,20 @@ class Agent:
         except Exception:
             log.exception("Mounts nicht angleichbar")
 
+    async def sync_dns(self) -> None:
+        """Website-Filter an die Policy angleichen: Listen holen, Resolver + nftables (im Thread)."""
+        if self.policy is None:
+            return
+        eligible = self.decisions(self.now_local())  # zugeordnete Nicht-Admins
+        children = {c.id: (c.web, {u for u in self.users_of(c.id) if u in eligible})
+                    for c in self.policy.children}
+        refs = [r for web, _ in children.values() if web.mode == "blacklist" for r in web.lists]
+        try:
+            await asyncio.to_thread(self.dns.fetch_lists, refs, self.device)
+            await asyncio.to_thread(self.dns.apply, children)
+        except Exception:
+            log.exception("Website-Filter nicht anwendbar")
+
     def app_exes(self) -> set[str]:
         return {a.key[4:] for a in self.apps if a.key.startswith("exe:")}
 
@@ -204,6 +221,7 @@ class Agent:
             self._synced = True
             self.programs.policy_changed()
             await self.sync_mounts()
+            await self.sync_dns()
             store.save(store.POLICY_FILE, msg.model_dump(mode="json"))
             log.info("Policy %s übernommen (%d zugeordnete User)", msg.version, len(msg.users))
             await self.conn.send(p.PolicyAck(version=msg.version))
@@ -303,6 +321,7 @@ class Agent:
         self.refresh_apps()
         await self.programs.refresh_base(self.app_exes())
         await self.sync_mounts()  # vor der Bereit-Meldung -> vor allen Logins
+        await self.sync_dns()
         self.procevents.start()
         try:
             await self.tray.start()

@@ -20,6 +20,7 @@ SUPPORTED_VERSIONS = frozenset({1})
 
 WS_PATH = "/api/v1/ws"
 ENROLL_PATH = "/api/v1/enroll"
+LISTS_PATH = "/api/v1/lists"  # GET {LISTS_PATH}/<id>, Authorization: Bearer <Geräte-Token>
 
 # WebSocket-Close-Codes (4000–4999 anwendungsspezifisch)
 CLOSE_UNAUTHORIZED = 4401
@@ -180,6 +181,23 @@ class DayOverride(BaseModel):
 
 
 ProgramMode = Literal["off", "audit", "enforce"]
+WebMode = Literal["off", "whitelist", "blacklist"]
+
+
+class BlocklistRef(BaseModel):
+    """Sperrliste, die der Agent unter ``LISTS_PATH/<id>`` abholt (eine Domain je Zeile)."""
+    id: str = Field(max_length=64)
+    sha256: str = ""  # leer = auf dem Server noch nicht verfügbar
+
+
+class WebFilter(BaseModel):
+    """Website-Filter eines Kindes. ``allow`` enthält bereits die Domains gewählter Bundles.
+    Domains gelten inkl. aller Subdomains."""
+    mode: WebMode = "off"
+    allow: list[str] = []
+    deny: list[str] = []
+    lists: list[BlocklistRef] = []   # nur im Blacklist-Modus relevant
+    safesearch: bool = True          # Google/Bing/DuckDuckGo SafeSearch, YouTube eingeschränkt
 
 
 class ChildPolicy(BaseModel):
@@ -190,6 +208,7 @@ class ChildPolicy(BaseModel):
     # Programm-Whitelist: off = keine Kontrolle, audit = nur protokollieren, enforce = sperren
     program_mode: ProgramMode = "off"
     allowed_programs: list[str] = []  # App-Schlüssel (siehe AppEntry.key), zusätzlich zur Basisliste
+    web: WebFilter = WebFilter()
 
 
 class Policy(BaseModel):

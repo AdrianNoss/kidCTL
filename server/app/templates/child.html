@@ -71,6 +71,40 @@
   {% endif %}
 </section>
 
+<section class="card" id="internet">
+  <h2>Internet</h2>
+  {% if request.query_params.get("web") %}<p class="success">Internet-Einstellungen gespeichert.</p>{% endif %}
+  <form method="post" action="/children/{{ child.id }}/web">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>Website-Filter
+      <select name="web_mode">
+        {% for key, label in web_modes.items() %}<option value="{{ key }}"{% if child.web_mode == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="row"><input type="checkbox" name="safesearch" value="1" style="width:auto"{% if child.safesearch %} checked{% endif %}>
+      SafeSearch erzwingen (Google, Bing, DuckDuckGo; YouTube eingeschränkt)</label>
+
+    <h3>Whitelist: freigegebene Dienste</h3>
+    {% for b in bundles.values() %}
+    <label class="row"><input type="checkbox" name="bundle" value="{{ b.id }}" style="width:auto"{% if b.id in web.bundles %} checked{% endif %}>
+      {{ b.name }}{% if b.note %} <small class="muted">– {{ b.note }}</small>{% endif %}</label>
+    {% endfor %}
+    <label>Weitere freigegebene Domains (je Zeile, inkl. Subdomains; im Blacklist-Modus: Ausnahmen)
+      <textarea name="allow" rows="3" placeholder="schule.de">{{ web.allow | join("\n") }}</textarea></label>
+
+    <h3>Blacklist: Sperrlisten</h3>
+    {% for b in blocklists.values() %}{% set st = list_states.get(b.id) %}
+    <label class="row"><input type="checkbox" name="list" value="{{ b.id }}" style="width:auto"
+      {% if b.id in web.lists or (not web.lists and b.id in default_lists) %} checked{% endif %}>
+      {{ b.name }} <small class="muted">– {{ b.description }}{% if st and st.count %}; {{ "{:,}".format(st.count).replace(",", ".") }} Domains, Stand {{ st.fetched_at | localtime }}{% elif st and st.error %}; Fehler: {{ st.error }}{% endif %}</small></label>
+    {% endfor %}
+    <label>Weitere gesperrte Domains (je Zeile)
+      <textarea name="deny" rows="3">{{ web.deny | join("\n") }}</textarea></label>
+    <p class="muted">Bekannte DNS-over-HTTPS-Anbieter sind immer gesperrt; verschlüsseltes DNS (Port 853) ebenso.</p>
+    <button type="submit">Speichern</button>
+  </form>
+</section>
+
 <section class="card" id="programme">
   <h2>Programme</h2>
   {% if request.query_params.get("programs") %}<p class="success">Programm-Einstellungen gespeichert.</p>{% endif %}

@@ -15,8 +15,10 @@ from kidctl_common import protocol as p
 from . import schedule as sch
 from .chat import device_ids_for_child
 from .programs import allowed_keys
+from .webfilter import web_policy
 from .config import settings
-from .models import Child, DayException, Device, DeviceUser, UsageRecord, utcnow
+from .db import SessionLocal
+from .models import Child, ChildBlocklist, DayException, Device, DeviceUser, UsageRecord, utcnow
 from .ws import manager
 
 log = logging.getLogger("kidctl.policy")
@@ -45,6 +47,7 @@ def build_policy(db: Session, device_id: int) -> p.Policy:
                                       window_end_override=e.window_end_override) for e in excs],
             program_mode=child.program_mode,
             allowed_programs=allowed_keys(db, child.id),
+            web=web_policy(db, child),
         ))
     body = p.Policy(version="", timezone=settings.timezone, users=users, children=children)
     digest = hashlib.sha256(body.model_dump_json(exclude={"version"}).encode()).hexdigest()[:16]
@@ -148,3 +151,13 @@ def day_status(db: Session, child: Child, day: date | None = None) -> DayStatus:
     end = exc.window_end_override if exc and exc.window_end_override else (rule.window_end if rule else None)
     return DayStatus(used_seconds=used, allowed_minutes=quota,
                      window_start=rule.window_start if rule else None, window_end=end)
+
+
+async def push_for_lists(list_ids: set[str]) -> None:
+    """Neue Sperrlisten-Versionen: Policies der Geräte betroffener Kinder neu senden."""
+    with SessionLocal() as db:
+        children = set(db.scalars(select(ChildBlocklist.child_id).where(ChildBlocklist.list_id.in_(list_ids))))
+        devices = set()
+        for cid in children:
+            devices |= device_ids_for_child(db, cid)
+        await push_policies(db, devices)
