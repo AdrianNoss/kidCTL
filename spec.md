@@ -676,3 +676,4 @@ Verlängerungsanfragen.
   Base + 25 % Highlight, fremde: Base + 8 % Text), Neuzeichnen bei Theme-Wechsel. Version 0.9.1.
   Getestet: Tray-Tests (7, inkl. GUI-Ablauf und Kontrast ≥ 4,5:1 für Breeze/Breeze Dark) mit PySide6 in
   temporärer venv, Sichtprüfung per Offscreen-Rendering hell/dunkel.
+- 2026-10-15: Sichttest Tray-Chat mit Breeze Dark auf echtem Testrechner (0.9.1 aus dem Pacman-Repo) vom Nutzer bestätigt.
