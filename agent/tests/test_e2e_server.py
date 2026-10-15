@@ -126,7 +126,7 @@ def test_full_flow(server):
         today = agent.now_local().date()
         agent.usage.local[("kind", today.isoformat())] = 1500.0
         await agent.send_usage()
-        await wait_for(lambda: "0:25 h von" in web.get("/").text)
+        await wait_for(lambda: "0:25 h <span class=\"muted\">von" in web.get("/").text)
 
         # Tick zählt die aktive Sitzung
         await agent.tick_once()
