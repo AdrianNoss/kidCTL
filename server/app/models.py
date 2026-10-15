@@ -79,6 +79,9 @@ class Child(Base):
     web_mode: Mapped[str] = mapped_column(String(16), default="off")  # off | whitelist | blacklist
     safesearch: Mapped[bool] = mapped_column(Boolean, default=True)
     program_mode: Mapped[str] = mapped_column(String(16), default="off")  # off | audit | enforce
+    # „Jetzt sperren“: gesperrt bis locked_until (UTC) bzw. bis zur Freigabe (None)
+    locked: Mapped[bool] = mapped_column(Boolean, default=False)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     rules: Mapped[list[WeekdayRule]] = relationship(

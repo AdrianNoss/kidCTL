@@ -9,12 +9,19 @@
     <tr><th>Kind</th><th>Heute genutzt</th><th>Rest</th><th>Fenster</th><th></th></tr>
     {% for c in children %}{% set st = status[c.id] %}
     <tr>
-      <td><a href="/children/{{ c.id }}" class="entity">{{ c.name }}</a></td>
+      <td><a href="/children/{{ c.id }}" class="entity">{{ c.name }}</a>
+        {% if is_locked(c) %}<br><span class="pill danger">gesperrt{% if c.locked_until %} bis {{ c.locked_until | localtime("%H:%M") }}{% endif %}</span>{% endif %}</td>
       <td class="num">{{ fmt_minutes(st.used_seconds // 60) }} <span class="muted">von {{ fmt_minutes(st.allowed_minutes) }}</span></td>
       <td class="num">{% if st.overrun_minutes %}<span class="pill warn">überzogen um {{ st.overrun_minutes }} min</span>
           {% else %}{{ fmt_minutes(st.remaining_minutes) }}{% endif %}</td>
       <td class="num">{% if st.window_start %}{{ st.window_start.strftime("%H:%M") }}–{{ st.window_end.strftime("%H:%M") }}{% endif %}</td>
       <td class="right"><div class="actions">
+        <form method="post" action="/children/{{ c.id }}/{{ 'unlock' if is_locked(c) else 'lock' }}" class="inline">
+          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+          <input type="hidden" name="back" value="dashboard">
+          {% if is_locked(c) %}<button type="submit" class="small">Freigeben</button>
+          {% else %}<button type="submit" class="small danger" title="Sperrt alle Rechner von {{ c.name }} bis zur Freigabe (Abmeldung nach 1 Minute Vorwarnung)">Jetzt sperren</button>{% endif %}
+        </form>
         <a href="/children/{{ c.id }}/stats" class="btn secondary small">Statistik</a>
         <a href="/children/{{ c.id }}/chat" class="btn secondary small">Chat{% if pending.get(c.id) %} <span class="count" title="offene Anfragen">{{ pending[c.id] }}</span>{% endif %}</a>
       </div></td>

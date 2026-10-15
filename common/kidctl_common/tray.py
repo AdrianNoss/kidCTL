@@ -50,7 +50,7 @@ class TrayState(BaseModel):
     child_name: str = ""
     allowed: bool = True
     remaining_seconds: int = 0
-    reason: str | None = None        # quota | window_not_open | window_closed
+    reason: str | None = None        # quota | window_not_open | window_closed | locked
     used_seconds: int = 0
     allowed_minutes: int = 0         # Kontingent heute inkl. Gutschrift
     window_start: time | None = None

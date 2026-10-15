@@ -20,6 +20,7 @@ from ..models import (
     utcnow,
 )
 from .. import chat, policy, programs, stats, webfilter
+from .. import lock as lk
 from .. import schedule as sch
 from ..security import (
     csrf_protect, hash_password, new_pairing_code, new_totp_secret, require_session, token_hash,
@@ -51,7 +52,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     chat.expire_stale_requests(db)
     return render(request, "dashboard.html", children=children, devices=devices, online=manager.is_online,
                   pending=chat.pending_count(db), status={c.id: policy.day_status(db, c) for c in children},
-                  fmt_minutes=sch.fmt_minutes)
+                  fmt_minutes=sch.fmt_minutes, is_locked=lk.is_locked)
 
 
 # ---------- Kinder ----------
@@ -107,7 +108,8 @@ def _child_page(request: Request, db: Session, child: Child, status_code: int = 
                   blocked=programs.blocked_log(db, child.id),
                   rules=sch.rules_by_day(child), groups=sch.GROUPS, weekday_names=sch.WEEKDAY_NAMES,
                   differs=sch.group_differs(child), exceptions=exceptions, today=today,
-                  fmt_minutes=sch.fmt_minutes, max_quota=sch.MAX_QUOTA, max_extra=sch.MAX_EXTRA, **ctx)
+                  fmt_minutes=sch.fmt_minutes, max_quota=sch.MAX_QUOTA, max_extra=sch.MAX_EXTRA,
+                  is_locked=lk.is_locked, lock_durations=lk.DURATIONS, **ctx)
 
 
 @router.get("/children/{child_id}")
@@ -150,6 +152,31 @@ async def child_credit(child_id: int, request: Request, day: str = Form(...), ex
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
     return _redirect(f"/children/{child_id}")
+
+
+def _back(child_id: int, back: str) -> str:
+    return "/" if back == "dashboard" else f"/children/{child_id}"
+
+
+@router.post("/children/{child_id}/lock", dependencies=[Depends(csrf_protect)])
+async def child_lock(child_id: int, duration: str = Form(""), back: str = Form(""), db: Session = Depends(get_db)):
+    child = _get_or_404(db, Child, child_id)
+    try:
+        lk.lock(child, duration)
+    except ValueError:
+        raise HTTPException(400, "Ungültige Dauer")
+    db.commit()
+    await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
+    return _redirect(_back(child_id, back))
+
+
+@router.post("/children/{child_id}/unlock", dependencies=[Depends(csrf_protect)])
+async def child_unlock(child_id: int, back: str = Form(""), db: Session = Depends(get_db)):
+    child = _get_or_404(db, Child, child_id)
+    lk.unlock(child)
+    db.commit()
+    await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
+    return _redirect(_back(child_id, back))
 
 
 @router.post("/children/{child_id}/programs", dependencies=[Depends(csrf_protect)])

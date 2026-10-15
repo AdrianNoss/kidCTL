@@ -6,13 +6,14 @@ import hashlib
 import logging
 import re
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, timedelta, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from kidctl_common import protocol as p
 
+from . import lock as lk
 from . import schedule as sch
 from .chat import device_ids_for_child
 from .programs import allowed_keys
@@ -50,6 +51,8 @@ def build_policy(db: Session, device_id: int) -> p.Policy:
             program_mode=child.program_mode,
             allowed_programs=allowed_keys(db, child.id),
             web=web_policy(db, child),
+            locked=lk.is_locked(child),
+            locked_until=child.locked_until.replace(tzinfo=timezone.utc) if lk.is_locked(child) and child.locked_until else None,
         ))
     body = p.Policy(version="", timezone=settings.timezone, users=users, children=children)
     digest = hashlib.sha256(body.model_dump_json(exclude={"version"}).encode()).hexdigest()[:16]

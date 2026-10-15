@@ -11,7 +11,7 @@ from datetime import date
 
 from .accounting import boottime
 from .logind import SessionInfo
-from .rules import REASON_TEXT, Decision
+from .rules import LOCKED, REASON_TEXT, Decision
 
 log = logging.getLogger("kidctl.enforcer")
 
@@ -30,6 +30,7 @@ class Enforcer:
         self.warned: dict[tuple[str, date], set[int]] = {}
         self.deadline: dict[str, float] = {}   # User -> Ende des Countdowns (BOOTTIME)
         self.hard: dict[str, float] = {}       # User -> Abmeldung angefordert, hart beenden ab
+        self.ending_reason: dict[str, str | None] = {}  # User -> Grund des laufenden Countdowns
         self.recover_at: float | None = None
 
     async def step(self, day: date, sessions: list[SessionInfo], decisions: dict[str, Decision]) -> None:
@@ -51,18 +52,22 @@ class Enforcer:
             if d.allowed:
                 self.hard.pop(user, None)
                 if self.deadline.pop(user, None) is not None:
-                    await self.desktop.notify(user, uid, "Bildschirmzeit verlängert",
+                    unlocked = self.ending_reason.pop(user, None) == LOCKED
+                    await self.desktop.notify(user, uid, "Wieder freigegeben" if unlocked else "Bildschirmzeit verlängert",
                                               f"Noch {_fmt(d.remaining_seconds)}.")
                 await self._warn(user, uid, day, d.remaining_seconds)
                 continue
 
             if user not in self.deadline and user not in self.hard:
                 self.deadline[user] = now + GRACE_SECONDS
+                self.ending_reason[user] = d.reason
                 log.info("Zeit für %s abgelaufen (%s) – Abmeldung in %d s", user, d.reason, GRACE_SECONDS)
+                locked = d.reason == LOCKED
                 await self.desktop.notify(
-                    user, uid, "Bildschirmzeit zu Ende",
+                    user, uid, "Gesperrt" if locked else "Bildschirmzeit zu Ende",
                     f"{REASON_TEXT.get(d.reason, '')} Abmeldung in {GRACE_SECONDS} Sekunden – "
-                    "bitte jetzt speichern.", critical=True, on_action=self.on_request)
+                    "bitte jetzt speichern.", critical=True,
+                    on_action=None if locked else self.on_request)  # Verlängerung hebt keine Sperre auf
             elif user in self.deadline and now >= self.deadline[user]:
                 del self.deadline[user]
                 await self._end(user, uid, user_sessions, d.reason, now)

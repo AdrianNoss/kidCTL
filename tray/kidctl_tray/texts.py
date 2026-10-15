@@ -11,6 +11,7 @@ REASON = {
     "quota": "Bildschirmzeit für heute aufgebraucht",
     "window_not_open": "Die erlaubte Zeit hat noch nicht begonnen",
     "window_closed": "Die erlaubte Zeit ist für heute vorbei",
+    "locked": "Von deinen Eltern gesperrt",
 }
 
 

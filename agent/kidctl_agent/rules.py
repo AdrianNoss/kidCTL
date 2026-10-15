@@ -6,7 +6,7 @@ Bewusst ohne I/O, damit Agent und PAM-Prüfung dieselbe Logik nutzen und sie tes
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 
 from kidctl_common.protocol import ChildPolicy
 
@@ -14,6 +14,7 @@ from kidctl_common.protocol import ChildPolicy
 QUOTA = "quota"                    # Tageskontingent aufgebraucht
 WINDOW_NOT_OPEN = "window_not_open"
 WINDOW_CLOSED = "window_closed"
+LOCKED = "locked"                  # von den Eltern gesperrt („Jetzt sperren“)
 
 
 @dataclass(frozen=True)
@@ -42,8 +43,19 @@ def day_limits(child: ChildPolicy, day: date) -> tuple[int, time, time]:
     return quota, rule.window_start, end
 
 
+def is_locked(child: ChildPolicy, now: datetime) -> bool:
+    if not child.locked:
+        return False
+    if child.locked_until is None:
+        return True
+    until = child.locked_until if child.locked_until.tzinfo else child.locked_until.replace(tzinfo=timezone.utc)
+    return (now if now.tzinfo else now.astimezone()) < until
+
+
 def evaluate(child: ChildPolicy, now_local: datetime, used_seconds: int) -> Decision:
     """``now_local`` in der Zeitzone der Policy, ``used_seconds`` = Nutzung heute (alle Geräte)."""
+    if is_locked(child, now_local):
+        return Decision(False, 0, LOCKED)
     quota, start, end = day_limits(child, now_local.date())
     now_s = _seconds(now_local.time())
     if now_s < _seconds(start):
@@ -57,6 +69,7 @@ def evaluate(child: ChildPolicy, now_local: datetime, used_seconds: int) -> Deci
 
 
 REASON_TEXT = {
+    LOCKED: "Deine Eltern haben den Rechner gesperrt.",
     QUOTA: "Bildschirmzeit für heute aufgebraucht.",
     WINDOW_NOT_OPEN: "Die erlaubte Nutzungszeit hat noch nicht begonnen.",
     WINDOW_CLOSED: "Die erlaubte Nutzungszeit ist für heute vorbei.",

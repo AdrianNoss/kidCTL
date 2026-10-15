@@ -219,6 +219,10 @@ class ChildPolicy(BaseModel):
     program_mode: ProgramMode = "off"
     allowed_programs: list[str] = []  # App-Schlüssel (siehe AppEntry.key), zusätzlich zur Basisliste
     web: WebFilter = WebFilter()
+    # „Jetzt sperren“ der Eltern: gesperrt bis ``locked_until`` (UTC) bzw. bis zur Freigabe (None).
+    # Läuft auch offline ab – der Agent vergleicht mit der Systemuhr.
+    locked: bool = False
+    locked_until: datetime | None = None
 
 
 class Policy(BaseModel):

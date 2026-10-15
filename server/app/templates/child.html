@@ -16,6 +16,30 @@
     <a href="/children/{{ child.id }}/stats" class="btn secondary">Statistik</a>
   </div>
 </div>
+<section class="card{% if is_locked(child) %} locked-card{% endif %}" id="sperre">
+  <div class="card-head">
+    <h2>Sperre</h2>
+    {% if is_locked(child) %}<span class="pill danger">gesperrt {% if child.locked_until %}bis {{ child.locked_until | localtime }}{% else %}bis zur Freigabe{% endif %}</span>
+    {% else %}<span class="pill ok">nicht gesperrt</span>{% endif %}
+  </div>
+  {% if is_locked(child) %}
+  <form method="post" action="/children/{{ child.id }}/unlock" class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <button type="submit">Jetzt freigeben</button>
+    <span class="muted"><small>Danach gelten wieder Kontingent und Zeitfenster.</small></span>
+  </form>
+  {% else %}
+  <form method="post" action="/children/{{ child.id }}/lock" class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>Dauer <select name="duration">
+      {% for key, label in lock_durations.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+    </select></label>
+    <button type="submit" class="danger">Jetzt sperren</button>
+  </form>
+  <p class="muted"><small>Sperrt alle Rechner von {{ child.name }}: Abmeldung nach 1 Minute Vorwarnung, Anmelden nicht möglich. Läuft eine Dauer ab, wird automatisch freigegeben – auch ohne Internetverbindung.</small></p>
+  {% endif %}
+</section>
+
 {% if request.query_params.get("saved") %}<p class="success">Wochenvorlage gespeichert.</p>{% endif %}
 
 <section class="card">

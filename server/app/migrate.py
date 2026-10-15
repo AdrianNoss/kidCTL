@@ -33,6 +33,9 @@ COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
     # 2026-10-14: Integritätsprüfung
     ("device", "integrity_json", "TEXT NOT NULL DEFAULT ''"),
     ("device", "integrity_at", "DATETIME"),
+    # 2026-10-15: „Jetzt sperren“
+    ("child", "locked", "BOOLEAN NOT NULL DEFAULT 0"),
+    ("child", "locked_until", "DATETIME"),
 ]
 
 

@@ -22,8 +22,8 @@ log = logging.getLogger("kidctl.loginlock")
 RUN_DIR = Path(os.environ.get("KIDCTL_RUN_DIR", "/run/kidctl"))
 LOCKED_FILE = "locked-users"
 MESSAGE_FILE = "locked-message"
-MESSAGE = ("Bildschirmzeit für heute aufgebraucht oder außerhalb der erlaubten Zeit. "
-           "Für mehr Zeit bitte bei den Eltern melden.")
+MESSAGE = ("Bildschirmzeit für heute aufgebraucht, außerhalb der erlaubten Zeit oder von den Eltern "
+           "gesperrt. Bitte bei den Eltern melden.")
 
 ADMIN_GROUPS = ("wheel", "sudo", "admin")
 

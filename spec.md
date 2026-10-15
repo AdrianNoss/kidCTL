@@ -134,6 +134,16 @@ Verlängerungsanfragen.
   - Aktivierung über `/etc/sddm.conf.d/zz-kidctl-theme.conf` (nach `kde_settings.conf` gelesen);
     Installation per `packaging/sddm/kidctl-sddm.sh install|remove [--apply]`.
 
+### Jetzt sperren (entschieden 2026-10-15)
+- Eltern sperren ein **Kind** (alle zugeordneten Rechner) sofort: Knopf auf der Übersicht (bis zur
+  Freigabe) und auf der Kind-Seite mit Dauer: bis zur Freigabe, 30 min, 1 h, 2 h, bis morgen (00:00 Uhr
+  lokal).
+- Ablauf wie bei Zeitende: Benachrichtigung „Gesperrt“ mit **1 Minute Vorwarnung** (ohne „Verlängerung
+  anfordern“), dann Abmeldung; Login-Sperre per PAM solange gesperrt. Freigabe während des Countdowns
+  bricht ihn ab („Wieder freigegeben“).
+- Policy-Felder `locked`/`locked_until` (UTC). Der Agent prüft die Sperre vor Kontingent/Zeitfenster;
+  eine befristete Sperre läuft auch offline ab (Systemuhr). Freigeben erreicht nur verbundene Geräte.
+
 ### Verlängerungen
 - Kind fordert an: mehr Minuten und/oder späteres Fensterende, mit Begründung (Freitext).
 - Eltern: genehmigen, vor Genehmigung anpassen oder ablehnen.
@@ -677,3 +687,10 @@ Verlängerungsanfragen.
   Getestet: Tray-Tests (7, inkl. GUI-Ablauf und Kontrast ≥ 4,5:1 für Breeze/Breeze Dark) mit PySide6 in
   temporärer venv, Sichtprüfung per Offscreen-Rendering hell/dunkel.
 - 2026-10-15: Sichttest Tray-Chat mit Breeze Dark auf echtem Testrechner (0.9.1 aus dem Pacman-Repo) vom Nutzer bestätigt.
+- 2026-10-15: „Jetzt sperren“ (Abschnitt unter Bildschirmzeit): Server `app/lock.py`, Spalten
+  `child.locked`/`locked_until` (Migration), Routen `/children/<id>/lock|unlock`, Policy-Felder; Agent-Regel
+  `locked` vor Kontingent/Fenster, Enforcer-Texte „Gesperrt“/„Wieder freigegeben“, Tray-Text, PAM-Hinweis.
+  Version 0.10.0. Getestet: Server 63 (Sperre/Freigabe mit Policy-Push über WebSocket, befristet + Ablauf,
+  ungültige Dauer, CSRF, „bis morgen“ in Sommer-/Winterzeit, Migration Alt-Schema), Agent 115 (Regel,
+  Ablauf offline, naive Zeit, Enforcer-Countdown + Abbruch bei Freigabe), Tray 7; Screenshots Übersicht/
+  Kind-Seite gesperrt und frei.

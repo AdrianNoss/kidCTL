@@ -235,3 +235,4 @@ details > summary { cursor:pointer; color:var(--ink-2); font-weight:600; font-si
   .nav { order:3; flex-basis:100%; margin:0 -1rem; padding:0 1rem .1rem; }
   .msg { max-width:95%; }
 }
+.locked-card { border-color:var(--danger); }
