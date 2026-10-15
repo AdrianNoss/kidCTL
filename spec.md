@@ -671,3 +671,8 @@ Verlängerungsanfragen.
   Checkboxen; Bundles/Sperrlisten als Auswahlkacheln, je nach Filtermodus nur die passenden Abschnitte
   (reines CSS `:has`). Getestet: Server-Tests (57, Markup-Prüfungen angepasst), Screenshots hell/dunkel/
   Handy (Firefox headless) von Übersicht, Kind, Statistik, Gerät, Chat.
+- 2026-10-15: Tray-Chat im dunklen KDE-Theme (Breeze Dark) unlesbar: Blasenfarben waren fest hell, die
+  Schrift kam aus dem Theme (weiß). Jetzt Hintergrund und Schrift aus der Systempalette (eigene Blase:
+  Base + 25 % Highlight, fremde: Base + 8 % Text), Neuzeichnen bei Theme-Wechsel. Version 0.9.1.
+  Getestet: Tray-Tests (7, inkl. GUI-Ablauf und Kontrast ≥ 4,5:1 für Breeze/Breeze Dark) mit PySide6 in
+  temporärer venv, Sichtprüfung per Offscreen-Rendering hell/dunkel.

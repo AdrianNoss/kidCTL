@@ -108,3 +108,28 @@ def test_request_dialog_validation(qapp):
     d.later.setChecked(True)
     r = d.request()
     assert r.minutes == 0 and r.window_end == time(21, 0)
+
+
+def _contrast(a, b):
+    def lum(hexcolor):
+        c = [int(hexcolor[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+        c = [x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4 for x in c]
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+    hi, lo = sorted((lum(a), lum(b)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+@pytest.mark.parametrize("base,text,highlight", [
+    ("#ffffff", "#232629", "#3daee9"),   # Breeze
+    ("#141618", "#fcfcfc", "#3daee9"),   # Breeze Dark
+])
+def test_chat_bubbles_readable_in_light_and_dark(qapp, base, text, highlight):
+    from PySide6.QtGui import QColor, QPalette
+    from kidctl_tray.ui import bubble_colors
+    pal = QPalette()
+    pal.setColor(QPalette.ColorRole.Base, QColor(base))
+    pal.setColor(QPalette.ColorRole.Text, QColor(text))
+    pal.setColor(QPalette.ColorRole.Highlight, QColor(highlight))
+    own, other, fg = bubble_colors(pal)
+    assert fg == text
+    assert _contrast(own, fg) >= 4.5 and _contrast(other, fg) >= 4.5
