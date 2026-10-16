@@ -25,5 +25,12 @@ def test_base_list_contains_agent_helpers():
     a = programs.Allowed(spec.globs, set(), frozenset(), spec.excludes)
     for helper in ("/usr/bin/notify-send", "/usr/bin/busctl", "/usr/lib/kidctl/kidctl-tray-main.py"):
         assert a.path_ok(helper), helper
-    assert "plasma-desktop" in spec.packages
+    assert "plasma-desktop" in spec.packages and {"plasma", "kf6"} <= set(spec.groups)
     assert not a.path_ok("/usr/bin/konsole")
+
+
+def test_base_list_excludes_socat():
+    from kidctl_agent import programs
+    spec = programs.load_base(ROOT / "packaging/arch/base-programs.txt")
+    base = programs.base_paths(["/usr/bin/socat", "/usr/bin/socat1", "/usr/bin/kded6"], set(), spec.excludes)
+    assert base == {"/usr/bin/kded6"}

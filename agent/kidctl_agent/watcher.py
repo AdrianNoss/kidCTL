@@ -16,7 +16,7 @@ from . import store
 from .accounting import boottime
 from .procs import pids_of, read_proc
 from .kidmounts import STEAM_ROOT
-from .programs import Allowed, Verdict, base_paths, classify, closure, load_base, parse_pacman_qi
+from .programs import Allowed, Verdict, base_paths, classify, closure, group_members, load_base, parse_pacman_qi
 
 log = logging.getLogger("kidctl.programs")
 
@@ -182,13 +182,15 @@ class ProgramWatcher:
         """Basisliste neu berechnen (pacman, im Thread). Bei Fehlern bleibt die alte erhalten."""
         try:
             mtime = os.stat(PACMAN_DB).st_mtime
-            exact = await asyncio.to_thread(_compute_base, self.spec.packages, app_exes, self.spec.excludes)
+            exact = await asyncio.to_thread(_compute_base, self.spec.packages, app_exes, self.spec.excludes,
+                                            self.spec.groups)
         except (OSError, subprocess.SubprocessError) as e:
             log.error("Basisliste nicht berechenbar (%s) – Programmkontrolle protokolliert nur", e)
             return
         self.base_exact, self._pacman_mtime = exact, mtime
         self.policy_changed()
-        log.info("Basisliste: %d Programme aus %d Wurzelpaketen", len(exact), len(self.spec.packages))
+        log.info("Basisliste: %d Programme aus %d Wurzelpaketen und Gruppen %s", len(exact),
+                 len(self.spec.packages), ", ".join(self.spec.groups) or "–")
 
     # ---------- Server ----------
 
@@ -201,11 +203,13 @@ class ProgramWatcher:
             self._save()
 
 
-def _compute_base(packages: list[str], app_exes: set[str], excludes: list[str]) -> frozenset[str]:
+def _compute_base(packages: list[str], app_exes: set[str], excludes: list[str],
+                  groups: list[str] = ()) -> frozenset[str]:
     env = {"LC_ALL": "C", "PATH": "/usr/bin"}
     qi = subprocess.run(["pacman", "-Qi"], capture_output=True, text=True, env=env, check=True, timeout=60)
     deps, provides = parse_pacman_qi(qi.stdout)
-    pkgs = sorted(closure(deps, provides, packages))
+    roots = list(packages) + group_members(qi.stdout, list(groups))
+    pkgs = sorted(closure(deps, provides, roots))
     if not pkgs:
         return frozenset()
     ql = subprocess.run(["pacman", "-Qlq", *pkgs], capture_output=True, text=True, env=env, check=True,

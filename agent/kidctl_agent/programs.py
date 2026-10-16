@@ -66,6 +66,7 @@ EXEC_DIRS = ("/usr/bin/", "/usr/lib/")
 class BaseSpec:
     """Inhalt von base-programs.txt: Wurzelpakete, zusätzliche Muster, Ausschlüsse."""
     packages: list[str] = field(default_factory=list)
+    groups: list[str] = field(default_factory=list)   # Paketgruppen: alle installierten Mitglieder
     globs: list[str] = field(default_factory=lambda: list(BUILTIN_BASE))
     excludes: list[str] = field(default_factory=lambda: list(BUILTIN_EXCLUDE))
 
@@ -81,6 +82,8 @@ def load_base(path: Path = BASE_FILE) -> BaseSpec:
             continue
         if ln.startswith("pkg:"):
             spec.packages.append(ln[4:])
+        elif ln.startswith("group:"):
+            spec.groups.append(ln[6:])
         elif ln.startswith("!"):
             spec.excludes.append(ln[1:])
         else:
@@ -88,10 +91,8 @@ def load_base(path: Path = BASE_FILE) -> BaseSpec:
     return spec
 
 
-def parse_pacman_qi(text: str) -> tuple[dict[str, list[str]], dict[str, str]]:
-    """``pacman -Qi`` (LC_ALL=C) -> (Paket -> Abhängigkeiten, bereitgestellter Name -> Paket)."""
-    deps: dict[str, list[str]] = {}
-    provides: dict[str, str] = {}
+def _qi_blocks(text: str):
+    """``pacman -Qi`` (LC_ALL=C) -> Felder je Paket (Fortsetzungszeilen angehängt)."""
     for block in text.strip().split("\n\n"):
         fields: dict[str, str] = {}
         key = None
@@ -102,14 +103,30 @@ def parse_pacman_qi(text: str) -> tuple[dict[str, list[str]], dict[str, str]]:
                 fields[key] = m.group(2)
             elif key:
                 fields[key] += " " + line.strip()
-        name = fields.get("Name")
-        if not name:
-            continue
-        strip = lambda v: [re.split(r"[<>=]", x)[0] for x in v.split()] if v and v != "None" else []  # noqa: E731
-        deps[name] = strip(fields.get("Depends On", ""))
-        for prov in strip(fields.get("Provides", "")):
+        if fields.get("Name"):
+            yield fields
+
+
+def _names(v: str) -> list[str]:
+    return [re.split(r"[<>=]", x)[0] for x in v.split()] if v and v != "None" else []
+
+
+def parse_pacman_qi(text: str) -> tuple[dict[str, list[str]], dict[str, str]]:
+    """``pacman -Qi`` (LC_ALL=C) -> (Paket -> Abhängigkeiten, bereitgestellter Name -> Paket)."""
+    deps: dict[str, list[str]] = {}
+    provides: dict[str, str] = {}
+    for fields in _qi_blocks(text):
+        name = fields["Name"]
+        deps[name] = _names(fields.get("Depends On", ""))
+        for prov in _names(fields.get("Provides", "")):
             provides.setdefault(prov, name)
     return deps, provides
+
+
+def group_members(text: str, groups: list[str]) -> list[str]:
+    """Installierte Pakete, die zu einer der ``groups`` gehören (Feld „Groups“ von ``pacman -Qi``)."""
+    wanted = set(groups)
+    return sorted(f["Name"] for f in _qi_blocks(text) if wanted & set(_names(f.get("Groups", ""))))
 
 
 def closure(deps: dict[str, list[str]], provides: dict[str, str], roots: list[str]) -> set[str]:

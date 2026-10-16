@@ -3,6 +3,7 @@
 #   pkg:<paket>   Wurzelpaket: alle ausführbaren Dateien (/usr/bin, /usr/lib) seiner gesamten
 #                 Abhängigkeitskette sind erlaubt – außer Programmen mit sichtbarem
 #                 .desktop-Eintrag (Apps = Eltern-Entscheidung), Shells/Interpreter und Ausschlüssen.
+#   group:<name>  alle installierten Pakete dieser Paketgruppe als Wurzelpakete (wie pkg:)
 #   <muster>      zusätzlich erlaubter Pfad (fnmatch-Glob)
 #   !<muster>     nie Basis (Eltern können es trotzdem einzeln freigeben)
 #
@@ -10,6 +11,11 @@
 # /usr/lib/kidctl/* ist immer erlaubt, der dynamische Loader (ld-linux*) nie.
 
 # --- Plasma-Sitzung (Wayland) ---
+# Gruppen decken die Hintergrunddienste einer vollen Plasma-Installation ab (kded, kwalletd,
+# powerdevil, baloo, kactivitymanagerd, Portale, KIO-Worker …); sichtbare Apps daraus (Discover,
+# Systemmonitor …) bleiben Eltern-Entscheidung.
+group:plasma
+group:kf6
 pkg:plasma-desktop
 pkg:plasma-workspace
 pkg:kwin
@@ -43,3 +49,8 @@ pkg:flatpak
 !/usr/bin/alacritty
 !/usr/bin/kitty
 !/usr/bin/foot
+
+# --- universelle Netzwerk-Werkzeuge (kommen über Gruppen-Abhängigkeiten mit) nie als Basis ---
+!/usr/bin/socat*
+!/usr/bin/filan
+!/usr/bin/procan

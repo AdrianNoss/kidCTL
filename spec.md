@@ -186,7 +186,10 @@ Verlängerungsanfragen.
     Einstieg), **Sperren**. *(Ergänzung zur Spec, Bestätigung ausstehend.)*
   - Basisliste wird aus Paketen berechnet: alle ausführbaren Dateien (/usr/bin, /usr/lib) der
     Abhängigkeitskette von Plasma/KWin/Xwayland/Pipewire/Portalen/Flatpak
-    (`/usr/lib/kidctl/base-programs.txt`, `pkg:`-Zeilen), ohne Programme mit sichtbarem
+    (`/usr/lib/kidctl/base-programs.txt`, `pkg:`-Zeilen) sowie aller installierten Pakete der
+    Gruppen `plasma` und `kf6` (`group:`-Zeilen, entschieden 2026-10-16: KDE-Hintergrunddienste wie
+    kded, kwalletd, powerdevil, baloo, kactivitymanagerd mussten sonst einzeln freigegeben werden;
+    `socat`/`filan`/`procan` ausgeschlossen), ohne Programme mit sichtbarem
     .desktop-Eintrag (= Apps, Eltern-Entscheidung), ohne Shells/Interpreter/Terminals und ohne
     dynamischen Loader (`ld-linux*`, startet sonst beliebige Programme). Neu berechnet beim Start
     und nach pacman-Updates. Ist sie leer (Fehler), wird nur protokolliert – nie die Sitzung zerstört.
@@ -711,3 +714,9 @@ Verlängerungsanfragen.
   während der Sitzung. Jetzt aufgeschoben bis zur Abmeldung (`KidMounts.deferred`, Prüfung je Takt).
   Version 0.11.1. Getestet: Agent 121 (Aufschub bei Anmeldung, Aushängen nach Abmeldung, Aufschub
   verworfen bei erneutem Einschalten, Erkennung über /run/user/<uid>).
+- 2026-10-16: Basisliste um Paketgruppen erweitert (`group:plasma`, `group:kf6`; Mitglieder aus dem
+  Feld „Groups“ von `pacman -Qi`), nach Nutzer-Test: KDE-Hintergrundprogramme mussten mühsam einzeln
+  freigegeben werden. Version 0.12.0. Getestet: Agent 125 (Gruppenauflösung, Datei-Format, Berechnung
+  mit Gruppen, socat-Ausschluss); Probe auf dem Entwicklungsrechner (Plasma, nur pacman-Abfrage): 2188 →
+  2304 Programme, u. a. kded6, kwalletd6, org_kde_powerdevil, kactivitymanagerd, polkit-kde-Agent,
+  xembedsniproxy, plasma-browser-integration-host; keine Shells/Terminals neu.

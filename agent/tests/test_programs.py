@@ -333,3 +333,55 @@ def test_read_proc_rereads_when_exe_changes(monkeypatch):
     monkeypatch.setattr(procs, "_read_once", lambda pid, exe: seen.append(exe) or proc(exe, ["sh"], pid=pid))
     info = procs.read_proc(5)
     assert info.exe == "/usr/bin/bash" and seen == ["/usr/lib/systemd/systemd-executor", "/usr/bin/bash"]
+
+
+QI_GROUPS = """Name            : powerdevil
+Groups          : plasma
+Depends On      : kidletime
+
+Name            : kidletime
+Groups          : kf6
+Depends On      : None
+
+Name            : baloo
+Groups          : kf6  kf6-extra
+Depends On      : None
+
+Name            : firefox
+Groups          : None
+Depends On      : None
+"""
+
+
+def test_group_members():
+    assert programs.group_members(QI_GROUPS, ["plasma"]) == ["powerdevil"]
+    assert programs.group_members(QI_GROUPS, ["kf6"]) == ["baloo", "kidletime"]
+    assert programs.group_members(QI_GROUPS, []) == []
+    deps, provides = programs.parse_pacman_qi(QI_GROUPS)
+    assert programs.closure(deps, provides, programs.group_members(QI_GROUPS, ["plasma"])) == {
+        "powerdevil", "kidletime"}
+
+
+def test_base_file_groups(tmp_path):
+    f = tmp_path / "base.txt"
+    f.write_text("group:plasma\npkg:kwin\n")
+    spec = programs.load_base(f)
+    assert spec.groups == ["plasma"] and spec.packages == ["kwin"]
+
+
+def test_compute_base_uses_groups(monkeypatch, tmp_path):
+    from kidctl_agent import watcher
+    exe = tmp_path / "powerdevil"
+    exe.write_text("")
+    exe.chmod(0o755)
+    calls = []
+
+    def fake_run(cmd, **kw):
+        import subprocess
+        calls.append(cmd)
+        out = QI_GROUPS if cmd[1] == "-Qi" else f"{exe}\n"
+        return subprocess.CompletedProcess(cmd, 0, out, "")
+    monkeypatch.setattr(watcher.subprocess, "run", fake_run)
+    monkeypatch.setattr(watcher, "base_paths", lambda files, app_exes, excludes: frozenset(files))
+    assert watcher._compute_base([], set(), [], ["plasma"]) == {str(exe)}
+    assert calls[1][:2] == ["pacman", "-Qlq"] and set(calls[1][2:]) == {"powerdevil", "kidletime"}
