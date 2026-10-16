@@ -55,11 +55,46 @@ def test_sync_mounts_and_unmounts_only_ours(monkeypatch):
                       MY_HOME, MY_HOME)]
     # Schon eingehängt -> nichts; Kind nicht mehr zugeordnet -> nur unseren Mount aushängen
     sysd.calls.clear()
-    m2 = KidMounts(run=sysd, mounts=lambda: {MY_HOME})
+    m2 = KidMounts(run=sysd, mounts=lambda: {MY_HOME}, in_use=lambda h: False)
     m2.sync({ME})
     assert not [c for c in sysd.calls if c[0] in ("systemd-mount", "systemd-umount")]
     m2.sync(set())
     assert [c for c in sysd.calls if c[0] == "systemd-umount"] == [("systemd-umount", MY_HOME)]
+
+
+def test_unmount_deferred_while_owner_logged_in(monkeypatch):
+    """Programmkontrolle aus, während das Kind angemeldet ist: Aushängen erst nach der Abmeldung
+    (sofortiges Aushängen hatte die Plasma-Sitzung abgeschossen -> schwarzer Bildschirm)."""
+    monkeypatch.setattr(kidmounts, "HOME_PARENT", os.path.dirname(MY_HOME))
+    monkeypatch.setattr(kidmounts.os, "listdir", lambda p: [os.path.basename(MY_HOME)])
+    sysd = FakeSystemd(active={MY_HOME})
+    logged_in = {"yes": True}
+    m = KidMounts(run=sysd, mounts=lambda: {MY_HOME}, in_use=lambda h: logged_in["yes"])
+    m.sync(set())
+    assert not [c for c in sysd.calls if c[0] == "systemd-umount"]
+    assert m.deferred == {MY_HOME} and not m.releasable()
+    logged_in["yes"] = False                      # abgemeldet
+    assert m.releasable()
+    m.sync(set())
+    assert [c for c in sysd.calls if c[0] == "systemd-umount"] == [("systemd-umount", MY_HOME)]
+    assert m.deferred == set() and not m.releasable()
+
+
+def test_deferred_cleared_when_wanted_again(monkeypatch):
+    monkeypatch.setattr(kidmounts, "HOME_PARENT", os.path.dirname(MY_HOME))
+    monkeypatch.setattr(kidmounts.os, "listdir", lambda p: [os.path.basename(MY_HOME)])
+    m = KidMounts(run=FakeSystemd(active={MY_HOME}), mounts=lambda: {MY_HOME}, in_use=lambda h: True)
+    m.sync(set())
+    assert m.deferred == {MY_HOME}
+    m.sync({ME})                                   # wieder eingeschaltet -> nichts mehr aufgeschoben
+    assert m.deferred == set()
+
+
+def test_home_in_use_checks_runtime_dir(tmp_path, monkeypatch):
+    assert kidmounts.home_in_use(str(tmp_path / "fehlt")) is False
+    exists = []
+    monkeypatch.setattr(kidmounts.os.path, "exists", lambda p: exists.append(p) or True)
+    assert kidmounts.home_in_use(str(tmp_path)) is True and exists == [f"/run/user/{os.getuid()}"]
 
 
 def test_ensure_steam_creates_library_and_links_as_user(tmp_path, monkeypatch):

@@ -126,6 +126,8 @@ class Agent:
         # Login-Sperre sofort (auch mit gecachter Policy) – sonst wäre direkt nach dem Booten
         # kurz eine Anmeldung möglich. Gilt auch ohne laufende Sitzung.
         self.loginlock.update({u for u, d in decisions.items() if not d.allowed})
+        if self.mounts.releasable():  # aufgeschobenes Aushängen nach der Abmeldung nachholen
+            await self.sync_mounts()
         if self._synced or boottime() - self._started >= STARTUP_SYNC:
             await self.enforcer.step(now.date(), sessions, decisions)
             await self.programs.scan()

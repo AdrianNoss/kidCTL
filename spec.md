@@ -169,6 +169,9 @@ Verlängerungsanfragen.
     kein Symlink, Eigentümer = Kind.
   - **Systemweit** `/tmp`, `/var/tmp` (Bind-Mount auf sich selbst) und `/dev/shm` mit `noexec`
     (`kidctl-noexec.service`, vom Agenten per `Wants=` mitgestartet, `ExecStop` nimmt es zurück).
+  - Aufheben (Programmkontrolle aus / Zuordnung entfernt) nie während der Besitzer angemeldet ist
+    (`/run/user/<uid>` existiert) – sonst bricht die laufende Plasma-Sitzung ab; der Agent holt es nach
+    der Abmeldung nach.
 - Whitelist besteht aus:
   1. **Fester Basisliste** (für Eltern unsichtbar): KDE/Plasma-Komponenten (`kwin_wayland`,
      `plasmashell`, `dbus`, `pipewire`, `xdg-desktop-portal*` usw.) und Tray-App.
@@ -703,3 +706,8 @@ Verlängerungsanfragen.
   Agent 118 (10 min: Hinweis, Erinnerung, Abmeldung genau nach Ablauf; 0 = sofort; Zeitende unverändert),
   Tray 7.
 - 2026-10-16: Sichttest „Jetzt sperren“ mit Vorwarnzeit auf echtem Testrechner (0.11.0) vom Nutzer bestätigt.
+- 2026-10-16: Fix: Programmkontrolle „Sperren“ → „Aus“ bei angemeldetem Kind führte zu eingefrorenem
+  Desktop/schwarzem Bildschirm (Nutzer-Test). Ursache: sofortiges `systemd-umount` des noexec-Homes
+  während der Sitzung. Jetzt aufgeschoben bis zur Abmeldung (`KidMounts.deferred`, Prüfung je Takt).
+  Version 0.11.1. Getestet: Agent 121 (Aufschub bei Anmeldung, Aushängen nach Abmeldung, Aufschub
+  verworfen bei erneutem Einschalten, Erkennung über /run/user/<uid>).

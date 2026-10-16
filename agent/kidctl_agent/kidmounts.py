@@ -36,6 +36,17 @@ def _unescape(path: str) -> str:
     return path.encode().decode("unicode_escape") if "\\" in path else path
 
 
+def home_in_use(home: str) -> bool:
+    """Ist der Besitzer des Homes angemeldet? (Laufzeitverzeichnis existiert, solange eine Sitzung
+    oder der user@-Manager läuft.) Ein Home darf dann nicht ausgehängt werden – das reißt die laufende
+    Plasma-Sitzung mit (schwarzer Bildschirm)."""
+    try:
+        uid = os.stat(home).st_uid
+    except OSError:
+        return False
+    return os.path.exists(f"/run/user/{uid}")
+
+
 def noexec_mounts() -> set[str]:
     """Mountpunkte mit noexec (aus /proc/self/mountinfo)."""
     out = set()
@@ -64,9 +75,11 @@ def safe_home(user: str) -> str | None:
 
 
 class KidMounts:
-    def __init__(self, run=_run, mounts=noexec_mounts) -> None:
+    def __init__(self, run=_run, mounts=noexec_mounts, in_use=home_in_use) -> None:
         self.run = run
         self.mounts = mounts
+        self.in_use = in_use
+        self.deferred: set[str] = set()  # Aushängen aufgeschoben, bis der Besitzer abgemeldet ist
         self._warned: set[str] = set()
 
     def unit_for(self, path: str) -> str:
@@ -110,9 +123,20 @@ class KidMounts:
                 log.info("Home von %s noexec eingehängt", user)
             else:
                 log.error("noexec für %s fehlgeschlagen: %s", home, r.stderr.strip())
+        self.deferred -= wanted.keys()
         for home in self.ours() - wanted.keys():
+            if self.in_use(home):
+                if home not in self.deferred:
+                    log.info("noexec für %s wird nach der Abmeldung aufgehoben (Sitzung läuft)", home)
+                    self.deferred.add(home)
+                continue
+            self.deferred.discard(home)
             r = self.run("systemd-umount", home)
             log.info("noexec für %s aufgehoben%s", home, "" if r.returncode == 0 else f": {r.stderr.strip()}")
+
+    def releasable(self) -> bool:
+        """Ist ein aufgeschobenes Home inzwischen frei (Besitzer abgemeldet)?"""
+        return any(not self.in_use(h) for h in self.deferred)
 
     # ---------- Steam ----------
 
