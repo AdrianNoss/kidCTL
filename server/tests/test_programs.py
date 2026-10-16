@@ -78,3 +78,47 @@ def test_blocked_log(client, parent):
             assert all(e.at.tzinfo is None for e in events)
         page = client.get(f"/children/{cid}").text
         assert "Konsole" in page and "interaktive Shell" in page and "nur protokolliert" in page
+
+
+def test_catalog_grouped_by_category(client, parent):
+    from app import programs
+    cid, tok = _setup(client, parent)
+    apps = [p.AppEntry(key="exe:/usr/bin/supertux2", name="SuperTux", categories=["Game", "ArcadeGame"]),
+            p.AppEntry(key="exe:/usr/bin/gcompris", name="GCompris", categories=["Education", "Game"]),
+            p.AppEntry(key="exe:/usr/bin/systemsettings", name="Systemeinstellungen", categories=["Qt", "KDE", "Settings"]),
+            p.AppEntry(key="exe:/usr/bin/firefox", name="Firefox", categories=["Network", "WebBrowser"]),
+            p.AppEntry(key="exe:/usr/bin/foo", name="Foo")]
+    with device(client, tok, "pc", map_to=cid) as (ws, _):
+        _policy(ws)
+        ws.send_text(p.ReportApps(apps=apps).model_dump_json())
+        _sync(ws)
+        with SessionLocal() as db:
+            assert db.scalar(select(DeviceApp.categories).where(DeviceApp.name == "SuperTux")) == "Game;ArcadeGame"
+            groups = programs.grouped_catalog(programs.catalog_for_child(db, cid))
+        assert [(g, [a.name for a in a_]) for g, _l, a_ in groups] == [
+            ("game", ["GCompris", "SuperTux"]),          # Spiel-Kategorie gewinnt vor Lernen
+            ("internet", ["Firefox"]),
+            ("system", ["Systemeinstellungen"]),
+            ("other", ["Foo"])]
+        page = client.get(f"/children/{cid}").text
+        assert 'data-group="game" open' in page and 'data-group="system">' in page   # System eingeklappt
+        assert "0 von 2 erlaubt" in page and "Programm suchen" in page
+
+
+def test_group_for_mapping():
+    from app.programs import group_for
+    assert group_for("Education;Science") == "education"
+    assert group_for("AudioVideo;Player") == "media"
+    assert group_for("") == "other" and group_for("X-Unbekannt") == "other"
+
+
+def test_device_app_categories_migrated(tmp_path):
+    from sqlalchemy import create_engine, text
+    from app import migrate
+    eng = create_engine(f"sqlite:///{tmp_path}/alt.db")
+    with eng.begin() as c:
+        c.execute(text("CREATE TABLE device_app (id INTEGER PRIMARY KEY, name VARCHAR(255))"))
+        c.execute(text("INSERT INTO device_app (name) VALUES ('alt')"))
+    migrate.run_migrations(eng)
+    with eng.connect() as c:
+        assert c.execute(text("SELECT categories FROM device_app")).scalar() == ""

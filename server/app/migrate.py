@@ -38,6 +38,8 @@ COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
     ("child", "locked_until", "DATETIME"),
     # 2026-10-16: Vorwarnzeit bei „Jetzt sperren“
     ("child", "lock_grace_minutes", "INTEGER NOT NULL DEFAULT 1"),
+    # 2026-10-16: Kategorien für die gruppierte Programmliste
+    ("device_app", "categories", "TEXT NOT NULL DEFAULT ''"),
 ]
 
 

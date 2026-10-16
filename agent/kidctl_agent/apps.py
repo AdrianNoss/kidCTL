@@ -66,7 +66,9 @@ def parse_desktop(path: Path) -> AppEntry | None:
         if exe is None:
             return None
         key = f"exe:{exe}"
-    return AppEntry(key=key, name=name[:255], icon=e.get("Icon", "")[:255], desktop_id=path.name[:255])
+    categories = [c.strip()[:64] for c in e.get("Categories", "").split(";") if c.strip()][:20]
+    return AppEntry(key=key, name=name[:255], icon=e.get("Icon", "")[:255], desktop_id=path.name[:255],
+                    categories=categories)
 
 
 def scan_apps(dirs=APP_DIRS) -> list[AppEntry]:

@@ -236,3 +236,16 @@ details > summary { cursor:pointer; color:var(--ink-2); font-weight:600; font-si
   .msg { max-width:95%; }
 }
 .locked-card { border-color:var(--danger); }
+/* Programmliste: Gruppen, Suche */
+.app-search { margin-bottom:.8rem; }
+.app-group { border:1px solid var(--line); border-radius:var(--radius); margin-bottom:.5rem; background:var(--surface); }
+.app-group > summary { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; padding:.55rem .8rem; margin:0;
+                       color:var(--ink); font-size:.95rem; list-style:none; }
+.app-group > summary::-webkit-details-marker { display:none; }
+.app-group > summary::before { content:""; width:.45rem; height:.45rem; border:solid var(--ink-2); border-width:0 2px 2px 0;
+                               transform:rotate(-45deg); transition:transform .12s; margin-right:.2rem; }
+.app-group[open] > summary::before { transform:rotate(45deg); }
+.app-group-title { font-weight:650; }
+.app-bulk { margin-left:auto; display:inline-flex; gap:.25rem; }
+.app-options { padding:0 .8rem .8rem; margin:0; grid-template-columns:repeat(auto-fill, minmax(13rem, 1fr)); }
+.app-options .option { padding:.45rem .65rem; }

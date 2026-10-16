@@ -100,7 +100,9 @@ def _child_page(request: Request, db: Session, child: Child, status_code: int = 
         DayException.child_id == child.id, DayException.day >= today).order_by(DayException.day)).all()
     ctx.setdefault("credit_day", today.isoformat())
     return render(request, "child.html", status_code=status_code, child=child,
-                  catalog=programs.catalog_for_child(db, child.id), program_modes=programs.MODES,
+                  catalog=(catalog := programs.catalog_for_child(db, child.id)),
+                  catalog_groups=programs.grouped_catalog(catalog), collapsed_groups=programs.COLLAPSED_GROUPS,
+                  program_modes=programs.MODES,
                   web=webfilter.child_settings(db, child.id), web_modes=webfilter.MODES,
                   bundles=webfilter.BUNDLES, blocklists=webfilter.BLOCKLISTS,
                   default_lists=webfilter.DEFAULT_LISTS,

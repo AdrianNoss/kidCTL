@@ -26,7 +26,8 @@ def apply_app_report(db: Session, dev: Device, msg: p.ReportApps) -> None:
         if a.key in seen:
             continue
         seen.add(a.key)
-        db.add(DeviceApp(device_id=dev.id, key=a.key, name=a.name, icon=a.icon, desktop_id=a.desktop_id))
+        db.add(DeviceApp(device_id=dev.id, key=a.key, name=a.name, icon=a.icon, desktop_id=a.desktop_id,
+                         categories=";".join(a.categories)))
 
 
 def apply_blocked_report(db: Session, dev: Device, msg: p.BlockedReport) -> int:
@@ -54,6 +55,39 @@ class CatalogEntry:
     devices: int        # auf wie vielen Geräten des Kindes installiert
     allowed: bool
     missing: bool = False  # freigegeben, aber auf keinem Gerät (mehr) gemeldet
+    group: str = "other"
+
+
+# Gruppen der Programmliste: (ID, Anzeige, freedesktop-Kategorien) – erste passende Gruppe gewinnt
+# (Spiele vor Lernen usw., weil viele Apps mehrere Kategorien tragen).
+GROUPS = [
+    ("game", "Spiele", {"Game"}),
+    ("education", "Lernen", {"Education", "Science"}),
+    ("internet", "Internet & Kommunikation", {"Network", "WebBrowser", "Email", "Chat", "InstantMessaging"}),
+    ("office", "Büro", {"Office"}),
+    ("graphics", "Grafik", {"Graphics"}),
+    ("media", "Musik & Video", {"AudioVideo", "Audio", "Video"}),
+    ("development", "Entwicklung", {"Development"}),
+    ("utility", "Werkzeuge", {"Utility"}),
+    ("system", "System & Einstellungen", {"System", "Settings", "Monitor", "PackageManager"}),
+]
+GROUP_LABELS = {gid: label for gid, label, _ in GROUPS} | {"other": "Sonstiges", "missing": "Nicht mehr installiert"}
+COLLAPSED_GROUPS = {"system"}  # standardmäßig eingeklappt
+
+
+def group_for(categories: str) -> str:
+    cats = {c for c in categories.split(";") if c}
+    return next((gid for gid, _label, match in GROUPS if cats & match), "other")
+
+
+def grouped_catalog(entries: list[CatalogEntry]) -> list[tuple[str, str, list[CatalogEntry]]]:
+    """(ID, Anzeige, Einträge) in fester Reihenfolge, leere Gruppen weggelassen."""
+    order = [gid for gid, _l, _c in GROUPS] + ["other", "missing"]
+    by_group: dict[str, list[CatalogEntry]] = {}
+    for e in entries:
+        by_group.setdefault("missing" if e.missing else e.group, []).append(e)
+    return [(gid, GROUP_LABELS[gid], sorted(by_group[gid], key=lambda e: e.name.lower()))
+            for gid in order if gid in by_group]
 
 
 def catalog_for_child(db: Session, child_id: int) -> list[CatalogEntry]:
@@ -64,7 +98,8 @@ def catalog_for_child(db: Session, child_id: int) -> list[CatalogEntry]:
         for app in db.scalars(select(DeviceApp).where(DeviceApp.device_id.in_(devices))):
             e = entries.get(app.key)
             if e is None:
-                entries[app.key] = CatalogEntry(app.key, app.name, 1, app.key in allowed)
+                entries[app.key] = CatalogEntry(app.key, app.name, 1, app.key in allowed,
+                                                group=group_for(app.categories or ""))
             else:
                 e.devices += 1
     for key in allowed - entries.keys():

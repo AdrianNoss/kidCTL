@@ -271,6 +271,8 @@ class AppEntry(BaseModel):
     name: str = Field(max_length=255)
     icon: str = Field(default="", max_length=255)
     desktop_id: str = Field(default="", max_length=255)
+    # freedesktop-Kategorien (z. B. Game, Education, Settings) – für die Gruppierung im WebUI
+    categories: list[Annotated[str, Field(max_length=64)]] = Field(default=[], max_length=20)
 
 
 class ReportApps(BaseModel):

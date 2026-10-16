@@ -162,18 +162,31 @@
       Systemkomponenten (KDE/Plasma, KidCTL) sind immer erlaubt. Terminals, Shells und Interpreter sind gesperrt,
       solange sie nicht ausdrücklich freigegeben sind.</small></p>
     {% if catalog %}
-    <div class="scroll">
-    <table>
-      <tr><th>Erlaubt</th><th>Programm</th><th></th></tr>
-      {% for app in catalog %}
-      <tr{% if app.missing %} class="muted"{% endif %}>
-        <td style="width:2.5rem"><input type="checkbox" name="app" value="{{ app.key }}" id="app{{ loop.index }}"{% if app.allowed %} checked{% endif %}></td>
-        <td><label for="app{{ loop.index }}" style="margin:0;color:var(--ink);cursor:pointer">{{ app.name }}<br><small class="muted" style="font-weight:400">{{ app.key }}</small></label></td>
-        <td class="right"><small class="muted">{% if app.missing %}nicht mehr installiert{% elif app.devices > 1 %}{{ app.devices }} Geräte{% endif %}</small></td>
-      </tr>
+    <div class="app-catalog">
+      <input type="search" class="app-search" placeholder="Programm suchen …" aria-label="Programm suchen" hidden>
+      <p class="app-nomatch muted" hidden>Kein Programm gefunden.</p>
+      {% for gid, label, apps in catalog_groups %}{% set n_allowed = apps | selectattr("allowed") | list | length %}
+      <details class="app-group" data-group="{{ gid }}"{% if gid not in collapsed_groups %} open{% endif %}>
+        <summary>
+          <span class="app-group-title">{{ label }}</span>
+          <span class="pill{% if n_allowed %} ok{% endif %} app-count">{{ n_allowed }} von {{ apps | length }} erlaubt</span>
+          <span class="app-bulk" hidden>
+            <button type="button" class="ghost small" data-bulk="all">Alle</button>
+            <button type="button" class="ghost small" data-bulk="none">Keine</button>
+          </span>
+        </summary>
+        <div class="options app-options">
+          {% for app in apps %}
+          <label class="option app-item" data-name="{{ app.name | lower }}" title="{{ app.key }}">
+            <input type="checkbox" name="app" value="{{ app.key }}"{% if app.allowed %} checked{% endif %}>
+            <span>{{ app.name }}{% if app.missing %}<small>nicht mehr installiert</small>{% elif app.devices > 1 %}<small>{{ app.devices }} Geräte</small>{% endif %}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </details>
       {% endfor %}
-    </table>
     </div>
+    <script src="/static/programs.js" defer></script>
     {% else %}<p class="muted">Noch keine Programmliste – sie erscheint, sobald ein Gerät mit zugeordnetem Benutzer verbunden ist.</p>{% endif %}
     <button type="submit">Speichern</button>
   </form>

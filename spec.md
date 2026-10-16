@@ -193,6 +193,11 @@ Verlängerungsanfragen.
     .desktop-Eintrag (= Apps, Eltern-Entscheidung), ohne Shells/Interpreter/Terminals und ohne
     dynamischen Loader (`ld-linux*`, startet sonst beliebige Programme). Neu berechnet beim Start
     und nach pacman-Updates. Ist sie leer (Fehler), wird nur protokolliert – nie die Sitzung zerstört.
+  - Programmliste im WebUI gruppiert nach freedesktop-Kategorien (entschieden 2026-10-16): Spiele,
+    Lernen, Internet & Kommunikation, Büro, Grafik, Musik & Video, Entwicklung, Werkzeuge,
+    System & Einstellungen (standardmäßig eingeklappt), Sonstiges, Nicht mehr installiert; erste
+    passende Gruppe gewinnt (Spiele vor Lernen). Je Gruppe Zähler „x von y erlaubt“ und „Alle/Keine“,
+    darüber Suchfeld (kleines JavaScript; ohne JS bleibt die Liste bedienbar). Pfad nur als Tooltip.
   - Eltern-Liste: App-Schlüssel `exe:<pfad>` bzw. `flatpak:<app-id>` aus dem gemeldeten Katalog
     (systemweite .desktop-Einträge; nicht `~/.local/share/applications`). Hilfsprogramme im
     Verzeichnis einer freigegebenen App (z. B. `/usr/lib/firefox/*`) sind mit erlaubt.
@@ -720,3 +725,8 @@ Verlängerungsanfragen.
   mit Gruppen, socat-Ausschluss); Probe auf dem Entwicklungsrechner (Plasma, nur pacman-Abfrage): 2188 →
   2304 Programme, u. a. kded6, kwalletd6, org_kde_powerdevil, kactivitymanagerd, polkit-kde-Agent,
   xembedsniproxy, plasma-browser-integration-host; keine Shells/Terminals neu.
+- 2026-10-16: Programmliste übersichtlicher (Nutzer-Rückmeldung „lang und unübersichtlich“): Agent meldet
+  `Categories` der .desktop-Einträge (`AppEntry.categories`), Server speichert sie (`device_app.categories`,
+  Migration) und gruppiert; Suchfeld + „Alle/Keine“ (`static/programs.js`). Version 0.13.0. Getestet:
+  Server 69 (Gruppierung inkl. Vorrang, Speicherung, eingeklappte Systemgruppe, Migration), Agent 127
+  (Kategorien aus .desktop); Screenshot mit 89 Apps des Entwicklungsrechners.

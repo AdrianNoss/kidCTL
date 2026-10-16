@@ -190,6 +190,7 @@ class DeviceApp(Base):
     name: Mapped[str] = mapped_column(String(255))
     icon: Mapped[str] = mapped_column(String(255), default="")
     desktop_id: Mapped[str] = mapped_column(String(255), default="")
+    categories: Mapped[str] = mapped_column(Text, default="")  # freedesktop-Kategorien, „;“-getrennt
 
 
 class ChildProgram(Base):
