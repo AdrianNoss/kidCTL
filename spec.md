@@ -214,6 +214,14 @@ Verlängerungsanfragen.
   bzw. `/proc/<pid>/root/.flatpak-info`). `flatpak --user` wird nicht unterstützt.
 - **Steam:** nur als Ganzes freigegeben/gesperrt.
   - Bibliothek unter `/srv/steam/<user>` (ohne `noexec`, Eigentümer Kind, 0700).
+  - Verweis + Bibliothek für **jedes zugeordnete Kind**, unabhängig vom Programm-Modus (sonst legt
+    Steam bei ausgeschalteter Kontrolle einen echten Ordner im Home an, der nach dem Einschalten
+    nicht mehr startet – Nutzer-Test 2026-10-16).
+  - Vorhandener Steam-Ordner im Home wird nach der Abmeldung automatisch nach `/srv/steam/<user>`
+    verschoben (entschieden 2026-10-16): nur per `renameat` (gleiche Partition), jeder Pfadteil ohne
+    Symlink-Verfolgung geöffnet und auf das Kind als Besitzer geprüft, Ziel muss leer sein. Sonst
+    (andere Partition, Ziel nicht leer, Verweis woandershin) Integritätsfehler `steam:<user>` mit
+    Hinweis; Anleitung zum Umzug von Hand in `docs/installation.md`.
     `~/.local/share/Steam` ist ein **Symlink** dorthin statt eines Bind-Mounts (entschieden
     2026-10-14): Ein Mount-Ziel im Kinder-Home ließe sich per Symlink auf Systempfade umlenken
     (Weg zu Root-Rechten). Den Link legt der Agent mit den Rechten des Kindes an; ein vorhandenes
@@ -730,3 +738,11 @@ Verlängerungsanfragen.
   Migration) und gruppiert; Suchfeld + „Alle/Keine“ (`static/programs.js`). Version 0.13.0. Getestet:
   Server 69 (Gruppierung inkl. Vorrang, Speicherung, eingeklappte Systemgruppe, Migration), Agent 127
   (Kategorien aus .desktop); Screenshot mit 89 Apps des Entwicklungsrechners.
+- 2026-10-16: Steam startete bei Programmkontrolle nicht (Nutzer-Test: `~/.local/share/Steam` war ein echter
+  Ordner, angelegt während die Kontrolle aus war → bei noexec-Home nicht ausführbar). Recherche der
+  Startkette (bin_steam.sh über `env bash` → steam.sh → ubuntu12_32/steam → reaper/steam-launch-wrapper →
+  SteamLinuxRuntime _v2-entry-point/pressure-vessel/bwrap → Proton/Spiel): durch die Abstammungsregel
+  bereits abgedeckt. Fix: Verweis für alle zugeordneten Kinder, automatischer Umzug nach Abmeldung,
+  Integritätsmeldung. Version 0.14.0. Getestet: Agent 131 (Umzug nach Abmeldung inkl. Verweis/Rechte,
+  Symlink-Angriff auf Pfadteil → nichts bewegt, andere Partition → Warnung ohne Datenverlust,
+  Integritätsmeldung).

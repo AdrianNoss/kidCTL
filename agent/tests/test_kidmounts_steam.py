@@ -156,3 +156,79 @@ def test_steam_descendants_outside_library_only_when_enabled():
     called = []
     classify(proc("/usr/bin/kwin_wayland"), steam_allowed(STEAM), ancestors=lambda: called.append(1) or [])
     assert called == []
+
+
+# ---------- Umzug eines vorhandenen Steam-Ordners ----------
+
+def _steam_home(tmp_path, monkeypatch):
+    """Fake-Home (eigener User) mit echtem Steam-Ordner, Bibliothek unter tmp/srv-steam."""
+    home = tmp_path / "home" / ME
+    (home / ".local/share/Steam/ubuntu12_32").mkdir(parents=True)
+    (home / ".local/share/Steam/steam.sh").write_text("#!/bin/sh\n")
+    root = tmp_path / "srv-steam"
+    monkeypatch.setattr(kidmounts, "STEAM_INSTALLED", tmp_path)
+    monkeypatch.setattr(kidmounts, "STEAM_ROOT", root)
+    monkeypatch.setattr(kidmounts, "STEAM_ROOT_OWNER", os.getuid())
+    monkeypatch.setattr(kidmounts, "safe_home", lambda u: str(home) if u == ME else None)
+    return home, root / ME
+
+
+def _real_link(*cmd):
+    """setpriv-Aufruf ohne Rechtewechsel ausführen (Tests laufen als eigener User)."""
+    if cmd[0] == "setpriv":
+        cmd = cmd[cmd.index("--") + 1:]
+    return subprocess.run(cmd, capture_output=True, text=True)
+
+
+def test_existing_steam_dir_moved_after_logout(tmp_path, monkeypatch):
+    home, lib = _steam_home(tmp_path, monkeypatch)
+    logged_in = {"yes": True}
+    m = KidMounts(run=_real_link, in_use=lambda h: logged_in["yes"])
+    m.ensure_steam({ME})
+    assert (home / ".local/share/Steam").is_dir() and not (home / ".local/share/Steam").is_symlink()
+    assert ME in m.steam_pending and "nach der Abmeldung" in m.steam_problems[ME]
+    logged_in["yes"] = False
+    assert m.releasable()
+    m.ensure_steam({ME})
+    link = home / ".local/share/Steam"
+    assert link.is_symlink() and os.readlink(link) == str(lib)
+    assert (lib / "steam.sh").exists() and (lib / "ubuntu12_32").is_dir()
+    assert oct(lib.stat().st_mode & 0o777) == "0o700"
+    assert m.steam_problems == {} and m.steam_pending == set() and not m.releasable()
+
+
+def test_steam_move_refuses_symlinked_path_components(tmp_path, monkeypatch):
+    """Das Kind ersetzt .local durch einen Verweis auf ein fremdes Verzeichnis -> nichts wird bewegt."""
+    home, lib = _steam_home(tmp_path, monkeypatch)
+    victim = tmp_path / "fremd"
+    (victim / "share/Steam").mkdir(parents=True)
+    import shutil
+    shutil.rmtree(home / ".local")
+    (home / ".local").symlink_to(victim)
+    m = KidMounts(run=lambda *c: subprocess.CompletedProcess(c, 3, "", ""), in_use=lambda h: False)
+    m.ensure_steam({ME})
+    assert (victim / "share/Steam").is_dir()          # unangetastet
+    assert lib.is_dir() and not any(lib.iterdir())    # Ziel weiterhin leer
+    assert "nicht verschiebbar" in m.steam_problems[ME]
+
+
+def test_steam_move_cross_device_warns(tmp_path, monkeypatch):
+    import errno as _errno
+    home, lib = _steam_home(tmp_path, monkeypatch)
+    real_rename = os.rename
+
+    def exdev(src, dst, *, src_dir_fd=None, dst_dir_fd=None):
+        if src == "Steam":
+            raise OSError(_errno.EXDEV, "Invalid cross-device link")
+        return real_rename(src, dst, src_dir_fd=src_dir_fd, dst_dir_fd=dst_dir_fd)
+    monkeypatch.setattr(kidmounts.os, "rename", exdev)
+    m = KidMounts(run=_real_link, in_use=lambda h: False)
+    m.ensure_steam({ME})
+    assert "anderer Partition" in m.steam_problems[ME]
+    assert (home / ".local/share/Steam").is_dir() and lib.is_dir()    # nichts verloren, Ziel wieder da
+
+
+def test_steam_problems_in_integrity():
+    from kidctl_agent import integrity
+    checks = integrity.check_steam({"mika": "Steam-Ordner liegt im Home"})
+    assert [(c.id, c.ok) for c in checks] == [("steam:mika", False)]

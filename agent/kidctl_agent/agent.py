@@ -179,9 +179,10 @@ class Agent:
     async def sync_mounts(self) -> None:
         """noexec-Homes und Steam-Bibliotheken an die Policy angleichen (systemd, im Thread)."""
         users = self.programs.users()
+        kids = set(self.decisions(self.now_local()))  # alle zugeordneten Nicht-Admins
         try:
             await asyncio.to_thread(self.mounts.sync, users)
-            await asyncio.to_thread(self.mounts.ensure_steam, users)
+            await asyncio.to_thread(self.mounts.ensure_steam, kids)
         except Exception:
             log.exception("Mounts nicht angleichbar")
 
@@ -213,6 +214,7 @@ class Agent:
     def _run_checks(self) -> list[p.IntegrityCheck]:
         return ([integrity.check_pam(), integrity.check_nsswitch(), integrity.check_browser_policies()]
                 + integrity.check_noexec(self.programs.users())
+                + integrity.check_steam(self.mounts.steam_problems)
                 + integrity.check_dns(self.web_children()))
 
     async def check_integrity(self) -> None:

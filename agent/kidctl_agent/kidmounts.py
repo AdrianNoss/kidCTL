@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import errno
 import logging
 import os
 import pwd
@@ -24,6 +25,7 @@ DESCRIPTION = "kidctl: noexec-Home"
 HOME_PARENT = "/home"
 STEAM_ROOT = Path(os.environ.get("KIDCTL_STEAM_ROOT", "/srv/steam"))
 STEAM_INSTALLED = Path("/usr/lib/steam")
+STEAM_ROOT_OWNER = 0   # /srv/steam gehört root (Tests: eigener User)
 MOUNTINFO = "/proc/self/mountinfo"
 
 
@@ -45,6 +47,44 @@ def home_in_use(home: str) -> bool:
     except OSError:
         return False
     return os.path.exists(f"/run/user/{uid}")
+
+
+def _open_dir(name: str, dir_fd: int | None, uid: int | None) -> int:
+    """Verzeichnis ohne Symlink-Verfolgung öffnen und (optional) Besitzer prüfen."""
+    fd = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=dir_fd)
+    if uid is not None and os.fstat(fd).st_uid != uid:
+        os.close(fd)
+        raise PermissionError(errno.EPERM, "Besitzer passt nicht", name)
+    return fd
+
+
+def move_steam_dir(home: str, uid: int, lib: Path) -> bool:
+    """``<home>/.local/share/Steam`` -> ``lib`` per renameat. Jeder Pfadteil wird ohne
+    Symlink-Verfolgung geöffnet und muss dem Kind gehören – das Kind kann root so nicht auf fremde
+    Verzeichnisse umlenken. ``lib`` muss leer sein (wird ersetzt). False = nichts zu tun."""
+    fds = []
+    try:
+        fds.append(_open_dir(home, None, uid))
+        for part in (".local", "share"):
+            fds.append(_open_dir(part, fds[-1], uid))
+        st = os.stat("Steam", dir_fd=fds[-1], follow_symlinks=False)
+        if not stat.S_ISDIR(st.st_mode) or st.st_uid != uid:
+            return False
+        fds.append(_open_dir(str(lib.parent), None, STEAM_ROOT_OWNER))
+        try:
+            os.rmdir(lib.name, dir_fd=fds[-1])
+        except FileNotFoundError:
+            pass
+        try:
+            os.rename("Steam", lib.name, src_dir_fd=fds[-2], dst_dir_fd=fds[-1])
+        except OSError:
+            os.makedirs(lib, mode=0o700, exist_ok=True)   # Ziel wiederherstellen
+            os.chown(lib, uid, -1)
+            raise
+        return True
+    finally:
+        for fd in fds:
+            os.close(fd)
 
 
 def noexec_mounts() -> set[str]:
@@ -80,6 +120,8 @@ class KidMounts:
         self.mounts = mounts
         self.in_use = in_use
         self.deferred: set[str] = set()  # Aushängen aufgeschoben, bis der Besitzer abgemeldet ist
+        self.steam_pending: set[str] = set()      # Steam-Umzug wartet auf Abmeldung (User)
+        self.steam_problems: dict[str, str] = {}  # User -> Problem (für die Integritätsprüfung)
         self._warned: set[str] = set()
 
     def unit_for(self, path: str) -> str:
@@ -136,11 +178,17 @@ class KidMounts:
 
     def releasable(self) -> bool:
         """Ist ein aufgeschobenes Home inzwischen frei (Besitzer abgemeldet)?"""
-        return any(not self.in_use(h) for h in self.deferred)
+        return (any(not self.in_use(h) for h in self.deferred)
+                or any(not self.in_use(h) for h in filter(None, map(safe_home, self.steam_pending))))
 
     # ---------- Steam ----------
 
     def ensure_steam(self, users: set[str]) -> None:
+        """Für alle zugeordneten Kinder (unabhängig vom Programm-Modus): Bibliothek unter STEAM_ROOT,
+        ``~/.local/share/Steam`` als Verweis dorthin. Ein bereits vorhandener Steam-Ordner im Home
+        wird nach der Abmeldung verschoben – sonst startet Steam bei noexec-Home nicht."""
+        self.steam_problems = {u: v for u, v in self.steam_problems.items() if u in users}
+        self.steam_pending &= users
         if not STEAM_INSTALLED.exists():
             return
         STEAM_ROOT.mkdir(mode=0o755, exist_ok=True)
@@ -158,15 +206,54 @@ class KidMounts:
                 continue
             if st.st_uid != pw.pw_uid:
                 os.chown(lib, pw.pw_uid, pw.pw_gid)
-            # Link als Kind anlegen (nie als root in Kinder-Pfaden schreiben)
-            r = self.run("setpriv", f"--reuid={pw.pw_uid}", f"--regid={pw.pw_gid}", "--init-groups",
+            r = self._link(pw, home, lib)
+            if r.returncode == 3:
+                r = self._migrate(user, pw, home, lib)
+            if r.returncode == 0:
+                self.steam_problems.pop(user, None)
+                self.steam_pending.discard(user)
+            elif r.returncode != 3:
+                log.error("Steam-Link für %s fehlgeschlagen: %s", user, r.stderr.strip())
+
+    def _link(self, pw, home: str, lib: Path) -> subprocess.CompletedProcess:
+        """Link als Kind anlegen (nie als root in Kinder-Pfaden schreiben). 3 = anderes Ziel vorhanden."""
+        return self.run("setpriv", f"--reuid={pw.pw_uid}", f"--regid={pw.pw_gid}", "--init-groups",
                          "--reset-env", "--", "/bin/sh", "-c",
                          'd="$1/.local/share"; l="$d/Steam"; mkdir -p "$d" || exit 2; '
                          'if [ -L "$l" ]; then [ "$(readlink "$l")" = "$2" ] && exit 0; exit 3; fi; '
                          '[ -e "$l" ] && exit 3; ln -s "$2" "$l"', "sh", home, str(lib))
-            if r.returncode == 3 and user not in self._warned:
-                self._warned.add(user)
-                log.warning("%s/.local/share/Steam existiert bereits und zeigt nicht auf %s – Steam "
-                            "startet dort nicht (Home ist noexec). Inhalt nach %s verschieben.", home, lib, lib)
-            elif r.returncode not in (0, 3):
-                log.error("Steam-Link für %s fehlgeschlagen: %s", user, r.stderr.strip())
+
+    def _migrate(self, user: str, pw, home: str, lib: Path) -> subprocess.CompletedProcess:
+        """Vorhandenen Steam-Ordner aus dem Home nach ``lib`` verschieben (nur abgemeldet, nur per
+        Umbenennen auf derselben Partition). Rückgabe wie ``_link``; 3 = nicht (jetzt) möglich."""
+        fail = subprocess.CompletedProcess((), 3, "", "")
+        if self.in_use(home):
+            if user not in self.steam_pending:
+                log.warning("Steam-Ordner von %s liegt im Home – wird nach der Abmeldung nach %s verschoben",
+                            user, lib)
+            self.steam_pending.add(user)
+            self.steam_problems[user] = (f"Steam-Ordner liegt im Home – wird nach der Abmeldung nach {lib} "
+                                         "verschoben (bis dahin startet Steam bei Programmkontrolle nicht)")
+            return fail
+        try:
+            moved = move_steam_dir(home, pw.pw_uid, lib)
+        except OSError as e:
+            if e.errno == errno.EXDEV:
+                msg = (f"Steam-Ordner liegt im Home, {STEAM_ROOT} auf anderer Partition – bitte von Hand "
+                       f"nach {lib} verschieben (siehe Anleitung)")
+            elif e.errno == errno.ENOTEMPTY:
+                msg = f"Steam-Ordner liegt im Home, {lib} ist aber nicht leer – bitte von Hand zusammenführen"
+            else:
+                msg = f"Steam-Ordner im Home nicht verschiebbar: {e.strerror}"
+            if self.steam_problems.get(user) != msg:
+                log.error("%s: %s", user, msg)
+            self.steam_problems[user] = msg
+            self.steam_pending.discard(user)
+            return fail
+        if not moved:  # z. B. Verweis auf ein anderes Ziel
+            self.steam_problems[user] = (f"{home}/.local/share/Steam ist kein Ordner und zeigt nicht auf {lib} "
+                                         "– bitte prüfen")
+            return fail
+        log.info("Steam-Ordner von %s nach %s verschoben", user, lib)
+        os.chmod(lib, 0o700)
+        return self._link(pw, home, lib)

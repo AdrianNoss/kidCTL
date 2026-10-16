@@ -212,6 +212,26 @@ Je Kind (Seite des Kindes):
 
 Je Gerät: Alarm, wenn das Gerät länger als X Stunden offline ist (Standard 48 h).
 
+### Steam
+
+Die Steam-Bibliothek eines Kindes liegt unter `/srv/steam/<kind>`, `~/.local/share/Steam` ist nur
+ein Verweis dorthin. Grund: Bei aktiver Programmkontrolle ist das Home `noexec`, aus dem Home startet
+Steam dann nicht. Den Verweis legt der Agent für jedes zugeordnete Kind an. Einen schon vorhandenen
+Steam-Ordner im Home verschiebt er nach der Abmeldung des Kindes automatisch.
+
+Das klappt nur, wenn `/home` und `/srv` auf derselben Partition liegen. Sonst meldet das WebUI unter
+„Integrität“ „…auf anderer Partition“. Dann von Hand verschieben, bei abgemeldetem Kind und mit
+beendetem Steam:
+
+```bash
+sudo rmdir /srv/steam/<kind>                         # muss leer sein
+sudo mv /home/<kind>/.local/share/Steam /srv/steam/<kind>
+sudo chown -R <kind>: /srv/steam/<kind> && sudo chmod 700 /srv/steam/<kind>
+sudo systemctl restart kidctl-agent                  # legt den Verweis an
+```
+
+Der Ordner kann sehr groß sein, das Kopieren zwischen Partitionen dauert entsprechend.
+
 ## 5. Härtung
 
 Ohne Härtung lässt sich jede Software-Sperre per USB-Stick oder Bootmenü umgehen. Mindestens

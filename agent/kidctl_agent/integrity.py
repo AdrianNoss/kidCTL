@@ -85,6 +85,12 @@ def check_noexec(kid_users: set[str], mounts=noexec_mounts) -> list[IntegrityChe
     return out
 
 
+def check_steam(problems: dict[str, str]) -> list[IntegrityCheck]:
+    """Steam-Bibliothek im Home statt unter /srv/steam (siehe KidMounts.ensure_steam)."""
+    return [IntegrityCheck(id=f"steam:{user}", label=f"Steam-Bibliothek von {user}", ok=False, detail=msg)
+            for user, msg in sorted(problems.items())]
+
+
 def check_dns(web_children: dict[int, set[str]], run=_run) -> list[IntegrityCheck]:
     """``web_children``: Kind-ID -> Linux-User mit aktivem Website-Filter."""
     if not web_children:
