@@ -702,3 +702,4 @@ Verlängerungsanfragen.
   Getestet: Server 66 (Policy-Wert, Schnellknopf = 1 min, ungültige Werte → 400 ohne Sperre, Migration),
   Agent 118 (10 min: Hinweis, Erinnerung, Abmeldung genau nach Ablauf; 0 = sofort; Zeitende unverändert),
   Tray 7.
+- 2026-10-16: Sichttest „Jetzt sperren“ mit Vorwarnzeit auf echtem Testrechner (0.11.0) vom Nutzer bestätigt.
