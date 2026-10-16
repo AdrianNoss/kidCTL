@@ -109,7 +109,7 @@ def _child_page(request: Request, db: Session, child: Child, status_code: int = 
                   rules=sch.rules_by_day(child), groups=sch.GROUPS, weekday_names=sch.WEEKDAY_NAMES,
                   differs=sch.group_differs(child), exceptions=exceptions, today=today,
                   fmt_minutes=sch.fmt_minutes, max_quota=sch.MAX_QUOTA, max_extra=sch.MAX_EXTRA,
-                  is_locked=lk.is_locked, lock_durations=lk.DURATIONS, **ctx)
+                  is_locked=lk.is_locked, lock_durations=lk.DURATIONS, max_grace=lk.MAX_GRACE_MINUTES, **ctx)
 
 
 @router.get("/children/{child_id}")
@@ -159,12 +159,14 @@ def _back(child_id: int, back: str) -> str:
 
 
 @router.post("/children/{child_id}/lock", dependencies=[Depends(csrf_protect)])
-async def child_lock(child_id: int, duration: str = Form(""), back: str = Form(""), db: Session = Depends(get_db)):
+async def child_lock(child_id: int, request: Request, duration: str = Form(""), grace: str = Form("1"),
+                     back: str = Form(""), db: Session = Depends(get_db)):
     child = _get_or_404(db, Child, child_id)
     try:
-        lk.lock(child, duration)
-    except ValueError:
-        raise HTTPException(400, "Ungültige Dauer")
+        lk.lock(child, duration, lk.parse_grace(grace))
+    except ValueError as e:
+        db.rollback()
+        return _child_page(request, db, child, status_code=400, error=str(e))
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
     return _redirect(_back(child_id, back))

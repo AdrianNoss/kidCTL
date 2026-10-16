@@ -39,8 +39,23 @@ def is_locked(child: Child, now: datetime | None = None) -> bool:
     return child.locked_until is None or (now or utcnow()) < child.locked_until
 
 
-def lock(child: Child, choice: str) -> None:
+MAX_GRACE_MINUTES = 120
+
+
+def parse_grace(raw: str) -> int:
+    """Vorwarnzeit in Minuten (0 = sofort abmelden)."""
+    try:
+        minutes = int(raw.strip() or "1")
+    except ValueError:
+        raise ValueError("Vorwarnzeit muss eine ganze Zahl sein") from None
+    if not 0 <= minutes <= MAX_GRACE_MINUTES:
+        raise ValueError(f"Vorwarnzeit muss zwischen 0 und {MAX_GRACE_MINUTES} Minuten liegen")
+    return minutes
+
+
+def lock(child: Child, choice: str, grace_minutes: int = 1) -> None:
     child.locked, child.locked_until = True, until_for(choice)
+    child.lock_grace_minutes = grace_minutes
 
 
 def unlock(child: Child) -> None:

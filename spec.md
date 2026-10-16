@@ -138,8 +138,11 @@ Verlängerungsanfragen.
 - Eltern sperren ein **Kind** (alle zugeordneten Rechner) sofort: Knopf auf der Übersicht (bis zur
   Freigabe) und auf der Kind-Seite mit Dauer: bis zur Freigabe, 30 min, 1 h, 2 h, bis morgen (00:00 Uhr
   lokal).
-- Ablauf wie bei Zeitende: Benachrichtigung „Gesperrt“ mit **1 Minute Vorwarnung** (ohne „Verlängerung
-  anfordern“), dann Abmeldung; Login-Sperre per PAM solange gesperrt. Freigabe während des Countdowns
+- Ablauf wie bei Zeitende: Benachrichtigung „Gesperrt“ mit Vorwarnung (ohne „Verlängerung
+  anfordern“), dann Abmeldung. **Vorwarnzeit** beim Sperren auf der Kind-Seite wählbar (0–120 min,
+  Standard 1, 0 = sofort; entschieden 2026-10-16), Schnellknopf der Übersicht = 1 min; bei mehr als
+  1 min zusätzlich Erinnerung 1 min vor der Abmeldung. Gilt nur für „Jetzt sperren“ – beim Zeitende
+  bleibt der 60-s-Countdown (Warnungen 15/5/1 min gibt es dort vorher); Login-Sperre per PAM solange gesperrt. Freigabe während des Countdowns
   bricht ihn ab („Wieder freigegeben“).
 - Policy-Felder `locked`/`locked_until` (UTC). Der Agent prüft die Sperre vor Kontingent/Zeitfenster;
   eine befristete Sperre läuft auch offline ab (Systemuhr). Freigeben erreicht nur verbundene Geräte.
@@ -694,3 +697,8 @@ Verlängerungsanfragen.
   ungültige Dauer, CSRF, „bis morgen“ in Sommer-/Winterzeit, Migration Alt-Schema), Agent 115 (Regel,
   Ablauf offline, naive Zeit, Enforcer-Countdown + Abbruch bei Freigabe), Tray 7; Screenshots Übersicht/
   Kind-Seite gesperrt und frei.
+- 2026-10-16: Vorwarnzeit für „Jetzt sperren“ konfigurierbar (Spalte `child.lock_grace_minutes`,
+  Migration; Policy `lock_grace_seconds`; Enforcer mit Erinnerung 1 min vorher, 0 = sofort). Version 0.11.0.
+  Getestet: Server 66 (Policy-Wert, Schnellknopf = 1 min, ungültige Werte → 400 ohne Sperre, Migration),
+  Agent 118 (10 min: Hinweis, Erinnerung, Abmeldung genau nach Ablauf; 0 = sofort; Zeitende unverändert),
+  Tray 7.

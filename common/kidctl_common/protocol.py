@@ -223,6 +223,7 @@ class ChildPolicy(BaseModel):
     # Läuft auch offline ab – der Agent vergleicht mit der Systemuhr.
     locked: bool = False
     locked_until: datetime | None = None
+    lock_grace_seconds: int = Field(default=60, ge=0, le=7200)  # Vorwarnung bis zur Abmeldung
 
 
 class Policy(BaseModel):

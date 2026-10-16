@@ -31,6 +31,7 @@ class Enforcer:
         self.deadline: dict[str, float] = {}   # User -> Ende des Countdowns (BOOTTIME)
         self.hard: dict[str, float] = {}       # User -> Abmeldung angefordert, hart beenden ab
         self.ending_reason: dict[str, str | None] = {}  # User -> Grund des laufenden Countdowns
+        self.reminded: set[str] = set()        # Erinnerung 1 min vor Abmeldung (lange Vorwarnung)
         self.recover_at: float | None = None
 
     async def step(self, day: date, sessions: list[SessionInfo], decisions: dict[str, Decision]) -> None:
@@ -44,6 +45,7 @@ class Enforcer:
             for user in list(pending):
                 if user not in by_user:
                     del pending[user]  # abgemeldet
+        self.reminded &= set(self.deadline)
 
         now = self.clock()
         for user, user_sessions in by_user.items():
@@ -59,15 +61,27 @@ class Enforcer:
                 continue
 
             if user not in self.deadline and user not in self.hard:
-                self.deadline[user] = now + GRACE_SECONDS
+                grace = GRACE_SECONDS if d.grace_seconds is None else d.grace_seconds
+                self.deadline[user] = now + grace
                 self.ending_reason[user] = d.reason
-                log.info("Zeit für %s abgelaufen (%s) – Abmeldung in %d s", user, d.reason, GRACE_SECONDS)
+                log.info("Zeit für %s abgelaufen (%s) – Abmeldung in %d s", user, d.reason, grace)
                 locked = d.reason == LOCKED
+                when = ("Du wirst jetzt abgemeldet." if grace <= 0 else
+                        f"Abmeldung in {grace} Sekunden – bitte jetzt speichern." if grace == GRACE_SECONDS else
+                        f"Abmeldung in {_fmt(grace)} – bitte rechtzeitig speichern.")
                 await self.desktop.notify(
                     user, uid, "Gesperrt" if locked else "Bildschirmzeit zu Ende",
-                    f"{REASON_TEXT.get(d.reason, '')} Abmeldung in {GRACE_SECONDS} Sekunden – "
-                    "bitte jetzt speichern.", critical=True,
+                    f"{REASON_TEXT.get(d.reason, '')} {when}", critical=True,
                     on_action=None if locked else self.on_request)  # Verlängerung hebt keine Sperre auf
+                if grace <= 0:
+                    del self.deadline[user]
+                    await self._end(user, uid, user_sessions, d.reason, now)
+            elif (user in self.deadline and user not in self.reminded
+                  and 0 < self.deadline[user] - now <= 60
+                  and self.ending_reason.get(user) == LOCKED and d.grace_seconds and d.grace_seconds > 60):
+                self.reminded.add(user)
+                await self.desktop.notify(user, uid, "Gesperrt", "Abmeldung in 1 Minute – bitte jetzt speichern.",
+                                          critical=True)
             elif user in self.deadline and now >= self.deadline[user]:
                 del self.deadline[user]
                 await self._end(user, uid, user_sessions, d.reason, now)

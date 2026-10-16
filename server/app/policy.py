@@ -52,6 +52,7 @@ def build_policy(db: Session, device_id: int) -> p.Policy:
             allowed_programs=allowed_keys(db, child.id),
             web=web_policy(db, child),
             locked=lk.is_locked(child),
+            lock_grace_seconds=(child.lock_grace_minutes if child.lock_grace_minutes is not None else 1) * 60,
             locked_until=child.locked_until.replace(tzinfo=timezone.utc) if lk.is_locked(child) and child.locked_until else None,
         ))
     body = p.Policy(version="", timezone=settings.timezone, users=users, children=children)

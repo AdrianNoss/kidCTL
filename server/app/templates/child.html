@@ -34,9 +34,10 @@
     <label>Dauer <select name="duration">
       {% for key, label in lock_durations.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
     </select></label>
+    <label>Abmeldung in <input type="number" name="grace" min="0" max="{{ max_grace }}" value="1" class="short" required> min</label>
     <button type="submit" class="danger">Jetzt sperren</button>
   </form>
-  <p class="muted"><small>Sperrt alle Rechner von {{ child.name }}: Abmeldung nach 1 Minute Vorwarnung, Anmelden nicht möglich. Läuft eine Dauer ab, wird automatisch freigegeben – auch ohne Internetverbindung.</small></p>
+  <p class="muted"><small>Sperrt alle Rechner von {{ child.name }}: {{ child.name }} bekommt eine Benachrichtigung und wird nach der Vorwarnzeit abgemeldet (0 = sofort); neu anmelden ist ab sofort nicht möglich. Läuft eine Dauer ab, wird automatisch freigegeben – auch ohne Internetverbindung.</small></p>
   {% endif %}
 </section>
 

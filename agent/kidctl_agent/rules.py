@@ -22,6 +22,7 @@ class Decision:
     allowed: bool
     remaining_seconds: int   # bis Kontingent- oder Fensterende, 0 wenn nicht erlaubt
     reason: str | None = None
+    grace_seconds: int | None = None  # Vorwarnzeit bis zur Abmeldung (None = Standard)
 
 
 def _seconds(t: time) -> int:
@@ -55,7 +56,7 @@ def is_locked(child: ChildPolicy, now: datetime) -> bool:
 def evaluate(child: ChildPolicy, now_local: datetime, used_seconds: int) -> Decision:
     """``now_local`` in der Zeitzone der Policy, ``used_seconds`` = Nutzung heute (alle Geräte)."""
     if is_locked(child, now_local):
-        return Decision(False, 0, LOCKED)
+        return Decision(False, 0, LOCKED, grace_seconds=child.lock_grace_seconds)
     quota, start, end = day_limits(child, now_local.date())
     now_s = _seconds(now_local.time())
     if now_s < _seconds(start):

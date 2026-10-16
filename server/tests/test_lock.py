@@ -75,3 +75,34 @@ def test_child_lock_columns_migrated(tmp_path):
     migrate.run_migrations(eng)
     with eng.connect() as c:
         assert c.execute(text("SELECT locked, locked_until FROM child")).one() == (0, None)
+
+
+def test_grace_minutes_sent_in_policy(client, parent):
+    cid, tok = _setup(client, parent)
+    with device(client, tok, "pc", map_to=cid) as (ws, _):
+        assert _policy(ws).children[0].lock_grace_seconds == 60
+        client.post(f"/children/{cid}/lock", data={"csrf_token": tok, "duration": "", "grace": "10"})
+        assert _policy(ws).children[0].lock_grace_seconds == 600
+        client.post(f"/children/{cid}/unlock", data={"csrf_token": tok})
+        _policy(ws)
+        client.post(f"/children/{cid}/lock", data={"csrf_token": tok, "back": "dashboard"})  # Schnellknopf
+        assert _policy(ws).children[0].lock_grace_seconds == 60
+
+
+def test_invalid_grace_rejected(client, parent):
+    cid, tok = _setup(client, parent)
+    for bad in ("-1", "121", "abc"):
+        r = client.post(f"/children/{cid}/lock", data={"csrf_token": tok, "grace": bad})
+        assert r.status_code == 400 and "Vorwarnzeit" in r.text
+    with SessionLocal() as db:
+        assert not db.get(Child, cid).locked
+
+
+def test_lock_grace_column_migrated(tmp_path):
+    eng = create_engine(f"sqlite:///{tmp_path}/alt.db")
+    with eng.begin() as c:
+        c.execute(text("CREATE TABLE child (id INTEGER PRIMARY KEY, name VARCHAR(64), locked BOOLEAN)"))
+        c.execute(text("INSERT INTO child (name) VALUES ('Max')"))
+    migrate.run_migrations(eng)
+    with eng.connect() as c:
+        assert c.execute(text("SELECT lock_grace_minutes FROM child")).scalar() == 1

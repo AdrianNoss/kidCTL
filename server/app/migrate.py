@@ -36,6 +36,8 @@ COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
     # 2026-10-15: „Jetzt sperren“
     ("child", "locked", "BOOLEAN NOT NULL DEFAULT 0"),
     ("child", "locked_until", "DATETIME"),
+    # 2026-10-16: Vorwarnzeit bei „Jetzt sperren“
+    ("child", "lock_grace_minutes", "INTEGER NOT NULL DEFAULT 1"),
 ]
 
 

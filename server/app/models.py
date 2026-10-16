@@ -82,6 +82,7 @@ class Child(Base):
     # „Jetzt sperren“: gesperrt bis locked_until (UTC) bzw. bis zur Freigabe (None)
     locked: Mapped[bool] = mapped_column(Boolean, default=False)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    lock_grace_minutes: Mapped[int] = mapped_column(Integer, default=1)  # Vorwarnung bis zur Abmeldung
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     rules: Mapped[list[WeekdayRule]] = relationship(

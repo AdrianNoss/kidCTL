@@ -56,3 +56,39 @@ def test_enforcer_lock_warns_then_logs_out_and_unlock_message():
     assert actions[0] is None                                       # kein „Verlängerung anfordern“
     asyncio.run(e.step(DAY, s, {"max": Decision(True, 3600)}))     # vor Ablauf freigegeben
     assert nt.sent[1][1] == "Wieder freigegeben" and lg.terminated == []
+
+
+def _enforcer():
+    lg, nt, clk = FakeLogind(), FakeNotifier(), Clock()
+    return Enforcer(lg, nt, clk), lg, nt, clk
+
+
+def test_long_grace_warns_reminds_then_logs_out():
+    e, lg, nt, clk = _enforcer()
+    s = [sess("1")]
+    d = Decision(False, 0, LOCKED, grace_seconds=600)
+    asyncio.run(e.step(DAY, s, {"max": d}))
+    assert "Abmeldung in 10 Minuten" in nt.sent[0][2]
+    clk.t += 500
+    asyncio.run(e.step(DAY, s, {"max": d}))
+    assert len(nt.sent) == 1                                        # noch keine Erinnerung
+    clk.t += 50                                                      # 50 s vor Ende
+    asyncio.run(e.step(DAY, s, {"max": d}))
+    asyncio.run(e.step(DAY, s, {"max": d}))
+    assert [x[2] for x in nt.sent[1:]] == ["Abmeldung in 1 Minute – bitte jetzt speichern."]
+    assert lg.terminated == []
+    clk.t += 51
+    asyncio.run(e.step(DAY, s, {"max": d}))
+    assert lg.terminated == ["1"]
+
+
+def test_zero_grace_logs_out_immediately():
+    e, lg, nt, _ = _enforcer()
+    asyncio.run(e.step(DAY, [sess("1")], {"max": Decision(False, 0, LOCKED, grace_seconds=0)}))
+    assert "jetzt abgemeldet" in nt.sent[0][2] and lg.terminated == ["1"]
+
+
+def test_grace_from_policy():
+    d = evaluate(child(locked=True, lock_grace_seconds=300), NOW, 0)
+    assert d.reason == LOCKED and d.grace_seconds == 300
+    assert evaluate(child(), NOW, 10 ** 6).grace_seconds is None   # Zeitende: Standard-Countdown
