@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 from kidctl_common import protocol as p
 from kidctl_common import tray as t
 
-from . import integrity, sdnotify, store
+from . import desktoptrust, integrity, sdnotify, store
 from .accounting import Usage, boottime
 from .apps import scan_apps
 from .apptime import AppIndex, AppTime
@@ -20,7 +20,7 @@ from .chat import NEW, ChatStore, Outbox, new_client_msg_id
 from .connection import Connection
 from .dnsfilter import DnsFilter
 from .enforcer import Enforcer
-from .kidmounts import STEAM_ROOT, KidMounts
+from .kidmounts import STEAM_ROOT, KidMounts, safe_home
 from .loginlock import LoginLock, is_admin
 from .procs import ProcEvents, pids_of, read_proc
 from .rules import Decision, day_limits, evaluate
@@ -31,6 +31,7 @@ log = logging.getLogger("kidctl.agent")
 
 TICK = 5.0            # Sekunden
 SAVE_EVERY = 6        # Takte (= 30 s)
+DESKTOP_EVERY = 2     # Takte (= 10 s): Desktop-Verknüpfungen erlaubter Programme vertrauen
 REPORT_EVERY = 60.0   # Sekunden
 APPS_EVERY = 6 * 3600.0  # installierte Anwendungen neu einlesen
 # Nach dem Start kurz auf die aktuelle Policy vom Server warten, bevor durchgesetzt wird –
@@ -128,6 +129,8 @@ class Agent:
         self.loginlock.update({u for u, d in decisions.items() if not d.allowed})
         if self.mounts.releasable():  # aufgeschobenes Aushängen nach der Abmeldung nachholen
             await self.sync_mounts()
+        if self._ticks % DESKTOP_EVERY == 0:
+            await asyncio.to_thread(self.trust_desktops)
         if self._synced or boottime() - self._started >= STARTUP_SYNC:
             await self.enforcer.step(now.date(), sessions, decisions)
             await self.programs.scan()
@@ -176,6 +179,18 @@ class Agent:
         self.programs.names = {a.key: a.name for a in self.apps}
         # Shells nicht als Programmzeit zählen (Systemprozesse wie „sh -c …“ verfälschen sonst die Statistik)
         self.app_index = AppIndex({a.key for a in self.apps if "Shell" not in a.categories})
+
+    def trust_desktops(self) -> None:
+        """Für Kinder mit Programmkontrolle (noexec-Home): Desktop-Verknüpfungen erlaubter Programme
+        root übergeben, damit KDE sie startet (siehe desktoptrust)."""
+        for uid, (user, _mode, allowed) in self.programs.targets().items():
+            home = safe_home(user)
+            if home is None:
+                continue
+            try:
+                desktoptrust.trust_desktop(home, uid, lambda t, a=allowed: desktoptrust.target_allowed(t, a))
+            except Exception:
+                log.exception("Desktop-Verknüpfungen von %s nicht prüfbar", user)
 
     async def sync_mounts(self) -> None:
         """noexec-Homes und Steam-Bibliotheken an die Policy angleichen (systemd, im Thread)."""

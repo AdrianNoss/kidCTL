@@ -37,4 +37,6 @@ def state_dir(tmp_path, monkeypatch):
     from kidctl_agent import integrity
     monkeypatch.setattr(integrity, "_run", fake_run)
     monkeypatch.setattr(integrity.check_dns, "__defaults__", (fake_run,))
+    # Nie den echten Desktop des Entwicklers anfassen (Takt ruft trust_desktop für Programm-Kinder auf)
+    monkeypatch.setattr(agent.Agent, "trust_desktops", lambda self: None)
     return d

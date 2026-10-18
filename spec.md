@@ -169,6 +169,15 @@ Verlängerungsanfragen.
     kein Symlink, Eigentümer = Kind.
   - **Systemweit** `/tmp`, `/var/tmp` (Bind-Mount auf sich selbst) und `/dev/shm` mit `noexec`
     (`kidctl-noexec.service`, vom Agenten per `Wants=` mitgestartet, `ExecStop` nimmt es zurück).
+  - Desktop-Verknüpfungen (entschieden 2026-10-18): KDE startet `.desktop`-Dateien außerhalb der
+    Anwendungsordner nur, wenn sie ausführbar sind oder root gehören; bei noexec-Home ist keine
+    ausführbar (Qt `isExecutable` = false, getestet). Der Agent übernimmt daher alle 10 s für Kinder
+    mit Programmkontrolle Verknüpfungen in `~/Desktop` und `XDG_DESKTOP_DIR` für root (0644), deren
+    Programm das Kind starten darf (Freigabe, Basisliste, Flatpak-ID, Shell-Skript aus /usr wie
+    `xdg-open`). Nur reguläre Dateien des Kindes ohne harte Links, Öffnen ohne Symlink-Verfolgung,
+    `fchown` auf dem Deskriptor. Danach kann das Kind sie löschen, aber nicht ändern (Steam kann eine
+    vertraute Verknüpfung nicht überschreiben – löschen und neu anlegen). Kein Zurücksetzen bei
+    Entzug der Freigabe (der Start wird ohnehin vom Agenten geprüft).
   - Aufheben (Programmkontrolle aus / Zuordnung entfernt) nie während der Besitzer angemeldet ist
     (`/run/user/<uid>` existiert) – sonst bricht die laufende Plasma-Sitzung ab; der Agent holt es nach
     der Abmeldung nach.
@@ -758,3 +767,9 @@ Verlängerungsanfragen.
   des Steam-Starters (z. B. `cmp`, `srt-logger`) als ein Eintrag „Steam – nicht freigegeben – <programm>“
   mit Schlüssel `exe:/usr/bin/steam` protokolliert statt als einzelne, irreführende Programme.
   Getestet: Agent 134 (cmp/srt-logger mit Steam-Abstammung → „Steam“, ohne Abstammung unverändert).
+- 2026-10-18: Desktop-Verknüpfungen erlaubter Programme vertraut (Nutzer-Test: Steam-Spiel-Verknüpfung auf
+  dem Desktop startete nur ohne Programmkontrolle). Ursache per Test im User-Namespace bestätigt:
+  `QFileInfo.isExecutable()` = false auf noexec trotz 0755. Neues Modul `desktoptrust`. Version 0.16.0.
+  Getestet: Agent 140 (nur erlaubte Einträge, XDG-Desktop-Ordner, Flatpak-ID, Symlink/harter Link/
+  fremder Besitzer/Pfad außerhalb des Homes abgelehnt, Systemskript-Regel). Nicht in echter
+  KDE-Sitzung getestet.
