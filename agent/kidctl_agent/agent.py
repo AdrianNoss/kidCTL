@@ -167,6 +167,7 @@ class Agent:
                 last_apps = boottime()  # nach pacman-Updates: Apps und Basisliste neu
                 self.refresh_apps()
                 await self.programs.refresh_base(self.app_exes())
+                self.refresh_index()  # Paket-Ordner
                 if self.online:
                     await self.conn.send(p.ReportApps(apps=self.apps))
 
@@ -177,8 +178,12 @@ class Agent:
             log.exception("Anwendungen nicht lesbar")
             return
         self.programs.names = {a.key: a.name for a in self.apps}
+        self.refresh_index()
+
+    def refresh_index(self) -> None:
         # Shells nicht als Programmzeit zählen (Systemprozesse wie „sh -c …“ verfälschen sonst die Statistik)
-        self.app_index = AppIndex({a.key for a in self.apps if "Shell" not in a.categories})
+        self.app_index = AppIndex({a.key for a in self.apps if "Shell" not in a.categories},
+                                  self.programs.pkg_dirs)
 
     def trust_desktops(self) -> None:
         """Für Kinder mit Programmkontrolle (noexec-Home): Desktop-Verknüpfungen erlaubter Programme
@@ -193,12 +198,12 @@ class Agent:
                 log.exception("Desktop-Verknüpfungen von %s nicht prüfbar", user)
 
     async def sync_mounts(self) -> None:
-        """noexec-Homes und Steam-Bibliotheken an die Policy angleichen (systemd, im Thread)."""
+        """noexec-Homes und Spiele-Bibliotheken an die Policy angleichen (systemd, im Thread)."""
         users = self.programs.users()
         kids = set(self.decisions(self.now_local()))  # alle zugeordneten Nicht-Admins
         try:
             await asyncio.to_thread(self.mounts.sync, users)
-            await asyncio.to_thread(self.mounts.ensure_steam, kids)
+            await asyncio.to_thread(self.mounts.ensure_libraries, kids)
         except Exception:
             log.exception("Mounts nicht angleichbar")
 
@@ -230,7 +235,7 @@ class Agent:
     def _run_checks(self) -> list[p.IntegrityCheck]:
         return ([integrity.check_pam(), integrity.check_nsswitch(), integrity.check_browser_policies()]
                 + integrity.check_noexec(self.programs.users())
-                + integrity.check_steam(self.mounts.steam_problems)
+                + integrity.check_libraries(self.mounts.lib_problems)
                 + integrity.check_dns(self.web_children()))
 
     async def check_integrity(self) -> None:
@@ -421,6 +426,7 @@ class Agent:
             log.warning("Keine Policy vorhanden – niemand wird eingeschränkt")
         self.refresh_apps()
         await self.programs.refresh_base(self.app_exes())
+        self.refresh_index()  # Paket-Ordner
         await self.sync_mounts()  # vor der Bereit-Meldung -> vor allen Logins
         await self.sync_dns()
         self.procevents.start()

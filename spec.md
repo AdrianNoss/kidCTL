@@ -246,6 +246,32 @@ Verlängerungsanfragen.
   - Bei Freigabe sind auch Nachfahren von Steam außerhalb der Bibliothek erlaubt
     (Laufzeit-Container pressure-vessel, Proton).
   - Bekannte Restlücke: „Nicht-Steam-Spiel hinzufügen“ in der Steam-Oberfläche.
+- **Paket-Ordner:** Verzeichnisse, die ausschließlich dem Pacman-Paket einer freigegebenen App
+  gehören (oberstes je Zweig unter `/usr/lib`, `/usr/libexec`, `/usr/share`, `/opt`), gelten wie das
+  Verzeichnis der App (z. B. `/usr/lib/heroic-games-launcher` für `/usr/bin/heroic` – mit `app.asar`
+  und den Hilfsprogrammen `gogdl`, `legendary`, `nile`). Berechnet aus `pacman -Ql` zusammen mit der
+  Basisliste (entschieden 2026-10-18).
+- **Electron (System-Electron `/usr/lib/electronNN/`):** keine eigene Freigabe. Hauptprozess erlaubt,
+  wenn seine App (erstes Nicht-Options-Argument, z. B. `…/app.asar`) freigegeben ist, ohne
+  `-r/--require`, `-e`, `-p`, `-i`, `--inspect*`, `--remote-debugging*`, `--js-flags` und ohne
+  `ELECTRON_RUN_AS_NODE`/`NODE_OPTIONS` in der Umgebung. Hilfsprozesse (`--type=…`, Crashpad) nur als
+  Nachfahren eines erlaubten Hauptprozesses. Andere Electron-Apps bleiben gesperrt.
+- **Spiele-Launcher (Heroic, Lutris):** Ist der Launcher (`/usr/bin/heroic`, `/usr/bin/lutris`)
+  freigegeben, sind seine Nachfahren erlaubt (Wine, Proton, Spiele) – wie bei Steam. Proton aus der
+  Steam-Bibliothek nur, wenn auch Steam freigegeben ist. Gleiche Restlücke („Spiel hinzufügen“).
+  - Heroic-Ordner unter `/srv/heroic/<user>` (Eigentümer Kind, 0700): `~/Games/Heroic` → `Games`
+    (Spiele, Wine-Prefixe), `~/.config/heroic/tools` → `tools` (Wine/Proton), `~/.local/share/umu` →
+    `umu` (Laufzeit, mit der Heroic Proton startet). Anlage, Umzug nach der
+    Abmeldung und Integritätsmeldung (`heroic:<user>`) wie bei Steam; nur wenn Heroic installiert ist.
+    Andere Installationsordner (in Heroic einstellbar) liegen im Home und starten bei Kontrolle nicht.
+  - `gogdl`/`legendary` sind Python-Zipapps (Interpreter-Regel, Skript im Paket-Ordner).
+    `nile` (Amazon) ist eine PyInstaller-Einzeldatei, die sich nach `/tmp` entpackt – scheitert an
+    `noexec`-`/tmp` (bekannte Grenze, nicht gelöst).
+  - Lutris: Regel vorbereitet, ohne eigene Ordner und ungetestet.
+- **Abstammung gemerkt:** Für Prozesse, die nur über ihre Elternkette erlaubt sind (Steam,
+  Launcher, Electron-Hilfsprozesse), merkt sich der Agent die Kette beim Start. Verwaiste Prozesse
+  (z. B. `wineserver`) werden nach einer Policy-Änderung so nicht beendet; wird die Freigabe
+  entzogen, schon.
 
 ## Website-Filter
 
@@ -405,7 +431,7 @@ Verlängerungsanfragen.
 - Kein Schutz gegen physischen Zugriff (nur Härtungs-Anleitung `docs/haertung.md`).
 - Keine Leerlauferkennung.
 - Keine Unterstützung anderer Desktops als KDE Plasma (Wayland).
-- Kein `flatpak --user`, keine Pro-Spiel-Steuerung bei Steam.
+- Kein `flatpak --user`, keine Pro-Spiel-Steuerung bei Steam und Heroic.
 - „Nicht-Steam-Spiel hinzufügen“ als bekannte Restlücke. Gleiche Wirkung: Die Steam-Bibliothek
   gehört dem Kind (Steam aktualisiert sich selbst) – `steam.sh`/Client sind ersetzbar. **Wer Steam
   freigibt, gibt faktisch alles frei, was über Steam gestartet werden kann.**
@@ -774,3 +800,15 @@ Verlängerungsanfragen.
   fremder Besitzer/Pfad außerhalb des Homes abgelehnt, Systemskript-Regel). Nicht in echter
   KDE-Sitzung getestet.
 - 2026-10-18: Sichttest auf dem Testrechner (0.16.0) vom Nutzer bestätigt: Steam-Desktop-Verknüpfung startet bei aktiver Programmkontrolle, Steam-Spiel startet.
+- 2026-10-18: Heroic (AUR `heroic-games-launcher`, System-Electron) unter Programmkontrolle (Paket
+  0.17.0). Anlass: Nutzer-Test, Heroic startete nicht („electron gesperrt“). Plan vom Nutzer
+  bestätigt. Paket-Ordner-Regel, Electron-Regel, Spiele-Launcher-Regel, Heroic-Ordner unter
+  `/srv/heroic/<user>` (Spiele, Wine/Proton, umu) mit Umzug, gemerkte Abstammung für verwaiste Prozesse, Programmzeit für
+  Electron-Apps (über die App). Steam-Bibliothekscode verallgemeinert (`ensure_libraries`,
+  Integrität `steam:`/`heroic:`). Getestet: Agent 150 (Paket-Ordner aus `pacman -Ql`-Ausschnitt,
+  Electron erlaubt/fremde App/`-r`/`--inspect`/`ELECTRON_RUN_AS_NODE`/`NODE_OPTIONS`, Hilfsprozesse nur
+  mit erlaubtem Hauptprozess, Launcher-Nachfahren nur bei Freigabe, Proton nur mit Steam,
+  verwaister wineserver nach Policy-Änderung, Heroic-Verweise anlegen/umziehen/Symlink-Angriff,
+  Programmzeit), Server 70. Paket-Ordner gegen das echte `pacman -Ql` des Entwicklungsrechners
+  geprüft (`/usr/bin/heroic` → `/usr/lib/heroic-games-launcher`). **Nicht getestet:** echtes Heroic mit
+  GOG-Spiel auf dem Testrechner.

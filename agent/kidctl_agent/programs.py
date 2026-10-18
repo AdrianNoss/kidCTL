@@ -15,7 +15,16 @@ Reihenfolge:
    ruft ``steam.sh`` per exec auf – danach gibt es keinen Steam-Vorfahren). Ist Steam
    freigegeben, sind auch Nachfahren von Steam außerhalb der Bibliothek erlaubt (Laufzeit-
    Container, Proton) – bekannte Restlücke „Nicht-Steam-Spiel hinzufügen“.
-6. Sonst gesperrt.
+6. Spiele-Launcher (Heroic, Lutris): Nachfahren eines freigegebenen Launchers sind erlaubt (Wine,
+   Spiele) – gleiche Restlücke wie bei Steam („Spiel hinzufügen“).
+7. Electron (``/usr/lib/electronNN/``): Hauptprozess erlaubt, wenn seine App (z. B.
+   ``/usr/lib/heroic/app.asar``) freigegeben ist – über den Paket-Ordner einer freigegebenen App –
+   und kein Code eingeschleust wird (``-r``, ``--inspect``, ``ELECTRON_RUN_AS_NODE``, ``NODE_OPTIONS``);
+   Hilfsprozesse (Renderer, GPU, Crashpad) erlaubt, wenn sie von so einem Hauptprozess abstammen.
+8. Sonst gesperrt.
+
+Paket-Ordner: Verzeichnisse, die nur dem Paket einer freigegebenen App gehören (z. B.
+``/usr/lib/heroic`` für ``/usr/bin/heroic``), gelten wie das Verzeichnis der App selbst.
 """
 
 from __future__ import annotations
@@ -58,6 +67,16 @@ STEAM_CLIENT = "ubuntu12_32/steam"
 STEAM_KEY = "exe:/usr/bin/steam"
 STEAM_SCRIPT = "steam.sh"
 MAX_ANCESTORS = 64
+
+# Spiele-Launcher: was sie starten (Wine, Spiele), ist erlaubt, wenn der Launcher freigegeben ist
+LAUNCHERS = {"/usr/bin/heroic": "Heroic", "/usr/bin/lutris": "Lutris"}
+
+# Electron-Laufzeit aus den Arch-Paketen electron, electron37, …
+ELECTRON_DIR = re.compile(r"^/usr/lib/electron[0-9]*/")
+# Optionen, mit denen Electron fremden Code lädt oder sich fernsteuern lässt
+ELECTRON_UNSAFE = {"-r", "--require", "-e", "--eval", "-p", "--print", "-i", "--interactive"}
+ELECTRON_UNSAFE_PREFIX = ("--inspect", "--remote-debugging", "--js-flags")
+ELECTRON_UNSAFE_ENV = ("ELECTRON_RUN_AS_NODE", "NODE_OPTIONS")
 
 # Immer erlaubt (kidctl selbst) bzw. nie in der Basis (Loader startet beliebige Programme)
 BUILTIN_BASE = ["/usr/lib/kidctl/*"]
@@ -167,6 +186,34 @@ def base_paths(files: list[str], app_exes: set[str], excludes: list[str]) -> fro
     return frozenset(out)
 
 
+PKG_DIR_PREFIXES = ("/usr/lib/", "/usr/libexec/", "/usr/share/", "/opt/")
+
+
+def package_dirs(listing: str, exes: set[str]) -> dict[str, tuple[str, ...]]:
+    """``pacman -Ql`` -> App-Programm -> eigene Ordner seines Pakets: Verzeichnisse, die keinem
+    anderen Paket gehören (jeweils nur das oberste, z. B. ``/usr/lib/heroic``)."""
+    owners: dict[str, set[str]] = {}
+    dirs_of: dict[str, list[str]] = {}
+    pkg_of: dict[str, str] = {}
+    for line in listing.splitlines():
+        pkg, _, path = line.partition(" ")
+        if path.endswith("/"):
+            owners.setdefault(path, set()).add(pkg)
+            dirs_of.setdefault(pkg, []).append(path)
+        elif path in exes:
+            pkg_of[path] = pkg
+        elif path.startswith("/usr/bin/") and (real := os.path.realpath(path)) in exes:
+            pkg_of.setdefault(real, pkg)  # z. B. /usr/bin/app -> /usr/lib/app/app
+    out = {}
+    for exe, pkg in pkg_of.items():
+        own = {d for d in dirs_of.get(pkg, ()) if owners[d] == {pkg} and d.startswith(PKG_DIR_PREFIXES)
+               and d.rstrip("/") not in GENERIC_DIRS}
+        tops = sorted(d.rstrip("/") for d in own if os.path.dirname(d.rstrip("/")) + "/" not in own)
+        if tops:
+            out[exe] = tuple(tops)
+    return out
+
+
 @dataclass
 class Allowed:
     base: list[str] = field(default_factory=lambda: list(BUILTIN_BASE))  # Glob-Muster
@@ -174,6 +221,7 @@ class Allowed:
     base_exact: frozenset[str] = frozenset()                              # aus der Paketkette
     excludes: list[str] = field(default_factory=lambda: list(BUILTIN_EXCLUDE))
     steam_root: str = ""   # z. B. "/srv/steam/kind/" (Steam-Bibliothek dieses Kindes)
+    pkg_dirs: dict[str, tuple[str, ...]] = field(default_factory=dict)  # App -> eigene Paket-Ordner
 
     def __post_init__(self) -> None:
         self.exes = {k[4:] for k in self.keys if k.startswith("exe:")}
@@ -181,11 +229,16 @@ class Allowed:
         self.steam_enabled = any(e.startswith(STEAM_SYSTEM) or e == "/usr/bin/steam" for e in self.exes)
         self.flatpaks = {k[8:] for k in self.keys if k.startswith("flatpak:")}
         self.app_dirs = {d for d in (os.path.dirname(e) for e in self.exes) if d not in GENERIC_DIRS}
+        for e in self.exes:
+            self.app_dirs.update(self.pkg_dirs.get(e, ()))
+        # freigegebene Spiele-Launcher: Programm + Paket-Ordner
+        self.launchers = {e for e in self.exes if e in LAUNCHERS}
+        self.launcher_dirs = {d for e in self.launchers for d in self.pkg_dirs.get(e, ())}
 
     def path_ok(self, path: str) -> bool:
         if path in self.exes:  # ausdrückliche Eltern-Freigabe gilt immer
             return True
-        if any(path.startswith(d + "/") for d in self.app_dirs):
+        if path in self.app_dirs or any(path.startswith(d + "/") for d in self.app_dirs):
             return True
         if any(fnmatch.fnmatchcase(path, pat) for pat in self.excludes):
             return False
@@ -269,10 +322,46 @@ def is_steam_process(info: ProcInfo, steam_root: str) -> bool:
             or (bool(steam_root) and path in (steam_root + STEAM_CLIENT, steam_root + STEAM_SCRIPT)))
 
 
+def is_electron(exe: str) -> bool:
+    return bool(ELECTRON_DIR.match(exe))
+
+
+def electron_app(info: ProcInfo) -> str | None:
+    """App eines Electron-Hauptprozesses (erstes Nicht-Options-Argument, realpath); ``None`` bei
+    Hilfsprozessen (``--type=``) oder ohne App."""
+    if not is_electron(info.exe) or os.path.basename(info.exe) != "electron":
+        return None
+    if any(a.startswith("--type=") for a in info.argv[1:]):
+        return None
+    app = next((a for a in info.argv[1:] if not a.startswith("-")), None)
+    return os.path.realpath(app) if app and os.path.isabs(app) else None
+
+
+def electron_args_unsafe(argv: tuple[str, ...]) -> bool:
+    """Optionen, mit denen Electron fremden Code lädt oder sich fernsteuern lässt."""
+    return any(a.split("=", 1)[0] in ELECTRON_UNSAFE or a.startswith(ELECTRON_UNSAFE_PREFIX) for a in argv[1:])
+
+
+def _allowed_electron_main(info: ProcInfo, allowed: Allowed) -> bool:
+    app = electron_app(info)
+    return app is not None and allowed.path_ok(app) and not electron_args_unsafe(info.argv)
+
+
+def is_launcher_process(info: ProcInfo, allowed: Allowed) -> bool:
+    """Prozess eines freigegebenen Spiele-Launchers (Starter, Electron-App oder Hilfsprogramm
+    aus seinem Paket-Ordner, z. B. gogdl)."""
+    if not allowed.launchers:
+        return False
+    path = electron_app(info) or _program_path(info)
+    return path in allowed.launchers or any(
+        path == d or path.startswith(d + "/") for d in allowed.launcher_dirs)
+
+
 def classify(info: ProcInfo, allowed: Allowed,
-             ancestors: Callable[[], Iterable[ProcInfo]] | None = None) -> Verdict | None:
+             ancestors: Callable[[], Iterable[ProcInfo]] | None = None,
+             environ: Callable[[], dict[str, str]] | None = None) -> Verdict | None:
     """``None`` = erlaubt, sonst ``Verdict`` (was gesperrt wird). ``ancestors`` liefert die
-    Elternkette (nur für Steam gebraucht, daher lazy)."""
+    Elternkette, ``environ`` die Umgebung (nur für Steam/Launcher/Electron gebraucht, daher lazy)."""
     if info.flatpak_id:
         if info.flatpak_id in allowed.flatpaks:
             return None
@@ -285,6 +374,12 @@ def classify(info: ProcInfo, allowed: Allowed,
         return ancestors is not None and any(
             is_steam_process(a, allowed.steam_root) for _, a in zip(range(MAX_ANCESTORS), ancestors()))
 
+    def chain() -> Iterable[ProcInfo]:
+        return () if ancestors is None else (a for _, a in zip(range(MAX_ANCESTORS), ancestors()))
+
+    def from_launcher() -> bool:
+        return bool(allowed.launchers) and any(is_launcher_process(a, allowed) for a in chain())
+
     def steam_blocked() -> Verdict:
         return Verdict(STEAM_KEY, "Steam", f"nicht freigegeben – {os.path.basename(path)}")
 
@@ -292,7 +387,7 @@ def classify(info: ProcInfo, allowed: Allowed,
     if allowed.steam_root and path.startswith(allowed.steam_root):
         if not allowed.steam_enabled:
             return steam_blocked()
-        if is_steam_process(info, allowed.steam_root) or from_steam():
+        if is_steam_process(info, allowed.steam_root) or from_steam() or from_launcher():
             return None
         return Verdict(f"exe:{path}", os.path.basename(path), "Steam-Bibliothek (über Steam gestartet nötig)")
 
@@ -302,6 +397,21 @@ def classify(info: ProcInfo, allowed: Allowed,
         if allowed.steam_enabled:
             return None  # von Steam gestartet (Laufzeit-Container, Proton, …)
         return steam_blocked()  # Hilfsprogramm des Steam-Starters (z. B. cmp)
+    if from_launcher():
+        return None  # von Heroic/Lutris gestartet (Wine, Spiel, Hilfsprogramme)
+
+    if is_electron(exe):
+        app = electron_app(info)
+        if app is not None and allowed.path_ok(app):
+            env = environ() if environ is not None else {}
+            if electron_args_unsafe(info.argv) or any(env.get(k) for k in ELECTRON_UNSAFE_ENV):
+                return Verdict(f"exe:{app}", os.path.basename(app), f"Electron mit fremdem Code ({name})")
+            return None
+        if app is None and any(_allowed_electron_main(a, allowed) for a in chain()):
+            return None  # Hilfsprozess (Renderer, GPU, Crashpad) einer erlaubten Electron-App
+        if app is not None:
+            return Verdict(f"exe:{app}", os.path.basename(app), f"Electron-App ({name})")
+        return Verdict(f"exe:{exe}", name, "Electron ohne freigegebene App")
 
     if name in SHELLS or re.sub(r"[0-9.]+$", "", name) in SHELLS:
         mode, script = shell_mode(info.argv)

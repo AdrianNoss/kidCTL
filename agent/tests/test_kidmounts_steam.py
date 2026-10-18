@@ -102,11 +102,11 @@ def test_ensure_steam_creates_library_and_links_as_user(tmp_path, monkeypatch):
     monkeypatch.setattr(kidmounts, "STEAM_INSTALLED", tmp_path)       # „Steam installiert“
     monkeypatch.setattr(kidmounts, "STEAM_ROOT", tmp_path / "steam")
     sysd = FakeSystemd()
-    KidMounts(run=sysd).ensure_steam({ME})
+    KidMounts(run=sysd).ensure_libraries({ME})
     lib = tmp_path / "steam" / ME
     assert lib.is_dir() and oct(lib.stat().st_mode & 0o777) == "0o700"
     link = [c for c in sysd.calls if c[0] == "setpriv"][0]
-    assert f"--reuid={os.getuid()}" in link and link[-2:] == (MY_HOME, str(lib))  # als User, nicht root
+    assert f"--reuid={os.getuid()}" in link and link[-3:] == (MY_HOME, ".local/share/Steam", str(lib))  # als User, nicht root
 
 
 # ---------- Steam-Regeln ----------
@@ -195,17 +195,17 @@ def test_existing_steam_dir_moved_after_logout(tmp_path, monkeypatch):
     home, lib = _steam_home(tmp_path, monkeypatch)
     logged_in = {"yes": True}
     m = KidMounts(run=_real_link, in_use=lambda h: logged_in["yes"])
-    m.ensure_steam({ME})
+    m.ensure_libraries({ME})
     assert (home / ".local/share/Steam").is_dir() and not (home / ".local/share/Steam").is_symlink()
-    assert ME in m.steam_pending and "nach der Abmeldung" in m.steam_problems[ME]
+    assert (ME, ".local/share/Steam") in m.lib_pending and "nach der Abmeldung" in m.lib_problems[("steam", ME)]
     logged_in["yes"] = False
     assert m.releasable()
-    m.ensure_steam({ME})
+    m.ensure_libraries({ME})
     link = home / ".local/share/Steam"
     assert link.is_symlink() and os.readlink(link) == str(lib)
     assert (lib / "steam.sh").exists() and (lib / "ubuntu12_32").is_dir()
     assert oct(lib.stat().st_mode & 0o777) == "0o700"
-    assert m.steam_problems == {} and m.steam_pending == set() and not m.releasable()
+    assert m.lib_problems == {} and m.lib_pending == set() and not m.releasable()
 
 
 def test_steam_move_refuses_symlinked_path_components(tmp_path, monkeypatch):
@@ -217,10 +217,10 @@ def test_steam_move_refuses_symlinked_path_components(tmp_path, monkeypatch):
     shutil.rmtree(home / ".local")
     (home / ".local").symlink_to(victim)
     m = KidMounts(run=lambda *c: subprocess.CompletedProcess(c, 3, "", ""), in_use=lambda h: False)
-    m.ensure_steam({ME})
+    m.ensure_libraries({ME})
     assert (victim / "share/Steam").is_dir()          # unangetastet
     assert lib.is_dir() and not any(lib.iterdir())    # Ziel weiterhin leer
-    assert "nicht verschiebbar" in m.steam_problems[ME]
+    assert "nicht verschiebbar" in m.lib_problems[("steam", ME)]
 
 
 def test_steam_move_cross_device_warns(tmp_path, monkeypatch):
@@ -234,12 +234,14 @@ def test_steam_move_cross_device_warns(tmp_path, monkeypatch):
         return real_rename(src, dst, src_dir_fd=src_dir_fd, dst_dir_fd=dst_dir_fd)
     monkeypatch.setattr(kidmounts.os, "rename", exdev)
     m = KidMounts(run=_real_link, in_use=lambda h: False)
-    m.ensure_steam({ME})
-    assert "anderer Partition" in m.steam_problems[ME]
+    m.ensure_libraries({ME})
+    assert "anderer Partition" in m.lib_problems[("steam", ME)]
     assert (home / ".local/share/Steam").is_dir() and lib.is_dir()    # nichts verloren, Ziel wieder da
 
 
 def test_steam_problems_in_integrity():
     from kidctl_agent import integrity
-    checks = integrity.check_steam({"mika": "Steam-Ordner liegt im Home"})
-    assert [(c.id, c.ok) for c in checks] == [("steam:mika", False)]
+    checks = integrity.check_libraries({("steam", "mika"): "~/.local/share/Steam liegt im Home",
+                                       ("heroic", "mika"): "~/Games/Heroic liegt im Home"})
+    assert [(c.id, c.label, c.ok) for c in checks] == [("heroic:mika", "Heroic-Spieleordner von mika", False),
+                                                      ("steam:mika", "Steam-Bibliothek von mika", False)]

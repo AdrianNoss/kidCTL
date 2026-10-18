@@ -77,6 +77,16 @@ def _read_once(pid: int, exe: str | None) -> ProcInfo | None:
                     flatpak_id=m.group("id") if m else None, parent_exe=_exe(ppid) or "")
 
 
+def read_environ(pid: int) -> dict[str, str]:
+    """Umgebung beim Start des Prozesses (leer, wenn nicht lesbar)."""
+    out = {}
+    for item in (_read(f"/proc/{pid}/environ") or b"").split(b"\0"):
+        k, sep, v = item.decode(errors="replace").partition("=")
+        if sep:
+            out[k] = v
+    return out
+
+
 def pids_of(uids: set[int]) -> list[int]:
     """Alle PIDs, deren reale UID in ``uids`` liegt (schneller Vorfilter über /proc/<pid>)."""
     out = []

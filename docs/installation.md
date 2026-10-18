@@ -232,6 +232,23 @@ sudo systemctl restart kidctl-agent                  # legt den Verweis an
 
 Der Ordner kann sehr groß sein, das Kopieren zwischen Partitionen dauert entsprechend.
 
+### Heroic (GOG, Epic, Amazon)
+
+Freigegeben wird nur „Heroic“. Electron, die Hilfsprogramme (`gogdl`, `legendary`) und alles, was
+Heroic startet (Wine, Proton, Spiele), sind damit erlaubt. Wie bei Steam liegen die Ordner, aus
+denen etwas gestartet wird, außerhalb des Homes unter `/srv/heroic/<kind>`:
+
+| Im Home (Verweis) | Ziel |
+|---|---|
+| `~/Games/Heroic` | `/srv/heroic/<kind>/Games` (Spiele, Wine-Prefixe) |
+| `~/.config/heroic/tools` | `/srv/heroic/<kind>/tools` (Wine, Proton) |
+| `~/.local/share/umu` | `/srv/heroic/<kind>/umu` (Laufzeit für Proton) |
+
+Vorhandene Ordner verschiebt der Agent nach der Abmeldung automatisch, sonst wie bei Steam von
+Hand. In Heroic den Standard-Installationsordner nicht ändern: Spiele außerhalb von
+`~/Games/Heroic` starten bei aktiver Programmkontrolle nicht. Amazon-Spiele (`nile`) funktionieren
+bei aktiver Programmkontrolle nicht.
+
 ## 5. Härtung
 
 Ohne Härtung lässt sich jede Software-Sperre per USB-Stick oder Bootmenü umgehen. Mindestens

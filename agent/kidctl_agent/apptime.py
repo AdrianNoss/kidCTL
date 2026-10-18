@@ -11,7 +11,7 @@ from datetime import date, timedelta
 
 from . import store
 from .procs import ProcInfo
-from .programs import GENERIC_DIRS, STEAM_SYSTEM, _program_path
+from .programs import GENERIC_DIRS, STEAM_SYSTEM, _program_path, electron_app
 
 APPTIME_FILE = "apptime.json"
 KEEP_DAYS = 35
@@ -20,11 +20,13 @@ KEEP_DAYS = 35
 class AppIndex:
     """Zuordnung Prozess -> App-Schlüssel aus dem Katalog."""
 
-    def __init__(self, keys: set[str]) -> None:
+    def __init__(self, keys: set[str], pkg_dirs: dict[str, tuple[str, ...]] | None = None) -> None:
         self.keys = keys
         self.exes = {k[4:]: k for k in keys if k.startswith("exe:")}
         self.dirs = {os.path.dirname(e): k for e, k in self.exes.items()
                      if os.path.dirname(e) not in GENERIC_DIRS}
+        for e, k in self.exes.items():  # Paket-Ordner, z. B. /usr/lib/heroic-games-launcher für heroic
+            self.dirs.update({d: k for d in (pkg_dirs or {}).get(e, ())})
         self.steam = next((k for e, k in self.exes.items() if e.startswith(STEAM_SYSTEM) or e == "/usr/bin/steam"),
                           None)
 
@@ -32,7 +34,7 @@ class AppIndex:
         if info.flatpak_id:
             k = f"flatpak:{info.flatpak_id}"
             return k if k in self.keys else None
-        path = _program_path(info)
+        path = electron_app(info) or _program_path(info)
         if path in self.exes:
             return self.exes[path]
         for d, k in self.dirs.items():

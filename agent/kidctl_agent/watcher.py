@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import itertools
 import logging
 import os
 import pwd
@@ -14,9 +15,10 @@ from kidctl_common import protocol as p
 
 from . import store
 from .accounting import boottime
-from .procs import pids_of, read_proc
+from .procs import pids_of, read_environ, read_proc
 from .kidmounts import STEAM_ROOT
-from .programs import Allowed, Verdict, base_paths, classify, closure, group_members, load_base, parse_pacman_qi
+from .programs import (MAX_ANCESTORS, Allowed, Verdict, base_paths, classify, closure, group_members, load_base,
+                       package_dirs, parse_pacman_qi)
 
 log = logging.getLogger("kidctl.programs")
 
@@ -36,6 +38,10 @@ class ProgramWatcher:
         self.kill, self.read, self.list_pids, self.clock = kill, read, list_pids, clock
         self.spec = load_base()
         self.base_exact: frozenset[str] = frozenset()  # aus der Paketkette (refresh_base)
+        self.pkg_dirs: dict[str, tuple[str, ...]] = {}  # App -> eigene Paket-Ordner (refresh_base)
+        # Elternkette von Prozessen, die nur über ihre Abstammung erlaubt sind (Steam, Launcher,
+        # Electron): Verwaiste Prozesse (z. B. wineserver) behalten sie bei erneuter Prüfung
+        self.lineage: dict[tuple[int, int], tuple] = {}
         self._pacman_mtime: float | None = None
         self.names: dict[str, str] = {}             # App-Schlüssel -> Anzeigename (aus .desktop)
         self.handled: set[tuple] = set()  # bereits geprüfte Prozesse (ProcInfo.ident)
@@ -70,7 +76,8 @@ class ProgramWatcher:
                         continue
                     out[uid] = (user, child.program_mode,
                                 Allowed(self.spec.globs, set(child.allowed_programs), self.base_exact,
-                                        self.spec.excludes, steam_root=f"{STEAM_ROOT}/{user}/"))
+                                        self.spec.excludes, steam_root=f"{STEAM_ROOT}/{user}/",
+                                        pkg_dirs=self.pkg_dirs))
             self._targets = out
         return self._targets
 
@@ -86,6 +93,8 @@ class ProgramWatcher:
             if ident:
                 alive.add(ident)
         self.handled &= alive  # beendete Prozesse vergessen
+        live = {i[:2] for i in alive}
+        self.lineage = {k: v for k, v in self.lineage.items() if k in live}
 
     def on_exec(self, pid: int) -> None:
         """Netlink-Callback (synchron) – Prüfung als Task."""
@@ -111,8 +120,11 @@ class ProgramWatcher:
         user, mode, allowed = targets[info.uid]
         if mode == "enforce" and not self.base_exact:
             mode = "audit"  # Sicherung: ohne Basisliste nie beenden (würde die Sitzung zerstören)
-        verdict = classify(info, allowed, ancestors=lambda: self._ancestors(info))
+        verdict = classify(info, allowed, ancestors=lambda: self._ancestors(info),
+                           environ=lambda: read_environ(info.pid))
         if verdict is None:
+            if (info.pid, info.start) not in self.lineage and classify(info, allowed) is not None:
+                self.lineage[(info.pid, info.start)] = tuple(itertools.islice(self._ancestors(info), MAX_ANCESTORS))
             return info.ident
         name = self.names.get(verdict.key, verdict.name)
         if mode == "enforce":
@@ -155,12 +167,19 @@ class ProgramWatcher:
         store.save(BLOCKED_FILE, {"events": [e.model_dump(mode="json") for e in self.pending]})
 
     def _ancestors(self, info):
+        """Elternkette; bei gemerkter Abstammung (des Prozesses oder eines Vorfahren) die damalige."""
+        if (saved := self.lineage.get((info.pid, info.start))) is not None:
+            yield from saved
+            return
         pid = info.ppid
         while pid > 1:
             parent = self.read(pid)
             if parent is None:
                 return
             yield parent
+            if (saved := self.lineage.get((parent.pid, parent.start))) is not None:
+                yield from saved
+                return
             pid = parent.ppid
 
     def users(self) -> set[str]:
@@ -184,10 +203,11 @@ class ProgramWatcher:
             mtime = os.stat(PACMAN_DB).st_mtime
             exact = await asyncio.to_thread(_compute_base, self.spec.packages, app_exes, self.spec.excludes,
                                             self.spec.groups)
+            pkg_dirs = await asyncio.to_thread(_compute_pkg_dirs, app_exes)
         except (OSError, subprocess.SubprocessError) as e:
             log.error("Basisliste nicht berechenbar (%s) – Programmkontrolle protokolliert nur", e)
             return
-        self.base_exact, self._pacman_mtime = exact, mtime
+        self.base_exact, self.pkg_dirs, self._pacman_mtime = exact, pkg_dirs, mtime
         self.policy_changed()
         log.info("Basisliste: %d Programme aus %d Wurzelpaketen und Gruppen %s", len(exact),
                  len(self.spec.packages), ", ".join(self.spec.groups) or "–")
@@ -216,3 +236,9 @@ def _compute_base(packages: list[str], app_exes: set[str], excludes: list[str],
                         timeout=60)
     files = [f for f in ql.stdout.split() if os.path.isfile(f) and os.access(f, os.X_OK)]
     return base_paths(files, app_exes, excludes)
+
+
+def _compute_pkg_dirs(app_exes: set[str]) -> dict[str, tuple[str, ...]]:
+    ql = subprocess.run(["pacman", "-Ql"], capture_output=True, text=True, env={"LC_ALL": "C", "PATH": "/usr/bin"},
+                        check=True, timeout=120)
+    return package_dirs(ql.stdout, app_exes)
