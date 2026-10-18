@@ -812,3 +812,9 @@ Verlängerungsanfragen.
   Programmzeit), Server 70. Paket-Ordner gegen das echte `pacman -Ql` des Entwicklungsrechners
   geprüft (`/usr/bin/heroic` → `/usr/lib/heroic-games-launcher`). **Nicht getestet:** echtes Heroic mit
   GOG-Spiel auf dem Testrechner.
+- 2026-10-18: Fix Heroic/Electron (Paket 0.17.1). Nutzer-Test 0.17.0: Electron weiter gesperrt.
+  Ursache: Chromium überschreibt `/proc/<pid>/cmdline` gleich beim Start mit der Befehlszeile als
+  einem String (setproctitle) – App-Pfad und `--type=` wurden nicht erkannt. Electron-Argumente
+  werden in diesem Fall an Leerzeichen getrennt. Getestet: Agent 151; zusätzlich echte electron43-
+  Test-App auf dem Entwicklungsrechner aus `/proc` klassifiziert – mit Freigabe Hauptprozess,
+  Zygote, GPU-, Netzwerk- und Renderer-Prozess erlaubt, ohne Freigabe alle gesperrt.

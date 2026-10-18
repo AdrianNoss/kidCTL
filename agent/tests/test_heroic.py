@@ -201,3 +201,17 @@ def test_heroic_time_attributed_to_launcher():
     assert ix.key_for(MAIN) == f"exe:{HEROIC}"
     assert ix.key_for(proc(f"{PKG}/app.asar.unpacked/build/bin/x64/linux/gogdl")) == f"exe:{HEROIC}"
     assert ix.key_for(proc(ELECTRON, [ELECTRON, "/usr/lib/anderes/app.asar"])) is None
+
+
+def test_electron_rewritten_cmdline():
+    """Chromium überschreibt /proc/<pid>/cmdline mit einem einzigen String (auf dem
+    Entwicklungsrechner mit electron43 nachgemessen) – Hauptprozess und Hilfsprozesse."""
+    main = proc(ELECTRON, [f"{ELECTRON} {PKG}/app.asar"], pid=50)
+    zygote = proc(ELECTRON, [f"{ELECTRON} --type=zygote --no-zygote-sandbox"], pid=51)
+    assert classify(main, ON, ancestors=lambda: [PLASMA], environ=lambda: {}) is None
+    assert classify(zygote, ON, ancestors=lambda: [main, PLASMA]) is None
+    assert classify(zygote, ON, ancestors=lambda: [PLASMA]) is not None
+    bad = proc(ELECTRON, [f"{ELECTRON} --inspect=9229 {PKG}/app.asar"], pid=52)
+    assert classify(bad, ON, ancestors=lambda: [PLASMA], environ=lambda: {}) is not None
+    from kidctl_agent.apptime import AppIndex
+    assert AppIndex({f"exe:{HEROIC}"}, {HEROIC: (PKG,)}).key_for(main) == f"exe:{HEROIC}"

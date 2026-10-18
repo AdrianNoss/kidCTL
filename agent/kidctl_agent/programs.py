@@ -326,25 +326,36 @@ def is_electron(exe: str) -> bool:
     return bool(ELECTRON_DIR.match(exe))
 
 
+def electron_argv(info: ProcInfo) -> tuple[str, ...]:
+    """Argumente eines Electron-Prozesses. Chromium überschreibt gleich beim Start
+    ``/proc/<pid>/cmdline`` mit der Befehlszeile als *einem* String (setproctitle) – dann an
+    Leerzeichen trennen (Pfade aus Paketen enthalten keine)."""
+    if len(info.argv) == 1 and " " in info.argv[0]:
+        return tuple(info.argv[0].split())
+    return info.argv
+
+
 def electron_app(info: ProcInfo) -> str | None:
     """App eines Electron-Hauptprozesses (erstes Nicht-Options-Argument, realpath); ``None`` bei
     Hilfsprozessen (``--type=``) oder ohne App."""
     if not is_electron(info.exe) or os.path.basename(info.exe) != "electron":
         return None
-    if any(a.startswith("--type=") for a in info.argv[1:]):
+    argv = electron_argv(info)
+    if any(a.startswith("--type=") for a in argv[1:]):
         return None
-    app = next((a for a in info.argv[1:] if not a.startswith("-")), None)
+    app = next((a for a in argv[1:] if not a.startswith("-")), None)
     return os.path.realpath(app) if app and os.path.isabs(app) else None
 
 
-def electron_args_unsafe(argv: tuple[str, ...]) -> bool:
+def electron_args_unsafe(info: ProcInfo) -> bool:
     """Optionen, mit denen Electron fremden Code lädt oder sich fernsteuern lässt."""
-    return any(a.split("=", 1)[0] in ELECTRON_UNSAFE or a.startswith(ELECTRON_UNSAFE_PREFIX) for a in argv[1:])
+    return any(a.split("=", 1)[0] in ELECTRON_UNSAFE or a.startswith(ELECTRON_UNSAFE_PREFIX)
+               for a in electron_argv(info)[1:])
 
 
 def _allowed_electron_main(info: ProcInfo, allowed: Allowed) -> bool:
     app = electron_app(info)
-    return app is not None and allowed.path_ok(app) and not electron_args_unsafe(info.argv)
+    return app is not None and allowed.path_ok(app) and not electron_args_unsafe(info)
 
 
 def is_launcher_process(info: ProcInfo, allowed: Allowed) -> bool:
@@ -404,7 +415,7 @@ def classify(info: ProcInfo, allowed: Allowed,
         app = electron_app(info)
         if app is not None and allowed.path_ok(app):
             env = environ() if environ is not None else {}
-            if electron_args_unsafe(info.argv) or any(env.get(k) for k in ELECTRON_UNSAFE_ENV):
+            if electron_args_unsafe(info) or any(env.get(k) for k in ELECTRON_UNSAFE_ENV):
                 return Verdict(f"exe:{app}", os.path.basename(app), f"Electron mit fremdem Code ({name})")
             return None
         if app is None and any(_allowed_electron_main(a, allowed) for a in chain()):
