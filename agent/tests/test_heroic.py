@@ -147,6 +147,7 @@ def _heroic_home(tmp_path, monkeypatch, existing=True):
     if existing:
         (home / "Games/Heroic/Spiel").mkdir(parents=True)
         (home / ".config/heroic/tools/wine").mkdir(parents=True)
+        (home / ".cache/legendary/vendored/Cryptodome").mkdir(parents=True)
     root = tmp_path / "srv-heroic"
     monkeypatch.setattr(kidmounts, "HEROIC_INSTALLED", tmp_path)
     monkeypatch.setattr(kidmounts, "HEROIC_ROOT", root)
@@ -162,6 +163,8 @@ def test_heroic_links_created(tmp_path, monkeypatch):
     assert os.readlink(home / "Games/Heroic") == str(lib / "Games")
     assert os.readlink(home / ".config/heroic/tools") == str(lib / "tools")
     assert os.readlink(home / ".local/share/umu") == str(lib / "umu")
+    assert os.readlink(home / ".cache/legendary") == str(lib / "cache/legendary")
+    assert os.readlink(home / ".cache/heroic_gogdl") == str(lib / "cache/heroic_gogdl")
     assert (lib / "Games").is_dir() and (lib / "tools").is_dir()
     assert oct(lib.stat().st_mode & 0o777) == "0o700" and m.lib_problems == {}
 
@@ -172,13 +175,14 @@ def test_heroic_dirs_moved_after_logout(tmp_path, monkeypatch):
     m = KidMounts(run=_real_link, in_use=lambda h: logged_in["yes"])
     m.ensure_libraries({ME})
     assert (home / "Games/Heroic").is_dir() and not (home / "Games/Heroic").is_symlink()
-    assert m.lib_pending == {(ME, "Games/Heroic"), (ME, ".config/heroic/tools")}
+    assert m.lib_pending == {(ME, "Games/Heroic"), (ME, ".config/heroic/tools"), (ME, ".cache/legendary")}
     assert "nach der Abmeldung" in m.lib_problems[("heroic", ME)]
     logged_in["yes"] = False
     assert m.releasable()
     m.ensure_libraries({ME})
     assert os.readlink(home / "Games/Heroic") == str(lib / "Games")
     assert (lib / "Games/Spiel").is_dir() and (lib / "tools/wine").is_dir()
+    assert (lib / "cache/legendary/vendored/Cryptodome").is_dir()
     assert m.lib_problems == {} and m.lib_pending == set()
 
 
@@ -215,3 +219,17 @@ def test_electron_rewritten_cmdline():
     assert classify(bad, ON, ancestors=lambda: [PLASMA], environ=lambda: {}) is not None
     from kidctl_agent.apptime import AppIndex
     assert AppIndex({f"exe:{HEROIC}"}, {HEROIC: (PKG,)}).key_for(main) == f"exe:{HEROIC}"
+
+
+def test_heroic_move_refuses_symlinked_target_parent(tmp_path, monkeypatch):
+    """Das Kind ersetzt /srv/heroic/<kind>/cache durch einen Verweis -> nichts wird dorthin bewegt."""
+    home, lib = _heroic_home(tmp_path, monkeypatch)
+    victim = tmp_path / "system"
+    victim.mkdir()
+    lib.mkdir(parents=True)
+    (lib / "cache").symlink_to(victim)
+    m = KidMounts(run=lambda *c: subprocess.CompletedProcess(c, 3, "", ""), in_use=lambda h: False)
+    m.ensure_libraries({ME})
+    assert list(victim.iterdir()) == []
+    assert (home / ".cache/legendary/vendored").is_dir()
+    assert "nicht verschiebbar" in m.lib_problems[("heroic", ME)]

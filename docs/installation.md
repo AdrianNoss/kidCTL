@@ -243,6 +243,7 @@ denen etwas gestartet wird, außerhalb des Homes unter `/srv/heroic/<kind>`:
 | `~/Games/Heroic` | `/srv/heroic/<kind>/Games` (Spiele, Wine-Prefixe) |
 | `~/.config/heroic/tools` | `/srv/heroic/<kind>/tools` (Wine, Proton) |
 | `~/.local/share/umu` | `/srv/heroic/<kind>/umu` (Laufzeit für Proton) |
+| `~/.cache/heroic_gogdl`, `~/.cache/legendary` | `/srv/heroic/<kind>/cache/…` (native Module von GOG- und Epic-Anbindung) |
 
 Vorhandene Ordner verschiebt der Agent nach der Abmeldung automatisch, sonst wie bei Steam von
 Hand. In Heroic den Standard-Installationsordner nicht ändern: Spiele außerhalb von

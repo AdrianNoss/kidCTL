@@ -9,7 +9,8 @@
   Kindes an – root schreibt/mountet nie in Pfade, die das Kind kontrolliert (Symlink-Tricks).
 - Heroic genauso: ``/srv/heroic/<user>`` mit ``~/Games/Heroic`` (Spiele, Wine-Prefixe) -> ``Games``
   ``~/.config/heroic/tools`` (Wine, Proton) -> ``tools`` und ``~/.local/share/umu`` (Laufzeit, mit
-  der Heroic Proton startet) -> ``umu``.
+  der Heroic Proton startet) -> ``umu``, ``~/.cache/heroic_gogdl`` und ``~/.cache/legendary`` (native
+  Module von gogdl/legendary) -> ``cache/…``.
 """
 
 from __future__ import annotations
@@ -79,7 +80,9 @@ def libraries() -> list[Library]:
     return [Library("steam", "Steam", STEAM_INSTALLED, STEAM_ROOT, ((".local/share/Steam", ""),)),
             Library("heroic", "Heroic", HEROIC_INSTALLED, HEROIC_ROOT,
                     (("Games/Heroic", "Games"), (".config/heroic/tools", "tools"),
-                     (".local/share/umu", "umu")))]
+                     (".local/share/umu", "umu"),
+                     # gogdl/legendary entpacken native Module (.so) dorthin und laden sie
+                     (".cache/heroic_gogdl", "cache/heroic_gogdl"), (".cache/legendary", "cache/legendary")))]
 
 
 def move_dir(home: str, uid: int, rel: str, lib: Path, sub: str) -> bool:
@@ -97,9 +100,11 @@ def move_dir(home: str, uid: int, rel: str, lib: Path, sub: str) -> bool:
         if not stat.S_ISDIR(st.st_mode) or st.st_uid != uid:
             return False
         src = fds[-1]
-        if sub:
+        if sub:  # Zwischenordner (z. B. cache/) ebenfalls ohne Symlink-Verfolgung, Besitzer Kind
+            *sub_parts, dst_name = sub.split("/")
             fds.append(_open_dir(str(lib), None, uid))
-            dst_name = sub
+            for part in sub_parts:
+                fds.append(_open_dir(part, fds[-1], uid))
         else:
             fds.append(_open_dir(str(lib.parent), None, STEAM_ROOT_OWNER))
             dst_name = lib.name

@@ -261,7 +261,8 @@ Verlängerungsanfragen.
   Steam-Bibliothek nur, wenn auch Steam freigegeben ist. Gleiche Restlücke („Spiel hinzufügen“).
   - Heroic-Ordner unter `/srv/heroic/<user>` (Eigentümer Kind, 0700): `~/Games/Heroic` → `Games`
     (Spiele, Wine-Prefixe), `~/.config/heroic/tools` → `tools` (Wine/Proton), `~/.local/share/umu` →
-    `umu` (Laufzeit, mit der Heroic Proton startet). Anlage, Umzug nach der
+    `umu` (Laufzeit, mit der Heroic Proton startet), `~/.cache/heroic_gogdl` und `~/.cache/legendary`
+    → `cache/…` (gogdl/legendary entpacken dort native Module und laden sie). Anlage, Umzug nach der
     Abmeldung und Integritätsmeldung (`heroic:<user>`) wie bei Steam; nur wenn Heroic installiert ist.
     Andere Installationsordner (in Heroic einstellbar) liegen im Home und starten bei Kontrolle nicht.
   - `gogdl`/`legendary` sind Python-Zipapps (Interpreter-Regel, Skript im Paket-Ordner).
@@ -818,3 +819,10 @@ Verlängerungsanfragen.
   werden in diesem Fall an Leerzeichen getrennt. Getestet: Agent 151; zusätzlich echte electron43-
   Test-App auf dem Entwicklungsrechner aus `/proc` klassifiziert – mit Freigabe Hauptprozess,
   Zygote, GPU-, Netzwerk- und Renderer-Prozess erlaubt, ohne Freigabe alle gesperrt.
+- 2026-10-18: Heroic: GOG-/Epic-Anbindung (Paket 0.17.2). Nutzer-Test 0.17.1: Heroic startet, aber
+  `legendary` scheitert („failed to map segment from shared object“) und GOG-Anmeldung schlägt fehl.
+  Ursache: Die Python-Zipapps gogdl/legendary entpacken native Module nach `~/.cache/heroic_gogdl`
+  bzw. `~/.cache/legendary` und laden sie – im noexec-Home unmöglich. Beide Ordner jetzt als Verweise
+  in `/srv/heroic/<user>/cache/`. Umzug öffnet auch Zwischenordner des Ziels ohne Symlink-Verfolgung.
+  Getestet: Agent 152 (Verweise, Umzug, Symlink-Angriff auf den Zwischenordner des Ziels); gogdl 1.3.0
+  und legendary 0.21.1 laufen auf dem Entwicklungsrechner mit ausführbarem Cache-Ordner.
