@@ -318,3 +318,27 @@ def test_short_lived_child_after_parent_exited():
     w2.lineage = dict(w.lineage)
     asyncio.run(w2.check_pid(92))
     assert killed == [92]
+
+
+def test_custom_program_package_dirs_recomputed():
+    """Eigenes Programm der Eltern (git): Paket-Ordner werden nachberechnet, ohne es aus der
+    Basisliste zu nehmen."""
+    from kidctl_agent.watcher import ProgramWatcher
+
+    class FakeAgent:
+        policy = None
+    w = ProgramWatcher(FakeAgent())
+    calls = []
+    import kidctl_agent.watcher as wmod
+    orig_base, orig_dirs = wmod._compute_base, wmod._compute_pkg_dirs
+    wmod._compute_base = lambda pk, app_exes, ex, gr=(): calls.append(("base", set(app_exes))) or frozenset({"/usr/bin/x"})
+    wmod._compute_pkg_dirs = lambda exes: calls.append(("dirs", set(exes))) or {"/usr/bin/git": ("/usr/lib/git-core",)}
+    try:
+        assert w.pkg_dirs_outdated({"/usr/bin/git"})
+        asyncio.run(w.refresh_base({"/usr/bin/kate"}, {"/usr/bin/git"}))
+    finally:
+        wmod._compute_base, wmod._compute_pkg_dirs = orig_base, orig_dirs
+    assert calls == [("base", {"/usr/bin/kate"}), ("dirs", {"/usr/bin/kate", "/usr/bin/git"})]
+    assert not w.pkg_dirs_outdated({"/usr/bin/git", "/usr/bin/kate"})
+    a = Allowed(["/usr/lib/kidctl/*"], {"exe:/usr/bin/git"}, frozenset(), [], pkg_dirs=w.pkg_dirs)
+    assert classify(proc("/usr/lib/git-core/git-remote-https"), a) is None

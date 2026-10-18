@@ -198,6 +198,30 @@ async def child_programs(child_id: int, request: Request, db: Session = Depends(
     return _redirect(f"/children/{child_id}?programs=1#programme")
 
 
+@router.post("/children/{child_id}/programs/custom", dependencies=[Depends(csrf_protect)])
+async def child_custom_add(child_id: int, request: Request, path: str = Form(""), name: str = Form(""),
+                           db: Session = Depends(get_db)):
+    child = _get_or_404(db, Child, child_id)
+    try:
+        programs.add_custom(db, child.id, path, name)
+    except ValueError as e:
+        return _child_page(request, db, child, status_code=400, custom_error=str(e), custom_path=path[:500],
+                           custom_name=name[:programs.MAX_CUSTOM_NAME])
+    db.commit()
+    await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
+    return _redirect(f"/children/{child_id}?programs=1#programme")
+
+
+@router.post("/children/{child_id}/programs/custom/{custom_id}/delete", dependencies=[Depends(csrf_protect)])
+async def child_custom_delete(child_id: int, custom_id: int, db: Session = Depends(get_db)):
+    child = _get_or_404(db, Child, child_id)
+    if not programs.delete_custom(db, child.id, custom_id):
+        raise HTTPException(404)
+    db.commit()
+    await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
+    return _redirect(f"/children/{child_id}?programs=1#programme")
+
+
 @router.get("/children/{child_id}/stats")
 def child_stats(child_id: int, request: Request, range: int = 7, db: Session = Depends(get_db)):
     child = _get_or_404(db, Child, child_id)

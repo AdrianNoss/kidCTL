@@ -226,6 +226,13 @@ Verlängerungsanfragen.
     Skriptdateien unter `/usr/lib/kidctl/`.
 - Server: Katalog je Gerät, Freigaben je Kind (`child_program`), Sperrprotokoll (`blocked_event`),
   WebUI-Abschnitt „Programme“ und „Gesperrte Aktionen“ auf der Kind-Seite.
+- **Eigene Programme** (entschieden 2026-10-18): Eltern tragen im Dialog „Programm hinzufügen“ ein
+  Programm ein, das nicht im Katalog steht (Pfad oder Name aus `/usr/bin`, z. B. `git`; optional
+  Anzeigename). Es wird sofort freigegeben und erscheint in der Gruppe „Eigene Programme“ (an-/abwählbar,
+  entfernbar – Entfernen entzieht die Freigabe). Tabelle `child_custom_program`. Pfad nur absolut,
+  normalisiert, Zeichen `A-Za-z0-9._+@/-`. Der Agent berechnet die Paket-Ordner auch für diese Programme
+  (z. B. `/usr/lib/git-core` für git) und rechnet nach einer neuen Freigabe neu, ohne sie aus der
+  Basisliste zu nehmen.
 - Browser: nur Firefox/Chromium mit gesetzter Policy sollten freigegeben werden.
 
 ### Programmquellen
@@ -867,3 +874,10 @@ Verlängerungsanfragen.
   beendeter Prozesse eine Scan-Runde länger behalten; Elternkette im Journal bei jeder Sperre (Diagnose).
   Getestet: Agent 158 (kurzlebiges Kind nach beendetem Shell-Elternprozess erlaubt, ohne Heroic-Freigabe
   gesperrt). Ursache auf dem Testrechner nicht bestätigt.
+- 2026-10-18: Eigene Programme (Server + Agent 0.20.0). Wunsch des Nutzers: Programme wie git selbst
+  hinzufügen (Dialog, Reiter „Eigene Programme“). Getestet: Server 72 (Pfad-Validierung inkl. `..`, `//`,
+  Leerzeichen, Shell-Zeichen; Hinzufügen → Policy, Abwählen behält Eintrag, Fehler im offenen Dialog,
+  Entfernen → Freigabe weg, 404 bei unbekannter ID, CSRF), Agent 159 (Paket-Ordner für eigene Programme
+  nachberechnet, `git-remote-https` erlaubt). Neue Tabelle gegen Kopie der Entwicklungs-DB per `init_db`
+  angelegt. Sichttest Entwicklungsserver (Firefox headless, hell/dunkel): Gruppe, Dialog (modal per
+  JavaScript, ohne JavaScript über `?add_program=1`), Entfernen über die Oberfläche.

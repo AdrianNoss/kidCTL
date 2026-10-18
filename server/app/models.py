@@ -203,6 +203,17 @@ class ChildProgram(Base):
     key: Mapped[str] = mapped_column(String(512))
 
 
+class ChildCustomProgram(Base):
+    """Von den Eltern selbst eingetragenes Programm (nicht im Katalog der Geräte, z. B. /usr/bin/git)."""
+    __tablename__ = "child_custom_program"
+    __table_args__ = (UniqueConstraint("child_id", "key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    child_id: Mapped[int] = mapped_column(ForeignKey("child.id", ondelete="CASCADE"), index=True)
+    key: Mapped[str] = mapped_column(String(512))   # exe:<pfad>
+    name: Mapped[str] = mapped_column(String(64))
+
+
 class BlockedEvent(Base):
     """Protokoll gesperrter Aktionen (kein Verlauf erlaubter Aktionen)."""
     __tablename__ = "blocked_event"

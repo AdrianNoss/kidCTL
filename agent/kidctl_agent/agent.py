@@ -166,7 +166,7 @@ class Agent:
             if boottime() - last_apps >= APPS_EVERY or self.programs.base_outdated():
                 last_apps = boottime()  # nach pacman-Updates: Apps und Basisliste neu
                 self.refresh_apps()
-                await self.programs.refresh_base(self.app_exes())
+                await self.programs.refresh_base(self.app_exes(), self.policy_exes())
                 self.refresh_index()  # Paket-Ordner
                 if self.online:
                     await self.conn.send(p.ReportApps(apps=self.apps))
@@ -272,6 +272,12 @@ class Agent:
             if self.online and await self.conn.send(p.IntegrityReport(checks=checks)):
                 self._integrity = checks
 
+    def policy_exes(self) -> set[str]:
+        """Von den Eltern freigegebene Programme (auch eigene, nicht im Katalog)."""
+        if self.policy is None:
+            return set()
+        return {k[4:] for c in self.policy.children for k in c.allowed_programs if k.startswith("exe:")}
+
     def app_exes(self) -> set[str]:
         return {a.key[4:] for a in self.apps if a.key.startswith("exe:")}
 
@@ -338,6 +344,9 @@ class Agent:
             self.policy = msg
             self._synced = True
             self.programs.policy_changed()
+            if self.programs.pkg_dirs_outdated(self.app_exes() | self.policy_exes()):
+                await self.programs.refresh_base(self.app_exes(), self.policy_exes())  # neues eigenes Programm
+                self.refresh_index()
             await self.sync_mounts()
             await self.sync_dns()
             store.save(store.POLICY_FILE, msg.model_dump(mode="json"))
@@ -437,7 +446,7 @@ class Agent:
         if self.policy is None:
             log.warning("Keine Policy vorhanden – niemand wird eingeschränkt")
         self.refresh_apps()
-        await self.programs.refresh_base(self.app_exes())
+        await self.programs.refresh_base(self.app_exes(), self.policy_exes())
         self.refresh_index()  # Paket-Ordner
         await self.sync_mounts()  # vor der Bereit-Meldung -> vor allen Logins
         await self.sync_dns()

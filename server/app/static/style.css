@@ -249,3 +249,14 @@ details > summary { cursor:pointer; color:var(--ink-2); font-weight:600; font-si
 .app-bulk { margin-left:auto; display:inline-flex; gap:.25rem; }
 .app-options { padding:0 .8rem .8rem; margin:0; grid-template-columns:repeat(auto-fill, minmax(13rem, 1fr)); }
 .app-options .option { padding:.45rem .65rem; }
+
+/* Eigene Programme */
+.app-toolbar { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin:.6rem 0 .8rem; }
+.custom-item { display:flex; align-items:stretch; gap:.25rem; }
+.custom-item .option { flex:1; min-width:0; }
+.custom-item .option small { overflow-wrap:anywhere; }
+.dialog { width:min(30rem, calc(100% - 32px)); padding:1.1rem 1.2rem; background:var(--surface); color:var(--ink);
+  border:1px solid var(--line-strong); border-radius:var(--radius-lg); }
+.dialog::backdrop { background:rgb(0 0 0 / .35); }
+.dialog h2 { margin-top:0; }
+.dialog .actions { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.6rem; }

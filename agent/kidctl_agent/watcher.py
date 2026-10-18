@@ -44,6 +44,7 @@ class ProgramWatcher:
         self.lineage: dict[tuple[int, int], tuple] = {}
         self._seen: set[tuple[int, int]] = set()  # Abstammungen, die schon einen Scan überstanden haben
         self._pacman_mtime: float | None = None
+        self._pkg_input: frozenset[str] = frozenset()  # Programme, für die pkg_dirs berechnet sind
         self.names: dict[str, str] = {}             # App-Schlüssel -> Anzeigename (aus .desktop)
         self.handled: set[tuple] = set()  # bereits geprüfte Prozesse (ProcInfo.ident)
         self.last_report: dict[tuple[str, str], float] = {}
@@ -212,13 +213,21 @@ class ProgramWatcher:
         except OSError:
             return False
 
-    async def refresh_base(self, app_exes: set[str]) -> None:
-        """Basisliste neu berechnen (pacman, im Thread). Bei Fehlern bleibt die alte erhalten."""
+    def pkg_dirs_outdated(self, exes: set[str]) -> bool:
+        """Freigegebene Programme, deren Paket-Ordner noch nicht berechnet sind (z. B. neues eigenes
+        Programm der Eltern wie /usr/bin/git -> /usr/lib/git-core)."""
+        return not exes <= self._pkg_input
+
+    async def refresh_base(self, app_exes: set[str], extra: set[str] = frozenset()) -> None:
+        """Basisliste neu berechnen (pacman, im Thread). Bei Fehlern bleibt die alte erhalten.
+        ``extra``: weitere freigegebene Programme (eigene Programme der Eltern) – nur für Paket-Ordner,
+        nicht aus der Basisliste genommen."""
         try:
             mtime = os.stat(PACMAN_DB).st_mtime
             exact = await asyncio.to_thread(_compute_base, self.spec.packages, app_exes, self.spec.excludes,
                                             self.spec.groups)
-            pkg_dirs = await asyncio.to_thread(_compute_pkg_dirs, app_exes)
+            pkg_dirs = await asyncio.to_thread(_compute_pkg_dirs, app_exes | extra)
+            self._pkg_input = frozenset(app_exes | extra)
         except (OSError, subprocess.SubprocessError) as e:
             log.error("Basisliste nicht berechenbar (%s) – Programmkontrolle protokolliert nur", e)
             return

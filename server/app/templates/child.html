@@ -162,6 +162,10 @@
       Systemkomponenten (KDE/Plasma, KidCTL) sind immer erlaubt. Terminals, Shells und Interpreter sind gesperrt,
       solange sie nicht ausdrücklich freigegeben sind – für ein nutzbares Terminal das Terminal-Programm
       (z. B. Konsole) <em>und</em> die Shell des Kindes freigeben (Gruppe „Terminal &amp; Shells“).</small></p>
+    <div class="app-toolbar">
+      <a href="/children/{{ child.id }}?add_program=1#add-program" class="btn secondary small" data-dialog="add-program">Programm hinzufügen</a>
+      <small class="muted">für Programme ohne Eintrag in der Liste, z. B. <code>git</code></small>
+    </div>
     {% if catalog %}
     <div class="app-catalog">
       <input type="search" class="app-search" placeholder="Programm suchen …" aria-label="Programm suchen" hidden>
@@ -178,19 +182,52 @@
         </summary>
         <div class="options app-options">
           {% for app in apps %}
+          {% if app.custom_id %}
+          <div class="app-item custom-item" data-name="{{ app.name | lower }} {{ app.key | lower }}">
+            <label class="option" title="{{ app.key }}">
+              <input type="checkbox" name="app" value="{{ app.key }}"{% if app.allowed %} checked{% endif %}>
+              <span>{{ app.name }}<small>{{ app.key[4:] if app.key.startswith("exe:") else app.key }}</small></span>
+            </label>
+            <button type="submit" class="ghost small" formaction="/children/{{ child.id }}/programs/custom/{{ app.custom_id }}/delete"
+                    formnovalidate title="Eintrag entfernen" aria-label="{{ app.name }} entfernen"
+                    onclick="return confirm('Eigenes Programm „{{ app.name }}“ entfernen? Die Freigabe wird entzogen.')">Entfernen</button>
+          </div>
+          {% else %}
           <label class="option app-item" data-name="{{ app.name | lower }}" title="{{ app.key }}">
             <input type="checkbox" name="app" value="{{ app.key }}"{% if app.allowed %} checked{% endif %}>
             <span>{{ app.name }}{% if app.missing %}<small>nicht mehr installiert</small>{% elif app.devices > 1 %}<small>{{ app.devices }} Geräte</small>{% endif %}</span>
           </label>
+          {% endif %}
           {% endfor %}
         </div>
       </details>
       {% endfor %}
     </div>
-    <script src="/static/programs.js" defer></script>
     {% else %}<p class="muted">Noch keine Programmliste – sie erscheint, sobald ein Gerät mit zugeordnetem Benutzer verbunden ist.</p>{% endif %}
     <button type="submit">Speichern</button>
   </form>
+  <dialog id="add-program" class="dialog"{% if custom_error or request.query_params.get("add_program") %} open{% endif %}>
+    <form method="post" action="/children/{{ child.id }}/programs/custom">
+      <h2>Eigenes Programm hinzufügen</h2>
+      {% if custom_error %}<p class="error">{{ custom_error }}</p>{% endif %}
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <label>Programm
+        <input name="path" required maxlength="500" placeholder="/usr/bin/git" value="{{ custom_path or '' }}" autocomplete="off" spellcheck="false">
+      </label>
+      <p class="muted"><small>Pfad oder Name eines Programms aus <code>/usr/bin</code>. Den Pfad zeigt auf dem Rechner
+        des Kindes <code>which git</code>. Hilfsprogramme aus demselben Paket (bei git <code>/usr/lib/git-core</code>) sind mit
+        erlaubt. Für Kommandozeilenprogramme zusätzlich Terminal und Shell freigeben.</small></p>
+      <label><span>Anzeigename <span class="muted">(optional)</span></span>
+        <input name="name" maxlength="64" placeholder="Git" value="{{ custom_name or '' }}">
+      </label>
+      <div class="actions">
+        <button type="submit">Hinzufügen und erlauben</button>
+        <a href="/children/{{ child.id }}#programme" class="btn secondary" data-close>Abbrechen</a>
+      </div>
+      <p class="muted"><small>Nicht gespeicherte Änderungen an der Programmliste gehen dabei verloren.</small></p>
+    </form>
+  </dialog>
+  <script src="/static/programs.js" defer></script>
 </section>
 
 <section class="card">

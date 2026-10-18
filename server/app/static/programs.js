@@ -1,4 +1,15 @@
 // Programmliste: Suche und „Alle/Keine“ je Gruppe (ohne JavaScript bleibt die Liste voll bedienbar).
+// „Programm hinzufügen“ öffnet einen Dialog (ohne JavaScript: Seite mit geöffnetem Dialog).
+(() => {
+  const dialog = document.getElementById("add-program");
+  if (!dialog || !dialog.showModal) return;
+  if (dialog.open) { dialog.close(); dialog.showModal(); }
+  for (const a of document.querySelectorAll('[data-dialog="add-program"]')) {
+    a.addEventListener("click", (ev) => { ev.preventDefault(); dialog.showModal(); dialog.querySelector("input[name=path]").focus(); });
+  }
+  dialog.querySelector("[data-close]").addEventListener("click", (ev) => { ev.preventDefault(); dialog.close(); });
+})();
+
 (() => {
   const root = document.querySelector(".app-catalog");
   if (!root) return;
