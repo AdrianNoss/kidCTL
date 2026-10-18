@@ -133,7 +133,18 @@ def test_steam_game_needs_steam_and_ancestry():
     assert v.key == f"exe:{ROOT}steamapps/common/Spiel/spiel" and "über Steam" in v.detail
     # Steam nicht freigegeben
     v = classify(game, steam_allowed(), ancestors=lambda: [CLIENT, BOOT])
-    assert "nicht freigegeben" in v.detail
+    assert v.key == "exe:/usr/bin/steam" and v.name == "Steam" and "nicht freigegeben – spiel" == v.detail
+
+
+def test_steam_launcher_helpers_reported_as_steam_when_not_allowed():
+    """Ohne Steam-Freigabe erscheinen Hilfsprogramme des Starters (cmp, srt-logger …) als „Steam“."""
+    cmp = proc("/usr/bin/cmp", pid=40)
+    v = classify(cmp, steam_allowed(), ancestors=lambda: [BOOT])
+    assert (v.key, v.name, v.detail) == ("exe:/usr/bin/steam", "Steam", "nicht freigegeben – cmp")
+    logger = proc(ROOT + "ubuntu12_32/steam-runtime/usr/libexec/steam-runtime-tools-0/srt-logger", pid=41)
+    assert classify(logger, steam_allowed(), ancestors=lambda: [STEAMSH, BOOT]).key == "exe:/usr/bin/steam"
+    # ohne Steam-Abstammung bleibt cmp ein gewöhnlicher Eintrag
+    assert classify(cmp, steam_allowed(), ancestors=lambda: []).key == "exe:/usr/bin/cmp"
 
 
 def test_steam_bootstrap_and_client_chain():

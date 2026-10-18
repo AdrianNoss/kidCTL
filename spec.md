@@ -754,3 +754,7 @@ Verlängerungsanfragen.
   aus `/etc/shells`, neue Gruppe „Terminal & Shells“, Hinweis im WebUI, Shells ohne Programmzeit.
   Version 0.15.0. Getestet: Agent 133 (Shell-Erkennung inkl. sh/rbash→bash, git-shell ignoriert),
   Server 70 (Gruppe für Shell und Konsole).
+- 2026-10-18: Sperrprotokoll: Ohne Steam-Freigabe werden Programme der Steam-Bibliothek und Hilfsprogramme
+  des Steam-Starters (z. B. `cmp`, `srt-logger`) als ein Eintrag „Steam – nicht freigegeben – <programm>“
+  mit Schlüssel `exe:/usr/bin/steam` protokolliert statt als einzelne, irreführende Programme.
+  Getestet: Agent 134 (cmp/srt-logger mit Steam-Abstammung → „Steam“, ohne Abstammung unverändert).

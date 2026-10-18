@@ -53,6 +53,9 @@ GENERIC_DIRS = {"/usr/bin", "/usr/sbin", "/bin", "/sbin", "/usr/local/bin", "/us
 # Steam: Systemteil (Bootstrap) und Client innerhalb der Bibliothek
 STEAM_SYSTEM = "/usr/lib/steam/"
 STEAM_CLIENT = "ubuntu12_32/steam"
+# Protokoll-Eintrag, wenn Steam nicht freigegeben ist: Schlüssel des Steam-Starters aus dem Katalog,
+# damit Eltern sehen (und freigeben), worum es geht – statt einzelner Hilfsprogramme wie cmp
+STEAM_KEY = "exe:/usr/bin/steam"
 STEAM_SCRIPT = "steam.sh"
 MAX_ANCESTORS = 64
 
@@ -282,17 +285,23 @@ def classify(info: ProcInfo, allowed: Allowed,
         return ancestors is not None and any(
             is_steam_process(a, allowed.steam_root) for _, a in zip(range(MAX_ANCESTORS), ancestors()))
 
+    def steam_blocked() -> Verdict:
+        return Verdict(STEAM_KEY, "Steam", f"nicht freigegeben – {os.path.basename(path)}")
+
     path = _program_path(info)
     if allowed.steam_root and path.startswith(allowed.steam_root):
-        if allowed.steam_enabled and (is_steam_process(info, allowed.steam_root) or from_steam()):
+        if not allowed.steam_enabled:
+            return steam_blocked()
+        if is_steam_process(info, allowed.steam_root) or from_steam():
             return None
-        detail = "über Steam gestartet nötig" if allowed.steam_enabled else "Steam nicht freigegeben"
-        return Verdict(f"exe:{path}", os.path.basename(path), f"Steam-Bibliothek ({detail})")
+        return Verdict(f"exe:{path}", os.path.basename(path), "Steam-Bibliothek (über Steam gestartet nötig)")
 
     if allowed.path_ok(exe):
         return None
-    if allowed.steam_enabled and from_steam():
-        return None  # von Steam gestartet (Laufzeit-Container, Proton, …)
+    if from_steam():
+        if allowed.steam_enabled:
+            return None  # von Steam gestartet (Laufzeit-Container, Proton, …)
+        return steam_blocked()  # Hilfsprogramm des Steam-Starters (z. B. cmp)
 
     if name in SHELLS or re.sub(r"[0-9.]+$", "", name) in SHELLS:
         mode, script = shell_mode(info.argv)
