@@ -68,6 +68,7 @@ GROUPS = [
     ("graphics", "Grafik", {"Graphics"}),
     ("media", "Musik & Video", {"AudioVideo", "Audio", "Video"}),
     ("development", "Entwicklung", {"Development"}),
+    ("terminal", "Terminal & Shells", {"TerminalEmulator", "Shell"}),
     ("utility", "Werkzeuge", {"Utility"}),
     ("system", "System & Einstellungen", {"System", "Settings", "Monitor", "PackageManager"}),
 ]

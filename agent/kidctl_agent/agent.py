@@ -174,7 +174,8 @@ class Agent:
             log.exception("Anwendungen nicht lesbar")
             return
         self.programs.names = {a.key: a.name for a in self.apps}
-        self.app_index = AppIndex({a.key for a in self.apps})
+        # Shells nicht als Programmzeit zählen (Systemprozesse wie „sh -c …“ verfälschen sonst die Statistik)
+        self.app_index = AppIndex({a.key for a in self.apps if "Shell" not in a.categories})
 
     async def sync_mounts(self) -> None:
         """noexec-Homes und Steam-Bibliotheken an die Policy angleichen (systemd, im Thread)."""

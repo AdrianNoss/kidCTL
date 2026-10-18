@@ -22,6 +22,9 @@ APP_DIRS = (
     "/var/lib/flatpak/exports/share/applications",  # nur systemweite Flatpaks
 )
 SEARCH_PATH = "/usr/local/bin:/usr/bin:/bin"
+ETC_SHELLS = "/etc/shells"
+# Shells, die Eltern einzeln freigeben können (haben keinen Startmenü-Eintrag)
+SELECTABLE_SHELLS = {"sh", "bash", "fish", "zsh", "dash", "ksh", "mksh", "tcsh", "csh", "nu", "elvish", "xonsh"}
 
 
 def resolve_exec(exec_line: str) -> str | None:
@@ -71,7 +74,26 @@ def parse_desktop(path: Path) -> AppEntry | None:
                     categories=categories)
 
 
-def scan_apps(dirs=APP_DIRS) -> list[AppEntry]:
+def scan_shells(etc_shells: str = ETC_SHELLS) -> list[AppEntry]:
+    """Installierte Shells aus /etc/shells (je Programmdatei einmal, z. B. sh -> bash)."""
+    out: dict[str, AppEntry] = {}
+    try:
+        lines = Path(etc_shells).read_text().splitlines()
+    except OSError:
+        return []
+    for line in lines:
+        line = line.strip()
+        if not line.startswith("/") or os.path.basename(line) not in SELECTABLE_SHELLS or not os.path.exists(line):
+            continue
+        real = os.path.realpath(line)
+        if os.path.basename(real) not in SELECTABLE_SHELLS:
+            continue
+        out.setdefault(real, AppEntry(key=f"exe:{real}", name=f"{os.path.basename(real)} (Shell)",
+                                      icon="utilities-terminal", categories=["Shell"]))
+    return list(out.values())
+
+
+def scan_apps(dirs=APP_DIRS, etc_shells: str = ETC_SHELLS) -> list[AppEntry]:
     seen: dict[str, AppEntry] = {}
     for d in dirs:
         base = Path(d)
@@ -81,4 +103,6 @@ def scan_apps(dirs=APP_DIRS) -> list[AppEntry]:
             app = parse_desktop(f)
             if app and app.key not in seen:
                 seen[app.key] = app
+    for sh in scan_shells(etc_shells):
+        seen.setdefault(sh.key, sh)
     return sorted(seen.values(), key=lambda a: a.name.lower())

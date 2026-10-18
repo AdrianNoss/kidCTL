@@ -198,6 +198,10 @@ Verlängerungsanfragen.
     System & Einstellungen (standardmäßig eingeklappt), Sonstiges, Nicht mehr installiert; erste
     passende Gruppe gewinnt (Spiele vor Lernen). Je Gruppe Zähler „x von y erlaubt“ und „Alle/Keine“,
     darüber Suchfeld (kleines JavaScript; ohne JS bleibt die Liste bedienbar). Pfad nur als Tooltip.
+  - Shells (aus `/etc/shells`: bash, fish, zsh …, je Programmdatei einmal) meldet der Agent zusätzlich
+    als Einträge „<name> (Shell)“, Kategorie `Shell` – sie haben keinen Startmenü-Eintrag. Gruppe
+    „Terminal & Shells“ (mit Terminal-Programmen wie Konsole). Freigegebene Shell = auch interaktiv
+    erlaubt. Shells zählen nicht zur Programmzeit (Systemprozesse `sh -c …`).
   - Eltern-Liste: App-Schlüssel `exe:<pfad>` bzw. `flatpak:<app-id>` aus dem gemeldeten Katalog
     (systemweite .desktop-Einträge; nicht `~/.local/share/applications`). Hilfsprogramme im
     Verzeichnis einer freigegebenen App (z. B. `/usr/lib/firefox/*`) sind mit erlaubt.
@@ -746,3 +750,7 @@ Verlängerungsanfragen.
   Integritätsmeldung. Version 0.14.0. Getestet: Agent 131 (Umzug nach Abmeldung inkl. Verweis/Rechte,
   Symlink-Angriff auf Pfadteil → nichts bewegt, andere Partition → Warnung ohne Datenverlust,
   Integritätsmeldung).
+- 2026-10-18: Shells wählbar (Nutzerwunsch: fish fehlte in der Programmliste): `apps.scan_shells`
+  aus `/etc/shells`, neue Gruppe „Terminal & Shells“, Hinweis im WebUI, Shells ohne Programmzeit.
+  Version 0.15.0. Getestet: Agent 133 (Shell-Erkennung inkl. sh/rbash→bash, git-shell ignoriert),
+  Server 70 (Gruppe für Shell und Konsole).

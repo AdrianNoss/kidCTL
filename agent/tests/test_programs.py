@@ -94,7 +94,7 @@ def test_desktop_parsing(tmp_path):
     (d / "env.desktop").write_text("[Desktop Entry]\nType=Application\nName=EnvApp\nExec=env FOO=1 -u BAR bash --x\n")
     (d / "gone.desktop").write_text("[Desktop Entry]\nType=Application\nName=Gone\nExec=/nicht/da\n")
     (d / "link.desktop").write_text("[Desktop Entry]\nType=Link\nName=L\nURL=x\n")
-    found = {a.name: a for a in apps.scan_apps([str(d)])}
+    found = {a.name: a for a in apps.scan_apps([str(d)], etc_shells="/nonexistent")}
     bash = str(Path(apps.resolve_exec("bash")))
     assert set(found) == {"Kommandozeile", "Tux Paint"}  # EnvApp == bash -> gleicher Schlüssel
     assert found["Kommandozeile"].key == f"exe:{bash}" and found["Kommandozeile"].desktop_id == "bash.desktop"

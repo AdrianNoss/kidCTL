@@ -122,3 +122,9 @@ def test_device_app_categories_migrated(tmp_path):
     migrate.run_migrations(eng)
     with eng.connect() as c:
         assert c.execute(text("SELECT categories FROM device_app")).scalar() == ""
+
+
+def test_terminal_group():
+    from app.programs import group_for
+    assert group_for("Shell") == "terminal"
+    assert group_for("Qt;KDE;System;TerminalEmulator") == "terminal"    # Konsole nicht unter „System“
