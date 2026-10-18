@@ -106,7 +106,7 @@ def test_ensure_steam_creates_library_and_links_as_user(tmp_path, monkeypatch):
     lib = tmp_path / "steam" / ME
     assert lib.is_dir() and oct(lib.stat().st_mode & 0o777) == "0o700"
     link = [c for c in sysd.calls if c[0] == "setpriv"][0]
-    assert f"--reuid={os.getuid()}" in link and link[-3:] == (MY_HOME, ".local/share/Steam", str(lib))  # als User, nicht root
+    assert f"--reuid={os.getuid()}" in link and link[-4:] == (MY_HOME, ".local/share/Steam", str(lib), "0")  # als User, nicht root
 
 
 # ---------- Steam-Regeln ----------
@@ -235,7 +235,7 @@ def test_steam_move_cross_device_warns(tmp_path, monkeypatch):
     monkeypatch.setattr(kidmounts.os, "rename", exdev)
     m = KidMounts(run=_real_link, in_use=lambda h: False)
     m.ensure_libraries({ME})
-    assert "anderer Partition" in m.lib_problems[("steam", ME)]
+    assert "andere Partition" in m.lib_problems[("steam", ME)]
     assert (home / ".local/share/Steam").is_dir() and lib.is_dir()    # nichts verloren, Ziel wieder da
 
 

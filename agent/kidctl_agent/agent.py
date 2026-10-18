@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 from kidctl_common import protocol as p
 from kidctl_common import tray as t
 
-from . import desktoptrust, integrity, sdnotify, store
+from . import desktoptrust, integrity, kidmounts, sdnotify, store
 from .accounting import Usage, boottime
 from .apps import scan_apps
 from .apptime import AppIndex, AppTime
@@ -204,8 +204,20 @@ class Agent:
         try:
             await asyncio.to_thread(self.mounts.sync, users)
             await asyncio.to_thread(self.mounts.ensure_libraries, kids)
+            await asyncio.to_thread(self.mounts.sync_libraries, self.locked_libraries())
         except Exception:
             log.exception("Mounts nicht angleichbar")
+
+    def locked_libraries(self) -> set[str]:
+        """Spieleordner von Kindern mit Programmkontrolle, deren Launcher nicht freigegeben ist
+        (werden noexec eingehängt, siehe kidmounts)."""
+        out = set()
+        for user, _mode, allowed in self.programs.targets().values():
+            for lib in kidmounts.libraries():
+                enabled = allowed.steam_enabled if lib.key == "steam" else lib.exe in allowed.exes
+                if lib.installed.exists() and not enabled and safe_home(user) is not None:
+                    out.add(str(lib.root / user))
+        return out
 
     async def sync_dns(self) -> None:
         """Website-Filter an die Policy angleichen: Listen holen, Resolver + nftables (im Thread)."""
@@ -234,7 +246,7 @@ class Agent:
 
     def _run_checks(self) -> list[p.IntegrityCheck]:
         return ([integrity.check_pam(), integrity.check_nsswitch(), integrity.check_browser_policies()]
-                + integrity.check_noexec(self.programs.users())
+                + integrity.check_noexec(self.programs.users(), libraries=self.locked_libraries())
                 + integrity.check_libraries(self.mounts.lib_problems)
                 + integrity.check_dns(self.web_children()))
 

@@ -100,7 +100,7 @@ def test_agent_repairs_and_reports_on_change(monkeypatch, tmp_path):
     a = Agent(logind=None, desktop=None, device=None)
     a.conn = FakeConn()
     state = {"broken": True}
-    monkeypatch.setattr(integrity, "check_noexec", lambda users: [])
+    monkeypatch.setattr(integrity, "check_noexec", lambda users, libraries=(): [])
 
     def fake_dns(children, run=None):
         return [p.IntegrityCheck(id="dns:1", label="Website-Filter Kind 1", ok=not state["broken"],

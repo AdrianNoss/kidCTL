@@ -70,7 +70,7 @@ def check_browser_policies() -> IntegrityCheck:
     return IntegrityCheck(id="browser", label=label, ok=not problems, detail="; ".join(problems))
 
 
-def check_noexec(kid_users: set[str], mounts=noexec_mounts) -> list[IntegrityCheck]:
+def check_noexec(kid_users: set[str], mounts=noexec_mounts, libraries: set[str] = frozenset()) -> list[IntegrityCheck]:
     active = mounts()
     missing = [d for d in SHARED_NOEXEC if d not in active]
     out = [IntegrityCheck(id="noexec", label="noexec für /tmp, /var/tmp, /dev/shm", ok=not missing,
@@ -82,6 +82,10 @@ def check_noexec(kid_users: set[str], mounts=noexec_mounts) -> list[IntegrityChe
         ok = home in active
         out.append(IntegrityCheck(id=f"home:{user}", label=f"noexec-Home von {user}", ok=ok,
                                   detail="" if ok else f"{home} nicht noexec eingehängt"))
+    for path in sorted(libraries):  # Spieleordner ohne Launcher-Freigabe
+        ok = path in active
+        out.append(IntegrityCheck(id=f"noexec:{path}", label=f"noexec-Spieleordner {path}", ok=ok,
+                                  detail="" if ok else f"{path} nicht noexec eingehängt"))
     return out
 
 

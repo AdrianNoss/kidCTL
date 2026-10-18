@@ -175,14 +175,15 @@ def test_heroic_dirs_moved_after_logout(tmp_path, monkeypatch):
     m = KidMounts(run=_real_link, in_use=lambda h: logged_in["yes"])
     m.ensure_libraries({ME})
     assert (home / "Games/Heroic").is_dir() and not (home / "Games/Heroic").is_symlink()
-    assert m.lib_pending == {(ME, "Games/Heroic"), (ME, ".config/heroic/tools"), (ME, ".cache/legendary")}
+    # Cache sofort ersetzt (neu erzeugbar), echte Ordner warten auf die Abmeldung
+    assert os.readlink(home / ".cache/legendary") == str(lib / "cache/legendary")
+    assert m.lib_pending == {(ME, "Games/Heroic"), (ME, ".config/heroic/tools")}
     assert "nach der Abmeldung" in m.lib_problems[("heroic", ME)]
     logged_in["yes"] = False
     assert m.releasable()
     m.ensure_libraries({ME})
     assert os.readlink(home / "Games/Heroic") == str(lib / "Games")
     assert (lib / "Games/Spiel").is_dir() and (lib / "tools/wine").is_dir()
-    assert (lib / "cache/legendary/vendored/Cryptodome").is_dir()
     assert m.lib_problems == {} and m.lib_pending == set()
 
 
@@ -233,3 +234,51 @@ def test_heroic_move_refuses_symlinked_target_parent(tmp_path, monkeypatch):
     assert list(victim.iterdir()) == []
     assert (home / ".cache/legendary/vendored").is_dir()
     assert "nicht verschiebbar" in m.lib_problems[("heroic", ME)]
+
+
+# ---------- noexec für Spieleordner ohne Launcher-Freigabe ----------
+
+def test_sync_libraries_mounts_and_unmounts(tmp_path, monkeypatch):
+    from test_kidmounts_steam import FakeSystemd
+    root = tmp_path / "srv-steam"
+    (root / "kind").mkdir(parents=True)
+    monkeypatch.setattr(kidmounts, "STEAM_ROOT", root)
+    monkeypatch.setattr(kidmounts, "STEAM_ROOT_OWNER", os.getuid())
+    path = str(root / "kind")
+    sysd = FakeSystemd()
+    mounted = set()
+    m = KidMounts(run=sysd, mounts=lambda: mounted)
+    m.sync_libraries({path})
+    assert ("systemd-mount", "--options=bind,noexec,nosuid,nodev",
+            f"--description={kidmounts.LIB_DESCRIPTION}", path, path) in sysd.calls
+    # Steam freigegeben -> sofort aushängen (nur eigene Mounts mit passender Beschreibung)
+    mounted.add(path)
+    sysd.calls.clear()
+    monkeypatch.setattr(m, "ours", lambda parents, desc: {path} if desc == kidmounts.LIB_DESCRIPTION else set())
+    m.sync_libraries(set())
+    assert [c for c in sysd.calls if c[0] == "systemd-umount"] == [("systemd-umount", path)]
+    # Symlink statt Ordner -> nichts einhängen
+    (root / "boese").symlink_to(tmp_path)
+    sysd.calls.clear()
+    m.sync_libraries({str(root / "boese")})
+    assert not [c for c in sysd.calls if c[0] == "systemd-mount"]
+
+
+def test_locked_libraries_follow_permissions(tmp_path, monkeypatch):
+    from kidctl_agent import agent as agent_mod
+    monkeypatch.setattr(kidmounts, "STEAM_INSTALLED", tmp_path)
+    monkeypatch.setattr(kidmounts, "HEROIC_INSTALLED", tmp_path)
+    monkeypatch.setattr(agent_mod, "safe_home", lambda u: "/home/" + u)
+    a = agent_mod.Agent.__new__(agent_mod.Agent)
+    perms = {"keys": set()}
+
+    class W:
+        def targets(self):
+            return {1001: ("kind", "enforce", heroic_allowed(*perms["keys"]))}
+    a.programs = W()
+    steam, heroic = str(kidmounts.STEAM_ROOT / "kind"), str(kidmounts.HEROIC_ROOT / "kind")
+    assert a.locked_libraries() == {steam, heroic}
+    perms["keys"] = {f"exe:{HEROIC}"}
+    assert a.locked_libraries() == {steam}
+    perms["keys"] = {f"exe:{HEROIC}", "exe:/usr/bin/steam"}
+    assert a.locked_libraries() == set()

@@ -7,6 +7,9 @@
 - Steam: Bibliothek unter ``/srv/steam/<user>`` (ausführbar, gehört dem Kind);
   ``~/.local/share/Steam`` ist ein Symlink dorthin. Den Link legt der Agent mit den Rechten des
   Kindes an – root schreibt/mountet nie in Pfade, die das Kind kontrolliert (Symlink-Tricks).
+- Spieleordner eines Kindes, dessen Launcher (Steam/Heroic) nicht freigegeben ist, werden ebenfalls
+  ``noexec`` eingehängt: Sonst könnte das Kind dort eigene Bibliotheken ablegen und in erlaubte Apps
+  laden (``LD_PRELOAD``, Vulkan-Layer in ``~/.local/share/vulkan``) – die Programmprüfung sieht das nicht.
 - Heroic genauso: ``/srv/heroic/<user>`` mit ``~/Games/Heroic`` (Spiele, Wine-Prefixe) -> ``Games``
   ``~/.config/heroic/tools`` (Wine, Proton) -> ``tools`` und ``~/.local/share/umu`` (Laufzeit, mit
   der Heroic Proton startet) -> ``umu``, ``~/.cache/heroic_gogdl`` und ``~/.cache/legendary`` (native
@@ -27,6 +30,7 @@ from pathlib import Path
 log = logging.getLogger("kidctl.mounts")
 
 DESCRIPTION = "kidctl: noexec-Home"
+LIB_DESCRIPTION = "kidctl: noexec-Spieleordner"
 HOME_PARENT = "/home"
 STEAM_ROOT = Path(os.environ.get("KIDCTL_STEAM_ROOT", "/srv/steam"))
 STEAM_INSTALLED = Path("/usr/lib/steam")
@@ -68,21 +72,25 @@ def _open_dir(name: str, dir_fd: int | None, uid: int | None) -> int:
 @dataclass(frozen=True)
 class Library:
     """Spiele-Bibliothek unter ``root/<user>``; ``links``: (Pfad im Home, Unterordner der Bibliothek,
-    leer = Bibliothek selbst)."""
+    leer = Bibliothek selbst). ``caches``: Pfade im Home, die statt Umzug gelöscht werden (werden neu
+    erzeugt)."""
     key: str
     label: str
+    exe: str        # Launcher (Freigabe-Schlüssel exe:…)
     installed: Path
     root: Path
     links: tuple[tuple[str, str], ...]
+    caches: frozenset[str] = frozenset()
 
 
 def libraries() -> list[Library]:
-    return [Library("steam", "Steam", STEAM_INSTALLED, STEAM_ROOT, ((".local/share/Steam", ""),)),
-            Library("heroic", "Heroic", HEROIC_INSTALLED, HEROIC_ROOT,
+    return [Library("steam", "Steam", "/usr/bin/steam", STEAM_INSTALLED, STEAM_ROOT, ((".local/share/Steam", ""),)),
+            Library("heroic", "Heroic", "/usr/bin/heroic", HEROIC_INSTALLED, HEROIC_ROOT,
                     (("Games/Heroic", "Games"), (".config/heroic/tools", "tools"),
                      (".local/share/umu", "umu"),
                      # gogdl/legendary entpacken native Module (.so) dorthin und laden sie
-                     (".cache/heroic_gogdl", "cache/heroic_gogdl"), (".cache/legendary", "cache/legendary")))]
+                     (".cache/heroic_gogdl", "cache/heroic_gogdl"), (".cache/legendary", "cache/legendary")),
+                    caches=frozenset({".cache/heroic_gogdl", ".cache/legendary"}))]
 
 
 def move_dir(home: str, uid: int, rel: str, lib: Path, sub: str) -> bool:
@@ -167,21 +175,44 @@ class KidMounts:
         r = self.run("systemd-escape", "--path", "--suffix=mount", path)
         return r.stdout.strip()
 
-    def ours(self) -> set[str]:
-        """Von kidctl angelegte, aktive noexec-Mounts unter /home."""
+    def ours(self, parents=None, description: str = DESCRIPTION) -> set[str]:
+        """Von kidctl angelegte, aktive noexec-Mounts (Standard: Homes unter /home)."""
         out = set()
-        try:
-            names = os.listdir(HOME_PARENT)
-        except OSError:
-            return out
-        for name in names:
-            path = os.path.join(HOME_PARENT, name)
-            r = self.run("systemctl", "show", self.unit_for(path), "-p", "Description", "-p", "ActiveState",
-                         "--value")
-            desc, _, state = r.stdout.partition("\n")
-            if desc.strip() == DESCRIPTION and state.strip() == "active":
-                out.add(path)
+        for parent in parents if parents is not None else [HOME_PARENT]:
+            try:
+                names = os.listdir(parent)
+            except OSError:
+                continue
+            for name in names:
+                path = os.path.join(parent, name)
+                r = self.run("systemctl", "show", self.unit_for(path), "-p", "Description", "-p", "ActiveState",
+                             "--value")
+                desc, _, state = r.stdout.partition("\n")
+                if desc.strip() == description and state.strip() == "active":
+                    out.add(path)
         return out
+
+    def sync_libraries(self, wanted: set[str]) -> None:
+        """Soll-Zustand: genau die Spieleordner ``wanted`` (``<root>/<user>``) sind noexec. Aushängen
+        sofort – dort läuft nichts (war noexec), keine Sitzung hängt daran; ist der Ordner belegt,
+        scheitert systemd-umount und der nächste Abgleich versucht es erneut."""
+        active = self.mounts()
+        for path in sorted(wanted - active):
+            try:
+                st = os.lstat(path)
+                parent = os.lstat(os.path.dirname(path))
+            except OSError:
+                continue
+            if not stat.S_ISDIR(st.st_mode) or parent.st_uid != STEAM_ROOT_OWNER:
+                log.error("%s ist kein Verzeichnis unter einem root-Ordner – kein noexec", path)
+                continue
+            r = self.run("systemd-mount", "--options=bind,noexec,nosuid,nodev", f"--description={LIB_DESCRIPTION}",
+                         path, path)
+            log.log(logging.INFO if r.returncode == 0 else logging.ERROR, "Spieleordner %s noexec%s", path,
+                    "" if r.returncode == 0 else f" fehlgeschlagen: {r.stderr.strip()}")
+        for path in self.ours([str(lib.root) for lib in libraries()], LIB_DESCRIPTION) - wanted:
+            r = self.run("systemd-umount", path)
+            log.info("noexec für Spieleordner %s aufgehoben%s", path, "" if r.returncode == 0 else f": {r.stderr.strip()}")
 
     def sync(self, users: set[str]) -> None:
         """Soll-Zustand: genau die Homes von ``users`` sind noexec (blockierend – im Thread aufrufen)."""
@@ -253,6 +284,10 @@ class KidMounts:
             for rel, sub in library.links:
                 target = lib / sub if sub else lib
                 r = self._link(pw, home, rel, target)
+                if r.returncode == 3 and rel in library.caches:
+                    r = self._link(pw, home, rel, target, replace=True)
+                    if r.returncode == 0:
+                        log.info("Cache ~/%s von %s gelöscht, Verweis nach %s angelegt", rel, user, target)
                 if r.returncode == 3:
                     r, msg = self._migrate(user, pw, home, rel, lib, sub, library.label)
                     if msg:
@@ -269,13 +304,15 @@ class KidMounts:
             else:
                 self.lib_problems.pop(key, None)
 
-    def _link(self, pw, home: str, rel: str, target: Path) -> subprocess.CompletedProcess:
-        """Link als Kind anlegen (nie als root in Kinder-Pfaden schreiben). 3 = anderes Ziel vorhanden."""
+    def _link(self, pw, home: str, rel: str, target: Path, replace: bool = False) -> subprocess.CompletedProcess:
+        """Link als Kind anlegen (nie als root in Kinder-Pfaden schreiben). 3 = anderes Ziel vorhanden.
+        ``replace``: vorhandenen Ordner/Verweis vorher löschen (nur für Caches; als Kind)."""
         return self.run("setpriv", f"--reuid={pw.pw_uid}", f"--regid={pw.pw_gid}", "--init-groups",
                          "--reset-env", "--", "/bin/sh", "-c",
                          'l="$1/$2"; mkdir -p "$(dirname "$l")" "$3" || exit 2; '
+                         'if [ "$4" = 1 ] && [ "$(readlink "$l")" != "$3" ]; then rm -rf -- "$l" || exit 2; fi; '
                          'if [ -L "$l" ]; then [ "$(readlink "$l")" = "$3" ] && exit 0; exit 3; fi; '
-                         '[ -e "$l" ] && exit 3; ln -s "$3" "$l"', "sh", home, rel, str(target))
+                         '[ -e "$l" ] && exit 3; ln -s "$3" "$l"', "sh", home, rel, str(target), "1" if replace else "0")
 
     def _migrate(self, user: str, pw, home: str, rel: str, lib: Path, sub: str,
                  label: str) -> tuple[subprocess.CompletedProcess, str]:
@@ -296,8 +333,9 @@ class KidMounts:
             moved = move_dir(home, pw.pw_uid, rel, lib, sub)
         except OSError as e:
             if e.errno == errno.EXDEV:
-                return fail, (f"{where} liegt im Home, {lib.parent} auf anderer Partition – bitte von Hand "
-                              f"nach {target} verschieben (siehe Anleitung)")
+                # andere Partition/btrfs-Subvolume oder noexec-Home (Bind-Mount) aktiv
+                return fail, (f"{where} liegt im Home und lässt sich nicht nach {target} umbenennen (andere "
+                              "Partition oder Programmkontrolle aktiv) – bitte von Hand verschieben (siehe Anleitung)")
             if e.errno == errno.ENOTEMPTY:
                 return fail, f"{where} liegt im Home, {target} ist aber nicht leer – bitte von Hand zusammenführen"
             return fail, f"{where} im Home nicht verschiebbar: {e.strerror}"

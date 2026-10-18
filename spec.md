@@ -269,6 +269,15 @@ Verlängerungsanfragen.
     `nile` (Amazon) ist eine PyInstaller-Einzeldatei, die sich nach `/tmp` entpackt – scheitert an
     `noexec`-`/tmp` (bekannte Grenze, nicht gelöst).
   - Lutris: Regel vorbereitet, ohne eigene Ordner und ungetestet.
+- **Spieleordner ohne Freigabe `noexec`** (entschieden 2026-10-18): Für Kinder mit Programmkontrolle
+  hängt der Agent `/srv/steam/<user>` bzw. `/srv/heroic/<user>` per `systemd-mount` `noexec,nosuid,nodev`
+  ein (Beschreibung „kidctl: noexec-Spieleordner“), solange Steam bzw. Heroic nicht freigegeben ist.
+  Grund: Diese Ordner gehören dem Kind und sind sonst die einzigen ausführbaren, beschreibbaren Orte –
+  eigene Bibliotheken ließen sich per `LD_PRELOAD`, Vulkan-Layer (`~/.local/share/vulkan/implicit_layer.d`)
+  o. Ä. in erlaubte Programme laden, ohne dass ein Programmstart sichtbar wird. Eine reine
+  Umgebungsprüfung (`LD_*`) wurde verworfen (Vulkan-Layer brauchen keine Variable). Aufheben sofort bei
+  Freigabe (keine Sitzung hängt daran; bei „busy“ nächster Abgleich). Integrität `noexec:<pfad>`.
+  Bei Freigabe bleibt die bekannte Lücke „Spiel hinzufügen“.
 - **Abstammung gemerkt:** Für Prozesse, die nur über ihre Elternkette erlaubt sind (Steam,
   Launcher, Electron-Hilfsprozesse), merkt sich der Agent die Kette beim Start. Verwaiste Prozesse
   (z. B. `wineserver`) werden nach einer Policy-Änderung so nicht beendet; wird die Freigabe
@@ -826,3 +835,10 @@ Verlängerungsanfragen.
   in `/srv/heroic/<user>/cache/`. Umzug öffnet auch Zwischenordner des Ziels ohne Symlink-Verfolgung.
   Getestet: Agent 152 (Verweise, Umzug, Symlink-Angriff auf den Zwischenordner des Ziels); gogdl 1.3.0
   und legendary 0.21.1 laufen auf dem Entwicklungsrechner mit ausführbarem Cache-Ordner.
+- 2026-10-18: Spieleordner ohne Launcher-Freigabe `noexec` (Paket 0.18.0), Variante vom Nutzer an mich
+  delegiert. Dabei gefunden: Der automatische Umzug vorhandener Ordner aus dem Home scheitert bei
+  aktiver Programmkontrolle immer (`rename` über die Grenze des noexec-Bind-Mounts → `EXDEV`, im
+  Namespace nachgestellt), ebenso bei btrfs-Subvolumes (CachyOS `@home`). Meldung und Anleitung
+  korrigiert; die Caches von gogdl/legendary werden stattdessen als Kind gelöscht und verlinkt
+  (sofort, ohne Abmeldung). Getestet: Agent 154 (Ein-/Aushängen, Symlink abgelehnt, Zuordnung
+  Freigabe → gesperrte Ordner, Cache-Ersetzung als Kind). Nicht auf dem Testrechner getestet.
