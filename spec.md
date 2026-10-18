@@ -773,3 +773,4 @@ Verlängerungsanfragen.
   Getestet: Agent 140 (nur erlaubte Einträge, XDG-Desktop-Ordner, Flatpak-ID, Symlink/harter Link/
   fremder Besitzer/Pfad außerhalb des Homes abgelehnt, Systemskript-Regel). Nicht in echter
   KDE-Sitzung getestet.
+- 2026-10-18: Sichttest auf dem Testrechner (0.16.0) vom Nutzer bestätigt: Steam-Desktop-Verknüpfung startet bei aktiver Programmkontrolle, Steam-Spiel startet.
