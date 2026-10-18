@@ -8,7 +8,9 @@ Reihenfolge:
    Terminal/stdin, z. B. TTY-Login) oder Skript aus dem Home -> gesperrt. Ein Steuerterminal allein
    sagt nichts: SDDM startet die Sitzung über ``bash --login wayland-session`` auf dem Sitzungs-TTY.
 4. Interpreter (python, perl, …): nur mit Skriptdatei, die selbst freigegeben ist;
-   ``-c``/``-m``/``-e``, stdin oder interaktiv -> gesperrt.
+   ``-c``/``-m``/``-e``, stdin oder interaktiv -> gesperrt. Ebenso, wenn Code über die Umgebung
+   (``PYTHONPATH``, ``PERL5OPT``, ``NODE_OPTIONS``, …) oder automatisch geladene Dateien im Home
+   (Python-User-Site: ``.pth``, ``usercustomize.py``, überdeckte Module) eingeschleust werden kann.
 5. Steam (nur als Ganzes freigebbar): Programme aus der Steam-Bibliothek ``/srv/steam/<user>/``
    nur, wenn Steam freigegeben ist und der Prozess von Steam abstammt (Elternkette); die
    Einstiegspunkte ``steam.sh`` und ``ubuntu12_32/steam`` selbst sind dann erlaubt (der Starter
@@ -77,6 +79,16 @@ ELECTRON_DIR = re.compile(r"^/usr/lib/electron[0-9]*/")
 ELECTRON_UNSAFE = {"-r", "--require", "-e", "--eval", "-p", "--print", "-i", "--interactive"}
 ELECTRON_UNSAFE_PREFIX = ("--inspect", "--remote-debugging", "--js-flags")
 ELECTRON_UNSAFE_ENV = ("ELECTRON_RUN_AS_NODE", "NODE_OPTIONS")
+
+# Interpreter: Variablen, die selbst Code/Optionen enthalten (gesetzt = gesperrt)
+INTERP_CODE_ENV = {"PYTHONINSPECT", "PYTHONSTARTUP", "PERL5OPT", "PERL5DB", "RUBYOPT", "NODE_OPTIONS",
+                   "LUA_INIT", "LUA_INIT_5_1", "LUA_INIT_5_2", "LUA_INIT_5_3", "LUA_INIT_5_4", "LUA_INIT_5_5",
+                   "R_PROFILE", "R_PROFILE_USER", "PHPRC", "PHP_INI_SCAN_DIR", "JULIA_DEPOT_PATH"}
+# Suchpfade für Module: nur Systemverzeichnisse erlaubt (leerer Eintrag = aktuelles Verzeichnis)
+INTERP_PATH_ENV = {"PYTHONPATH", "PYTHONHOME", "PYTHONUSERBASE", "PYTHONPLATLIBDIR", "PERL5LIB", "PERLLIB",
+                   "RUBYLIB", "NODE_PATH", "TCLLIBPATH", "GUILE_LOAD_PATH", "GUILE_LOAD_COMPILED_PATH",
+                   "JULIA_LOAD_PATH", "R_LIBS", "R_LIBS_USER", "LUA_PATH", "LUA_CPATH", "LUA_PATH_5_4",
+                   "LUA_CPATH_5_4"}
 
 # Immer erlaubt (kidctl selbst) bzw. nie in der Basis (Loader startet beliebige Programme)
 BUILTIN_BASE = ["/usr/lib/kidctl/*"]
@@ -222,6 +234,7 @@ class Allowed:
     excludes: list[str] = field(default_factory=lambda: list(BUILTIN_EXCLUDE))
     steam_root: str = ""   # z. B. "/srv/steam/kind/" (Steam-Bibliothek dieses Kindes)
     pkg_dirs: dict[str, tuple[str, ...]] = field(default_factory=dict)  # App -> eigene Paket-Ordner
+    home: str = ""         # Home des Kindes (automatisch geladene Interpreter-Dateien)
 
     def __post_init__(self) -> None:
         self.exes = {k[4:] for k in self.keys if k.startswith("exe:")}
@@ -277,6 +290,45 @@ def script_arg(interp: str, argv: tuple[str, ...]) -> str | None:
             continue
         return a
     return None
+
+
+def interpreter_injection(name: str, env: dict[str, str], home: str) -> str | None:
+    """Grund, falls ein Interpreter fremden Code laden würde, sonst ``None``."""
+    for k in sorted(INTERP_CODE_ENV):
+        if env.get(k):
+            return k
+    for k in sorted(INTERP_PATH_ENV):
+        if k not in env:
+            continue
+        lua = k.startswith("LUA_")
+        for entry in re.split(r"[:;]", env[k]):
+            entry = entry.split("?", 1)[0]  # Lua-Muster /usr/share/lua/?.lua
+            if not entry:
+                if lua:
+                    continue  # ";;" = Standardpfad
+                return k
+            if not os.path.isabs(entry) or not os.path.realpath(entry).startswith(SYSTEM_SCRIPT_DIRS):
+                return k
+    if home and name.startswith("python") and _python_user_site_used(home):
+        return "~/.local/lib/python*/site-packages"
+    return None
+
+
+def _python_user_site_used(home: str) -> bool:
+    """Python lädt aus ``~/.local/lib/pythonX.Y/site-packages`` automatisch ``.pth``-Dateien und
+    ``usercustomize.py`` und bevorzugt dortige Module vor den System-Paketen – nicht leer = Code."""
+    base = os.path.join(home, ".local", "lib")
+    try:
+        names = [n for n in os.listdir(base) if n.startswith("python")]
+    except OSError:
+        return False
+    for n in names:
+        try:
+            if os.listdir(os.path.join(base, n, "site-packages")):
+                return True
+        except OSError:
+            continue
+    return False
 
 
 def shell_mode(argv: tuple[str, ...]) -> tuple[str, str | None]:
@@ -441,7 +493,10 @@ def classify(info: ProcInfo, allowed: Allowed,
             return Verdict(f"exe:{exe}", name, "Interpreter ohne freigegebenes Skript")
         real = os.path.realpath(script) if os.path.isabs(script) else script
         if os.path.isabs(real) and allowed.path_ok(real):
-            return None
+            reason = interpreter_injection(name, environ() if environ is not None else {}, allowed.home)
+            if reason is None:
+                return None
+            return Verdict(f"exe:{real}", os.path.basename(real), f"eingeschleuster Code ({reason})")
         return Verdict(f"exe:{real}", os.path.basename(real), f"Skript ({name})")
 
     return Verdict(f"exe:{exe}", name)

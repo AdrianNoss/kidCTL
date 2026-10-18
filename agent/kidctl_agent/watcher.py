@@ -71,13 +71,14 @@ class ProgramWatcher:
                     if child is None or child.program_mode == "off" or user not in eligible:
                         continue
                     try:
-                        uid = pwd.getpwnam(user).pw_uid
+                        pw = pwd.getpwnam(user)
                     except KeyError:
                         continue
+                    uid, home = pw.pw_uid, pw.pw_dir
                     out[uid] = (user, child.program_mode,
                                 Allowed(self.spec.globs, set(child.allowed_programs), self.base_exact,
                                         self.spec.excludes, steam_root=f"{STEAM_ROOT}/{user}/",
-                                        pkg_dirs=self.pkg_dirs))
+                                        pkg_dirs=self.pkg_dirs, home=home))
             self._targets = out
         return self._targets
 

@@ -215,7 +215,14 @@ Verlängerungsanfragen.
     (systemweite .desktop-Einträge; nicht `~/.local/share/applications`). Hilfsprogramme im
     Verzeichnis einer freigegebenen App (z. B. `/usr/lib/firefox/*`) sind mit erlaubt.
   - Shells nur ohne Steuerterminal (Skripte von Systemkomponenten); Interpreter nur mit
-    freigegebener Skriptdatei (kein `-c`/`-m`/`-e`, stdin, REPL). kidctl-Wrapper starten daher
+    freigegebener Skriptdatei (kein `-c`/`-m`/`-e`, stdin, REPL). Zusätzlich gesperrt (entschieden 2026-10-18), wenn Code
+    eingeschleust werden kann: Code-Variablen gesetzt (`PYTHONSTARTUP`, `PYTHONINSPECT`, `PERL5OPT`,
+    `RUBYOPT`, `NODE_OPTIONS`, `LUA_INIT*`, `R_PROFILE*`, `PHPRC`, …), Modul-Suchpfade (`PYTHONPATH`,
+    `PYTHONUSERBASE`, `PERL5LIB`, `RUBYLIB`, `NODE_PATH`, `LUA_PATH`, …) mit Einträgen außerhalb von
+    `/usr`, `/etc`, `/opt` oder leer/relativ (= aktuelles Verzeichnis), oder bei Python ein nicht
+    leerer User-Site-Ordner `~/.local/lib/python*/site-packages` (`.pth`, `usercustomize.py` und dortige
+    Module laufen automatisch vor den System-Paketen). Von Steam/Launchern gestartete Prozesse sind
+    ausgenommen. kidctl-Wrapper starten daher
     Skriptdateien unter `/usr/lib/kidctl/`.
 - Server: Katalog je Gerät, Freigaben je Kind (`child_program`), Sperrprotokoll (`blocked_event`),
   WebUI-Abschnitt „Programme“ und „Gesperrte Aktionen“ auf der Kind-Seite.
@@ -842,3 +849,11 @@ Verlängerungsanfragen.
   korrigiert; die Caches von gogdl/legendary werden stattdessen als Kind gelöscht und verlinkt
   (sofort, ohne Abmeldung). Getestet: Agent 154 (Ein-/Aushängen, Symlink abgelehnt, Zuordnung
   Freigabe → gesperrte Ordner, Cache-Ersetzung als Kind). Nicht auf dem Testrechner getestet.
+- 2026-10-18: Interpreter-Einschleusung gesperrt (Paket 0.19.0). Lücke nachgewiesen: eine `.pth`-Datei
+  bzw. `usercustomize.py` im User-Site-Ordner läuft in jedem erlaubten System-Python-Skript (mit
+  `/usr/bin/pip` gezeigt). Regel siehe Programm-Whitelist. Getestet: Agent 157 (sauberes Skript
+  erlaubt; `PYTHONPATH` Home/leer/relativ, `PYTHONUSERBASE`, `PYTHONSTARTUP`, `PYTHONINSPECT`,
+  `PERL5OPT`, Lua-Pfade; User-Site leer erlaubt, mit `.pth` gesperrt). Entwicklungsrechner: keine dieser
+  Variablen in der KDE-Sitzung, kein User-Site-Ordner – keine Fehlalarme erwartet. Restlücken: R liest
+  `.Rprofile` auch aus dem aktuellen Verzeichnis, Julia `~/.julia/config/startup.jl` (beide selten
+  installiert); Shell-Code (`sh -c`, `BASH_ENV`) bleibt bewusst erlaubt.
