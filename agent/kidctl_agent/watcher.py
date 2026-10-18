@@ -42,6 +42,7 @@ class ProgramWatcher:
         # Elternkette von Prozessen, die nur über ihre Abstammung erlaubt sind (Steam, Launcher,
         # Electron): Verwaiste Prozesse (z. B. wineserver) behalten sie bei erneuter Prüfung
         self.lineage: dict[tuple[int, int], tuple] = {}
+        self._seen: set[tuple[int, int]] = set()  # Abstammungen, die schon einen Scan überstanden haben
         self._pacman_mtime: float | None = None
         self.names: dict[str, str] = {}             # App-Schlüssel -> Anzeigename (aus .desktop)
         self.handled: set[tuple] = set()  # bereits geprüfte Prozesse (ProcInfo.ident)
@@ -95,7 +96,9 @@ class ProgramWatcher:
                 alive.add(ident)
         self.handled &= alive  # beendete Prozesse vergessen
         live = {i[:2] for i in alive}
-        self.lineage = {k: v for k, v in self.lineage.items() if k in live}
+        # Beendete erst eine Runde später vergessen: Ihre Kinder warten evtl. noch auf die Prüfung
+        self.lineage = {k: v for k, v in self.lineage.items() if k in live or k not in self._seen}
+        self._seen = set(self.lineage)
 
     def on_exec(self, pid: int) -> None:
         """Netlink-Callback (synchron) – Prüfung als Task."""
@@ -121,11 +124,19 @@ class ProgramWatcher:
         user, mode, allowed = targets[info.uid]
         if mode == "enforce" and not self.base_exact:
             mode = "audit"  # Sicherung: ohne Basisliste nie beenden (würde die Sitzung zerstören)
-        verdict = classify(info, allowed, ancestors=lambda: self._ancestors(info),
-                           environ=lambda: read_environ(info.pid))
+        chain: tuple | None = None
+
+        def ancestors():
+            nonlocal chain  # einmal lesen (auch fürs Merken und die Diagnose)
+            if chain is None:
+                chain = tuple(itertools.islice(self._ancestors(info), MAX_ANCESTORS))
+            return chain
+        verdict = classify(info, allowed, ancestors=ancestors, environ=lambda: read_environ(info.pid))
         if verdict is None:
-            if (info.pid, info.start) not in self.lineage and classify(info, allowed) is not None:
-                self.lineage[(info.pid, info.start)] = tuple(itertools.islice(self._ancestors(info), MAX_ANCESTORS))
+            if chain is not None:
+                # Kette merken: Kurzlebige Kinder (z. B. pv-try-setlocale) finden sie auch dann noch,
+                # wenn dieser Prozess bei ihrer Prüfung schon beendet ist
+                self.lineage.setdefault((info.pid, info.start), chain)
             return info.ident
         name = self.names.get(verdict.key, verdict.name)
         if mode == "enforce":
@@ -136,9 +147,9 @@ class ProgramWatcher:
             await self._notify(user, info.uid, verdict.key, name)
         new = self._record(user, verdict, name, audit=mode != "enforce")
         # Log gedrosselt wie das Protokoll (z. B. Firefox startet viele Prozesse)
-        log.log(logging.WARNING if new else logging.DEBUG, "%s: %s (%s%s) von %s, PID %s",
+        log.log(logging.WARNING if new else logging.DEBUG, "%s: %s (%s%s) von %s, PID %s; Eltern: %s",
                 "Gesperrt" if mode == "enforce" else "Protokolliert (würde sperren)", name, verdict.key,
-                f", {verdict.detail}" if verdict.detail else "", user, pid)
+                f", {verdict.detail}" if verdict.detail else "", user, pid, _describe(info, ancestors()))
         return info.ident
 
     async def _notify(self, user: str, uid: int, key: str, name: str) -> None:
@@ -176,6 +187,9 @@ class ProgramWatcher:
         while pid > 1:
             parent = self.read(pid)
             if parent is None:
+                # schon beendet: gemerkte Kette dieses Elternprozesses (PID-Wiederverwendung ist in
+                # dem kurzen Fenster ausgeschlossen – das Kind hing eben noch an ihm)
+                yield from next((c for (p, _), c in self.lineage.items() if p == pid), ())
                 return
             yield parent
             if (saved := self.lineage.get((parent.pid, parent.start))) is not None:
@@ -222,6 +236,15 @@ class ProgramWatcher:
         if await conn.send(p.BlockedReport(events=batch)):
             self.pending = self.pending[len(batch):]
             self._save()
+
+
+def _describe(info, chain: tuple) -> str:
+    """Elternkette fürs Log (Diagnose, z. B. abgerissene Kette bei Launchern)."""
+    parts = [f"{a.pid}:{os.path.basename(a.exe)}" for a in chain[:10]]
+    last = chain[-1].ppid if chain else info.ppid
+    if last > 1:
+        parts.append(f"{last}:<nicht lesbar>")
+    return " ← ".join(parts) or "–"
 
 
 def _compute_base(packages: list[str], app_exes: set[str], excludes: list[str],

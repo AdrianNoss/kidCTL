@@ -282,3 +282,39 @@ def test_locked_libraries_follow_permissions(tmp_path, monkeypatch):
     assert a.locked_libraries() == {steam}
     perms["keys"] = {f"exe:{HEROIC}", "exe:/usr/bin/steam"}
     assert a.locked_libraries() == set()
+
+
+def test_short_lived_child_after_parent_exited():
+    """Kurzlebige Container-Prozesse (pv-try-setlocale): Ist der Elternprozess bei der Prüfung schon
+    beendet, gilt dessen gemerkte Kette – auch wenn er selbst ohne Kette erlaubt war (Shell-Skript)."""
+    from kidctl_agent.watcher import ProgramWatcher
+
+    async def notify(*a):
+        pass
+
+    class FakeAgent:
+        policy = None
+        desktop = type("D", (), {"notify": staticmethod(notify)})()
+
+    locale_gen = proc("/usr/bin/bash", ["sh", "/usr/lib/pressure-vessel/from-host/libexec/steam-runtime-tools-0/pv-locale-gen"],
+                      pid=91, uid=1001)
+    locale_gen = locale_gen.__class__(**{**locale_gen.__dict__, "ppid": 50})
+    setlocale = proc("/usr/lib/pressure-vessel/from-host/libexec/steam-runtime-tools-0/pv-try-setlocale", pid=92, uid=1001)
+    setlocale = setlocale.__class__(**{**setlocale.__dict__, "ppid": 91})
+    procs = {50: MAIN, 91: locale_gen, 92: setlocale}
+    killed = []
+    w = ProgramWatcher(FakeAgent(), kill=lambda pid, sig: killed.append(pid), read=lambda pid: procs.get(pid))
+    w.base_exact = frozenset({"/usr/bin/kwin_wayland"})
+    w._targets = {1001: ("kind", "enforce", ON)}
+    asyncio.run(w.check_pid(91))
+    assert killed == [] and (91, 1) in w.lineage
+    del procs[91]                                    # pv-locale-gen schon beendet
+    asyncio.run(w.check_pid(92))
+    assert killed == []
+    # ohne Heroic-Freigabe gesperrt (die Kette allein erlaubt nichts)
+    w2 = ProgramWatcher(FakeAgent(), kill=lambda pid, sig: killed.append(pid), read=lambda pid: procs.get(pid))
+    w2.base_exact = w.base_exact
+    w2._targets = {1001: ("kind", "enforce", OFF)}
+    w2.lineage = dict(w.lineage)
+    asyncio.run(w2.check_pid(92))
+    assert killed == [92]

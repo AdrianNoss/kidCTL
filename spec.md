@@ -857,3 +857,13 @@ Verlängerungsanfragen.
   Variablen in der KDE-Sitzung, kein User-Site-Ordner – keine Fehlalarme erwartet. Restlücken: R liest
   `.Rprofile` auch aus dem aktuellen Verzeichnis, Julia `~/.julia/config/startup.jl` (beide selten
   installiert); Shell-Code (`sh -c`, `BASH_ENV`) bleibt bewusst erlaubt.
+- 2026-10-18: Abstammung robuster (Paket 0.19.1). Nutzer-Test: beim Spielstart (Heroic, umu/Proton)
+  wiederholt `pv-try-setlocale` (pressure-vessel, Container-Pfad) gesperrt. Kette nachgestellt mit der
+  umu-Laufzeit auf dem Entwicklungsrechner: pv-adverb → srt-bwrap → Starter ist lückenlos;
+  pv-try-setlocale wird von `pv-locale-gen` (Shell-Skript) in schneller Folge aufgerufen und ist sehr
+  kurzlebig. Vermutete Ursache: Bei vielen Starts auf langsamer Hardware ist ein Glied der Kette bei der
+  Prüfung schon beendet. Änderungen: Kette jedes erlaubten Prozesses merken, dessen Elternkette gelesen
+  wurde (nicht nur, wenn sie nötig war); beendeter Elternprozess → dessen gemerkte Kette; gemerkte Ketten
+  beendeter Prozesse eine Scan-Runde länger behalten; Elternkette im Journal bei jeder Sperre (Diagnose).
+  Getestet: Agent 158 (kurzlebiges Kind nach beendetem Shell-Elternprozess erlaubt, ohne Heroic-Freigabe
+  gesperrt). Ursache auf dem Testrechner nicht bestätigt.
