@@ -309,6 +309,12 @@ Verlängerungsanfragen.
   leer). Server: Spalte `app_usage.name`, „spielt gerade“ nur im Speicher (verfällt nach 150 s oder bei
   getrenntem Gerät), Anzeige in Übersicht, Kind- und Statistikseite. Namen/IDs stammen aus Dateien des
   Kindes: nur Anzeige, keine Freigaben.
+  - **Spiel-Protokoll** (Reiter „Spiele“ der Protokollseite, 2026-10-19): Der Server schreibt aus den
+    „spielt gerade“-Meldungen Sitzungen fort (`game_session`: Start, letzte Meldung; Lücke > 3 min =
+    neue Sitzung; Dauer minutengenau, eine Meldung = 1 min). Anzeige nach Tagen mit Tagessumme,
+    „seit HH:MM ▶ läuft“ für laufende Sitzungen, „Meistgespielt“ (Summe, Anzahl Sitzungen) im
+    Zeitraum, Suche/Zeitraum/Benutzer/Reihenfolge wie bei den Sperren. Löschung nach 90 Tagen wie das
+    übrige Protokoll. Kein Agent-Update nötig.
 - **Container-Prozesse** (entschieden 2026-10-19): Bei Prozessen in einem eigenen Mount-Namespace
   (nicht Flatpak) zeigt ein Pfad nicht zwingend auf die Systemdatei. Der Agent vergleicht deshalb die
   tatsächlich laufende Datei (`/proc/<pid>/exe`) sowie Skript bzw. Electron-App (`/proc/<pid>/root/…`)
@@ -935,3 +941,9 @@ Verlängerungsanfragen.
   `app_usage.name` gegen Kopie der Entwicklungs-DB. Sichttest Statistik (Firefox headless).
   Nicht getestet: echtes Spiel auf dem Testrechner.
 - 2026-10-19: Nutzer-Test auf dem Testrechner bestätigt: Spielzeit je Spiel und „spielt gerade“ funktionieren.
+- 2026-10-19: Protokoll-Reiter „Spiele“ (nur Server). Wunsch des Nutzers. Getestet: Server 81
+  (Sitzung über WebSocket angelegt; minütliche Meldungen ergeben eine Sitzung, Lücke > 3 min eine neue;
+  parallele Spiele, doppelte Einträge, fremde User und Nicht-Spiel-Schlüssel ignoriert; Meistgespielt
+  sortiert und summiert; Suche; laufende Sitzung; Sperr-Ansicht unverändert; Löschung nach 90 Tagen).
+  Neue Tabelle per `create_all` auf der Entwicklungs-DB angelegt. Sichttest mit vorübergehenden
+  Sitzungen: hell, dunkel, 420 px (Handy: „Zuletzt“ ausgeblendet, kompakte „läuft“-Pille).

@@ -161,7 +161,7 @@ async def agent_ws(ws: WebSocket):
                     programs.apply_blocked_report(db, dev, msg)
                 elif isinstance(msg, p.AppUsageReport):
                     stats.apply_app_report(db, dev, msg)
-                    nowplaying.update(dev.id, msg.playing)
+                    nowplaying.update(dev.id, msg.playing, db)
                 elif isinstance(msg, p.IntegrityReport):
                     integrity.alarm(dev, integrity.apply_report(dev, msg))
                 db.commit()

@@ -231,6 +231,20 @@ class BlockedEvent(Base):
     audit: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
+class GameSession(Base):
+    """Spielsitzung (aus den „spielt gerade“-Meldungen des Agenten, etwa minütlich)."""
+    __tablename__ = "game_session"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    child_id: Mapped[int] = mapped_column(ForeignKey("child.id", ondelete="CASCADE"), index=True)
+    device_id: Mapped[int | None] = mapped_column(ForeignKey("device.id", ondelete="SET NULL"), nullable=True)
+    username: Mapped[str] = mapped_column(String(64))
+    key: Mapped[str] = mapped_column(String(512))      # game:steam:<id> / game:heroic:<quelle>:<id>
+    name: Mapped[str] = mapped_column(String(255))
+    started_at: Mapped[datetime] = mapped_column(DateTime, index=True)   # UTC
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
 class ChildWebBundle(Base):
     """Gewähltes Dienst-Bundle (Whitelist-Modus)."""
     __tablename__ = "child_web_bundle"

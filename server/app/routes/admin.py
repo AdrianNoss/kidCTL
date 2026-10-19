@@ -228,10 +228,16 @@ def child_blocked(child_id: int, request: Request, db: Session = Depends(get_db)
     child = _get_or_404(db, Child, child_id)
     f = blocklog.parse(request.query_params)
     today = sch.today_local()
-    rows, total = blocklog.events(db, child.id, f, today)
+    if f.kind == blocklog.GAME:
+        rows, total = blocklog.sessions(db, child.id, f, today)
+        days, top = blocklog.by_day(rows, today, "started_at"), blocklog.top_games(db, child.id, f, today)
+    else:
+        rows, total = blocklog.events(db, child.id, f, today)
+        days, top = blocklog.by_day(rows, today), blocklog.top(db, child.id, f, today)
     return render(request, "blocked.html", child=child, f=f, base=f"/children/{child.id}/protokoll",
-                  days=blocklog.by_day(rows, today), shown=len(rows), total=total,
-                  top=blocklog.top(db, child.id, f, today), users=blocklog.users(db, child.id),
+                  days=days, shown=len(rows), total=total, top=top, users=blocklog.users(db, child.id),
+                  games=f.kind == blocklog.GAME, session_minutes=blocklog.session_minutes,
+                  is_running=blocklog.is_running, launcher=blocklog.launcher, fmt_minutes=sch.fmt_minutes,
                   kinds=blocklog.KINDS, ranges=blocklog.RANGES, statuses=blocklog.STATUSES,
                   orders=blocklog.ORDERS, page=blocklog.PAGE, retention=blocklog.RETENTION_DAYS)
 

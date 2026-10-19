@@ -2,7 +2,7 @@
 {% block title %}Protokoll {{ child.name }} – KidCTL{% endblock %}
 {% block content %}
 <div class="page-head">
-  <div><span class="eyebrow">Gesperrte Aktionen</span><h1>{{ child.name }}</h1></div>
+  <div><span class="eyebrow">{{ "Spiele" if games else "Gesperrte Aktionen" }}</span><h1>{{ child.name }}</h1></div>
   <div class="actions">
     <a href="/children/{{ child.id }}" class="btn secondary">Einstellungen</a>
     <a href="/children/{{ child.id }}/chat" class="btn secondary">Chat</a>
@@ -19,14 +19,16 @@
   <form method="get" action="{{ base }}" class="log-form">
     {% if f.kind %}<input type="hidden" name="kind" value="{{ f.kind }}">{% endif %}
     <label class="log-search">Suche
-      <input type="search" name="q" value="{{ f.q }}" maxlength="100" placeholder="Programm, Domain, Pfad …">
+      <input type="search" name="q" value="{{ f.q }}" maxlength="100" placeholder="{{ 'Spiel …' if games else 'Programm, Domain, Pfad …' }}">
     </label>
     <label>Zeitraum
       <select name="range">{% for key, label in ranges.items() %}<option value="{{ key }}"{% if f.range == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
     </label>
+    {% if not games %}
     <label>Status
       <select name="status">{% for key, label in statuses.items() %}<option value="{{ key }}"{% if f.status == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
     </label>
+    {% endif %}
     {% if users | length > 1 or f.user %}
     <label>Benutzer
       <select name="user"><option value="">Alle</option>{% for u in users %}<option value="{{ u }}"{% if f.user == u %} selected{% endif %}>{{ u }}</option>{% endfor %}</select>
@@ -40,9 +42,56 @@
       {% if f.active or f.range != "7" or f.order != "new" %}<a href="{{ base }}" class="btn ghost">Zurücksetzen</a>{% endif %}
     </div>
   </form>
-  <p class="muted log-summary" title="Einträge werden nach {{ retention }} Tagen gelöscht">{{ total }} {{ "Eintrag" if total == 1 else "Einträge" }} · {{ ranges[f.range] }}{% if f.kind %} · {{ kinds[f.kind] }}{% endif %}{% if f.q %} · Suche „{{ f.q }}“{% endif %}</p>
+  <p class="muted log-summary" title="Einträge werden nach {{ retention }} Tagen gelöscht">{{ total }} {% if games %}{{ "Sitzung" if total == 1 else "Sitzungen" }}{% else %}{{ "Eintrag" if total == 1 else "Einträge" }}{% endif %} · {{ ranges[f.range] }}{% if f.kind %} · {{ kinds[f.kind] }}{% endif %}{% if f.q %} · Suche „{{ f.q }}“{% endif %}</p>
 </section>
 
+{% if games %}
+{% if top %}
+<section class="card">
+  <h2>Meistgespielt</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>Spiel</th><th class="right">Gesamt</th><th class="right">Sitzungen</th><th class="right hide-narrow">Zuletzt</th></tr>
+    {% for t in top %}
+    <tr>
+      <td><a href="{{ f.url(base, q=t.name, limit=page) }}" title="Nur dieses Spiel anzeigen">{{ t.name }}</a>{% if t.launcher %} <small class="muted">{{ t.launcher }}</small>{% endif %}</td>
+      <td class="num right">{{ fmt_minutes(t.minutes) }}</td>
+      <td class="num right">{{ t.sessions }}</td>
+      <td class="num right hide-narrow">{{ t.last | localtime }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+</section>
+{% endif %}
+<section class="card">
+  {% for label, sessions in days %}
+  <div class="log-day">
+    {% set ns = namespace(m=0) %}{% for s in sessions %}{% set ns.m = ns.m + session_minutes(s) %}{% endfor %}
+    <h3>{{ label }} <span class="log-day-count">{{ fmt_minutes(ns.m) }}</span></h3>
+    <div class="scroll">
+    <table class="log-table">
+      <colgroup><col class="c-span"><col>{% if users | length > 1 %}<col class="c-user">{% endif %}<col class="c-status"></colgroup>
+      {% for s in sessions %}{% set running = is_running(s) %}
+      <tr>
+        <td class="num log-time">{% if running %}seit {{ s.started_at | localtime("%H:%M") }}{% else %}{{ s.started_at | localtime("%H:%M") }}–{{ s.last_seen_at | localtime("%H:%M") }}{% endif %}</td>
+        <td>{{ s.name }}{% if launcher(s.key) %} <small class="muted">{{ launcher(s.key) }}</small>{% endif %}</td>
+        {% if users | length > 1 %}<td>{{ s.username }}</td>{% endif %}
+        <td class="right">{% if running %}<span class="pill play" title="läuft gerade">▶<span class="hide-narrow"> läuft ·</span> {{ fmt_minutes(session_minutes(s)) }}</span>{% else %}<span class="num">{{ fmt_minutes(session_minutes(s)) }}</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    </div>
+  </div>
+  {% else %}
+  <p class="muted">{% if f.q or f.user %}Keine Spiele für diese Filter.{% else %}Keine Spiele in diesem Zeitraum.{% endif %}</p>
+  {% endfor %}
+  {% if shown < total %}
+  <a href="{{ f.url(base, limit=f.limit + page) }}" class="btn secondary">{{ "Ältere" if f.order == "new" else "Neuere" }} laden ({{ total - shown }} weitere)</a>
+  {% endif %}
+  <p class="muted"><small>Erfasst werden Spiele aus Steam und Heroic, etwa minutengenau. Der Spielname stammt vom Rechner des Kindes.</small></p>
+</section>
+{% else %}
 {% if top and total > 1 %}
 <section class="card">
   <h2>Häufigste Einträge</h2>
@@ -86,4 +135,5 @@
   <a href="{{ f.url(base, limit=f.limit + page) }}" class="btn secondary">{{ "Ältere" if f.order == "new" else "Neuere" }} laden ({{ total - shown }} weitere)</a>
   {% endif %}
 </section>
+{% endif %}
 {% endblock %}
