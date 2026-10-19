@@ -948,3 +948,4 @@ Verlängerungsanfragen.
   Neue Tabelle per `create_all` auf der Entwicklungs-DB angelegt. Sichttest mit vorübergehenden
   Sitzungen: hell, dunkel, 420 px (Handy: „Zuletzt“ ausgeblendet, kompakte „läuft“-Pille).
 - 2026-10-19: Nutzer-Test auf dem Testrechner bestätigt: automatische Abmeldung bei abgelaufener Bildschirmzeit funktioniert.
+- 2026-10-19: Nutzer-Test auf dem Testrechner bestätigt: Login-Sperre nach Zeitende greift (erneute Anmeldung abgewiesen, Hinweistext wird angezeigt).
