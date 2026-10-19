@@ -29,10 +29,22 @@ class Settings:
     vapid_private_key: str = ""   # Web Push; erzeugen mit `python -m app.cli vapid-keys`
     vapid_public_key: str = ""
     vapid_subject: str = ""       # mailto:… oder https://…
+    # E-Mail (Passwort vergessen, Hinweise bei Änderungen); ohne SMTP_HOST kein Mailversand
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    smtp_security: str = "starttls"   # starttls | ssl | none
+    dev: bool = False
 
     @property
     def push_enabled(self) -> bool:
         return bool(self.vapid_private_key and self.vapid_public_key and self.vapid_subject)
+
+    @property
+    def mail_enabled(self) -> bool:
+        return bool(self.smtp_host and self.smtp_from)
 
 
 def load_settings() -> Settings:
@@ -54,6 +66,13 @@ def load_settings() -> Settings:
         vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY", ""),
         vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY", ""),
         vapid_subject=os.environ.get("VAPID_SUBJECT", ""),
+        smtp_host=os.environ.get("SMTP_HOST", ""),
+        smtp_port=int(os.environ.get("SMTP_PORT", "587") or 587),
+        smtp_user=os.environ.get("SMTP_USER", ""),
+        smtp_password=os.environ.get("SMTP_PASSWORD", ""),
+        smtp_from=os.environ.get("SMTP_FROM", ""),
+        smtp_security=os.environ.get("SMTP_SECURITY", "starttls").strip().lower(),
+        dev=dev,
     )
 
 

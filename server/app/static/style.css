@@ -290,3 +290,10 @@ details > summary { cursor:pointer; color:var(--ink-2); font-weight:600; font-si
 .page-head .pill.play { margin-top:.5rem; display:inline-flex; }
 .pill.play::before { display:none; }
 @media (max-width: 640px) { .hide-narrow { display:none; } }
+
+/* Profil, Konto-Wiederherstellung */
+.who-name { color:var(--ink-2); text-decoration:none; font-weight:600; padding:.2rem .45rem; border-radius:var(--radius); }
+.who-name:hover, .who-name.active { color:var(--ink); background:var(--surface-2); }
+.login-help { margin:.8rem 0 0; text-align:center; font-size:.88rem; }
+.form-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(15rem, 1fr)); gap:0 1rem; }
+.link-box { display:block; padding:.6rem .7rem; overflow-wrap:anywhere; user-select:all; }

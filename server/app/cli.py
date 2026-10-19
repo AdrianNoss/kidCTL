@@ -1,7 +1,8 @@
-"""CLI: Bootstrap des ersten Eltern-Accounts, VAPID-Schlüssel.
+"""CLI: Bootstrap des ersten Eltern-Accounts, Notfall-Zurücksetzen, VAPID-Schlüssel.
 
 Interaktiv:   python -m app.cli create-parent
 Per Env-Var:  KIDCTL_BOOTSTRAP_USER=… KIDCTL_BOOTSTRAP_PASSWORD=… python -m app.cli create-parent
+Notfall:      python -m app.cli reset-password <benutzer> | reset-totp <benutzer>
 VAPID:        python -m app.cli vapid-keys >> .env
 """
 
@@ -19,6 +20,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from sqlalchemy import select
 
 from .db import SessionLocal, init_db
+from .accounts import end_sessions, password_error
 from .models import Parent
 from .security import hash_password, new_totp_secret, totp_uri
 
@@ -51,11 +53,54 @@ def create_parent(args: argparse.Namespace) -> int:
         uri = totp_uri(parent)
 
     print(f"\nEltern-Account {username!r} angelegt.")
+    _print_totp(uri, parent.totp_secret)
+    return 0
+
+
+def _print_totp(uri: str, secret: str) -> None:
     print("TOTP in der Authenticator-App einrichten (QR-Code oder Secret):\n")
     qr = qrcode.QRCode(border=1)
     qr.add_data(uri)
     qr.print_ascii(invert=True)
-    print(f"\nSecret: {parent.totp_secret}\nURI:    {uri}")
+    print(f"\nSecret: {secret}\nURI:    {uri}")
+
+
+def _parent(db, username: str) -> Parent | None:
+    parent = db.scalar(select(Parent).where(Parent.username == username))
+    if parent is None:
+        print(f"Benutzer {username!r} gibt es nicht.", file=sys.stderr)
+    return parent
+
+
+def reset_password(args: argparse.Namespace) -> int:
+    """Notfall: Passwort neu setzen (alle Sitzungen des Accounts enden)."""
+    init_db()
+    password = getpass.getpass("Neues Passwort (min. 12 Zeichen): ")
+    if err := password_error(password, getpass.getpass("Wiederholen: ")):
+        print(err, file=sys.stderr)
+        return 1
+    with SessionLocal() as db:
+        if (parent := _parent(db, args.username)) is None:
+            return 1
+        parent.password_hash = hash_password(password)
+        end_sessions(db, parent.id)
+        db.commit()
+    print(f"Passwort für {args.username!r} gesetzt.")
+    return 0
+
+
+def reset_totp(args: argparse.Namespace) -> int:
+    """Notfall: neuen Authenticator erzeugen (alter wird ungültig, alle Sitzungen enden)."""
+    init_db()
+    with SessionLocal() as db:
+        if (parent := _parent(db, args.username)) is None:
+            return 1
+        parent.totp_secret, parent.totp_last_step = new_totp_secret(), 0
+        end_sessions(db, parent.id)
+        db.commit()
+        uri, secret = totp_uri(parent), parent.totp_secret
+    print(f"Neuer Authenticator für {args.username!r}:")
+    _print_totp(uri, secret)
     return 0
 
 
@@ -79,6 +124,12 @@ def main() -> int:
     cp = sub.add_parser("create-parent", help="Eltern-Account anlegen (Bootstrap)")
     cp.add_argument("--force", action="store_true", help="auch wenn bereits Accounts existieren")
     cp.set_defaults(func=create_parent)
+    rp = sub.add_parser("reset-password", help="Notfall: Passwort eines Eltern-Accounts neu setzen")
+    rp.add_argument("username")
+    rp.set_defaults(func=reset_password)
+    rt = sub.add_parser("reset-totp", help="Notfall: neuen Authenticator für einen Eltern-Account erzeugen")
+    rt.add_argument("username")
+    rt.set_defaults(func=reset_totp)
     vk = sub.add_parser("vapid-keys", help="VAPID-Schlüssel für Web Push erzeugen (für .env)")
     vk.set_defaults(func=vapid_keys)
     args = ap.parse_args()

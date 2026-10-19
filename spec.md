@@ -950,3 +950,20 @@ Verlängerungsanfragen.
 - 2026-10-19: Nutzer-Test auf dem Testrechner bestätigt: automatische Abmeldung bei abgelaufener Bildschirmzeit funktioniert.
 - 2026-10-19: Nutzer-Test auf dem Testrechner bestätigt: Login-Sperre nach Zeitende greift (erneute Anmeldung abgewiesen, Hinweistext wird angezeigt).
 - 2026-10-19: Nutzer-Test auf dem Testrechner bestätigt: Nach „Zeit gutschreiben“ ist die Anmeldung wieder möglich (Login-Sperre aufgehoben).
+- 2026-10-19: Eltern-Profil und Konto-Wiederherstellung (nur Server). Entscheidungen des Nutzers:
+  verlorener Authenticator wird von einem anderen Elternteil zurückgesetzt (sonst CLI), Benutzername und
+  Anzeigename im Profil änderbar. Umsetzung: Profil (`/profile`: Benutzername, Anzeigename, E-Mail –
+  Benutzername/E-Mail nur mit aktuellem Passwort; Passwort ändern; neuer Authenticator mit Bestätigung per
+  Code, alter gilt bis dahin); „Passwort vergessen?“ per E-Mail-Link (30 min, einmalig, nur Hash
+  gespeichert, setzt nur das Passwort, gleiche Antwort ob Account existiert oder nicht, 5 Anfragen je
+  15 min und IP); „Authenticator zurücksetzen“ unter „Eltern“ (alter sofort ungültig, Sitzungen beendet,
+  Einrichtungslink 24 h, verlangt Passwort, wird nicht gemailt); CLI `reset-password`/`reset-totp`;
+  Sicherheitshinweise per Mail; andere Sitzungen enden nach Passwort-/Authenticator-Änderung. SMTP über
+  `.env` (`SMTP_HOST/PORT/USER/PASSWORD/FROM/SECURITY`). Neue Spalte `parent.email`, Tabelle `parent_token`.
+  Getestet: Server 87 (Reset-Ablauf inkl. falscher/zu kurzer Wiederholung, Einmaligkeit, altes Passwort
+  ungültig, Hinweis-Mail; keine Mail ohne Adresse; Rate-Limit; ohne SMTP kein Formular; Profil inkl.
+  Passwortpflicht, ungültiger/doppelter Name, ungültige E-Mail; Passwortwechsel beendet nur andere
+  Sitzungen; Authenticator-Wechsel; Zurücksetzen durch anderes Elternteil inkl. Link-Einmaligkeit, alter
+  Code ungültig, eigener Account abgelehnt). Mailversand gegen lokalen SMTP-Testserver (AUTH, UTF-8);
+  STARTTLS/SSL nicht getestet. Migration gegen Kopie der Entwicklungs-DB. Sichttest Profil, Eltern,
+  Anmeldung (Firefox headless).

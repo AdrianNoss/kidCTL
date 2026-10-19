@@ -48,6 +48,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # Ausgabe als SE
 | `TOTP_ISSUER` | Name in der Authenticator-App (Standard `KidCTL`) |
 | `TZ_HOME` | Zeitzone für Tageskontingente und Zeitfenster (Standard `Europe/Berlin`) |
 | `VAPID_*` | Web Push, siehe 1.4. Ohne Schlüssel gibt es keine Push-Benachrichtigungen. |
+| `SMTP_*` | E-Mail für „Passwort vergessen“ und Sicherheitshinweise (optional), siehe 1.7 |
 
 ### 1.3 Traefik und Start
 
@@ -90,6 +91,29 @@ scannen. Weitere Eltern-Accounts legt man danach im WebUI unter „Eltern“ an.
 2. „Zum Startbildschirm hinzufügen“ bzw. „App installieren“ (PWA). Unter iOS funktioniert Push nur
    in der installierten App.
 3. In der App unter „Benachrichtigungen“ Push aktivieren und „Test“ drücken.
+
+### 1.7 E-Mail und Konto-Wiederherstellung (empfohlen)
+
+In `.env` (danach `docker compose up -d`):
+
+| Variable | Bedeutung |
+|---|---|
+| `SMTP_HOST`, `SMTP_PORT` | Mailserver, z. B. Port 587 |
+| `SMTP_SECURITY` | `starttls` (Port 587), `ssl` (Port 465) oder `none` (nur im lokalen Netz) |
+| `SMTP_USER`, `SMTP_PASSWORD` | Zugangsdaten, leer lassen ohne Anmeldung |
+| `SMTP_FROM` | Absender, z. B. `KidCTL <kidctl@example.org>` |
+
+Jedes Elternteil trägt unter **Profil** (Klick auf den eigenen Namen oben rechts) seine E-Mail-Adresse
+ein. Dort lassen sich auch Benutzername, Anzeigename, Passwort und der Authenticator ändern.
+
+| Problem | Lösung |
+|---|---|
+| Passwort vergessen | Anmeldeseite → „Passwort vergessen?“. Der Link ist 30 Minuten gültig und setzt **nur das Passwort** zurück. Zum Anmelden braucht man weiterhin den Authenticator. |
+| Authenticator verloren (z. B. neues Handy) | Ein anderes Elternteil: „Eltern“ → „Authenticator zurücksetzen“. Der alte Authenticator ist sofort ungültig. Den angezeigten Einrichtungslink (24 h) persönlich weitergeben, er verlangt zusätzlich das Passwort. |
+| Nur ein Eltern-Account oder beides verloren | Auf dem Server: `docker compose exec kidctl python -m app.cli reset-totp <benutzer>` bzw. `reset-password <benutzer>` |
+
+Bei Passwort- oder Authenticator-Änderungen bekommt das Elternteil einen Hinweis per E-Mail, und
+seine anderen Sitzungen werden beendet.
 
 ## 2. Pacman-Repository
 

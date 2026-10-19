@@ -25,7 +25,7 @@
     </nav>
     <form method="post" action="/logout" class="who">
       <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-      <span class="muted">{{ current_parent.display_name or current_parent.username }}</span>
+      <a href="/profile" class="who-name{% if path == '/profile' %} active{% endif %}" title="Profil">{{ current_parent.display_name or current_parent.username }}</a>
       <button type="submit" class="secondary small">Abmelden</button>
     </form>
   </div>
@@ -33,6 +33,7 @@
 {% endif %}
 <main>
 {% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% if notice %}<p class="success">{{ notice }}</p>{% endif %}
 {% block content %}{% endblock %}
 </main>
 </body>

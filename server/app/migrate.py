@@ -42,6 +42,8 @@ COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
     ("device_app", "categories", "TEXT NOT NULL DEFAULT ''"),
     # 2026-10-19: Spielzeit je Spiel (Name vom Agenten, Spiele stehen nicht im Katalog)
     ("app_usage", "name", "VARCHAR(255) NOT NULL DEFAULT ''"),
+    # 2026-10-19: Profil, Passwort vergessen
+    ("parent", "email", "VARCHAR(255) NOT NULL DEFAULT ''"),
 ]
 
 

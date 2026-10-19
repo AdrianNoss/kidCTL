@@ -8,5 +8,6 @@
   <label>Passwort <input type="password" name="password" autocomplete="current-password" required></label>
   <label>Authenticator-Code <input name="totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
   <button type="submit" style="width:100%">Anmelden</button>
+  <p class="login-help"><a href="/reset">Passwort vergessen?</a></p>
 </form>
 {% endblock %}

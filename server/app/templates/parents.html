@@ -6,16 +6,22 @@
   <table>
     {% for p in parents %}
     <tr>
-      <td><strong>{{ p.username }}</strong>{% if p.display_name %} <span class="muted">{{ p.display_name }}</span>{% endif %}</td>
-      <td class="right">
+      <td><strong>{{ p.username }}</strong>{% if p.display_name %} <span class="muted">{{ p.display_name }}</span>{% endif %}
+        <br><small class="muted">{{ p.email or "keine E-Mail hinterlegt" }}</small></td>
+      <td class="right"><div class="actions">
         {% if p.id != current_parent.id %}
+        <form method="post" action="/parents/{{ p.id }}/totp-reset" class="inline"
+              onsubmit="return confirm('Authenticator von {{ p.username }} zurücksetzen? Der bisherige wird sofort ungültig, du bekommst einen Einrichtungslink zum Weitergeben.')">
+          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+          <button type="submit" class="secondary small">Authenticator zurücksetzen</button>
+        </form>
         <form method="post" action="/parents/{{ p.id }}/delete" class="inline"
               onsubmit="return confirm('Account löschen?')">
           <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
           <button type="submit" class="danger small">Löschen</button>
         </form>
-        {% else %}<span class="pill ok">angemeldet</span>{% endif %}
-      </td>
+        {% else %}<span class="pill ok">angemeldet</span> <a href="/profile" class="btn secondary small">Profil</a>{% endif %}
+      </div></td>
     </tr>
     {% endfor %}
   </table>
@@ -25,6 +31,7 @@
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
   <label>Benutzername <input name="username" required maxlength="64" autocomplete="off"></label>
   <label>Anzeigename <input name="display_name" maxlength="128"></label>
+  <label>E-Mail (optional, für „Passwort vergessen“) <input type="email" name="email" maxlength="255"></label>
   <label>Passwort (min. 12 Zeichen) <input type="password" name="password" minlength="12" required autocomplete="new-password"></label>
   <button type="submit">Anlegen</button>
 </form>

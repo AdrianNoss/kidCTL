@@ -29,6 +29,22 @@ class Parent(Base):
     totp_secret: Mapped[str] = mapped_column(String(64))
     totp_last_step: Mapped[int] = mapped_column(Integer, default=0)  # Replay-Schutz
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    email: Mapped[str] = mapped_column(String(255), default="")  # für „Passwort vergessen“ (optional)
+
+
+class ParentToken(Base):
+    """Einmal-Link: Passwort zurücksetzen (E-Mail) bzw. Authenticator einrichten/wechseln.
+    Gespeichert wird nur der Hash; ``secret`` = neues TOTP-Secret bis zur Bestätigung."""
+    __tablename__ = "parent_token"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    parent_id: Mapped[int] = mapped_column(ForeignKey("parent.id", ondelete="CASCADE"), index=True)
+    purpose: Mapped[str] = mapped_column(String(16))   # password_reset | totp_setup | totp_change
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    secret: Mapped[str] = mapped_column(String(64), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class ParentSession(Base):

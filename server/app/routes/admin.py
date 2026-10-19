@@ -19,12 +19,12 @@ from ..models import (
     BlocklistState, Child, DayException, Device, Message, PairingCode, Parent, ParentSession, WeekdayRule,
     utcnow,
 )
-from .. import blocklog, chat, nowplaying, policy, programs, stats, webfilter
+from .. import accounts, blocklog, chat, nowplaying, policy, programs, stats, webfilter
 from .. import lock as lk
 from .. import schedule as sch
 from ..security import (
-    csrf_protect, hash_password, new_pairing_code, new_totp_secret, require_session, token_hash,
-    totp_qr_svg, totp_uri,
+    client_ip, csrf_protect, hash_password, is_rate_limited, new_pairing_code, new_totp_secret, record_failure,
+    require_session, token_hash, totp_qr_svg, totp_uri, verify_password,
 )
 from ..web import render
 from ..ws import manager
@@ -443,28 +443,42 @@ def parents_list(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/parents", dependencies=[Depends(csrf_protect)])
 def parent_create(request: Request, username: str = Form(...), display_name: str = Form(""),
-                  password: str = Form(...), db: Session = Depends(get_db)):
-    username = username.strip()
-    error = None
-    if not username or len(username) > 64:
-        error = "Ungültiger Benutzername."
-    elif len(password) < 12:
-        error = "Passwort muss mindestens 12 Zeichen haben."
-    elif len(password.encode()) > 72:
-        error = "Passwort darf höchstens 72 Bytes haben."
-    elif db.scalar(select(Parent).where(Parent.username == username)):
-        error = "Benutzername existiert bereits."
+                  email: str = Form(""), password: str = Form(...), db: Session = Depends(get_db)):
+    username, email = username.strip(), email.strip()
+    error = (accounts.username_error(db, username) or accounts.email_error(email)
+             or accounts.password_error(password))
     if error:
         parents = db.scalars(select(Parent).order_by(Parent.username)).all()
         return render(request, "parents.html", status_code=400, parents=parents, error=error)
 
-    parent = Parent(username=username, display_name=display_name.strip()[:128],
+    parent = Parent(username=username, display_name=display_name.strip()[:128], email=email[:255],
                     password_hash=hash_password(password), totp_secret=new_totp_secret())
     db.add(parent)
     db.commit()
     uri = totp_uri(parent)
     return render(request, "parent_created.html", parent=parent, uri=uri, qr_svg=totp_qr_svg(uri),
                   secret=parent.totp_secret)
+
+
+@router.post("/parents/{parent_id}/totp-reset")
+def parent_totp_reset(parent_id: int, request: Request, sess: ParentSession = Depends(csrf_protect),
+                      db: Session = Depends(get_db)):
+    """Authenticator eines anderen Elternteils zurücksetzen: altes Secret sofort ungültig, Sitzungen
+    beendet; Einrichtungslink (24 h, verlangt zusätzlich das Passwort) zum Weitergeben."""
+    if parent_id == sess.parent_id:
+        raise HTTPException(400, "Eigenen Authenticator im Profil ändern")
+    parent = _get_or_404(db, Parent, parent_id)
+    secret = new_totp_secret()
+    raw = accounts.create_token(db, parent, "totp_setup", timedelta(hours=accounts.TOTP_SETUP_HOURS), secret)
+    parent.totp_secret, parent.totp_last_step = new_totp_secret(), 0   # alter Authenticator ungültig
+    accounts.end_sessions(db, parent.id)
+    db.commit()
+    by = sess.parent.display_name or sess.parent.username
+    accounts.notify(parent, "Authenticator zurückgesetzt",
+                    f"{by} hat den Authenticator deines Accounts „{parent.username}“ zurückgesetzt. "
+                    "Den Einrichtungslink bekommst du von dieser Person.")
+    return render(request, "totp_reset_link.html", parent=parent, link=f"{settings.base_url}/totp-setup/{raw}",
+                  hours=accounts.TOTP_SETUP_HOURS)
 
 
 @router.post("/parents/{parent_id}/delete")
@@ -477,3 +491,106 @@ def parent_delete(parent_id: int, sess: ParentSession = Depends(csrf_protect),
     db.delete(_get_or_404(db, Parent, parent_id))
     db.commit()
     return _redirect("/parents")
+
+
+# ---------- Profil ----------
+
+def _profile(request: Request, parent: Parent, status_code: int = 200, **ctx):
+    return render(request, "profile.html", status_code=status_code, parent=parent,
+                  mail_enabled=settings.mail_enabled, **ctx)
+
+
+def _check_password(db: Session, request: Request, parent: Parent, password: str) -> str | None:
+    """Aktuelles Passwort prüfen (mit Rate-Limiting wie beim Login)."""
+    ip = client_ip(request)
+    if is_rate_limited(db, "login", ip, parent.username):
+        return "Zu viele Fehlversuche. Bitte später erneut versuchen."
+    if not verify_password(password, parent.password_hash):
+        record_failure(db, "login", ip, parent.username)
+        return "Aktuelles Passwort ist falsch."
+    return None
+
+
+PROFILE_NOTICES = {"saved": "Profil gespeichert.", "password": "Passwort geändert. Andere Sitzungen wurden abgemeldet.",
+                   "totp": "Neuer Authenticator eingerichtet. Andere Sitzungen wurden abgemeldet."}
+
+
+@router.get("/profile")
+def profile(request: Request):
+    return _profile(request, request.state.session.parent,
+                    notice=PROFILE_NOTICES.get(request.query_params.get("msg", "")))
+
+
+@router.post("/profile")
+def profile_save(request: Request, username: str = Form(""), display_name: str = Form(""), email: str = Form(""),
+                 current_password: str = Form(""), sess: ParentSession = Depends(csrf_protect),
+                 db: Session = Depends(get_db)):
+    parent = db.get(Parent, sess.parent_id)
+    username, email = username.strip(), email.strip()
+    error = accounts.username_error(db, username, parent.id) or accounts.email_error(email)
+    sensitive = username != parent.username or email != parent.email
+    if not error and sensitive:
+        error = _check_password(db, request, parent, current_password)
+    if error:
+        return _profile(request, parent, 400, error=error, form={"username": username, "display_name": display_name,
+                                                                   "email": email})
+    old_email = parent.email
+    parent.username, parent.display_name, parent.email = username, display_name.strip()[:128], email[:255]
+    db.commit()
+    if old_email and old_email != email:
+        accounts.mail.send(old_email, "KidCTL: E-Mail-Adresse geändert",
+                           f"Die E-Mail-Adresse des KidCTL-Accounts „{username}“ wurde von dieser Adresse auf "
+                           f"„{email or '(keine)'}“ geändert.\nFalls du das nicht warst, melde dich sofort an.\n")
+    return _redirect("/profile?msg=saved")
+
+
+@router.post("/profile/password")
+def profile_password(request: Request, current_password: str = Form(""), password: str = Form(""),
+                     repeat: str = Form(""), sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    parent = db.get(Parent, sess.parent_id)
+    error = _check_password(db, request, parent, current_password) or accounts.password_error(password, repeat)
+    if error:
+        return _profile(request, parent, 400, error=error)
+    parent.password_hash = hash_password(password)
+    accounts.end_sessions(db, parent.id, keep_session_id=sess.id)
+    db.commit()
+    accounts.notify(parent, "Passwort geändert", "dein Passwort wurde im Profil geändert.")
+    return _redirect("/profile?msg=password")
+
+
+@router.post("/profile/totp")
+def profile_totp_start(request: Request, sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    """Neuen Authenticator vorbereiten (der alte gilt, bis der neue bestätigt ist)."""
+    parent = db.get(Parent, sess.parent_id)
+    secret = new_totp_secret()
+    raw = accounts.create_token(db, parent, "totp_change", timedelta(minutes=accounts.TOTP_CHANGE_MINUTES), secret)
+    db.commit()
+    return _totp_change_page(request, parent, raw, secret)
+
+
+def _totp_change_page(request, parent, raw, secret, status_code=200, error=None):
+    uri = accounts.totp_uri_for(secret, parent.username)
+    return render(request, "profile_totp.html", status_code=status_code, parent=parent, token=raw, secret=secret,
+                  qr_svg=totp_qr_svg(uri), minutes=accounts.TOTP_CHANGE_MINUTES, error=error)
+
+
+@router.post("/profile/totp/confirm")
+def profile_totp_confirm(request: Request, token: str = Form(""), current_password: str = Form(""),
+                         totp: str = Form(""), sess: ParentSession = Depends(csrf_protect),
+                         db: Session = Depends(get_db)):
+    parent = db.get(Parent, sess.parent_id)
+    t = accounts.get_token(db, token, "totp_change")
+    if t is None or t.parent_id != parent.id:
+        return _profile(request, parent, 400, error="Die Einrichtung ist abgelaufen. Bitte neu starten.")
+    error = _check_password(db, request, parent, current_password)
+    step = accounts.totp_step(t.secret, totp)
+    if not error and step is None:
+        error = "Der Code passt nicht zum neuen QR-Code."
+    if error:
+        return _totp_change_page(request, parent, token, t.secret, 400, error)
+    parent.totp_secret, parent.totp_last_step = t.secret, step
+    t.used_at = utcnow()
+    accounts.end_sessions(db, parent.id, keep_session_id=sess.id)
+    db.commit()
+    accounts.notify(parent, "Authenticator geändert", "für deinen Account wurde ein neuer Authenticator eingerichtet.")
+    return _redirect("/profile?msg=totp")

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Authenticator zurückgesetzt – KidCTL{% endblock %}
+{% block content %}
+<div class="page-head"><div><span class="eyebrow">Eltern</span><h1>Authenticator von „{{ parent.username }}“ zurückgesetzt</h1></div></div>
+<section class="card">
+  <p>Der bisherige Authenticator gilt nicht mehr, alle Sitzungen dieses Accounts wurden beendet.
+    Gib diesen Link an <strong>{{ parent.display_name or parent.username }}</strong> weiter (persönlich oder per Messenger).
+    Er ist {{ hours }} Stunden gültig, nur einmal verwendbar und verlangt zusätzlich das Passwort.</p>
+  <p><code class="link-box">{{ link }}</code></p>
+  <p class="muted"><small>Dieser Link wird nur jetzt angezeigt. Bei Bedarf einfach erneut zurücksetzen.</small></p>
+  <a href="/parents" class="btn">Fertig</a>
+</section>
+{% endblock %}
