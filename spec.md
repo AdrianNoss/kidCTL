@@ -292,6 +292,14 @@ Verlängerungsanfragen.
   Umgebungsprüfung (`LD_*`) wurde verworfen (Vulkan-Layer brauchen keine Variable). Aufheben sofort bei
   Freigabe (keine Sitzung hängt daran; bei „busy“ nächster Abgleich). Integrität `noexec:<pfad>`.
   Bei Freigabe bleibt die bekannte Lücke „Spiel hinzufügen“.
+- **Container-Prozesse** (entschieden 2026-10-19): Bei Prozessen in einem eigenen Mount-Namespace
+  (nicht Flatpak) zeigt ein Pfad nicht zwingend auf die Systemdatei. Der Agent vergleicht deshalb die
+  tatsächlich laufende Datei (`/proc/<pid>/exe`) sowie Skript bzw. Electron-App (`/proc/<pid>/root/…`)
+  per Gerät + Inode mit der Systemdatei unter demselben Pfad. Weicht etwas ab, ist der Prozess nur als
+  Laufzeit-Container von Steam (freigegeben) oder einem freigegebenen Launcher erlaubt; abweichende
+  Prozesse gelten auch nie als Launcher- oder Electron-Hauptprozess für ihre Nachfahren. Referenz ist
+  der Mount-Namespace von PID 1. Restlücke: Steam-Vorfahren werden nicht so geprüft (Steam-Client-Pfade
+  liegen in der Bibliothek des Kindes und sind bei Freigabe ohnehin ersetzbar).
 - **Abstammung gemerkt:** Für Prozesse, die nur über ihre Elternkette erlaubt sind (Steam,
   Launcher, Electron-Hilfsprozesse), merkt sich der Agent die Kette beim Start. Verwaiste Prozesse
   (z. B. `wineserver`) werden nach einer Policy-Änderung so nicht beendet; wird die Freigabe
@@ -881,3 +889,10 @@ Verlängerungsanfragen.
   nachberechnet, `git-remote-https` erlaubt). Neue Tabelle gegen Kopie der Entwicklungs-DB per `init_db`
   angelegt. Sichttest Entwicklungsserver (Firefox headless, hell/dunkel): Gruppe, Dialog (modal per
   JavaScript, ohne JavaScript über `?add_program=1`), Entfernen über die Oberfläche.
+- 2026-10-19: Container-Prozesse nach echter Datei prüfen (Paket 0.21.0). Anlass: Mit Namespaces
+  (bwrap/unshare, beide für Kinder ausführbar) ließen sich eigene Dateien unter Pfaden freigegebener
+  Programme einblenden; der Agent prüfte nur den Pfad. Getestet: Agent 164 (gleiche Datei im Container
+  erlaubt; andere Datei, ersetztes Skript, ersetzte Electron-App gesperrt; ersetzte App gilt nicht als
+  Launcher; Laufzeit-Container von Heroic erlaubt, ohne Freigabe gesperrt). Gegentest mit echten
+  unprivilegierten Namespaces auf dem Entwicklungsrechner: unveränderte Systemdatei erlaubt, andere Datei
+  unter demselben Pfad gesperrt.

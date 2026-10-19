@@ -26,6 +26,9 @@ class ProcInfo:
     tty: bool            # hat ein Steuerterminal (interaktiv)
     flatpak_id: str | None
     parent_exe: str = ""
+    # Eigener Mount-Namespace (Container): Pfade zeigen dann nicht zwingend auf Systemdateien
+    mnt_foreign: bool = False
+    exe_id: tuple[int, int] | None = None   # (st_dev, st_ino) der tatsächlich laufenden Datei
 
     @property
     def ident(self) -> tuple:
@@ -48,6 +51,34 @@ def _exe(pid: int) -> str | None:
     except OSError:
         return None  # Kernel-Thread, Zombie oder schon beendet
     return exe.removesuffix(" (deleted)")
+
+
+_init_mnt_ns: str | None = None
+
+
+def init_mnt_ns() -> str:
+    """Mount-Namespace von PID 1 (der des Systems; der Agent selbst läuft in einem eigenen)."""
+    global _init_mnt_ns
+    if _init_mnt_ns is None:
+        try:
+            _init_mnt_ns = os.readlink("/proc/1/ns/mnt")
+        except OSError:
+            _init_mnt_ns = ""
+    return _init_mnt_ns
+
+
+def _mount_identity(pid: int) -> tuple[bool, tuple[int, int] | None]:
+    try:
+        foreign = bool(init_mnt_ns()) and os.readlink(f"/proc/{pid}/ns/mnt") != init_mnt_ns()
+    except OSError:
+        return False, None
+    if not foreign:
+        return False, None
+    try:
+        st = os.stat(f"/proc/{pid}/exe")
+        return True, (st.st_dev, st.st_ino)
+    except OSError:
+        return True, None
 
 
 def read_proc(pid: int) -> ProcInfo | None:
@@ -73,8 +104,10 @@ def _read_once(pid: int, exe: str | None) -> ProcInfo | None:
     argv = tuple(a.decode(errors="replace") for a in (_read(f"/proc/{pid}/cmdline") or b"").split(b"\0") if a)
     cgroup = (_read(f"/proc/{pid}/cgroup") or b"").decode(errors="replace")
     m = FLATPAK_SCOPE.search(cgroup)
+    foreign, exe_id = _mount_identity(pid)
     return ProcInfo(pid=pid, uid=uid, ppid=ppid, start=start, exe=exe, argv=argv, tty=tty_nr != 0,
-                    flatpak_id=m.group("id") if m else None, parent_exe=_exe(ppid) or "")
+                    flatpak_id=m.group("id") if m else None, parent_exe=_exe(ppid) or "",
+                    mnt_foreign=foreign, exe_id=exe_id)
 
 
 def read_environ(pid: int) -> dict[str, str]:

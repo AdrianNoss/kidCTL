@@ -25,6 +25,11 @@ Reihenfolge:
    Hilfsprozesse (Renderer, GPU, Crashpad) erlaubt, wenn sie von so einem Hauptprozess abstammen.
 8. Sonst gesperrt.
 
+Container (eigener Mount-Namespace, z. B. bwrap/unshare): Dort kann unter einem Systempfad eine ganz
+andere Datei liegen. Für solche Prozesse wird deshalb die tatsächlich laufende Datei (bzw. das Skript
+oder die Electron-App) mit der Systemdatei unter demselben Pfad verglichen (Gerät + Inode). Weicht sie
+ab, ist der Prozess nur über Steam oder einen Spiele-Launcher erlaubt (deren Laufzeit-Container).
+
 Paket-Ordner: Verzeichnisse, die nur dem Paket einer freigegebenen App gehören (z. B.
 ``/usr/lib/heroic`` für ``/usr/bin/heroic``), gelten wie das Verzeichnis der App selbst.
 """
@@ -407,13 +412,55 @@ def electron_args_unsafe(info: ProcInfo) -> bool:
 
 def _allowed_electron_main(info: ProcInfo, allowed: Allowed) -> bool:
     app = electron_app(info)
-    return app is not None and allowed.path_ok(app) and not electron_args_unsafe(info)
+    return (app is not None and allowed.path_ok(app) and not electron_args_unsafe(info)
+            and matches_host(info))
+
+
+_stat = os.stat  # Tests ersetzen das
+
+
+def _same(a: str, b: str) -> bool:
+    try:
+        x, y = _stat(a), _stat(b)
+    except OSError:
+        return False
+    return (x.st_dev, x.st_ino) == (y.st_dev, y.st_ino)
+
+
+def _decisive_paths(info: ProcInfo) -> list[str]:
+    """Dateien, nach denen entschieden wird (außer dem Programm selbst): Skript bzw. Electron-App,
+    so wie der Prozess sie sieht (ohne realpath im Namensraum des Agenten)."""
+    name = os.path.basename(info.exe)
+    out = []
+    if name in SHELLS or re.sub(r"[0-9.]+$", "", name) in SHELLS:
+        mode, script = shell_mode(info.argv)
+        if mode == "script":
+            out.append(script)
+    elif INTERPRETER.match(name):
+        out.append(script_arg(name, info.argv))
+    elif is_electron(info.exe) and os.path.basename(info.exe) == "electron":
+        argv = electron_argv(info)
+        out.append(next((a for a in argv[1:] if not a.startswith("-")), None))
+    return [p for p in out if p and os.path.isabs(p)]
+
+
+def matches_host(info: ProcInfo) -> bool:
+    """Läuft (bei einem Container-Prozess) wirklich die Systemdatei unter diesem Pfad?"""
+    if not info.mnt_foreign:
+        return True
+    try:
+        host = _stat(info.exe)
+    except OSError:
+        return False
+    if info.exe_id != (host.st_dev, host.st_ino):
+        return False
+    return all(_same(f"/proc/{info.pid}/root{p}", p) for p in _decisive_paths(info))
 
 
 def is_launcher_process(info: ProcInfo, allowed: Allowed) -> bool:
     """Prozess eines freigegebenen Spiele-Launchers (Starter, Electron-App oder Hilfsprogramm
-    aus seinem Paket-Ordner, z. B. gogdl)."""
-    if not allowed.launchers:
+    aus seinem Paket-Ordner, z. B. gogdl) – nie ein Container mit nachgebauten Dateien."""
+    if not allowed.launchers or not matches_host(info):
         return False
     path = electron_app(info) or _program_path(info)
     return path in allowed.launchers or any(
@@ -447,6 +494,13 @@ def classify(info: ProcInfo, allowed: Allowed,
         return Verdict(STEAM_KEY, "Steam", f"nicht freigegeben – {os.path.basename(path)}")
 
     path = _program_path(info)
+    if not matches_host(info):
+        # Container mit eigener Datei unter diesem Pfad: nur als Laufzeit-Container von Steam/Launcher
+        if from_launcher() or (allowed.steam_enabled and from_steam()):
+            return None
+        if from_steam():
+            return steam_blocked()
+        return Verdict(f"exe:{exe}", name, "Container: Datei weicht vom System ab")
     if allowed.steam_root and path.startswith(allowed.steam_root):
         if not allowed.steam_enabled:
             return steam_blocked()
