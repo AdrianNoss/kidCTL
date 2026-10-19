@@ -305,13 +305,23 @@ class BlockedReport(BaseModel):
 class AppUsageEntry(BaseModel):
     username: str = Field(max_length=64)
     day: date
-    key: str = Field(max_length=512)
+    key: str = Field(max_length=512)   # App-Schlüssel oder Spiel "game:steam:<id>" / "game:heroic:<quelle>:<id>"
     seconds: int = Field(ge=0, le=2 * 86400)
+    name: str = Field(default="", max_length=255)  # Anzeigename für Spiele (nicht im Katalog)
+
+
+class PlayingEntry(BaseModel):
+    """Gerade laufendes Spiel eines Users (Name stammt aus Dateien des Kindes – nur Anzeige)."""
+    username: str = Field(max_length=64)
+    key: str = Field(max_length=512)
+    name: str = Field(max_length=255)
 
 
 class AppUsageReport(BaseModel):
     type: Literal["app_usage_report"] = "app_usage_report"
     entries: list[AppUsageEntry] = Field(max_length=2000)
+    # Abwärtskompatibel ergänzt (2026-10-19): ältere Server ignorieren das Feld
+    playing: list[PlayingEntry] = Field(default=[], max_length=200)
 
 
 # ---------- Integrität ----------

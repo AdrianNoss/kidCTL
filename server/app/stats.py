@@ -34,6 +34,8 @@ def apply_app_report(db: Session, dev: Device, msg: p.AppUsageReport) -> None:
                            child_id=mapping[e.username], seconds=0)
             db.add(rec)
         rec.seconds = max(rec.seconds, e.seconds)
+        if e.key.startswith(GAME_PREFIX) and e.name:
+            rec.name = _clean(e.name)
 
 
 @dataclass
@@ -47,11 +49,20 @@ class DayBar:
         return self.used_minutes > self.allowed_minutes
 
 
+GAME_PREFIX = "game:"
+LAUNCHERS = {"steam": "Steam", "heroic": "Heroic"}
+
+
+def _clean(name: str) -> str:
+    return "".join(ch for ch in name if ch.isprintable()).strip()[:255]
+
+
 @dataclass
 class AppRow:
     key: str
     name: str
     minutes: int
+    launcher: str = ""  # bei Spielen: „Steam“ / „Heroic“
 
 
 def daily(db: Session, child: Child, days: int = DAYS) -> list[DayBar]:
@@ -81,5 +92,15 @@ def apps(db: Session, child: Child, days: int) -> list[AppRow]:
                       .where(AppUsage.child_id == child.id, AppUsage.day >= start)
                       .group_by(AppUsage.key)).all()
     names = dict(db.execute(select(DeviceApp.key, DeviceApp.name)).all())
-    out = [AppRow(k, names.get(k, k.split(":", 1)[-1].rsplit("/", 1)[-1]), int(s) // 60) for k, s in rows]
+    names |= {k: n for k, n in db.execute(
+        select(AppUsage.key, func.max(AppUsage.name)).where(
+            AppUsage.child_id == child.id, AppUsage.key.startswith(GAME_PREFIX), AppUsage.name != "")
+        .group_by(AppUsage.key)).all()}
+    out = []
+    for k, s in rows:
+        if k.startswith(GAME_PREFIX):
+            launcher = LAUNCHERS.get(k.split(":")[1], "")
+            out.append(AppRow(k, names.get(k, k.rsplit(":", 1)[-1]), int(s) // 60, launcher))
+        else:
+            out.append(AppRow(k, names.get(k, k.split(":", 1)[-1].rsplit("/", 1)[-1]), int(s) // 60))
     return sorted((r for r in out if r.minutes > 0), key=lambda r: -r.minutes)

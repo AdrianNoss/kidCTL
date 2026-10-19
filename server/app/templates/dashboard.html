@@ -10,6 +10,7 @@
     {% for c in children %}{% set st = status[c.id] %}
     <tr>
       <td><a href="/children/{{ c.id }}" class="entity">{{ c.name }}</a>
+        {% if playing.get(c.id) %}<br><span class="pill play" title="Spielt gerade">▶ {{ playing[c.id] | join(", ") }}</span>{% endif %}
         {% if is_locked(c) %}<br><span class="pill danger">gesperrt{% if c.locked_until %} bis {{ c.locked_until | localtime("%H:%M") }}{% endif %}</span>{% endif %}</td>
       <td class="num">{{ fmt_minutes(st.used_seconds // 60) }} <span class="muted">von {{ fmt_minutes(st.allowed_minutes) }}</span></td>
       <td class="num">{% if st.overrun_minutes %}<span class="pill warn">überzogen um {{ st.overrun_minutes }} min</span>

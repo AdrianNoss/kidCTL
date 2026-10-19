@@ -282,3 +282,8 @@ details > summary { cursor:pointer; color:var(--ink-2); font-weight:600; font-si
   .log-table col.c-user { width:9rem; }
   .log-table col.c-status { width:10.5rem; }
 }
+
+/* „spielt gerade“ */
+.pill.play { background:var(--accent-soft); color:var(--accent); border-color:transparent; }
+.page-head .pill.play { margin-top:.5rem; display:inline-flex; }
+.pill.play::before { display:none; }

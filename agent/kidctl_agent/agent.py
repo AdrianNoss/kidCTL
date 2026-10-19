@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import pwd
 import re
 from datetime import datetime
@@ -20,9 +21,10 @@ from .chat import NEW, ChatStore, Outbox, new_client_msg_id
 from .connection import Connection
 from .dnsfilter import DnsFilter
 from .enforcer import Enforcer
+from .games import GameNames, game_id
 from .kidmounts import STEAM_ROOT, KidMounts, safe_home
 from .loginlock import LoginLock, is_admin
-from .procs import ProcEvents, pids_of, read_proc
+from .procs import ProcEvents, pids_of, read_environ, read_proc
 from .rules import Decision, day_limits, evaluate
 from .trayserver import TrayServer
 from .watcher import ProgramWatcher
@@ -54,6 +56,9 @@ class Agent:
         self.usage = Usage.load()
         self.apptime = AppTime.load()
         self.app_index = AppIndex(set())
+        self.game_names = GameNames()
+        self._game_of: dict[tuple[int, int], str | None] = {}  # Prozess -> Spiel-Schlüssel (Cache)
+        self.playing: dict[str, dict[str, str]] = {}  # User -> {Spiel-Schlüssel: Name} („spielt gerade“)
         self.chat = ChatStore.load()
         self.outbox = Outbox.load()
         self.tray = TrayServer(self, tray_path)
@@ -288,24 +293,54 @@ class Agent:
         entries = [p.UsageEntry(username=u, day=d, seconds=s) for u, d, s in self.usage.report_entries(today)]
         if entries:
             await self.conn.send(p.UsageReport(entries=entries))
-        apps = [p.AppUsageEntry(username=u, day=d, key=k, seconds=s)
+        apps = [p.AppUsageEntry(username=u, day=d, key=k, seconds=s, name=self.apptime.names.get(k, ""))
                 for u, d, k, s in self.apptime.report_entries(today)]
-        if apps:
-            await self.conn.send(p.AppUsageReport(entries=apps[:2000]))
+        playing = [p.PlayingEntry(username=u, key=k, name=n)
+                   for u, games in sorted(self.playing.items()) for k, n in sorted(games.items())]
+        # immer senden (auch leer), damit „spielt gerade“ beim Server endet
+        await self.conn.send(p.AppUsageReport(entries=apps[:2000], playing=playing[:200]))
 
     def _count_apps(self, users: set[str], day, delta: float) -> None:
-        """Programmzeit: je User die Apps mit mindestens einem laufenden Prozess."""
+        """Programmzeit: je User die Apps mit mindestens einem laufenden Prozess. Prozesse eines
+        Steam-/Heroic-Spiels zählen für das Spiel (statt für Steam), außerdem „spielt gerade“."""
+        alive: set[tuple[int, int]] = set()
+        playing: dict[str, dict[str, str]] = {}
         for user in users:
             try:
                 uid = pwd.getpwnam(user).pw_uid
             except KeyError:
                 continue
+            steam_lib = f"{STEAM_ROOT}/{user}"
             keys = set()
             for pid in pids_of({uid}):
                 info = read_proc(pid)
-                if info is not None and (k := self.app_index.key_for(info, f"{STEAM_ROOT}/{user}/")):
+                if info is None:
+                    continue
+                alive.add((info.pid, info.start))
+                if game := self._game_key(info, user):
+                    keys.add(game)
+                    if game not in self.apptime.names:
+                        home = safe_home(user) or ""
+                        self.apptime.names[game] = self.game_names.name(game, home, steam_lib)
+                    playing.setdefault(user, {})[game] = self.apptime.names[game]
+                elif k := self.app_index.key_for(info, steam_lib + "/"):
                     keys.add(k)
             self.apptime.add(user, day, keys, delta)
+        self._game_of = {k: v for k, v in self._game_of.items() if k in alive}
+        self.playing = playing
+
+    def _game_key(self, info, user: str) -> str | None:
+        """Spiel eines Prozesses (Umgebung nur bei Kandidaten lesen: Spieleordner, Wine, Container)."""
+        ident = (info.pid, info.start)
+        if ident in self._game_of:
+            return self._game_of[ident]
+        roots = tuple(f"{lib.root}/{user}/" for lib in kidmounts.libraries())
+        candidate = (info.exe.startswith(roots) or info.mnt_foreign
+                     or os.path.basename(info.exe).startswith(("wine", "pv-", "proton")))
+        found = game_id(read_environ(info.pid)) if candidate else None
+        key = found[0] if found else None
+        self._game_of[ident] = key
+        return key
 
     def _collect_blocked_domains(self) -> None:
         for cid, domain, source in self.dns.collect_blocked():

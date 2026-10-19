@@ -48,17 +48,22 @@ class AppIndex:
 class AppTime:
     def __init__(self) -> None:
         self.local: dict[tuple[str, str, str], float] = {}
+        self.names: dict[str, str] = {}  # Anzeigenamen für Schlüssel außerhalb des Katalogs (Spiele)
 
     @classmethod
     def load(cls) -> AppTime:
         a = cls()
-        for row in (store.load(APPTIME_FILE) or {}).get("entries", []):
+        data = store.load(APPTIME_FILE) or {}
+        for row in data.get("entries", []):
             a.local[(row["user"], row["day"], row["key"])] = float(row["seconds"])
+        a.names = {str(k): str(v) for k, v in (data.get("names") or {}).items()}
         return a
 
     def save(self) -> None:
+        keys = {k for (_u, _d, k) in self.local}
         store.save(APPTIME_FILE, {"entries": [{"user": u, "day": d, "key": k, "seconds": round(s, 1)}
-                                              for (u, d, k), s in sorted(self.local.items())]})
+                                              for (u, d, k), s in sorted(self.local.items())],
+                                  "names": {k: v for k, v in sorted(self.names.items()) if k in keys}})
 
     def add(self, user: str, day: date, keys: set[str], seconds: float) -> None:
         if seconds <= 0:

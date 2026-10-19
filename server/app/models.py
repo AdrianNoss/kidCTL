@@ -286,6 +286,7 @@ class AppUsage(Base):
     child_id: Mapped[int | None] = mapped_column(
         ForeignKey("child.id", ondelete="CASCADE"), nullable=True, index=True)
     seconds: Mapped[int] = mapped_column(Integer, default=0)
+    name: Mapped[str] = mapped_column(String(255), default="")  # Spiele: Name vom Agenten
 
 
 class PairingCode(Base):

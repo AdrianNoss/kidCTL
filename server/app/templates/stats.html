@@ -2,7 +2,8 @@
 {% block title %}Statistik {{ child.name }} – KidCTL{% endblock %}
 {% block content %}
 <div class="page-head">
-  <div><span class="eyebrow">Statistik</span><h1>{{ child.name }}</h1></div>
+  <div><span class="eyebrow">Statistik</span><h1>{{ child.name }}</h1>
+    {% if playing %}<span class="pill play" title="Spielt gerade">▶ spielt gerade: {{ playing | join(", ") }}</span>{% endif %}</div>
   <div class="actions">
     <a href="/children/{{ child.id }}" class="btn secondary">Einstellungen</a>
     <a href="/children/{{ child.id }}/chat" class="btn secondary">Chat</a>
@@ -54,12 +55,13 @@
     {% if app_days == 1 %}<span class="active">Heute</span><a href="?range=7">Letzte 7 Tage</a>
     {% else %}<a href="?range=1">Heute</a><span class="active">Letzte 7 Tage</span>{% endif %}
   </div>
-  <p class="muted"><small>Zeit, in der ein Programm während der Bildschirmzeit geöffnet war. Parallel geöffnete Programme zählen jeweils voll.</small></p>
+  <p class="muted"><small>Zeit, in der ein Programm während der Bildschirmzeit geöffnet war. Parallel geöffnete Programme zählen jeweils voll.
+    Spiele aus Steam und Heroic erscheinen einzeln (die Zeit des Launchers selbst steht separat).</small></p>
   {% if apps %}
   <div class="hbars">
     {% for a in apps %}
-    <div class="hrow" tabindex="0" data-tip="{{ a.name }}: {{ fmt_minutes(a.minutes) }}">
-      <div class="hname">{{ a.name }}</div>
+    <div class="hrow" tabindex="0" data-tip="{{ a.name }}{% if a.launcher %} ({{ a.launcher }}){% endif %}: {{ fmt_minutes(a.minutes) }}">
+      <div class="hname">{{ a.name }}{% if a.launcher %} <small class="muted">{{ a.launcher }}</small>{% endif %}</div>
       <div class="htrack"><div class="hbar" style="width: {{ (100 * a.minutes / app_scale) | round(1) }}%"></div>
         <span class="hval">{{ fmt_minutes(a.minutes) }}</span></div>
     </div>

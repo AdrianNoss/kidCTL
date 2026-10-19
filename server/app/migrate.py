@@ -40,6 +40,8 @@ COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
     ("child", "lock_grace_minutes", "INTEGER NOT NULL DEFAULT 1"),
     # 2026-10-16: Kategorien für die gruppierte Programmliste
     ("device_app", "categories", "TEXT NOT NULL DEFAULT ''"),
+    # 2026-10-19: Spielzeit je Spiel (Name vom Agenten, Spiele stehen nicht im Katalog)
+    ("app_usage", "name", "VARCHAR(255) NOT NULL DEFAULT ''"),
 ]
 
 

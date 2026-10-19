@@ -10,7 +10,8 @@
 {% endmacro %}
 {% block content %}
 <div class="page-head">
-  <div><span class="eyebrow">Kind</span><h1>{{ child.name }}</h1></div>
+  <div><span class="eyebrow">Kind</span><h1>{{ child.name }}</h1>
+    {% if playing %}<span class="pill play" title="Spielt gerade">▶ spielt gerade: {{ playing | join(", ") }}</span>{% endif %}</div>
   <div class="actions">
     <a href="/children/{{ child.id }}/chat" class="btn secondary">Chat</a>
     <a href="/children/{{ child.id }}/stats" class="btn secondary">Statistik</a>

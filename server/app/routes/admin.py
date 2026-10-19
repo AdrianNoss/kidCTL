@@ -19,7 +19,7 @@ from ..models import (
     BlocklistState, Child, DayException, Device, Message, PairingCode, Parent, ParentSession, WeekdayRule,
     utcnow,
 )
-from .. import blocklog, chat, policy, programs, stats, webfilter
+from .. import blocklog, chat, nowplaying, policy, programs, stats, webfilter
 from .. import lock as lk
 from .. import schedule as sch
 from ..security import (
@@ -52,7 +52,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     chat.expire_stale_requests(db)
     return render(request, "dashboard.html", children=children, devices=devices, online=manager.is_online,
                   pending=chat.pending_count(db), status={c.id: policy.day_status(db, c) for c in children},
-                  fmt_minutes=sch.fmt_minutes, is_locked=lk.is_locked)
+                  fmt_minutes=sch.fmt_minutes, is_locked=lk.is_locked, playing=nowplaying.for_children(db))
 
 
 # ---------- Kinder ----------
@@ -111,7 +111,8 @@ def _child_page(request: Request, db: Session, child: Child, status_code: int = 
                   rules=sch.rules_by_day(child), groups=sch.GROUPS, weekday_names=sch.WEEKDAY_NAMES,
                   differs=sch.group_differs(child), exceptions=exceptions, today=today,
                   fmt_minutes=sch.fmt_minutes, max_quota=sch.MAX_QUOTA, max_extra=sch.MAX_EXTRA,
-                  is_locked=lk.is_locked, lock_durations=lk.DURATIONS, max_grace=lk.MAX_GRACE_MINUTES, **ctx)
+                  is_locked=lk.is_locked, lock_durations=lk.DURATIONS, max_grace=lk.MAX_GRACE_MINUTES,
+                  playing=nowplaying.for_children(db).get(child.id, []), **ctx)
 
 
 @router.get("/children/{child_id}")
@@ -242,7 +243,7 @@ def child_stats(child_id: int, request: Request, range: int = 7, db: Session = D
     bars = stats.daily(db, child)
     scale = max([b.used_minutes for b in bars] + [b.allowed_minutes for b in bars] + [1])
     app_rows = stats.apps(db, child, app_days)
-    return render(request, "stats.html", child=child, bars=bars, scale=scale, sums=stats.week_sums(bars),
+    return render(request, "stats.html", child=child, playing=nowplaying.for_children(db).get(child.id, []), bars=bars, scale=scale, sums=stats.week_sums(bars),
                   apps=app_rows, app_days=app_days, app_scale=max([r.minutes for r in app_rows] + [1]),
                   fmt_minutes=sch.fmt_minutes, weekday_names=sch.WEEKDAY_NAMES)
 

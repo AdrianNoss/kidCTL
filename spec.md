@@ -299,6 +299,16 @@ Verlängerungsanfragen.
   Umgebungsprüfung (`LD_*`) wurde verworfen (Vulkan-Layer brauchen keine Variable). Aufheben sofort bei
   Freigabe (keine Sitzung hängt daran; bei „busy“ nächster Abgleich). Integrität `noexec:<pfad>`.
   Bei Freigabe bleibt die bekannte Lücke „Spiel hinzufügen“.
+- **Spielzeit je Spiel und „spielt gerade“** (entschieden 2026-10-19, Varianten 1 + 2): Der Agent erkennt
+  Spielprozesse an der Umgebung (`SteamAppId`; Heroic `HEROIC_APP_NAME` + `HEROIC_APP_SOURCE`) – gelesen nur
+  bei Kandidaten (Spieleordner, Wine/pressure-vessel, Container), je Prozess zwischengespeichert. Spielname
+  aus `steamapps/appmanifest_<id>.acf` bzw. Heroics Bibliotheksdaten im Home (ohne Symlink-Verfolgung,
+  nur reguläre Dateien, Größenlimit). Programmzeit unter `game:steam:<id>` / `game:heroic:<quelle>:<id>`
+  (Spielprozesse zählen für das Spiel, nicht mehr für Steam); Name in `AppUsageEntry.name`. Laufende
+  Spiele in `AppUsageReport.playing` (abwärtskompatibel, Report wird jetzt jede Minute gesendet, auch
+  leer). Server: Spalte `app_usage.name`, „spielt gerade“ nur im Speicher (verfällt nach 150 s oder bei
+  getrenntem Gerät), Anzeige in Übersicht, Kind- und Statistikseite. Namen/IDs stammen aus Dateien des
+  Kindes: nur Anzeige, keine Freigaben.
 - **Container-Prozesse** (entschieden 2026-10-19): Bei Prozessen in einem eigenen Mount-Namespace
   (nicht Flatpak) zeigt ein Pfad nicht zwingend auf die Systemdatei. Der Agent vergleicht deshalb die
   tatsächlich laufende Datei (`/proc/<pid>/exe`) sowie Skript bzw. Electron-App (`/proc/<pid>/root/…`)
@@ -914,3 +924,13 @@ Verlängerungsanfragen.
   `_prune_log_forever` (Start + alle 6 h), Zeitraum „Alles“ heißt jetzt „Alles (90 Tage)“. Getestet:
   Server 77 (älter als 90 Tage gelöscht, jüngere bleiben, auch Einträge ohne Kind; zweiter Lauf löscht
   nichts); Entwicklungsserver startet die Aufgabe ohne Fehler.
+- 2026-10-19: Spielzeit je Spiel und „spielt gerade“ (Server + Agent 0.22.0). Getestet: Agent 168
+  (Erkennung Steam/Heroic inkl. ungültiger IDs, Namen aus Manifest/Heroic-Bibliothek/legendary
+  `installed.json`, Steuerzeichen entfernt, Datei-Lesen lehnt Symlink/FIFO/zu groß ab, Zählung für das
+  Spiel statt Steam, Umgebung nur bei Kandidaten und zwischengespeichert, Namen persistiert), Server 79
+  (Ende-zu-Ende über WebSocket: Statistik mit Launcher-Kennzeichnung, Namen HTML-escaped und ohne
+  Steuerzeichen, „spielt gerade“ in Übersicht/Kind-Seite, endet bei leerer Meldung und nach Ablauf,
+  fremde User ignoriert, alter Agent ohne `playing` akzeptiert). Namen gegen echte Heroic-/Steam-Dateien
+  des Entwicklungsrechners nachgeschlagen (Cyberpunk 2077, Nobody Wants to Die). Migration
+  `app_usage.name` gegen Kopie der Entwicklungs-DB. Sichttest Statistik (Firefox headless).
+  Nicht getestet: echtes Spiel auf dem Testrechner.
