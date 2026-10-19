@@ -93,3 +93,15 @@ def test_child_page_links_and_limit(client, parent):
     page = client.get(f"/children/{cid}").text
     assert "Ganzes Protokoll" in page and "Die letzten 10 Einträge" in page
     assert "Prog00" in page and "Prog14" not in page
+
+
+def test_prune_after_90_days(client, parent):
+    cid, _tok = _setup(client, parent)
+    now = datetime(2026, 10, 19, 12, 0)
+    _add(cid, at=now - timedelta(days=91), kind="program", key="exe:/alt", name="Alt")
+    _add(cid, at=now - timedelta(days=89), kind="program", key="exe:/jung", name="Jung")
+    _add(None, at=now - timedelta(days=200), kind="domain", key="domain:x.example", name="x.example")
+    with SessionLocal() as db:
+        assert blocklog.prune(db, now=now) == 2
+        assert [e.name for e in db.query(BlockedEvent)] == ["Jung"]
+        assert blocklog.prune(db, now=now) == 0

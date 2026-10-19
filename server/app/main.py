@@ -9,9 +9,9 @@ from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import alarms, policy, webfilter
+from . import alarms, blocklog, policy, webfilter
 from .config import settings
-from .db import init_db
+from .db import SessionLocal, init_db
 from .routes import admin, api, auth, pwa
 from .security import LoginRequired
 
@@ -21,7 +21,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_db()
-    tasks = [asyncio.create_task(alarms.run_forever()), asyncio.create_task(_refresh_lists_forever())]
+    tasks = [asyncio.create_task(alarms.run_forever()), asyncio.create_task(_refresh_lists_forever()),
+             asyncio.create_task(_prune_log_forever())]
     yield
     for t in tasks:
         t.cancel()
@@ -37,6 +38,21 @@ async def _refresh_lists_forever() -> None:
         except Exception:
             logging.getLogger("kidctl.webfilter").exception("Aktualisierung der Sperrlisten fehlgeschlagen")
         await asyncio.sleep(webfilter.REFRESH_SECONDS)
+
+
+async def _prune_log_forever() -> None:
+    """Protokoll gesperrter Aktionen: Einträge nach 90 Tagen löschen (beim Start, dann alle 6 Stunden)."""
+    log = logging.getLogger("kidctl.blocklog")
+    while True:
+        try:
+            def run() -> int:
+                with SessionLocal() as db:
+                    return blocklog.prune(db)
+            if n := await asyncio.to_thread(run):
+                log.info("Protokoll: %d Einträge älter als %d Tage gelöscht", n, blocklog.RETENTION_DAYS)
+        except Exception:
+            log.exception("Protokoll nicht aufräumbar")
+        await asyncio.sleep(blocklog.PRUNE_INTERVAL)
 
 
 app = FastAPI(title="KidCTL", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)

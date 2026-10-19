@@ -231,7 +231,8 @@ Verlängerungsanfragen.
   protokolliert), Benutzer (ab zwei), Freitextsuche (Name, Schlüssel, Detail; ohne Platzhalter),
   Reihenfolge; Einträge nach Tagen gruppiert, je 200 nachladbar; Kasten „Häufigste Einträge“ im
   gefilterten Zeitraum (Klick filtert darauf). Alles per GET-Parametern (Links teilbar, ohne
-  JavaScript). Die Kind-Seite zeigt die letzten 10 Einträge mit Links zur Protokollseite.
+  JavaScript). Die Kind-Seite zeigt die letzten 10 Einträge mit Links zur Protokollseite. Einträge werden nach
+  90 Tagen gelöscht (Server-Aufgabe beim Start und alle 6 Stunden; entschieden 2026-10-19).
 - **Eigene Programme** (entschieden 2026-10-18): Eltern tragen im Dialog „Programm hinzufügen“ ein
   Programm ein, das nicht im Katalog steht (Pfad oder Name aus `/usr/bin`, z. B. `git`; optional
   Anzeigename). Es wird sofort freigegeben und erscheint in der Gruppe „Eigene Programme“ (an-/abwählbar,
@@ -909,4 +910,7 @@ Verlängerungsanfragen.
   Ortszeit, Status, Benutzer, Suche groß/klein und mit `%`/`_`, ungültige Parameter, Reihenfolge,
   Nachladen, Häufigste, Kind-Seite nur 10 Einträge, fremde Einträge unsichtbar). Sichttest
   Entwicklungsserver (Firefox headless) mit vorübergehenden Beispieleinträgen: hell, dunkel, 420 px.
-  Offen: keine automatische Löschung alter Einträge (Tabelle wächst; der Agent drosselt Meldungen).
+- 2026-10-19: Protokoll gesperrter Aktionen nach 90 Tagen löschen (Nutzer-Entscheidung). Server-Aufgabe
+  `_prune_log_forever` (Start + alle 6 h), Zeitraum „Alles“ heißt jetzt „Alles (90 Tage)“. Getestet:
+  Server 77 (älter als 90 Tage gelöscht, jüngere bleiben, auch Einträge ohne Kind; zweiter Lauf löscht
+  nichts); Entwicklungsserver startet die Aufgabe ohne Fehler.

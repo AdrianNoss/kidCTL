@@ -1,4 +1,5 @@
-"""Protokoll gesperrter Aktionen: Filter (Art, Zeitraum, Status, Benutzer, Suche), Tagesgruppen, Häufigste."""
+"""Protokoll gesperrter Aktionen: Filter (Art, Zeitraum, Status, Benutzer, Suche), Tagesgruppen, Häufigste.
+Einträge werden nach ``RETENTION_DAYS`` gelöscht (``prune``)."""
 
 from __future__ import annotations
 
@@ -7,19 +8,21 @@ from datetime import date, datetime, time, timedelta, timezone
 from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from .config import settings
 from .models import BlockedEvent
 
 KINDS = {"": "Alle", "program": "Programme", "domain": "Websites"}
-RANGES = {"1": "Heute", "7": "7 Tage", "30": "30 Tage", "all": "Alles"}
+RANGES = {"1": "Heute", "7": "7 Tage", "30": "30 Tage", "all": "Alles (90 Tage)"}
 STATUSES = {"": "Alle", "blocked": "Gesperrt", "audit": "Nur protokolliert"}
 ORDERS = {"new": "Neueste zuerst", "old": "Älteste zuerst"}
 PAGE = 200
 MAX_LIMIT = 5000
 TOP = 10
+RETENTION_DAYS = 90
+PRUNE_INTERVAL = 6 * 3600  # Sekunden
 WEEKDAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
 
 
@@ -116,6 +119,14 @@ def top(db: Session, child_id: int, f: LogFilter, today: date, n: int = TOP) -> 
                       .group_by(BlockedEvent.key, BlockedEvent.kind)
                       .order_by(func.count().desc(), func.max(BlockedEvent.at).desc()).limit(n)).all()
     return [TopEntry(*r) for r in rows]
+
+
+def prune(db: Session, now: datetime | None = None) -> int:
+    """Einträge älter als ``RETENTION_DAYS`` löschen (alle Kinder). Gibt die Anzahl zurück."""
+    now = now or datetime.now(timezone.utc).replace(tzinfo=None)
+    n = db.execute(delete(BlockedEvent).where(BlockedEvent.at < now - timedelta(days=RETENTION_DAYS))).rowcount
+    db.commit()
+    return n or 0
 
 
 def users(db: Session, child_id: int) -> list[str]:

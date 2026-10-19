@@ -232,7 +232,7 @@ def child_blocked(child_id: int, request: Request, db: Session = Depends(get_db)
                   days=blocklog.by_day(rows, today), shown=len(rows), total=total,
                   top=blocklog.top(db, child.id, f, today), users=blocklog.users(db, child.id),
                   kinds=blocklog.KINDS, ranges=blocklog.RANGES, statuses=blocklog.STATUSES,
-                  orders=blocklog.ORDERS, page=blocklog.PAGE)
+                  orders=blocklog.ORDERS, page=blocklog.PAGE, retention=blocklog.RETENTION_DAYS)
 
 
 @router.get("/children/{child_id}/stats")

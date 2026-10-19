@@ -39,7 +39,7 @@
       {% if f.active or f.range != "7" or f.order != "new" %}<a href="{{ base }}" class="btn ghost">Zurücksetzen</a>{% endif %}
     </div>
   </form>
-  <p class="muted log-summary">{{ total }} {{ "Eintrag" if total == 1 else "Einträge" }} · {{ ranges[f.range] }}{% if f.kind %} · {{ kinds[f.kind] }}{% endif %}{% if f.q %} · Suche „{{ f.q }}“{% endif %}</p>
+  <p class="muted log-summary" title="Einträge werden nach {{ retention }} Tagen gelöscht">{{ total }} {{ "Eintrag" if total == 1 else "Einträge" }} · {{ ranges[f.range] }}{% if f.kind %} · {{ kinds[f.kind] }}{% endif %}{% if f.q %} · Suche „{{ f.q }}“{% endif %}</p>
 </section>
 
 {% if top and total > 1 %}
