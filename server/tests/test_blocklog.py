@@ -92,6 +92,7 @@ def test_child_page_links_and_limit(client, parent):
              key=f"exe:/usr/bin/p{i}", name=f"Prog{i:02d}")
     page = client.get(f"/children/{cid}").text
     assert "Ganzes Protokoll" in page and "Die letzten 10 Einträge" in page
+    assert f'href="/children/{cid}/protokoll" class="btn secondary">Protokoll</a>' in page   # Kopfzeile
     assert "Prog00" in page and "Prog14" not in page
 
 
