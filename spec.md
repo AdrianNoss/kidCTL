@@ -897,3 +897,4 @@ Verlängerungsanfragen.
   unprivilegierten Namespaces auf dem Entwicklungsrechner: unveränderte Systemdatei erlaubt, andere Datei
   unter demselben Pfad gesperrt.
 - 2026-10-19: Nutzer-Test auf dem Testrechner bestätigt: Heroic mit GOG-Spiel (Proton/umu) startet bei aktiver Programmkontrolle problemlos, keine Einträge unter „Gesperrte Aktionen“ (auch kein `pv-try-setlocale` mehr).
+- 2026-10-19: Nutzer-Test auf dem Testrechner bestätigt: eigene Programme `git` und `fastfetch` über „Programm hinzufügen“ freigegeben, beide funktionieren bei aktiver Programmkontrolle.
