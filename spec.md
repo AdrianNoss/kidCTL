@@ -934,3 +934,4 @@ Verlängerungsanfragen.
   des Entwicklungsrechners nachgeschlagen (Cyberpunk 2077, Nobody Wants to Die). Migration
   `app_usage.name` gegen Kopie der Entwicklungs-DB. Sichttest Statistik (Firefox headless).
   Nicht getestet: echtes Spiel auf dem Testrechner.
+- 2026-10-19: Nutzer-Test auf dem Testrechner bestätigt: Spielzeit je Spiel und „spielt gerade“ funktionieren.
