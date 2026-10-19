@@ -947,3 +947,4 @@ Verlängerungsanfragen.
   sortiert und summiert; Suche; laufende Sitzung; Sperr-Ansicht unverändert; Löschung nach 90 Tagen).
   Neue Tabelle per `create_all` auf der Entwicklungs-DB angelegt. Sichttest mit vorübergehenden
   Sitzungen: hell, dunkel, 420 px (Handy: „Zuletzt“ ausgeblendet, kompakte „läuft“-Pille).
+- 2026-10-19: Nutzer-Test auf dem Testrechner bestätigt: automatische Abmeldung bei abgelaufener Bildschirmzeit funktioniert.
