@@ -19,7 +19,7 @@ from ..models import (
     BlocklistState, Child, DayException, Device, Message, PairingCode, Parent, ParentSession, WeekdayRule,
     utcnow,
 )
-from .. import chat, policy, programs, stats, webfilter
+from .. import blocklog, chat, policy, programs, stats, webfilter
 from .. import lock as lk
 from .. import schedule as sch
 from ..security import (
@@ -107,7 +107,7 @@ def _child_page(request: Request, db: Session, child: Child, status_code: int = 
                   bundles=webfilter.BUNDLES, blocklists=webfilter.BLOCKLISTS,
                   default_lists=webfilter.DEFAULT_LISTS,
                   list_states={s.id: s for s in db.scalars(select(BlocklistState))},
-                  blocked=programs.blocked_log(db, child.id),
+                  blocked=programs.blocked_log(db, child.id, limit=10),
                   rules=sch.rules_by_day(child), groups=sch.GROUPS, weekday_names=sch.WEEKDAY_NAMES,
                   differs=sch.group_differs(child), exceptions=exceptions, today=today,
                   fmt_minutes=sch.fmt_minutes, max_quota=sch.MAX_QUOTA, max_extra=sch.MAX_EXTRA,
@@ -220,6 +220,19 @@ async def child_custom_delete(child_id: int, custom_id: int, db: Session = Depen
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
     return _redirect(f"/children/{child_id}?programs=1#programme")
+
+
+@router.get("/children/{child_id}/protokoll")
+def child_blocked(child_id: int, request: Request, db: Session = Depends(get_db)):
+    child = _get_or_404(db, Child, child_id)
+    f = blocklog.parse(request.query_params)
+    today = sch.today_local()
+    rows, total = blocklog.events(db, child.id, f, today)
+    return render(request, "blocked.html", child=child, f=f, base=f"/children/{child.id}/protokoll",
+                  days=blocklog.by_day(rows, today), shown=len(rows), total=total,
+                  top=blocklog.top(db, child.id, f, today), users=blocklog.users(db, child.id),
+                  kinds=blocklog.KINDS, ranges=blocklog.RANGES, statuses=blocklog.STATUSES,
+                  orders=blocklog.ORDERS, page=blocklog.PAGE)
 
 
 @router.get("/children/{child_id}/stats")

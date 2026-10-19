@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Protokoll {{ child.name }} – KidCTL{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><span class="eyebrow">Gesperrte Aktionen</span><h1>{{ child.name }}</h1></div>
+  <div class="actions">
+    <a href="/children/{{ child.id }}" class="btn secondary">Einstellungen</a>
+    <a href="/children/{{ child.id }}/stats" class="btn secondary">Statistik</a>
+  </div>
+</div>
+
+<section class="card log-filter">
+  <div class="segmented" role="group" aria-label="Art">
+    {% for key, label in kinds.items() %}
+    {% if f.kind == key %}<span class="active">{{ label }}</span>{% else %}<a href="{{ f.url(base, kind=key, limit=page) }}">{{ label }}</a>{% endif %}
+    {% endfor %}
+  </div>
+  <form method="get" action="{{ base }}" class="log-form">
+    {% if f.kind %}<input type="hidden" name="kind" value="{{ f.kind }}">{% endif %}
+    <label class="log-search">Suche
+      <input type="search" name="q" value="{{ f.q }}" maxlength="100" placeholder="Programm, Domain, Pfad …">
+    </label>
+    <label>Zeitraum
+      <select name="range">{% for key, label in ranges.items() %}<option value="{{ key }}"{% if f.range == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    </label>
+    <label>Status
+      <select name="status">{% for key, label in statuses.items() %}<option value="{{ key }}"{% if f.status == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    </label>
+    {% if users | length > 1 or f.user %}
+    <label>Benutzer
+      <select name="user"><option value="">Alle</option>{% for u in users %}<option value="{{ u }}"{% if f.user == u %} selected{% endif %}>{{ u }}</option>{% endfor %}</select>
+    </label>
+    {% endif %}
+    <label>Reihenfolge
+      <select name="order">{% for key, label in orders.items() %}<option value="{{ key }}"{% if f.order == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    </label>
+    <div class="log-buttons">
+      <button type="submit">Anzeigen</button>
+      {% if f.active or f.range != "7" or f.order != "new" %}<a href="{{ base }}" class="btn ghost">Zurücksetzen</a>{% endif %}
+    </div>
+  </form>
+  <p class="muted log-summary">{{ total }} {{ "Eintrag" if total == 1 else "Einträge" }} · {{ ranges[f.range] }}{% if f.kind %} · {{ kinds[f.kind] }}{% endif %}{% if f.q %} · Suche „{{ f.q }}“{% endif %}</p>
+</section>
+
+{% if top and total > 1 %}
+<section class="card">
+  <h2>Häufigste Einträge</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>Programm / Website</th><th class="right">Anzahl</th><th class="right">Zuletzt</th></tr>
+    {% for t in top %}
+    <tr>
+      <td>{% if t.kind == "domain" %}<span class="pill">Website</span> {% endif %}<a href="{{ f.url(base, q=t.key.split(':', 1)[-1], limit=page) }}" title="Nur diesen Eintrag anzeigen">{{ t.name }}</a></td>
+      <td class="num right">{{ t.count }}</td>
+      <td class="num right">{{ t.last | localtime }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+</section>
+{% endif %}
+
+<section class="card">
+  {% for label, events in days %}
+  <div class="log-day">
+    <h3>{{ label }} <span class="log-day-count">{{ events | length }}</span></h3>
+    <div class="scroll">
+    <table class="log-table">
+      <colgroup><col class="c-time"><col><col class="c-user"><col class="c-status"></colgroup>
+      {% for e in events %}
+      <tr>
+        <td class="num log-time">{{ e.at | localtime("%H:%M") }}</td>
+        <td>{% if e.kind == "domain" %}<span class="pill">Website</span> {% endif %}{{ e.name }}{% if e.detail %} <small class="muted">({{ e.detail }})</small>{% endif %}<br><small class="muted log-key">{{ e.key }}</small></td>
+        <td>{{ e.username }}</td>
+        <td class="right">{% if e.audit %}<span class="pill">nur protokolliert</span>{% else %}<span class="pill warn">gesperrt</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    </div>
+  </div>
+  {% else %}
+  <p class="muted">{% if f.active %}Keine Einträge für diese Filter.{% else %}Keine gesperrten Aktionen in diesem Zeitraum.{% endif %}</p>
+  {% endfor %}
+  {% if shown < total %}
+  <a href="{{ f.url(base, limit=f.limit + page) }}" class="btn secondary">{{ "Ältere" if f.order == "new" else "Neuere" }} laden ({{ total - shown }} weitere)</a>
+  {% endif %}
+</section>
+{% endblock %}

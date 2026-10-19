@@ -226,6 +226,12 @@ Verlängerungsanfragen.
     Skriptdateien unter `/usr/lib/kidctl/`.
 - Server: Katalog je Gerät, Freigaben je Kind (`child_program`), Sperrprotokoll (`blocked_event`),
   WebUI-Abschnitt „Programme“ und „Gesperrte Aktionen“ auf der Kind-Seite.
+- **Protokollseite** `/children/<id>/protokoll` (2026-10-19): Filter nach Art (Alle/Programme/
+  Websites), Zeitraum (Heute/7 Tage/30 Tage/Alles; Tagesgrenzen in `TZ_HOME`), Status (gesperrt/nur
+  protokolliert), Benutzer (ab zwei), Freitextsuche (Name, Schlüssel, Detail; ohne Platzhalter),
+  Reihenfolge; Einträge nach Tagen gruppiert, je 200 nachladbar; Kasten „Häufigste Einträge“ im
+  gefilterten Zeitraum (Klick filtert darauf). Alles per GET-Parametern (Links teilbar, ohne
+  JavaScript). Die Kind-Seite zeigt die letzten 10 Einträge mit Links zur Protokollseite.
 - **Eigene Programme** (entschieden 2026-10-18): Eltern tragen im Dialog „Programm hinzufügen“ ein
   Programm ein, das nicht im Katalog steht (Pfad oder Name aus `/usr/bin`, z. B. `git`; optional
   Anzeigename). Es wird sofort freigegeben und erscheint in der Gruppe „Eigene Programme“ (an-/abwählbar,
@@ -898,3 +904,9 @@ Verlängerungsanfragen.
   unter demselben Pfad gesperrt.
 - 2026-10-19: Nutzer-Test auf dem Testrechner bestätigt: Heroic mit GOG-Spiel (Proton/umu) startet bei aktiver Programmkontrolle problemlos, keine Einträge unter „Gesperrte Aktionen“ (auch kein `pv-try-setlocale` mehr).
 - 2026-10-19: Nutzer-Test auf dem Testrechner bestätigt: eigene Programme `git` und `fastfetch` über „Programm hinzufügen“ freigegeben, beide funktionieren bei aktiver Programmkontrolle.
+- 2026-10-19: Protokollseite für gesperrte Aktionen (nur Server). Wunsch des Nutzers: durchsuchbar,
+  nach Tagen, Filter Programme/Websites. Getestet: Server 76 (Art, Zeitraum inkl. Tagesgrenze in
+  Ortszeit, Status, Benutzer, Suche groß/klein und mit `%`/`_`, ungültige Parameter, Reihenfolge,
+  Nachladen, Häufigste, Kind-Seite nur 10 Einträge, fremde Einträge unsichtbar). Sichttest
+  Entwicklungsserver (Firefox headless) mit vorübergehenden Beispieleinträgen: hell, dunkel, 420 px.
+  Offen: keine automatische Löschung alter Einträge (Tabelle wächst; der Agent drosselt Meldungen).

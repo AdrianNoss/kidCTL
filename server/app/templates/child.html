@@ -231,7 +231,15 @@
 </section>
 
 <section class="card">
-  <h2>Gesperrte Aktionen</h2>
+  <div class="card-head">
+    <h2>Gesperrte Aktionen</h2>
+    <div class="actions">
+      <a href="/children/{{ child.id }}/protokoll?kind=program" class="btn ghost small">Programme</a>
+      <a href="/children/{{ child.id }}/protokoll?kind=domain" class="btn ghost small">Websites</a>
+      <a href="/children/{{ child.id }}/protokoll" class="btn secondary small">Ganzes Protokoll</a>
+    </div>
+  </div>
+  {% if blocked %}<p class="muted"><small>Die letzten {{ blocked | length }} Einträge.</small></p>{% endif %}
   {% if blocked %}
   <div class="scroll">
   <table>
