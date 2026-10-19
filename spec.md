@@ -896,3 +896,4 @@ Verlängerungsanfragen.
   Launcher; Laufzeit-Container von Heroic erlaubt, ohne Freigabe gesperrt). Gegentest mit echten
   unprivilegierten Namespaces auf dem Entwicklungsrechner: unveränderte Systemdatei erlaubt, andere Datei
   unter demselben Pfad gesperrt.
+- 2026-10-19: Nutzer-Test auf dem Testrechner bestätigt: Heroic mit GOG-Spiel (Proton/umu) startet bei aktiver Programmkontrolle problemlos, keine Einträge unter „Gesperrte Aktionen“ (auch kein `pv-try-setlocale` mehr).
