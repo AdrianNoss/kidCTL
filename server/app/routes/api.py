@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from kidctl_common import protocol as p
 
-from .. import chat, integrity, nowplaying, policy, programs, stats, webfilter
+from .. import access, chat, integrity, nowplaying, policy, programs, stats, webfilter
 from ..db import SessionLocal, get_db
 from ..models import BlocklistState, Device, DeviceUser, PairingCode, utcnow
 from ..security import (
@@ -168,8 +168,11 @@ async def agent_ws(ws: WebSocket):
 
                 if isinstance(msg, p.Ping):
                     await _send(ws, p.Pong())
-                elif isinstance(msg, (p.ChatSend, p.ExtensionRequest)):
-                    ack, new = chat.receive_from_agent(db, device_id, msg)
+                elif isinstance(msg, (p.ChatSend, p.ExtensionRequest, p.AccessRequest)):
+                    if isinstance(msg, p.AccessRequest):
+                        ack, new = access.receive(db, device_id, msg)
+                    else:
+                        ack, new = chat.receive_from_agent(db, device_id, msg)
                     await _send(ws, ack)
                     if new is not None:
                         await chat.push_to_child(db, new)

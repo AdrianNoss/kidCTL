@@ -237,6 +237,11 @@ Je Kind (Seite des Kindes):
   - **Blacklist**: Sperrlisten, z. B. HaGeZi Multi + NSFW, plus eigene Sperren und Ausnahmen.
   - SafeSearch je Kind.
 - **Statistik**: Nutzung der letzten 14 Tage und Zeit pro Programm.
+- **Freigabe-Anfragen**: Wird ein Programm gesperrt, hat die Meldung beim Kind den Knopf
+  „Freigabe anfragen“. Gesperrte Websites fragt das Kind über das Tray-Menü „Gesperrt – Freigabe
+  anfragen …“ an. Die Anfrage erscheint im Chat (mit Push) mit **Dauerhaft erlauben**, **Nur heute**
+  (gilt bis Mitternacht) oder **Ablehnen**. Dauerhafte Freigaben stehen danach in der Programm- bzw.
+  Website-Liste und lassen sich dort zurücknehmen.
 
 Je Gerät: Alarm, wenn das Gerät länger als X Stunden offline ist (Standard 48 h).
 

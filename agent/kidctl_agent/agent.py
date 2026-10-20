@@ -63,6 +63,7 @@ class Agent:
         self.outbox = Outbox.load()
         self.tray = TrayServer(self, tray_path)
         self.programs = ProgramWatcher(self)
+        self._day = None  # zuletzt gesehener lokaler Tag (Ablauf der Freigaben „nur heute“)
         self.mounts = KidMounts()
         self.dns = DnsFilter()
         self.device = device
@@ -129,6 +130,7 @@ class Agent:
         if delta:
             self._count_apps(counting, now.date(), delta)
         self._collect_blocked_domains()
+        await self._day_changed(now.date())
         # Login-Sperre sofort (auch mit gecachter Policy) – sonst wäre direkt nach dem Booten
         # kurz eine Anmeldung möglich. Gilt auch ohne laufende Sitzung.
         self.loginlock.update({u for u, d in decisions.items() if not d.allowed})
@@ -146,6 +148,18 @@ class Agent:
             self.usage.save()
             self.apptime.prune(now.date())
             self.apptime.save()
+
+    async def _day_changed(self, today) -> None:
+        """Freigaben „nur heute“ laufen um Mitternacht ab (auch offline): Programme neu prüfen
+        (laufende werden beendet), Spielordner und Website-Filter angleichen."""
+        last, self._day = self._day, today
+        if last is None or last == today or self.policy is None:
+            return
+        if any(g.day in (last, today) for c in self.policy.children for g in c.temp_grants):
+            log.info("Tageswechsel: Freigaben „nur heute“ neu angewendet")
+            self.programs.policy_changed()
+            await self.sync_mounts()
+            await self.sync_dns()
 
     async def _tick_loop(self) -> None:
         ready = False
@@ -229,7 +243,8 @@ class Agent:
         if self.policy is None:
             return
         eligible = self.decisions(self.now_local())  # zugeordnete Nicht-Admins
-        children = {c.id: (c.web, {u for u in self.users_of(c.id) if u in eligible})
+        today = self.now_local().date()
+        children = {c.id: (c.web_on(today), {u for u in self.users_of(c.id) if u in eligible})
                     for c in self.policy.children}
         refs = [r for web, _ in children.values() if web.mode == "blacklist" for r in web.lists]
         try:
@@ -281,7 +296,8 @@ class Agent:
         """Von den Eltern freigegebene Programme (auch eigene, nicht im Katalog)."""
         if self.policy is None:
             return set()
-        return {k[4:] for c in self.policy.children for k in c.allowed_programs if k.startswith("exe:")}
+        today = self.now_local().date()
+        return {k[4:] for c in self.policy.children for k in c.programs_on(today) if k.startswith("exe:")}
 
     def app_exes(self) -> set[str]:
         return {a.key[4:] for a in self.apps if a.key.startswith("exe:")}
@@ -427,6 +443,13 @@ class Agent:
                 title, body = "Verlängerung genehmigt", " und ".join(parts) or "Genehmigt."
             else:
                 title, body = "Verlängerung abgelehnt", f"{msg.sender_name} hat die Anfrage abgelehnt."
+        elif (msg.kind == "access_request" and prev is not None and prev.status == "pending"
+              and msg.status in ("approved", "rejected")):
+            if msg.status == "approved":
+                title = "Freigabe erteilt"
+                body = f"„{msg.access_name}“ ist {'heute' if msg.access_scope == 'today' else 'ab jetzt'} erlaubt."
+            else:
+                title, body = "Freigabe abgelehnt", f"„{msg.access_name}“ bleibt gesperrt."
         else:
             return
         users = set(self.users_of(msg.child_id))
@@ -439,6 +462,47 @@ class Agent:
         """Klick auf „Verlängerung anfordern“ in einer Warnung."""
         if not await self.tray.send_to_user(user, t.TrayOpenRequestDialog()):
             log.info("Verlängerung angefordert, aber keine Tray-App von %s verbunden", user)
+
+    def _blocked_items(self, user: str) -> dict[str, t.BlockedItem]:
+        """Kürzlich Gesperrtes aller Linux-User desselben Kindes (Websites laufen unter einem User),
+        mit Status „schon angefragt“."""
+        child_id = self.policy.users[user]
+        out: dict[str, t.BlockedItem] = {}
+        for u in self.users_of(child_id):
+            for item in self.programs.recent_items(u):
+                if item.key not in out or item.last_at > out[item.key].last_at:
+                    out[item.key] = item
+        pending = {m.access_key for m in self.chat.history(child_id)
+                   if m.kind == "access_request" and m.status == "pending"}
+        pending |= {i.key for i in self.outbox.items.values()
+                    if isinstance(i, p.AccessRequest) and self.policy.users.get(i.username) == child_id}
+        return {k: i.model_copy(update={"pending": k in pending}) for k, i in out.items()}
+
+    def tray_blocked(self, user: str) -> t.TrayBlocked:
+        items = sorted(self._blocked_items(user).values(), key=lambda i: i.last_at, reverse=True)
+        return t.TrayBlocked(items=items)
+
+    async def open_access_dialog(self, user: str, key: str) -> None:
+        """Klick auf „Freigabe anfragen“ in der Sperr-Benachrichtigung."""
+        if self.policy is None or user not in self.policy.users:
+            return
+        item = self._blocked_items(user).get(key)
+        if item is None or not await self.tray.send_to_user(user, t.TrayOpenAccessDialog(item=item)):
+            log.info("Freigabe angefragt, aber keine Tray-App von %s verbunden", user)
+
+    async def tray_access(self, user: str, key: str, reason: str) -> tuple[bool, str]:
+        """Freigabe anfragen (nur für kürzlich Gesperrtes; Name/Art aus der eigenen Liste).
+        Rückgabe (online, Fehlertext)."""
+        item = self._blocked_items(user).get(key)
+        if item is None:
+            return self.online, "Dieser Eintrag ist nicht (mehr) in der Liste der Sperren."
+        if item.pending:
+            return self.online, "Schon angefragt – warte auf die Antwort deiner Eltern."
+        self.outbox.add(p.AccessRequest(client_msg_id=new_client_msg_id(), username=user,
+                                        access_kind=item.access_kind, key=item.key, name=item.name[:255],
+                                        reason=reason.strip()))
+        await self.flush_outbox()
+        return self.online, ""
 
     # ---------- Tray-Schnittstelle (für TrayServer) ----------
 

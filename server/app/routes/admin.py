@@ -19,7 +19,7 @@ from ..models import (
     BlocklistState, Child, DayException, Device, Message, PairingCode, Parent, ParentSession, WeekdayRule,
     utcnow,
 )
-from .. import accounts, blocklog, chat, nowplaying, policy, programs, report, stats, webfilter
+from .. import access, accounts, blocklog, chat, nowplaying, policy, programs, report, stats, webfilter
 from .. import lock as lk
 from .. import schedule as sch
 from ..security import (
@@ -364,6 +364,25 @@ async def child_request_decide(child_id: int, msg_id: int, request: Request,
         else:
             chat.decide(db, msg, sess.parent_id, False)
     except sch.ScheduleError as e:
+        db.rollback()
+        return render(request, "chat.html", status_code=400, **_chat_ctx(db, child), error=str(e))
+    await chat.push_to_child(db, msg)
+    if msg.status == "approved":
+        await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
+    return _redirect(f"/children/{child_id}/chat#m{msg.id}")
+
+
+@router.post("/children/{child_id}/access/{msg_id}")
+async def child_access_decide(child_id: int, msg_id: int, request: Request, action: str = Form(...),
+                              sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    """Freigabe-Anfrage: dauerhaft erlauben, nur heute erlauben oder ablehnen."""
+    child = _get_or_404(db, Child, child_id)
+    msg = _get_or_404(db, Message, msg_id)
+    if msg.child_id != child.id or action not in {"permanent", "today", "reject"}:
+        raise HTTPException(404)
+    try:
+        access.decide(db, msg, sess.parent_id, None if action == "reject" else action)
+    except access.AccessError as e:
         db.rollback()
         return render(request, "chat.html", status_code=400, **_chat_ctx(db, child), error=str(e))
     await chat.push_to_child(db, msg)

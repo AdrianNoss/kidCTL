@@ -263,6 +263,17 @@ class GameSession(Base):
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, index=True)
 
 
+class ChildTempGrant(Base):
+    """Freigabe „nur heute“ (Programm oder Website) aus einer Freigabe-Anfrage."""
+    __tablename__ = "child_temp_grant"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    child_id: Mapped[int] = mapped_column(ForeignKey("child.id", ondelete="CASCADE"), index=True)
+    key: Mapped[str] = mapped_column(String(512))   # exe:… | flatpak:… | domain:…
+    day: Mapped[date] = mapped_column(Date)          # lokaler Kalendertag
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class ChildWebBundle(Base):
     """Gewähltes Dienst-Bundle (Whitelist-Modus)."""
     __tablename__ = "child_web_bundle"
@@ -360,3 +371,8 @@ class Message(Base):
     device_id: Mapped[int | None] = mapped_column(
         ForeignKey("device.id", ondelete="SET NULL"), nullable=True)
     client_msg_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Nur für access_request (Freigabe-Anfrage für Programm/Website):
+    access_kind: Mapped[str | None] = mapped_column(String(16), nullable=True)   # program | domain
+    access_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    access_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    access_scope: Mapped[str | None] = mapped_column(String(16), nullable=True)  # permanent | today

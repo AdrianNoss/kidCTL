@@ -363,6 +363,7 @@ class Verdict:
     key: str      # App-Schlüssel für Protokoll/Freigabe
     name: str
     detail: str = ""
+    grantable: bool = True  # False: eine Freigabe von ``key`` würde nichts ändern (keine Anfrage anbieten)
 
 
 def script_arg(interp: str, argv: tuple[str, ...]) -> str | None:
@@ -595,13 +596,13 @@ def classify(info: ProcInfo, allowed: Allowed,
             return None
         if from_steam():
             return steam_blocked()
-        return Verdict(f"exe:{exe}", name, "Container: Datei weicht vom System ab")
+        return Verdict(f"exe:{exe}", name, "Container: Datei weicht vom System ab", grantable=False)
     if allowed.steam_root and path.startswith(allowed.steam_root):
         if not allowed.steam_enabled:
             return steam_blocked()
         if is_steam_process(info, allowed.steam_root) or from_steam() or from_launcher():
             return None
-        return Verdict(f"exe:{path}", os.path.basename(path), "Steam-Bibliothek (über Steam gestartet nötig)")
+        return Verdict(f"exe:{path}", os.path.basename(path), "Steam-Bibliothek (über Steam gestartet nötig)", grantable=False)
 
     if allowed.path_ok(exe):
         return None
@@ -620,7 +621,7 @@ def classify(info: ProcInfo, allowed: Allowed,
         if app is not None and allowed.path_ok(app):
             env = environ() if environ is not None else {}
             if electron_args_unsafe(info) or any(env.get(k) for k in ELECTRON_UNSAFE_ENV):
-                return Verdict(f"exe:{app}", os.path.basename(app), f"Electron mit fremdem Code ({name})")
+                return Verdict(f"exe:{app}", os.path.basename(app), f"Electron mit fremdem Code ({name})", grantable=False)
             return None
         if app is None and any(_allowed_electron_main(a, allowed) for a in chain()):
             return None  # Hilfsprozess (Renderer, GPU, Crashpad) einer erlaubten Electron-App
@@ -648,7 +649,7 @@ def classify(info: ProcInfo, allowed: Allowed,
             reason = interpreter_injection(name, environ() if environ is not None else {}, allowed.home)
             if reason is None:
                 return None
-            return Verdict(f"exe:{real}", os.path.basename(real), f"eingeschleuster Code ({reason})")
+            return Verdict(f"exe:{real}", os.path.basename(real), f"eingeschleuster Code ({reason})", grantable=False)
         return Verdict(f"exe:{real}", os.path.basename(real), f"Skript ({name})")
 
     return Verdict(f"exe:{exe}", name)

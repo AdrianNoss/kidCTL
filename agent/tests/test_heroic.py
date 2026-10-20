@@ -114,7 +114,7 @@ def test_orphaned_launcher_child_keeps_lineage(tmp_path):
     wineserver_child = wineserver.__class__(**{**wineserver.__dict__, "ppid": 50})
     killed = []
 
-    async def notify(*a):
+    async def notify(*a, **kw):
         pass
 
     class FakeAgent:
@@ -289,7 +289,7 @@ def test_short_lived_child_after_parent_exited():
     beendet, gilt dessen gemerkte Kette – auch wenn er selbst ohne Kette erlaubt war (Shell-Skript)."""
     from kidctl_agent.watcher import ProgramWatcher
 
-    async def notify(*a):
+    async def notify(*a, **kw):
         pass
 
     class FakeAgent:

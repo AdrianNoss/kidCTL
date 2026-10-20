@@ -122,6 +122,23 @@ class ExtensionRequest(BaseModel):
     reason: str = Field(min_length=1, max_length=MAX_BODY)
 
 
+AccessKind = Literal["program", "domain"]
+AccessScope = Literal["permanent", "today"]
+
+
+class AccessRequest(BaseModel):
+    """Agent -> Server: Freigabe eines gesperrten Programms bzw. einer Website anfragen (ergänzt
+    2026-10-20). ``key`` wie im Sperrprotokoll (``exe:``/``flatpak:``/``domain:``); Name und Schlüssel
+    stammen aus der Sperrliste des Agenten, nicht aus der Eingabe des Kindes. Grund optional."""
+    type: Literal["access_request"] = "access_request"
+    client_msg_id: str = Field(min_length=8, max_length=64)
+    username: str = Field(max_length=64)
+    access_kind: AccessKind
+    key: str = Field(min_length=5, max_length=512)
+    name: str = Field(min_length=1, max_length=255)
+    reason: str = Field(default="", max_length=MAX_BODY)
+
+
 class ChatSync(BaseModel):
     """Agent -> Server: Verlauf ab ``after_id`` für einen Linux-User anfordern."""
     type: Literal["chat_sync"] = "chat_sync"
@@ -130,7 +147,7 @@ class ChatSync(BaseModel):
 
 
 class Ack(BaseModel):
-    """Server -> Agent: Bestätigung für ``chat_send``/``extension_request``.
+    """Server -> Agent: Bestätigung für ``chat_send``/``extension_request``/``access_request``.
 
     ``ok=False`` mit ``error`` = endgültig abgelehnt (z. B. User keinem Kind zugeordnet);
     der Agent verwirft die Nachricht dann ebenfalls.
@@ -152,7 +169,7 @@ class ChatMessage(BaseModel):
     child_id: int
     from_child: bool
     sender_name: str
-    kind: Literal["text", "extension_request"]
+    kind: Literal["text", "extension_request", "access_request"]
     body: str
     created_at: datetime  # UTC
     request_day: date | None = None
@@ -161,6 +178,11 @@ class ChatMessage(BaseModel):
     status: Literal["pending", "approved", "rejected", "expired"] | None = None
     approved_minutes: int | None = None
     approved_window_end: time | None = None
+    # Nur für access_request (Freigabe-Anfrage):
+    access_kind: AccessKind | None = None
+    access_key: str | None = None
+    access_name: str | None = None
+    access_scope: AccessScope | None = None   # bei Genehmigung: dauerhaft bzw. nur heute
 
 
 # ---------- Policy & Nutzungszeit ----------
@@ -210,6 +232,13 @@ class WebFilter(BaseModel):
     safesearch: bool = True          # Google/Bing/DuckDuckGo SafeSearch, YouTube eingeschränkt
 
 
+class TempGrant(BaseModel):
+    """Freigabe „nur heute“: ``key`` (``exe:``/``flatpak:``/``domain:``) gilt am lokalen Tag ``day`` –
+    der Agent wertet das auch offline aus (Ablauf um Mitternacht)."""
+    key: str = Field(max_length=512)
+    day: date
+
+
 class ChildPolicy(BaseModel):
     id: ChildId
     name: str
@@ -224,6 +253,19 @@ class ChildPolicy(BaseModel):
     locked: bool = False
     locked_until: datetime | None = None
     lock_grace_seconds: int = Field(default=60, ge=0, le=7200)  # Vorwarnung bis zur Abmeldung
+    temp_grants: list[TempGrant] = []  # Freigaben „nur heute“ (ergänzt 2026-10-20)
+
+    def programs_on(self, day: date) -> list[str]:
+        """Freigegebene Programme an ``day``: dauerhafte plus „nur heute“."""
+        return self.allowed_programs + [g.key for g in self.temp_grants
+                                        if g.day == day and not g.key.startswith("domain:")]
+
+    def web_on(self, day: date) -> WebFilter:
+        """Website-Filter an ``day``: Freigaben „nur heute“ zusätzlich in ``allow``."""
+        extra = [g.key[7:] for g in self.temp_grants if g.day == day and g.key.startswith("domain:")]
+        if not extra or self.web.mode == "off":
+            return self.web
+        return self.web.model_copy(update={"allow": sorted(set(self.web.allow) | set(extra))})
 
 
 class Policy(BaseModel):
@@ -343,7 +385,7 @@ class IntegrityReport(BaseModel):
 
 
 AgentMessage = Annotated[
-    Union[Hello, Ping, Pong, ReportUsers, ChatSend, ExtensionRequest, ChatSync, PolicyAck,
+    Union[Hello, Ping, Pong, ReportUsers, ChatSend, ExtensionRequest, AccessRequest, ChatSync, PolicyAck,
           UsageReport, ReportApps, BlockedReport, IntegrityReport, AppUsageReport],
     Field(discriminator="type")]
 ServerMessage = Annotated[

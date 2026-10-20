@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from kidctl_common import protocol as p
 
+from . import access
 from . import lock as lk
 from . import schedule as sch
 from .chat import device_ids_for_child
@@ -54,6 +55,7 @@ def build_policy(db: Session, device_id: int) -> p.Policy:
             locked=lk.is_locked(child),
             lock_grace_seconds=(child.lock_grace_minutes if child.lock_grace_minutes is not None else 1) * 60,
             locked_until=child.locked_until.replace(tzinfo=timezone.utc) if lk.is_locked(child) and child.locked_until else None,
+            temp_grants=access.temp_grants(db, child.id),
         ))
     body = p.Policy(version="", timezone=settings.timezone, users=users, children=children)
     digest = hashlib.sha256(body.model_dump_json(exclude={"version"}).encode()).hexdigest()[:16]

@@ -45,13 +45,13 @@ class UserSession:
             return None
 
     async def notify(self, user: str, uid: int, title: str, body: str, critical: bool = False,
-                     on_action=None) -> None:
-        """KDE-Benachrichtigung. Mit ``on_action`` zusätzlich Knopf „Verlängerung anfordern“;
+                     on_action=None, action: str = "Verlängerung anfordern") -> None:
+        """KDE-Benachrichtigung. Mit ``on_action`` zusätzlich ein Knopf (Beschriftung ``action``);
         ein Klick ruft ``on_action(user)`` auf."""
         args = ["notify-send", "-a", "kidctl", "-i", "chronometer",
                 "-u", "critical" if critical else "normal"]
         if on_action:
-            args += [f"--action={ACTION_REQUEST}=Verlängerung anfordern", "--wait"]
+            args += [f"--action={ACTION_REQUEST}={action}", "--wait"]
         cmd = self._as_user(user, uid, *args, "--", title, body)  # Texte nie als Optionen
         if not cmd or not (proc := await self._spawn(cmd, capture=bool(on_action))):
             return

@@ -117,7 +117,7 @@ class FakeDesktop:
     def __init__(self):
         self.sent = []
 
-    async def notify(self, user, uid, title, body, critical=False, on_action=None):
+    async def notify(self, user, uid, title, body, critical=False, on_action=None, action=None):
         self.sent.append((user, title, body))
 
 
@@ -171,7 +171,9 @@ def test_watcher_enforce_kills_notifies_records():
     w, killed, clock = make_watcher(a, ps)
     asyncio.run(w.scan())
     assert killed == [(2, signal.SIGKILL)]                       # root-Prozess (uid 0) unangetastet
-    assert a.desktop.sent == [(a.user, "Programm gesperrt", "„Konsole“ ist nicht freigegeben. Frag deine Eltern.")]
+    assert a.desktop.sent == [(a.user, "Programm gesperrt",
+                               "„Konsole“ ist nicht freigegeben. Du kannst deine Eltern um Freigabe bitten.")]
+    assert [(i.key, i.name, i.access_kind) for i in w.recent_items(a.user)] == [("exe:/usr/bin/konsole", "Konsole", "program")]
     assert [(e.key, e.name, e.audit) for e in w.pending] == [("exe:/usr/bin/konsole", "Konsole", False)]
     # Erneuter Start desselben Programms kurz danach: wieder beendet, aber keine Meldungsflut
     ps[5] = proc("/usr/bin/konsole", pid=5, uid=a.uid, start=9)

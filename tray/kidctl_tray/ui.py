@@ -9,7 +9,7 @@ from PySide6.QtCore import QEvent, QRect, Qt, QTime, Signal
 from PySide6.QtGui import QColor, QFont, QIcon, QPainter, QPalette, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPlainTextEdit, QPushButton, QSpinBox, QTextBrowser, QTimeEdit, QVBoxLayout, QWidget,
+    QPlainTextEdit, QPushButton, QScrollArea, QSpinBox, QTextBrowser, QTimeEdit, QVBoxLayout, QWidget,
 )
 
 from kidctl_common import tray as t
@@ -105,6 +105,79 @@ class RequestDialog(QDialog):
             self.accept()
 
 
+class AccessDialog(QDialog):
+    """Freigabe für ein gesperrtes Programm bzw. eine Website anfragen; Grund optional."""
+
+    def __init__(self, item: t.BlockedItem, parent=None) -> None:
+        super().__init__(parent)
+        self.item = item
+        self.setWindowTitle("Freigabe anfragen")
+        title = QLabel(f"<b>{html.escape(item.name)}</b> ({texts.kind_label(item.access_kind)})")
+        info = QLabel("Deine Eltern bekommen die Anfrage und können sie dauerhaft oder nur für heute erlauben.")
+        info.setWordWrap(True)
+        self.reason = QPlainTextEdit(placeholderText="Wofür brauchst du das? (freiwillig)")
+        self.reason.setMaximumHeight(90)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Anfragen")
+        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText("Abbrechen")
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        lay = QVBoxLayout(self)
+        for w in (title, info, self.reason, buttons):
+            lay.addWidget(w)
+
+    def request(self) -> t.TrayAccessRequest:
+        return t.TrayAccessRequest(key=self.item.key, reason=self.reason.toPlainText().strip()[:MAX_BODY])
+
+
+class BlockedWindow(QWidget):
+    """Kürzlich gesperrte Programme und Websites mit „Anfragen“ je Eintrag."""
+    requestAccess = Signal(object)   # t.BlockedItem
+    refresh = Signal()
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.setWindowTitle("Gesperrt – Freigabe anfragen")
+        self.resize(420, 460)
+        hint = QLabel("Programme und Websites, die in den letzten 24 Stunden gesperrt wurden. "
+                      "Websites sind je Hauptdomain zusammengefasst.")
+        hint.setWordWrap(True)
+        self.list = QVBoxLayout()
+        self.list.addStretch(1)
+        inner = QWidget()
+        inner.setLayout(self.list)
+        area = QScrollArea(widgetResizable=True)
+        area.setWidget(inner)
+        reload_ = QPushButton("Aktualisieren")
+        reload_.clicked.connect(self.refresh.emit)
+        lay = QVBoxLayout(self)
+        lay.addWidget(hint)
+        lay.addWidget(area, 1)
+        lay.addWidget(reload_)
+        self.items: list[t.BlockedItem] = []
+
+    def set_items(self, items: list[t.BlockedItem]) -> None:
+        self.items = items
+        while self.list.count() > 1:
+            w = self.list.takeAt(0).widget()
+            if w is not None:
+                w.deleteLater()
+        if not items:
+            self.list.insertWidget(0, QLabel("<i>In den letzten 24 Stunden wurde nichts gesperrt.</i>"))
+        for i, item in enumerate(items):
+            row = QWidget()
+            h = QHBoxLayout(row)
+            h.setContentsMargins(0, 2, 0, 2)
+            label = QLabel(f"<b>{html.escape(item.name)}</b><br><small>{html.escape(texts.blocked_line(item))}</small>")
+            label.setWordWrap(True)
+            button = QPushButton("Angefragt" if item.pending else "Anfragen …")
+            button.setEnabled(not item.pending)
+            button.clicked.connect(lambda _=False, it=item: self.requestAccess.emit(it))
+            h.addWidget(label, 1)
+            h.addWidget(button)
+            self.list.insertWidget(i, row)
+
+
 class ChatWindow(QWidget):
     sendText = Signal(str)
     requestExtension = Signal()
@@ -168,6 +241,10 @@ class ChatWindow(QWidget):
             if m.kind == "extension_request":
                 body = (f"<b>Verlängerung: {html.escape(texts.request_summary(m))}</b><br>{body}"
                         f"<br><i>{html.escape(texts.request_status(m))}</i>")
+            elif m.kind == "access_request":
+                what = f"{texts.kind_label(m.access_kind)} {m.access_name or ''}"
+                body = (f"<b>Freigabe: {html.escape(what)}</b>" + (f"<br>{body}" if body else "")
+                        + f"<br><i>{html.escape(texts.access_status(m))}</i>")
             who = "Du" if m.from_child else html.escape(m.sender_name)
             parts.append(
                 f'<table width="100%"><tr><td align="{align}">'

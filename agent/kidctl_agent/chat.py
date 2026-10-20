@@ -14,7 +14,7 @@ CHAT_FILE = "chat.json"
 OUTBOX_FILE = "outbox.json"
 KEEP_MESSAGES = 200  # je Kind
 
-_outbox_item = TypeAdapter(p.ChatSend | p.ExtensionRequest)
+_outbox_item = TypeAdapter(p.ChatSend | p.ExtensionRequest | p.AccessRequest)
 
 NEW, UPDATED = "new", "updated"
 
@@ -64,7 +64,7 @@ class Outbox:
     """Nachrichten/Anfragen des Kindes, bis der Server sie per ``ack`` bestätigt hat."""
 
     def __init__(self) -> None:
-        self.items: dict[str, p.ChatSend | p.ExtensionRequest] = {}
+        self.items: dict[str, p.ChatSend | p.ExtensionRequest | p.AccessRequest] = {}
 
     @classmethod
     def load(cls) -> Outbox:
@@ -77,7 +77,7 @@ class Outbox:
     def save(self) -> None:
         store.save(OUTBOX_FILE, {"items": [i.model_dump(mode="json") for i in self.items.values()]})
 
-    def add(self, item: p.ChatSend | p.ExtensionRequest) -> None:
+    def add(self, item: p.ChatSend | p.ExtensionRequest | p.AccessRequest) -> None:
         self.items[item.client_msg_id] = item
         self.save()
 

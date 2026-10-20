@@ -20,6 +20,8 @@ class AgentClient(QObject):
     messageReceived = Signal(object)     # ChatMessage (neu oder geändert)
     queued = Signal(object)              # t.TrayQueued
     openRequestDialog = Signal()
+    blockedReceived = Signal(list)       # list[t.BlockedItem]
+    openAccessDialog = Signal(object)    # t.BlockedItem
     errorReceived = Signal(str)
 
     def __init__(self, path: str | None = None, parent=None) -> None:
@@ -80,5 +82,9 @@ class AgentClient(QObject):
             self.queued.emit(msg)
         elif isinstance(msg, t.TrayOpenRequestDialog):
             self.openRequestDialog.emit()
+        elif isinstance(msg, t.TrayBlocked):
+            self.blockedReceived.emit(msg.items)
+        elif isinstance(msg, t.TrayOpenAccessDialog):
+            self.openAccessDialog.emit(msg.item)
         elif isinstance(msg, t.TrayError):
             self.errorReceived.emit(msg.message)

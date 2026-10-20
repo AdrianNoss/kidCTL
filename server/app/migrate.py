@@ -47,6 +47,11 @@ COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
     # 2026-10-20: Nutzungsbericht per E-Mail
     ("parent", "report_interval", "VARCHAR(16) NOT NULL DEFAULT ''"),
     ("parent", "report_sent", "VARCHAR(16) NOT NULL DEFAULT ''"),
+    # 2026-10-20: Freigabe-Anfragen für Programme/Websites
+    ("message", "access_kind", "VARCHAR(16)"),
+    ("message", "access_key", "VARCHAR(512)"),
+    ("message", "access_name", "VARCHAR(255)"),
+    ("message", "access_scope", "VARCHAR(16)"),
 ]
 
 

@@ -11,7 +11,7 @@ from kidctl_common import tray as t
 
 from . import texts
 from .client import AgentClient
-from .ui import ChatWindow, RequestDialog, render_icon
+from .ui import AccessDialog, BlockedWindow, ChatWindow, RequestDialog, render_icon
 
 
 class TrayApp:
@@ -20,6 +20,7 @@ class TrayApp:
         self.state: t.TrayState | None = None
         self.client = AgentClient(socket_path)
         self.window = ChatWindow()
+        self.blocked = BlockedWindow()
         self.tray = QSystemTrayIcon(render_icon("…", "offline"))
         self.tray.setToolTip("KidCTL")
 
@@ -29,6 +30,7 @@ class TrayApp:
         self.menu.addSeparator()
         self.menu.addAction("Chat öffnen", self.show_chat)
         self.menu.addAction("Verlängerung anfordern …", self.request_extension)
+        self.menu.addAction("Gesperrt – Freigabe anfragen …", self.show_blocked)
         self.tray.setContextMenu(self.menu)
         self.tray.activated.connect(self._activated)
 
@@ -38,6 +40,10 @@ class TrayApp:
         c.historyReceived.connect(self.window.set_history)
         c.messageReceived.connect(self.window.upsert)
         c.openRequestDialog.connect(self.request_extension)
+        c.blockedReceived.connect(self.blocked.set_items)
+        c.openAccessDialog.connect(self.request_access)
+        self.blocked.requestAccess.connect(self.request_access)
+        self.blocked.refresh.connect(lambda: c.send(t.TrayGetBlocked()))
         c.errorReceived.connect(lambda msg: self.tray.showMessage("KidCTL", msg))
         self.window.sendText.connect(lambda text: c.send(t.TrayChatSend(body=text)))
         self.window.requestExtension.connect(self.request_extension)
@@ -58,6 +64,22 @@ class TrayApp:
             self.client.send(req)
             self.show_chat()
 
+    def show_blocked(self) -> None:
+        self.client.send(t.TrayGetBlocked())
+        self.blocked.show()
+        self.blocked.raise_()
+        self.blocked.activateWindow()
+
+    def request_access(self, item: t.BlockedItem) -> None:
+        if item.pending:
+            self.tray.showMessage("KidCTL", f"„{item.name}“ ist schon angefragt.")
+            return
+        parent = self.blocked if self.blocked.isVisible() else None
+        dlg = AccessDialog(item, parent)
+        if dlg.exec():
+            self.client.send(dlg.request())
+            self.show_chat()
+
     def _connection_changed(self, connected: bool) -> None:
         if not connected:
             self.tray.setIcon(render_icon("…", "offline"))
@@ -69,6 +91,7 @@ class TrayApp:
         if not state.restricted:  # nicht zugeordneter User: nichts anzeigen
             self.tray.hide()
             self.window.hide()
+            self.blocked.hide()
             return
         self.tray.setIcon(render_icon(texts.icon_text(state), texts.level(state)))
         line = texts.status_line(state)

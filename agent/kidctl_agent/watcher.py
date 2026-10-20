@@ -12,9 +12,11 @@ import subprocess
 from datetime import datetime, timezone
 
 from kidctl_common import protocol as p
+from kidctl_common import tray as t
 
 from . import store
 from .accounting import boottime
+from .dnsfilter import site_of
 from .procs import pids_of, read_environ, read_proc
 from .kidmounts import STEAM_ROOT
 from .programs import (MAX_ANCESTORS, Allowed, Verdict, base_paths, classify, closure, group_members, load_base,
@@ -28,6 +30,9 @@ MAX_PENDING = 500
 REPORT_DEDUP = {"audit": 600.0, "enforce": 60.0, "domain": 600.0}  # gleiche Meldung höchstens so oft
 NOTIFY_DEDUP = 60.0
 MAX_FORKS = 65536  # gemerkte Eltern aus fork()-Events (älteste fallen heraus)
+RECENT_SECONDS = 24 * 3600  # gesperrte Einträge für „Freigabe anfragen“ so lange anbieten
+RECENT_MAX = 100            # je User
+NOT_REQUESTABLE = {"DNS-over-HTTPS-Anbieter"}  # Domain-Sperren, die eine Freigabe nicht aufhebt
 # Leere Argumentliste: meist mitten im exec() gelesen -> kurz warten und erneut lesen
 EMPTY_ARGV_RETRIES = 5
 EMPTY_ARGV_DELAY = 0.05  # Sekunden
@@ -53,6 +58,8 @@ class ProgramWatcher:
         self.handled: set[tuple] = set()  # bereits geprüfte Prozesse (ProcInfo.ident)
         self.last_report: dict[tuple[str, str], float] = {}
         self.last_notify: dict[tuple[str, str], float] = {}
+        # Kürzlich Gesperrtes je User (für „Freigabe anfragen“): Schlüssel -> (Eintrag, Zeitpunkt monoton)
+        self.recent: dict[str, dict[str, tuple[t.BlockedItem, float]]] = {}
         self.pending: list[p.BlockedEvent] = [
             p.BlockedEvent.model_validate(e) for e in (store.load(BLOCKED_FILE) or {}).get("events", [])]
         self._targets: dict[int, tuple[str, str, Allowed]] | None = None
@@ -71,7 +78,9 @@ class ProgramWatcher:
             pol = self.agent.policy
             if pol is not None:
                 children = {c.id: c for c in pol.children}
-                eligible = self.agent.decisions(self.agent.now_local())  # ohne Admins
+                now = self.agent.now_local()
+                today = now.date()
+                eligible = self.agent.decisions(now)  # ohne Admins
                 for user, child_id in pol.users.items():
                     child = children.get(child_id)
                     if child is None or child.program_mode == "off" or user not in eligible:
@@ -82,7 +91,7 @@ class ProgramWatcher:
                         continue
                     uid, home = pw.pw_uid, pw.pw_dir
                     out[uid] = (user, child.program_mode,
-                                Allowed(self.spec.globs, set(child.allowed_programs), self.base_exact,
+                                Allowed(self.spec.globs, set(child.programs_on(today)), self.base_exact,
                                         self.spec.excludes, steam_root=f"{STEAM_ROOT}/{user}/",
                                         pkg_dirs=self.pkg_dirs, home=home))
             self._targets = out
@@ -157,7 +166,9 @@ class ProgramWatcher:
                 self.kill(pid, signal.SIGKILL)
             except ProcessLookupError:
                 pass
-            await self._notify(user, info.uid, verdict.key, name)
+            if verdict.grantable:
+                self.remember(user, "program", verdict.key, name)
+            await self._notify(user, info.uid, verdict.key, name, verdict.grantable)
         new = self._record(user, verdict, name, audit=mode != "enforce")
         # Log gedrosselt wie das Protokoll (z. B. Firefox startet viele Prozesse)
         log.log(logging.WARNING if new else logging.DEBUG, "%s: %s (%s%s) von %s, PID %s; Eltern: %s; Aufruf: %s",
@@ -166,13 +177,38 @@ class ProgramWatcher:
                 " ".join(info.argv)[:300])
         return info.ident
 
-    async def _notify(self, user: str, uid: int, key: str, name: str) -> None:
+    async def _notify(self, user: str, uid: int, key: str, name: str, grantable: bool = True) -> None:
         now = self.clock()
         if now - self.last_notify.get((user, key), -1e9) < NOTIFY_DEDUP:
             return
         self.last_notify[(user, key)] = now
+        if not grantable:
+            await self.agent.desktop.notify(user, uid, "Programm gesperrt", f"„{name}“ ist nicht freigegeben.")
+            return
+
+        async def ask(u: str) -> None:
+            await self.agent.open_access_dialog(u, key)
         await self.agent.desktop.notify(user, uid, "Programm gesperrt",
-                                        f"„{name}“ ist nicht freigegeben. Frag deine Eltern.")
+                                        f"„{name}“ ist nicht freigegeben. Du kannst deine Eltern um Freigabe bitten.",
+                                        on_action=ask, action="Freigabe anfragen")
+
+    def remember(self, user: str, kind: str, key: str, name: str) -> None:
+        """Gesperrten Eintrag für „Freigabe anfragen“ merken (Websites je Hauptdomain)."""
+        items = self.recent.setdefault(user, {})
+        old = items.pop(key, None)
+        item = t.BlockedItem(access_kind=kind, key=key, name=name, last_at=datetime.now(timezone.utc),
+                             count=old[0].count + 1 if old else 1)
+        items[key] = (item, self.clock())
+        while len(items) > RECENT_MAX:
+            del items[next(iter(items))]
+
+    def recent_items(self, user: str) -> list[t.BlockedItem]:
+        """Kürzlich Gesperrtes, neuestes zuerst (ältere als ``RECENT_SECONDS`` entfallen)."""
+        now = self.clock()
+        items = self.recent.get(user, {})
+        for key in [k for k, (_i, at) in items.items() if now - at > RECENT_SECONDS]:
+            del items[key]
+        return [i for i, _at in sorted(items.values(), key=lambda x: -x[1])]
 
     def _record(self, user: str, verdict, name: str, audit: bool, kind: str = "program") -> bool:
         """Ins Protokoll aufnehmen (gedrosselt je User + Schlüssel). True = neu aufgenommen."""
@@ -228,6 +264,9 @@ class ProgramWatcher:
         return {user for user, _mode, _allowed in self.targets().values()}
 
     def record_domain(self, user: str, domain: str, detail: str) -> bool:
+        if detail not in NOT_REQUESTABLE:
+            site = site_of(domain)
+            self.remember(user, "domain", f"domain:{site}", site)
         return self._record(user, Verdict(f"domain:{domain}", domain, detail), domain, audit=False, kind="domain")
 
     # ---------- Basisliste aus der Paketkette ----------

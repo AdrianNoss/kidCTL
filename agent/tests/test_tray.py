@@ -28,7 +28,7 @@ class FakeDesktop:
     def __init__(self):
         self.sent = []
 
-    async def notify(self, user, uid, title, body, critical=False, on_action=None):
+    async def notify(self, user, uid, title, body, critical=False, on_action=None, action=None):
         self.sent.append((user, title, body))
 
     async def logout(self, user, uid):

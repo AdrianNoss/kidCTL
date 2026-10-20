@@ -1,6 +1,6 @@
 {% if not messages %}<p class="muted">Noch keine Nachrichten.</p>{% endif %}
 {% for m in messages %}
-<div class="msg {{ 'from-child' if m.from_child else 'from-parent' }}{% if m.kind == 'extension_request' %} request{% endif %}" id="m{{ m.id }}">
+<div class="msg {{ 'from-child' if m.from_child else 'from-parent' }}{% if m.kind in ('extension_request', 'access_request') %} request{% endif %}" id="m{{ m.id }}">
   <div class="meta">{{ sender_name(m) }} · {{ m.created_at | localtime }}</div>
   {% if m.kind == "extension_request" %}
     {% set day = weekday_names[m.request_day.weekday()][:2] ~ " " ~ m.request_day.strftime("%d.%m.") %}
@@ -41,6 +41,25 @@
     <div><span class="pill warn">Abgelehnt</span></div>
     {% elif m.status == "expired" %}
     <div><span class="pill">Verfallen (Tag vorbei)</span></div>
+    {% endif %}
+  {% elif m.kind == "access_request" %}
+    <div><strong>Freigabe-Anfrage:</strong> {% if m.access_kind == "domain" %}<span class="pill">Website</span>{% else %}<span class="pill">Programm</span>{% endif %}
+      {{ m.access_name }}{% if m.access_kind != "domain" %} <small class="muted log-key">{{ m.access_key }}</small>{% endif %}</div>
+    {% if m.body %}<div class="body">„{{ m.body }}“</div>{% endif %}
+    {% if m.status == "pending" %}
+    <div class="actions">
+      {% for action, label, cls in [("permanent", "Dauerhaft erlauben", "small"), ("today", "Nur heute", "small secondary"), ("reject", "Ablehnen", "small danger")] %}
+      <form method="post" action="/children/{{ child.id }}/access/{{ m.id }}" class="inline">
+        <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+        <input type="hidden" name="action" value="{{ action }}">
+        <button type="submit" class="{{ cls }}">{{ label }}</button>
+      </form>
+      {% endfor %}
+    </div>
+    {% elif m.status == "approved" %}
+    <div><span class="pill ok">{{ "Heute erlaubt" if m.access_scope == "today" else "Dauerhaft erlaubt" }}</span>{% if m.access_scope == "permanent" %} <span class="muted">– zurücknehmen unter {{ "Websites" if m.access_kind == "domain" else "Programme" }} in den Einstellungen</span>{% endif %}</div>
+    {% elif m.status == "rejected" %}
+    <div><span class="pill warn">Abgelehnt</span></div>
     {% endif %}
   {% else %}
     <div class="body">{{ m.body }}</div>

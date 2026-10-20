@@ -73,6 +73,18 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 _opener = urllib.request.build_opener(_NoRedirect)
 
 
+# Zweite Ebene unter Länder-Domains, z. B. co.uk, com.au (ohne Public-Suffix-Liste: Näherung)
+_SECOND_LEVEL = {"co", "com", "org", "net", "gov", "ac", "edu", "or", "ne", "go"}
+
+
+def site_of(name: str) -> str:
+    """Hauptdomain zum Zusammenfassen/Anfragen: „img.cdn.example.com“ -> „example.com“,
+    „news.bbc.co.uk“ -> „bbc.co.uk“."""
+    parts = name.strip(".").lower().split(".")
+    n = 3 if len(parts) >= 3 and len(parts[-1]) == 2 and parts[-2] in _SECOND_LEVEL else 2
+    return ".".join(parts[-n:])
+
+
 def covered(name: str, domains: set[str]) -> bool:
     """``name`` ist ``domains`` oder Subdomain davon."""
     parts = name.split(".")

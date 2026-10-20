@@ -32,6 +32,8 @@ def to_wire(db: Session, msg: Message) -> p.ChatMessage:
         request_day=msg.request_day, requested_minutes=msg.requested_minutes,
         requested_window_end=msg.requested_window_end, status=msg.status,
         approved_minutes=msg.approved_minutes, approved_window_end=msg.approved_window_end,
+        access_kind=msg.access_kind, access_key=msg.access_key, access_name=msg.access_name,
+        access_scope=msg.access_scope,
     )
 
 
@@ -70,12 +72,16 @@ def expire_stale_requests(db: Session) -> None:
 
 
 def pending_count(db: Session) -> dict[int, int]:
-    """Offene Anfragen je Kind (für Übersicht/Navigation)."""
-    return dict(db.execute(
+    """Offene Anfragen je Kind (Verlängerungen und Freigaben; für Übersicht/Navigation)."""
+    out = dict(db.execute(
         select(Message.child_id, func.count()).where(
             Message.kind == "extension_request", Message.status == "pending",
             Message.request_day >= sch.today_local())
         .group_by(Message.child_id)).all())
+    for child_id, n in db.execute(select(Message.child_id, func.count()).where(
+            Message.kind == "access_request", Message.status == "pending").group_by(Message.child_id)):
+        out[child_id] = out.get(child_id, 0) + n
+    return out
 
 
 def notify_parents_new(db: Session, msg: Message) -> None:
@@ -88,6 +94,10 @@ def notify_parents_new(db: Session, msg: Message) -> None:
         if msg.requested_window_end:
             parts.append(f"bis {msg.requested_window_end:%H:%M} Uhr")
         title, body = f"{name} bittet um Verlängerung ({', '.join(parts)})", msg.body
+    elif msg.kind == "access_request":
+        what = "die Website" if msg.access_kind == "domain" else "das Programm"
+        title = f"{name} bittet um Freigabe: {msg.access_name}"
+        body = msg.body or f"Anfrage für {what} {msg.access_name}"
     else:
         title, body = f"Nachricht von {name}", msg.body
     push.notify_parents(title, body, url=f"/children/{msg.child_id}/chat#m{msg.id}",

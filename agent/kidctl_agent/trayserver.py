@@ -130,3 +130,12 @@ class TrayServer:
                 return
             online = await self.handler.tray_request(user, msg)
             await self._send(client, t.TrayQueued(kind="extension_request", online=online))
+        elif isinstance(msg, t.TrayGetBlocked):
+            await self._send(client, self.handler.tray_blocked(user))
+        elif isinstance(msg, t.TrayAccessRequest):
+            online, error = await self.handler.tray_access(user, msg.key, msg.reason)
+            if error:
+                await self._send(client, t.TrayError(message=error))
+            else:
+                await self._send(client, t.TrayQueued(kind="access_request", online=online))
+                await self._send(client, self.handler.tray_blocked(user))

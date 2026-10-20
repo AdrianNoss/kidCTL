@@ -84,3 +84,21 @@ def request_status(m: ChatMessage) -> str:
         return "✔ Genehmigt" + (f": {' und '.join(parts)}" if parts else "")
     return {"pending": "⏳ Wartet auf Antwort", "rejected": "✘ Abgelehnt",
             "expired": "Verfallen (Tag vorbei)"}.get(m.status or "", "")
+
+
+def kind_label(kind: str | None) -> str:
+    return "Website" if kind == "domain" else "Programm"
+
+
+def access_status(m: ChatMessage) -> str:
+    if m.status == "approved":
+        return "✔ Heute erlaubt" if m.access_scope == "today" else "✔ Dauerhaft erlaubt"
+    return {"pending": "⏳ Wartet auf Antwort", "rejected": "✘ Abgelehnt"}.get(m.status or "", "")
+
+
+def blocked_line(item: t.BlockedItem) -> str:
+    """„Website · zuletzt 14:03 · 3×“"""
+    parts = [kind_label(item.access_kind), f"zuletzt {local_time(item.last_at)}"]
+    if item.count > 1:
+        parts.append(f"{item.count}×")
+    return " · ".join(parts)

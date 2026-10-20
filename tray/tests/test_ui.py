@@ -133,3 +133,41 @@ def test_chat_bubbles_readable_in_light_and_dark(qapp, base, text, highlight):
     own, other, fg = bubble_colors(pal)
     assert fg == text
     assert _contrast(own, fg) >= 4.5 and _contrast(other, fg) >= 4.5
+
+
+def test_access_flow(qapp, tmp_path, monkeypatch):
+    agent = FakeAgent(str(tmp_path / "tray2.sock"))
+    tray = app_mod.TrayApp(qapp, str(tmp_path / "tray2.sock"))
+    assert spin(lambda: agent.lines)
+    agent.push(t.TrayState(restricted=True, child_name="Max", allowed=True, remaining_seconds=3600, online=True))
+    assert spin(lambda: tray.state is not None)
+    at = datetime(2026, 10, 20, 14, 3, tzinfo=timezone.utc)
+    items = [t.BlockedItem(access_kind="domain", key="domain:youtube.com", name="youtube.com", last_at=at, count=3),
+             t.BlockedItem(access_kind="program", key="exe:/usr/bin/krita", name="Krita", last_at=at, pending=True)]
+
+    # Menü „Gesperrt“: Liste anfordern und anzeigen
+    tray.show_blocked()
+    assert spin(lambda: {"type": "get_blocked"} in agent.lines)
+    agent.push(t.TrayBlocked(items=items))
+    assert spin(lambda: tray.blocked.items == items)
+    buttons = tray.blocked.findChildren(QtWidgets.QPushButton)
+    texts_ = {b.text(): b.isEnabled() for b in buttons}
+    assert texts_["Anfragen …"] is True and texts_["Angefragt"] is False
+
+    # Benachrichtigung „Freigabe anfragen“ -> Dialog mit optionalem Grund -> access_request
+    def fake_exec(self):
+        self.reason.setPlainText("Erklärvideo")
+        return True
+    monkeypatch.setattr(app_mod.AccessDialog, "exec", fake_exec)
+    agent.push(t.TrayOpenAccessDialog(item=items[0]))
+    assert spin(lambda: any(line.get("type") == "access_request" for line in agent.lines))
+    assert {"type": "access_request", "key": "domain:youtube.com", "reason": "Erklärvideo"} in agent.lines
+
+    # Entscheidung im Verlauf
+    agent.push(t.TrayChatMessage(message=msg(3, from_child=True, kind="access_request", body="Erklärvideo",
+                                             status="approved", access_kind="domain", access_key="domain:youtube.com",
+                                             access_name="youtube.com", access_scope="today")))
+    assert spin(lambda: 3 in tray.window.messages)
+    assert "Freigabe: Website youtube.com" in tray.window.view.toPlainText()
+    assert "Heute erlaubt" in tray.window.view.toPlainText()
+    tray.blocked.close()

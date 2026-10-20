@@ -404,6 +404,23 @@ Verlängerungsanfragen.
 - Eltern-WebUI aktualisiert den Chat per Polling (5 s).
 - Verlängerungsanfragen für vergangene Tage verfallen automatisch (Status `expired`).
 - Gleichzeitige Entscheidungen zweier Eltern: nur die erste wird übernommen.
+- **Freigabe-Anfragen** (entschieden 2026-10-20): Das Kind bittet um Freigabe eines gesperrten
+  Programms oder einer Website; Eltern antworten mit **Dauerhaft erlauben**, **Nur heute** oder
+  **Ablehnen** (Chat-Eintrag `access_request`, Push an alle Eltern).
+  - Programme: Sperr-Benachrichtigung mit Knopf „Freigabe anfragen“ (nur, wenn eine Freigabe die Sperre
+    auch aufhebt – nicht bei Container-Abweichung, eingeschleustem Code, Steam-Bibliothek ohne Steam).
+  - Websites: Tray-Menü „Gesperrt – Freigabe anfragen …“ listet die in den letzten 24 h gesperrten
+    Programme und Websites (Websites je Hauptdomain zusammengefasst, Näherung ohne Public-Suffix-Liste;
+    ohne DoH-Anbieter und Werbe-/Tracker-Listen, die nicht protokolliert werden).
+  - Grund optional (Dialog in der Tray-App). Anfragbar ist nur, was der Agent selbst gesperrt hat;
+    Name und Schlüssel stammen aus seiner Liste, nicht aus der Eingabe. Je Kind und Schlüssel höchstens
+    eine offene Anfrage.
+  - Dauerhaft: Katalog-App -> Programmfreigabe; anderes Programm -> „Eigene Programme“; Website ->
+    erlaubte Domain inkl. Subdomains (eigene Sperre derselben Domain wird entfernt).
+  - Nur heute: `child_temp_grant` (lokaler Tag), in der Policy als `temp_grants`. Der Agent wendet sie
+    nur am jeweiligen Tag an und läuft um Mitternacht auch offline ab: Programme werden neu geprüft (noch
+    laufende danach beendet), Spielordner und Website-Filter angeglichen.
+  - Server zuerst aktualisieren: ältere Server lehnen die neue Nachricht `access_request` ab.
 
 ## Eltern-Accounts & Sicherheit
 
@@ -1011,3 +1028,15 @@ Verlängerungsanfragen.
   wiederverwendeter PID gesperrt; begrenzte fork-Tabelle; Container-Ausschlüsse im Paket). Probe auf
   dem Entwicklungsrechner (nur lesend): +10 Programme aus Sitzungsdiensten (u. a. kdeconnectd,
   kded5, mpris-proxy), keine Apps/Shells/nspawn. Netlink-fork-Events nicht auf echtem System getestet.
+- 2026-10-20: Freigabe-Anfragen für gesperrte Programme und Websites (Server + Agent/Tray 0.24.0).
+  Entscheidungen des Nutzers: Antworten „Dauerhaft / Nur heute / Ablehnen“, Websites über eine Liste
+  im Tray, Grund optional. Protokoll abwärtskompatibel ergänzt (`access_request`, Felder an
+  `chat_message`, `temp_grants` in der Policy; Version bleibt 1). Getestet: Server 98 grün (neu:
+  Schlüsselprüfung, Duplikate/offene Anfrage, ungültiger Schlüssel, Ablehnen, doppelte Entscheidung,
+  dauerhaft für Katalog-App/eigenes Programm/Website inkl. Entfernen der eigenen Sperre, „nur heute“
+  in der Policy und nur am Tag gültig), Agent 182 grün (neu: Hauptdomain, Sperrliste inkl. Zählung und
+  DoH-Ausschluss, Tray-Anfrage mit Grund, „schon angefragt“, nicht anfragbarer Schlüssel, Status aus
+  Chat, Dialog aus der Benachrichtigung, Meldung bei Entscheidung, Ablauf um Mitternacht, nicht
+  freigebbare Sperren), Tray 8 grün mit PySide6 in temporärer venv (neu: Liste, Dialog, Verlauf).
+  Sichtprüfung Tray-Fenster hell/dunkel (offscreen) und Chat-Seite im WebUI (Firefox headless).
+  Auf echtem Kinderrechner nicht getestet.

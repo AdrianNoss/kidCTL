@@ -84,7 +84,7 @@ def test_netlink_fork_events():
 def _watcher(ps):
     killed = []
 
-    async def notify(*a):
+    async def notify(*a, **kw):
         pass
 
     class FakeAgent:
