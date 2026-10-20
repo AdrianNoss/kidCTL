@@ -383,5 +383,6 @@ def test_compute_base_uses_groups(monkeypatch, tmp_path):
         return subprocess.CompletedProcess(cmd, 0, out, "")
     monkeypatch.setattr(watcher.subprocess, "run", fake_run)
     monkeypatch.setattr(watcher, "base_paths", lambda files, app_exes, excludes: frozenset(files))
-    assert watcher._compute_base([], set(), [], ["plasma"]) == {str(exe)}
+    monkeypatch.setattr(watcher, "service_exes", lambda: {"/usr/bin/kdeconnectd"})
+    assert watcher._compute_base([], set(), [], ["plasma"]) == {str(exe), "/usr/bin/kdeconnectd"}
     assert calls[1][:2] == ["pacman", "-Qlq"] and set(calls[1][2:]) == {"powerdevil", "kidletime"}

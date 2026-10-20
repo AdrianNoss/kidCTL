@@ -18,7 +18,7 @@ from .accounting import boottime
 from .procs import pids_of, read_environ, read_proc
 from .kidmounts import STEAM_ROOT
 from .programs import (MAX_ANCESTORS, Allowed, Verdict, base_paths, classify, closure, group_members, load_base,
-                       package_dirs, parse_pacman_qi)
+                       package_dirs, parse_pacman_qi, service_exes)
 
 log = logging.getLogger("kidctl.programs")
 
@@ -27,6 +27,7 @@ PACMAN_DB = "/var/lib/pacman/local"
 MAX_PENDING = 500
 REPORT_DEDUP = {"audit": 600.0, "enforce": 60.0, "domain": 600.0}  # gleiche Meldung höchstens so oft
 NOTIFY_DEDUP = 60.0
+MAX_FORKS = 65536  # gemerkte Eltern aus fork()-Events (älteste fallen heraus)
 # Leere Argumentliste: meist mitten im exec() gelesen -> kurz warten und erneut lesen
 EMPTY_ARGV_RETRIES = 5
 EMPTY_ARGV_DELAY = 0.05  # Sekunden
@@ -43,6 +44,9 @@ class ProgramWatcher:
         # Electron): Verwaiste Prozesse (z. B. wineserver) behalten sie bei erneuter Prüfung
         self.lineage: dict[tuple[int, int], tuple] = {}
         self._seen: set[tuple[int, int]] = set()  # Abstammungen, die schon einen Scan überstanden haben
+        # Kind-PID -> Eltern-PID beim fork() (Netlink): Die echte Abstammung bleibt erhalten, auch wenn der
+        # Elternprozess endet und das Kind an einen Subreaper (systemd --user) umgehängt wird
+        self.forks: dict[int, int] = {}
         self._pacman_mtime: float | None = None
         self._pkg_input: frozenset[str] = frozenset()  # Programme, für die pkg_dirs berechnet sind
         self.names: dict[str, str] = {}             # App-Schlüssel -> Anzeigename (aus .desktop)
@@ -107,6 +111,14 @@ class ProgramWatcher:
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
 
+    def on_fork(self, parent: int, child: int) -> None:
+        """Netlink-Callback: Elternprozess merken (PID-Wiederverwendung überschreibt den Eintrag)."""
+        forks = self.forks
+        forks.pop(child, None)
+        forks[child] = parent
+        if len(forks) > MAX_FORKS:
+            del forks[next(iter(forks))]
+
     async def check_pid(self, pid: int) -> tuple | None:
         targets = self.targets()
         if not targets:
@@ -148,9 +160,10 @@ class ProgramWatcher:
             await self._notify(user, info.uid, verdict.key, name)
         new = self._record(user, verdict, name, audit=mode != "enforce")
         # Log gedrosselt wie das Protokoll (z. B. Firefox startet viele Prozesse)
-        log.log(logging.WARNING if new else logging.DEBUG, "%s: %s (%s%s) von %s, PID %s; Eltern: %s",
+        log.log(logging.WARNING if new else logging.DEBUG, "%s: %s (%s%s) von %s, PID %s; Eltern: %s; Aufruf: %s",
                 "Gesperrt" if mode == "enforce" else "Protokolliert (würde sperren)", name, verdict.key,
-                f", {verdict.detail}" if verdict.detail else "", user, pid, _describe(info, ancestors()))
+                f", {verdict.detail}" if verdict.detail else "", user, pid, _describe(info, ancestors()),
+                " ".join(info.argv)[:300])
         return info.ident
 
     async def _notify(self, user: str, uid: int, key: str, name: str) -> None:
@@ -180,23 +193,35 @@ class ProgramWatcher:
         store.save(BLOCKED_FILE, {"events": [e.model_dump(mode="json") for e in self.pending]})
 
     def _ancestors(self, info):
-        """Elternkette; bei gemerkter Abstammung (des Prozesses oder eines Vorfahren) die damalige."""
+        """Elternkette; bei gemerkter Abstammung (des Prozesses oder eines Vorfahren) die damalige.
+        Eltern laut fork()-Event haben Vorrang vor ``ppid`` (nach Umhängen an einen Subreaper)."""
         if (saved := self.lineage.get((info.pid, info.start))) is not None:
             yield from saved
             return
-        pid = info.ppid
-        while pid > 1:
-            parent = self.read(pid)
-            if parent is None:
-                # schon beendet: gemerkte Kette dieses Elternprozesses (PID-Wiederverwendung ist in
-                # dem kurzen Fenster ausgeschlossen – das Kind hing eben noch an ihm)
-                yield from next((c for (p, _), c in self.lineage.items() if p == pid), ())
+        child_start = info.start
+        pid = self.forks.get(info.pid, info.ppid)
+        for _ in range(2 * MAX_ANCESTORS):
+            if pid <= 1:
                 return
+            parent = self.read(pid)
+            if parent is None or parent.start > child_start:
+                # schon beendet: gemerkte Kette dieses Elternprozesses (PID-Wiederverwendung ist in
+                # dem kurzen Fenster ausgeschlossen – das Kind hing eben noch an ihm), sonst über
+                # dessen fork()-Eltern weiter (z. B. beendete Subshell eines Skripts)
+                saved = next((c for (p, _), c in self.lineage.items() if p == pid), None)
+                if saved is not None:
+                    yield from saved
+                    return
+                if pid not in self.forks:
+                    return
+                pid = self.forks[pid]
+                continue
             yield parent
             if (saved := self.lineage.get((parent.pid, parent.start))) is not None:
                 yield from saved
                 return
-            pid = parent.ppid
+            child_start = parent.start
+            pid = self.forks.get(parent.pid, parent.ppid)
 
     def users(self) -> set[str]:
         """Kinder mit Programmkontrolle (für noexec-Home und Steam-Bibliothek)."""
@@ -268,7 +293,9 @@ def _compute_base(packages: list[str], app_exes: set[str], excludes: list[str],
     ql = subprocess.run(["pacman", "-Qlq", *pkgs], capture_output=True, text=True, env=env, check=True,
                         timeout=60)
     files = [f for f in ql.stdout.split() if os.path.isfile(f) and os.access(f, os.X_OK)]
-    return base_paths(files, app_exes, excludes)
+    services = service_exes()
+    log.info("Basisliste: %d Programme aus Sitzungsdiensten (Autostart, D-Bus, systemd --user)", len(services))
+    return base_paths(files + sorted(services), app_exes, excludes)
 
 
 def _compute_pkg_dirs(app_exes: set[str]) -> dict[str, tuple[str, ...]]:

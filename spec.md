@@ -200,8 +200,15 @@ Verlängerungsanfragen.
     kded, kwalletd, powerdevil, baloo, kactivitymanagerd mussten sonst einzeln freigegeben werden;
     `socat`/`filan`/`procan` ausgeschlossen), ohne Programme mit sichtbarem
     .desktop-Eintrag (= Apps, Eltern-Entscheidung), ohne Shells/Interpreter/Terminals und ohne
-    dynamischen Loader (`ld-linux*`, startet sonst beliebige Programme). Neu berechnet beim Start
-    und nach pacman-Updates. Ist sie leer (Fehler), wird nur protokolliert – nie die Sitzung zerstört.
+    dynamischen Loader (`ld-linux*`, startet sonst beliebige Programme; erlaubt nur im reinen
+    Prüfmodus von `ldd`: `--verify`/`--list` bzw. `LD_TRACE_LOADED_OBJECTS`). Dazu (ergänzt
+    2026-10-20) automatisch Programme, die installierte Pakete als Hintergrunddienst der Sitzung
+    eintragen: `Exec=` aus `/etc/xdg/autostart/*.desktop` und `/usr/share/dbus-1/services/*.service`,
+    `ExecStart=` aus `/usr/lib/systemd/user` und `/etc/systemd/user` – nur root-eigene, nicht
+    fremd-beschreibbare Dateien, nie Autostart/Units aus dem Home; gleiche Ausnahmen wie oben,
+    zusätzlich `systemd-nspawn`/`-vmspawn`/`systemd-run`. Bewusst **nicht** über die Elternkette
+    („von systemd --user gestartet“): Das Kind kann per `systemd-run --user`/D-Bus selbst so starten.
+    Neu berechnet beim Start und nach pacman-Updates. Ist sie leer (Fehler), wird nur protokolliert – nie die Sitzung zerstört.
   - Programmliste im WebUI gruppiert nach freedesktop-Kategorien (entschieden 2026-10-16): Spiele,
     Lernen, Internet & Kommunikation, Büro, Grafik, Musik & Video, Entwicklung, Werkzeuge,
     System & Einstellungen (standardmäßig eingeklappt), Sonstiges, Nicht mehr installiert; erste
@@ -326,7 +333,10 @@ Verlängerungsanfragen.
 - **Abstammung gemerkt:** Für Prozesse, die nur über ihre Elternkette erlaubt sind (Steam,
   Launcher, Electron-Hilfsprozesse), merkt sich der Agent die Kette beim Start. Verwaiste Prozesse
   (z. B. `wineserver`) werden nach einer Policy-Änderung so nicht beendet; wird die Freigabe
-  entzogen, schon.
+  entzogen, schon. Zusätzlich (2026-10-20) merkt sich der Agent aus Netlink-`fork`-Events den echten
+  Elternprozess jeder PID (begrenzt auf 65 536 Einträge): Endet der Elternprozess und wird das Kind an
+  einen Subreaper (`systemd --user`) umgehängt, oder ist er bei der Prüfung schon beendet, folgt die
+  Kette den fork-Eltern weiter (PID-Wiederverwendung: Vorfahr muss vor dem Kind gestartet sein).
 
 ## Website-Filter
 
@@ -988,3 +998,16 @@ Verlängerungsanfragen.
   Postfächer/Mailprogramme nicht getestet.
 - 2026-10-20: Nutzer-Test Nutzungsbericht: „Jetzt senden“ über den echten SMTP-Server, Mail kommt an und
   wird korrekt dargestellt.
+- 2026-10-20: Fehlsperren beim Plasma-Start beseitigt (Meldung Nutzer: `kdeconnectd`, `obexd`,
+  `arch-update-tray`, `srt-logger`, `which`, `ld-linux-x86-64.so.2`, `socat1` bei jedem Login).
+  Ursachen laut Journal: Autostart-/User-Dienste außerhalb der Plasma-Paketkette; `srt-logger` an
+  `systemd --user` umgehängt (Subshell von `steam.sh` beendet) und `which` mit beendetem
+  Elternprozess; `ldd` aus einem Plasma-Widget. Änderungen: Sitzungsdienste als Basis (siehe
+  Programm-Whitelist), fork-Abstammung, `ldd`-Prüfmodus, `/usr/bin/which` in der Basisliste,
+  Aufrufzeile im Journal bei jeder Sperre. `socat1` (bash ← systemd --user) bleibt gesperrt, Herkunft
+  noch offen. Getestet: Agent-Tests 176 grün (neu: Dienstdateien inkl. Hidden, Desktop-Actions,
+  env-Präfix, fremder Besitzer/fremd-beschreibbar; Filter wie Basis; Loader nur im Prüfmodus;
+  Netlink-fork-Parser ohne Threads; umgehängter `srt-logger` erlaubt, ohne fork-Wissen bzw. mit
+  wiederverwendeter PID gesperrt; begrenzte fork-Tabelle; Container-Ausschlüsse im Paket). Probe auf
+  dem Entwicklungsrechner (nur lesend): +10 Programme aus Sitzungsdiensten (u. a. kdeconnectd,
+  kded5, mpris-proxy), keine Apps/Shells/nspawn. Netlink-fork-Events nicht auf echtem System getestet.

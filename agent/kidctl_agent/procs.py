@@ -139,6 +139,7 @@ NETLINK_CONNECTOR = 11
 CN_IDX_PROC = 1
 CN_VAL_PROC = 1
 PROC_CN_MCAST_LISTEN = 1
+PROC_EVENT_FORK = 0x00000001
 PROC_EVENT_EXEC = 0x00000002
 NLMSG_DONE = 3
 
@@ -148,10 +149,11 @@ _PROC_EVENT = struct.Struct("=IIQ")    # what, cpu, timestamp_ns
 
 
 class ProcEvents:
-    """Ruft ``on_exec(pid)`` bei jedem exec() auf. Ohne Berechtigung: inaktiv (Scan genügt)."""
+    """Ruft ``on_exec(pid)`` bei jedem exec() und ``on_fork(eltern, kind)`` bei jedem neuen Prozess auf.
+    Ohne Berechtigung: inaktiv (Scan genügt)."""
 
-    def __init__(self, on_exec) -> None:
-        self.on_exec = on_exec
+    def __init__(self, on_exec, on_fork=None) -> None:
+        self.on_exec, self.on_fork = on_exec, on_fork
         self.sock: socket.socket | None = None
 
     def start(self) -> bool:
@@ -184,12 +186,20 @@ class ProcEvents:
             except OSError as e:  # z. B. ENOBUFS bei Überlast – Scan fängt Verpasstes
                 log.debug("Netlink: %s", e)
                 return
-            for pid in parse_exec_events(data):
-                self.on_exec(pid)
+            for what, a, b in parse_events(data):
+                if what == PROC_EVENT_EXEC:
+                    self.on_exec(a)
+                elif self.on_fork is not None:
+                    self.on_fork(a, b)
 
 
 def parse_exec_events(data: bytes) -> list[int]:
-    pids = []
+    return [a for what, a, _ in parse_events(data) if what == PROC_EVENT_EXEC]
+
+
+def parse_events(data: bytes) -> list[tuple[int, int, int]]:
+    """(PROC_EVENT_EXEC, PID, 0) bzw. (PROC_EVENT_FORK, Eltern-PID, Kind-PID); neue Threads entfallen."""
+    out = []
     off = 0
     while off + _NLMSGHDR.size <= len(data):
         length = _NLMSGHDR.unpack_from(data, off)[0]
@@ -198,8 +208,12 @@ def parse_exec_events(data: bytes) -> list[int]:
         ev = off + _NLMSGHDR.size + _CN_MSG.size
         if ev + _PROC_EVENT.size <= off + length:
             what = _PROC_EVENT.unpack_from(data, ev)[0]
-            if what == PROC_EVENT_EXEC:
+            if what == PROC_EVENT_EXEC and ev + _PROC_EVENT.size + 8 <= off + length:
                 _pid, tgid = struct.unpack_from("=ii", data, ev + _PROC_EVENT.size)
-                pids.append(tgid)  # Prozess-ID (process_pid wäre die Thread-ID)
+                out.append((what, tgid, 0))  # Prozess-ID (process_pid wäre die Thread-ID)
+            elif what == PROC_EVENT_FORK and ev + _PROC_EVENT.size + 16 <= off + length:
+                _ppid, ptgid, cpid, ctgid = struct.unpack_from("=iiii", data, ev + _PROC_EVENT.size)
+                if cpid == ctgid:
+                    out.append((what, ptgid, ctgid))
         off += (length + 3) & ~3
-    return pids
+    return out

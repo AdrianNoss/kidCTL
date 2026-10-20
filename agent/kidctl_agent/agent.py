@@ -67,7 +67,7 @@ class Agent:
         self.dns = DnsFilter()
         self.device = device
         self._integrity: list[p.IntegrityCheck] | None = None  # zuletzt gemeldet
-        self.procevents = ProcEvents(self.programs.on_exec)
+        self.procevents = ProcEvents(self.programs.on_exec, self.programs.on_fork)
         self.apps: list[p.AppEntry] = []
         self._sessions: list = []
         raw = store.load(store.POLICY_FILE)

@@ -7,6 +7,8 @@
 #   <muster>      zusätzlich erlaubter Pfad (fnmatch-Glob)
 #   !<muster>     nie Basis (Eltern können es trotzdem einzeln freigeben)
 #
+# Dazu kommen automatisch Programme, die Pakete als Hintergrunddienst der Sitzung eintragen
+# (/etc/xdg/autostart, D-Bus- und systemd-User-Dienste) – mit denselben Ausnahmen.
 # Der Agent berechnet die Liste beim Start und nach jedem pacman-Update neu.
 # /usr/lib/kidctl/* ist immer erlaubt, der dynamische Loader (ld-linux*) nie.
 
@@ -34,6 +36,9 @@ pkg:xdg-desktop-portal-gtk
 # --- Flatpak-Laufzeit (Apps selbst über App-ID geregelt) ---
 pkg:flatpak
 
+# --- harmlose Hilfsprogramme, die Skripte (z. B. steam.sh) aufrufen ---
+/usr/bin/which
+
 # --- vom Agenten im Namen des Kindes gestartet (Benachrichtigung, Plasma-Abmeldung) ---
 /usr/bin/notify-send
 /usr/bin/busctl
@@ -54,3 +59,8 @@ pkg:flatpak
 !/usr/bin/socat*
 !/usr/bin/filan
 !/usr/bin/procan
+
+# --- Container/VMs (kommen als systemd-User-Dienste mit) nie als Basis ---
+!/usr/bin/systemd-nspawn
+!/usr/bin/systemd-vmspawn
+!/usr/bin/systemd-run

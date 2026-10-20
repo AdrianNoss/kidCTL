@@ -30,6 +30,12 @@ andere Datei liegen. Für solche Prozesse wird deshalb die tatsächlich laufende
 oder die Electron-App) mit der Systemdatei unter demselben Pfad verglichen (Gerät + Inode). Weicht sie
 ab, ist der Prozess nur über Steam oder einen Spiele-Launcher erlaubt (deren Laufzeit-Container).
 
+Basisliste: ausführbare Dateien der Plasma-Paketkette (``base-programs.txt``) plus Programme, die
+installierte Pakete als Hintergrunddienst der Sitzung eintragen (systemweiter Autostart, D-Bus- und
+systemd-User-Dienste – nur root-eigene Dateien, nie aus dem Home). Apps mit sichtbarem Menüeintrag,
+Shells/Interpreter und Ausschlüsse bleiben außen vor. Der dynamische Loader (``ld-linux*``) ist nie
+Basis; erlaubt ist er nur im reinen Prüfmodus von ``ldd`` (führt nichts aus).
+
 Paket-Ordner: Verzeichnisse, die nur dem Paket einer freigegebenen App gehören (z. B.
 ``/usr/lib/heroic`` für ``/usr/bin/heroic``), gelten wie das Verzeichnis der App selbst.
 """
@@ -39,6 +45,8 @@ from __future__ import annotations
 import fnmatch
 import os
 import re
+import shlex
+import stat
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -181,6 +189,93 @@ def closure(deps: dict[str, list[str]], provides: dict[str, str], roots: list[st
             if d and d not in seen:
                 stack.append(d)
     return seen
+
+
+# Hintergrunddienste installierter Pakete: (Verzeichnis, Endung, Schlüssel, Abschnitt)
+SERVICE_SOURCES = (("/etc/xdg/autostart", ".desktop", "Exec", "Desktop Entry"),
+                   ("/usr/share/dbus-1/services", ".service", "Exec", "D-BUS Service"),
+                   ("/usr/lib/systemd/user", ".service", "ExecStart", "Service"),
+                   ("/etc/systemd/user", ".service", "ExecStart", "Service"))
+MAX_SERVICE_FILE = 64 * 1024
+
+
+def _service_commands(text: str, key: str, section: str) -> list[str]:
+    """Befehlszeilen ``key=`` im Abschnitt ``[section]``; deaktivierte Autostarts (Hidden=true) entfallen."""
+    current, cmds, hidden = "", [], False
+    for line in text.splitlines():
+        line = line.strip()
+        if line.startswith("["):
+            current = line.strip("[]")
+        elif current == section and "=" in line:
+            k, v = (x.strip() for x in line.split("=", 1))
+            if k == key and v:
+                cmds.append(v)
+            elif k == "Hidden" and v.lower() == "true":
+                hidden = True
+    return [] if hidden else cmds
+
+
+def _command_exe(cmd: str, path_dirs: tuple[str, ...] = ("/usr/bin",)) -> str | None:
+    """Programmdatei einer Befehlszeile (systemd-Präfixe ``-@:+!`` und ``env VAR=…`` übersprungen)."""
+    try:
+        words = shlex.split(cmd.lstrip("-@:+!"))
+    except ValueError:
+        return None
+    if words and os.path.basename(words[0]) == "env":
+        words = words[1:]
+        while words and "=" in words[0]:
+            words = words[1:]
+        if words and words[0].startswith("-"):
+            return None  # env-Optionen (z. B. -u NAME) nicht auswerten
+    if not words:
+        return None
+    exe = words[0]
+    if not os.path.isabs(exe):
+        exe = next((os.path.join(d, exe) for d in path_dirs if os.path.isfile(os.path.join(d, exe))), "")
+    if not exe:
+        return None
+    real = os.path.realpath(exe)
+    return real if os.path.isfile(real) and os.access(real, os.X_OK) else None
+
+
+def service_exes(sources=SERVICE_SOURCES, owner: int = 0) -> set[str]:
+    """Programme, die installierte Pakete als Hintergrunddienst der Sitzung starten (kdeconnectd,
+    obexd, Tray-Programme …). Nur root-eigene, nicht für andere beschreibbare Dateien."""
+    out = set()
+    for directory, suffix, key, section in sources:
+        try:
+            names = sorted(os.listdir(directory))
+        except OSError:
+            continue
+        for n in names:
+            if not n.endswith(suffix):
+                continue
+            try:
+                fd = os.open(os.path.join(directory, n), os.O_RDONLY | os.O_NONBLOCK)
+            except OSError:
+                continue
+            try:
+                st = os.fstat(fd)
+                if not stat.S_ISREG(st.st_mode) or st.st_uid != owner or st.st_mode & 0o022:
+                    continue
+                text = os.read(fd, MAX_SERVICE_FILE).decode(errors="replace")
+            except OSError:
+                continue
+            finally:
+                os.close(fd)
+            for cmd in _service_commands(text, key, section):
+                if exe := _command_exe(cmd):
+                    out.add(exe)
+    return out
+
+
+LOADER = re.compile(r"^ld-linux[\w.-]*\.so\.\d+$")
+
+
+def loader_inspect_only(info: ProcInfo, env: dict[str, str]) -> bool:
+    """Dynamischer Loader nur prüfend (``ldd``: ``--verify``/``--list`` bzw. LD_TRACE_LOADED_OBJECTS) –
+    lädt das Programm, führt aber nichts davon aus."""
+    return (len(info.argv) > 1 and info.argv[1] in ("--verify", "--list")) or "LD_TRACE_LOADED_OBJECTS" in env
 
 
 def is_shell_or_interpreter(path: str) -> bool:
@@ -516,6 +611,9 @@ def classify(info: ProcInfo, allowed: Allowed,
         return steam_blocked()  # Hilfsprogramm des Steam-Starters (z. B. cmp)
     if from_launcher():
         return None  # von Heroic/Lutris gestartet (Wine, Spiel, Hilfsprogramme)
+
+    if LOADER.match(name) and loader_inspect_only(info, environ() if environ is not None else {}):
+        return None
 
     if is_electron(exe):
         app = electron_app(info)
