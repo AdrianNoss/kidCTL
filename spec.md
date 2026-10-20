@@ -998,7 +998,7 @@ Verlängerungsanfragen.
   Postfächer/Mailprogramme nicht getestet.
 - 2026-10-20: Nutzer-Test Nutzungsbericht: „Jetzt senden“ über den echten SMTP-Server, Mail kommt an und
   wird korrekt dargestellt.
-- 2026-10-20: Fehlsperren beim Plasma-Start beseitigt (Meldung Nutzer: `kdeconnectd`, `obexd`,
+- 2026-10-20: Fehlsperren beim Plasma-Start beseitigt (Agent 0.23.0) (Meldung Nutzer: `kdeconnectd`, `obexd`,
   `arch-update-tray`, `srt-logger`, `which`, `ld-linux-x86-64.so.2`, `socat1` bei jedem Login).
   Ursachen laut Journal: Autostart-/User-Dienste außerhalb der Plasma-Paketkette; `srt-logger` an
   `systemd --user` umgehängt (Subshell von `steam.sh` beendet) und `which` mit beendetem
