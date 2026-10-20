@@ -1040,3 +1040,4 @@ Verlängerungsanfragen.
   freigebbare Sperren), Tray 8 grün mit PySide6 in temporärer venv (neu: Liste, Dialog, Verlauf).
   Sichtprüfung Tray-Fenster hell/dunkel (offscreen) und Chat-Seite im WebUI (Firefox headless).
   Auf echtem Kinderrechner nicht getestet.
+- 2026-10-20: Nutzer-Test Freigabe-Anfragen (0.24.0) auf dem Kinderrechner: Anfrage, Entscheidung und Freigabe funktionieren.
