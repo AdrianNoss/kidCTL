@@ -986,3 +986,5 @@ Verlängerungsanfragen.
   abgelehnt, Vorschau, Jetzt senden). Sichttest Wochen- und Monatsbericht mit Entwicklungs- und
   synthetischen Daten (2 Kinder, 70 Tage) sowie Profilseite (Firefox headless). Versand an echte
   Postfächer/Mailprogramme nicht getestet.
+- 2026-10-20: Nutzer-Test Nutzungsbericht: „Jetzt senden“ über den echten SMTP-Server, Mail kommt an und
+  wird korrekt dargestellt.
