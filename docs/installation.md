@@ -48,7 +48,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # Ausgabe als SE
 | `TOTP_ISSUER` | Name in der Authenticator-App (Standard `KidCTL`) |
 | `TZ_HOME` | Zeitzone für Tageskontingente und Zeitfenster (Standard `Europe/Berlin`) |
 | `VAPID_*` | Web Push, siehe 1.4. Ohne Schlüssel gibt es keine Push-Benachrichtigungen. |
-| `SMTP_*` | E-Mail für „Passwort vergessen“ und Sicherheitshinweise (optional), siehe 1.7 |
+| `SMTP_*` | E-Mail für „Passwort vergessen“, Sicherheitshinweise und Nutzungsbericht (optional), siehe 1.7 |
 
 ### 1.3 Traefik und Start
 
@@ -114,6 +114,10 @@ ein. Dort lassen sich auch Benutzername, Anzeigename, Passwort und der Authentic
 
 Bei Passwort- oder Authenticator-Änderungen bekommt das Elternteil einen Hinweis per E-Mail, und
 seine anderen Sitzungen werden beendet.
+
+**Nutzungsbericht:** Unter **Profil → Nutzungsbericht per E-Mail** lässt sich je Elternteil ein
+wöchentlicher (montags) oder monatlicher (am 1.) Bericht aktivieren, jeweils ab 7 Uhr. „Vorschau“ zeigt
+ihn im Browser, „Jetzt senden“ verschickt ihn sofort zum Ausprobieren.
 
 ## 2. Pacman-Repository
 

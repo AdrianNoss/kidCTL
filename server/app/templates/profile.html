@@ -18,6 +18,35 @@
   <button type="submit">Speichern</button>
 </form>
 
+<section class="card">
+  <h2>Nutzungsbericht per E-Mail</h2>
+  <p>Eine Zusammenfassung je Kind: Bildschirmzeit je Tag, Tage über dem Limit, meistgenutzte Programme und Spiele,
+    gesperrte Aktionen und Verlängerungsanfragen. Versand ab {{ send_hour }} Uhr für die abgelaufene Woche bzw. den abgelaufenen Monat.</p>
+  {% if not parent.email %}<p class="muted"><small>Dafür oben zuerst eine E-Mail-Adresse eintragen.</small></p>
+  {% elif not mail_enabled %}<p class="muted"><small>Auf diesem Server ist kein E-Mail-Versand eingerichtet (SMTP in <code>.env</code>).</small></p>{% endif %}
+  <form method="post" action="/profile/report" class="report-form">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>Bericht
+      <select name="interval"{% if not parent.email %} disabled{% endif %}>
+        {% for key, label in intervals.items() %}<option value="{{ key }}"{% if parent.report_interval == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </label>
+    <button type="submit"{% if not parent.email %} disabled{% endif %}>Speichern</button>
+  </form>
+  {% set iv = parent.report_interval or "weekly" %}
+  <div class="actions">
+    <a href="/profile/report/preview?interval={{ iv }}" class="btn ghost" target="_blank" rel="noopener">Vorschau</a>
+    {% if parent.email and mail_enabled %}
+    <form method="post" action="/profile/report/send" class="inline">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <input type="hidden" name="interval" value="{{ iv }}">
+      <button type="submit" class="secondary">Jetzt an {{ parent.email }} senden</button>
+    </form>
+    {% endif %}
+  </div>
+  <p class="muted"><small>Vorschau und „Jetzt senden“ zeigen {{ "die letzte Woche" if iv == "weekly" else "den letzten Monat" }}.</small></p>
+</section>
+
 <form method="post" action="/profile/password" class="card">
   <h2>Passwort ändern</h2>
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">

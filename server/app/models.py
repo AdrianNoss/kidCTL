@@ -30,6 +30,8 @@ class Parent(Base):
     totp_last_step: Mapped[int] = mapped_column(Integer, default=0)  # Replay-Schutz
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     email: Mapped[str] = mapped_column(String(255), default="")  # für „Passwort vergessen“ (optional)
+    report_interval: Mapped[str] = mapped_column(String(16), default="")  # Nutzungsbericht: "" | weekly | monthly
+    report_sent: Mapped[str] = mapped_column(String(16), default="")      # zuletzt gesendeter Zeitraum (Schlüssel)
 
 
 class ParentToken(Base):

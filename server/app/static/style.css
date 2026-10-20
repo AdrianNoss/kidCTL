@@ -297,3 +297,7 @@ details > summary { cursor:pointer; color:var(--ink-2); font-weight:600; font-si
 .login-help { margin:.8rem 0 0; text-align:center; font-size:.88rem; }
 .form-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(15rem, 1fr)); gap:0 1rem; }
 .link-box { display:block; padding:.6rem .7rem; overflow-wrap:anywhere; user-select:all; }
+
+/* ---------- Profil: Nutzungsbericht ---------- */
+.report-form { display:flex; gap:.6rem; align-items:flex-end; flex-wrap:wrap; margin-bottom:.8rem; }
+.report-form label { margin:0; }

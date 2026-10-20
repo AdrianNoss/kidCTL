@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import alarms, blocklog, policy, webfilter
+from . import alarms, blocklog, policy, report, webfilter
 from .config import settings
 from .db import SessionLocal, init_db
 from .routes import admin, api, auth, pwa
@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 async def lifespan(_app: FastAPI):
     init_db()
     tasks = [asyncio.create_task(alarms.run_forever()), asyncio.create_task(_refresh_lists_forever()),
-             asyncio.create_task(_prune_log_forever())]
+             asyncio.create_task(_prune_log_forever()), asyncio.create_task(report.run_forever())]
     yield
     for t in tasks:
         t.cancel()

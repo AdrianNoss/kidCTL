@@ -454,6 +454,16 @@ Verlängerungsanfragen.
     (NSFW/Glücksspiel/Porn), im Whitelist-Modus alles Nicht-Freigegebene; **nicht** Werbe-/Tracker-
     Listen (zu viele Einträge). Je Domain höchstens alle 10 min.
 - **Kein** Verlauf erlaubter Websites.
+- **Nutzungsbericht per E-Mail** (ergänzt 2026-10-20): je Elternteil im Profil wählbar (aus /
+  wöchentlich / monatlich), braucht E-Mail-Adresse und SMTP. HTML-Mail (Tabellenlayout, Inline-Styles,
+  Text-Alternative), gegliedert nach Kindern: Übersichtstabelle (ab 2 Kindern), Bildschirmzeit gesamt
+  mit Veränderung ggü. Vorzeitraum, Ø pro Tag, Tage über dem Limit (aktuelles Limit inkl. Gutschriften,
+  farbig **und** als Liste), Säulen je Tag, Top-5-Programme und -Spiele, gesperrte Aktionen (ohne „nur
+  protokolliert“) mit Top 5, Verlängerungsanfragen, Gutschriften, Link zur Statistik. Versand ab 07:00
+  Uhr montags (Vorwoche Mo–So) bzw. am 1. (Vormonat); verpasste Termine werden nachgeholt, solange der
+  nächste Zeitraum nicht abgelaufen ist; `parent.report_sent` verhindert Doppelversand; nach
+  Fehlschlag frühestens nach 1 h erneut. Beim Aktivieren gilt der letzte Zeitraum als gesendet.
+  Profil: „Vorschau“ und „Jetzt senden“ (letzter abgeschlossener Zeitraum).
 - Push-Alarme:
   - Gerät hat sich länger als X Stunden nicht gemeldet (Standard 48 h, pro Gerät einstellbar).
     Prüfung alle 5 min, ein Alarm pro Offline-Phase (erneut erst nach erneuter Meldung).
@@ -967,3 +977,12 @@ Verlängerungsanfragen.
   Code ungültig, eigener Account abgelehnt). Mailversand gegen lokalen SMTP-Testserver (AUTH, UTF-8);
   STARTTLS/SSL nicht getestet. Migration gegen Kopie der Entwicklungs-DB. Sichttest Profil, Eltern,
   Anmeldung (Firefox headless).
+- 2026-10-20: Nutzungsbericht per E-Mail (wöchentlich/monatlich, je Elternteil im Profil aktivierbar,
+  HTML-Mail je Kind; siehe „Auswertung & Alarme“). Nur Server; Migration `parent.report_interval`,
+  `parent.report_sent`. Getestet: Server-Tests 93 grün (neu: Zeiträume inkl. Jahres-/Monatswechsel,
+  Fälligkeit vor/nach 07:00, Nachholen, kein Doppelversand, Wiederholung nach Fehlschlag erst nach 1 h,
+  Inhalt – Tageswerte, Vorzeitraum, Limit inkl. Gutschrift, Programme/Spiele, Sperren ohne Audit,
+  Anfragen, Zeitraumgrenzen –, HTML-Escaping vs. Textteil, Profil-Einstellung inkl. CSRF, ohne Adresse
+  abgelehnt, Vorschau, Jetzt senden). Sichttest Wochen- und Monatsbericht mit Entwicklungs- und
+  synthetischen Daten (2 Kinder, 70 Tage) sowie Profilseite (Firefox headless). Versand an echte
+  Postfächer/Mailprogramme nicht getestet.

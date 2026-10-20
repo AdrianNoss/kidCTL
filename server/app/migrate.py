@@ -44,6 +44,9 @@ COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
     ("app_usage", "name", "VARCHAR(255) NOT NULL DEFAULT ''"),
     # 2026-10-19: Profil, Passwort vergessen
     ("parent", "email", "VARCHAR(255) NOT NULL DEFAULT ''"),
+    # 2026-10-20: Nutzungsbericht per E-Mail
+    ("parent", "report_interval", "VARCHAR(16) NOT NULL DEFAULT ''"),
+    ("parent", "report_sent", "VARCHAR(16) NOT NULL DEFAULT ''"),
 ]
 
 

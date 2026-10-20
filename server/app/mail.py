@@ -15,8 +15,8 @@ log = logging.getLogger("kidctl.mail")
 TIMEOUT = 20
 
 
-def send(to: str, subject: str, body: str) -> bool:
-    """Mail senden; ``False`` bei Fehler oder ohne SMTP (Fehler werden geloggt, nie an Nutzer gezeigt)."""
+def send(to: str, subject: str, body: str, html: str | None = None) -> bool:
+    """Mail senden (``html``: zusätzlich als HTML-Alternative); ``False`` bei Fehler oder ohne SMTP (Fehler werden geloggt, nie an Nutzer gezeigt)."""
     if not settings.mail_enabled:
         if settings.dev:
             log.info("Mail (nicht gesendet, KIDCTL_DEV) an %s: %s\n%s", to, subject, body)
@@ -26,6 +26,8 @@ def send(to: str, subject: str, body: str) -> bool:
     msg["Date"] = formatdate(localtime=True)
     msg["Message-ID"] = make_msgid(domain=settings.smtp_from.rsplit("@", 1)[-1].strip(" >") or None)
     msg.set_content(body)
+    if html:
+        msg.add_alternative(html, subtype="html")
     try:
         ctx = ssl.create_default_context()
         if settings.smtp_security == "ssl":

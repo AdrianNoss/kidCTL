@@ -87,9 +87,14 @@ def week_sums(bars: list[DayBar]) -> dict[str, int]:
 
 
 def apps(db: Session, child: Child, days: int) -> list[AppRow]:
-    start = sch.today_local() - timedelta(days=days - 1)
+    today = sch.today_local()
+    return apps_between(db, child, today - timedelta(days=days - 1), today)
+
+
+def apps_between(db: Session, child: Child, start: date, end: date) -> list[AppRow]:
+    """Programm- und Spielzeit von ``start`` bis ``end`` (einschließlich), absteigend."""
     rows = db.execute(select(AppUsage.key, func.sum(AppUsage.seconds))
-                      .where(AppUsage.child_id == child.id, AppUsage.day >= start)
+                      .where(AppUsage.child_id == child.id, AppUsage.day >= start, AppUsage.day <= end)
                       .group_by(AppUsage.key)).all()
     names = dict(db.execute(select(DeviceApp.key, DeviceApp.name)).all())
     names |= {k: n for k, n in db.execute(

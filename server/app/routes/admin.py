@@ -6,7 +6,7 @@ import asyncio
 from datetime import date, time, timedelta
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -19,7 +19,7 @@ from ..models import (
     BlocklistState, Child, DayException, Device, Message, PairingCode, Parent, ParentSession, WeekdayRule,
     utcnow,
 )
-from .. import accounts, blocklog, chat, nowplaying, policy, programs, stats, webfilter
+from .. import accounts, blocklog, chat, nowplaying, policy, programs, report, stats, webfilter
 from .. import lock as lk
 from .. import schedule as sch
 from ..security import (
@@ -497,7 +497,7 @@ def parent_delete(parent_id: int, sess: ParentSession = Depends(csrf_protect),
 
 def _profile(request: Request, parent: Parent, status_code: int = 200, **ctx):
     return render(request, "profile.html", status_code=status_code, parent=parent,
-                  mail_enabled=settings.mail_enabled, **ctx)
+                  mail_enabled=settings.mail_enabled, intervals=report.INTERVALS, send_hour=report.SEND_HOUR, **ctx)
 
 
 def _check_password(db: Session, request: Request, parent: Parent, password: str) -> str | None:
@@ -512,7 +512,8 @@ def _check_password(db: Session, request: Request, parent: Parent, password: str
 
 
 PROFILE_NOTICES = {"saved": "Profil gespeichert.", "password": "Passwort geändert. Andere Sitzungen wurden abgemeldet.",
-                   "totp": "Neuer Authenticator eingerichtet. Andere Sitzungen wurden abgemeldet."}
+                   "totp": "Neuer Authenticator eingerichtet. Andere Sitzungen wurden abgemeldet.",
+                   "report": "Nutzungsbericht gespeichert.", "report_sent": "Nutzungsbericht gesendet."}
 
 
 @router.get("/profile")
@@ -542,6 +543,43 @@ def profile_save(request: Request, username: str = Form(""), display_name: str =
                            f"Die E-Mail-Adresse des KidCTL-Accounts „{username}“ wurde von dieser Adresse auf "
                            f"„{email or '(keine)'}“ geändert.\nFalls du das nicht warst, melde dich sofort an.\n")
     return _redirect("/profile?msg=saved")
+
+
+@router.post("/profile/report")
+def profile_report(request: Request, interval: str = Form(""), sess: ParentSession = Depends(csrf_protect),
+                   db: Session = Depends(get_db)):
+    parent = db.get(Parent, sess.parent_id)
+    if interval not in report.INTERVALS:
+        return _profile(request, parent, 400, error="Ungültiger Zeitraum.")
+    if interval and not parent.email:
+        return _profile(request, parent, 400, error="Für den Nutzungsbericht zuerst eine E-Mail-Adresse eintragen.")
+    if interval != parent.report_interval:
+        report.activate(parent, interval, sch.today_local())
+        db.commit()
+    return _redirect("/profile?msg=report")
+
+
+def _report_period(parent: Parent, interval: str) -> report.Period:
+    interval = interval if interval in ("weekly", "monthly") else (parent.report_interval or "weekly")
+    return report.last_period(interval, sch.today_local())
+
+
+@router.post("/profile/report/send")
+def profile_report_send(request: Request, interval: str = Form(""), sess: ParentSession = Depends(csrf_protect),
+                        db: Session = Depends(get_db)):
+    """Bericht für den letzten abgeschlossenen Zeitraum sofort senden (zum Ausprobieren)."""
+    parent = db.get(Parent, sess.parent_id)
+    if not parent.email or not settings.mail_enabled:
+        return _profile(request, parent, 400, error="Versand nicht möglich: keine E-Mail-Adresse bzw. kein SMTP eingerichtet.")
+    if not report.send(db, parent, _report_period(parent, interval)):
+        return _profile(request, parent, 502, error="Versand fehlgeschlagen (Details im Server-Log).")
+    return _redirect("/profile?msg=report_sent")
+
+
+@router.get("/profile/report/preview", response_class=HTMLResponse)
+def profile_report_preview(request: Request, interval: str = "", db: Session = Depends(get_db)):
+    parent = db.get(Parent, request.state.session.parent_id)
+    return HTMLResponse(report.render(db, parent, _report_period(parent, interval))[2])
 
 
 @router.post("/profile/password")
