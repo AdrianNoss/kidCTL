@@ -19,7 +19,7 @@ class AgentClient(QObject):
     historyReceived = Signal(list)       # list[ChatMessage]
     messageReceived = Signal(object)     # ChatMessage (neu oder geändert)
     queued = Signal(object)              # t.TrayQueued
-    openRequestDialog = Signal()
+    openRequestDialog = Signal(str)      # "screen" | "games"
     blockedReceived = Signal(list)       # list[t.BlockedItem]
     openAccessDialog = Signal(object)    # t.BlockedItem
     errorReceived = Signal(str)
@@ -81,7 +81,7 @@ class AgentClient(QObject):
         elif isinstance(msg, t.TrayQueued):
             self.queued.emit(msg)
         elif isinstance(msg, t.TrayOpenRequestDialog):
-            self.openRequestDialog.emit()
+            self.openRequestDialog.emit(msg.target)
         elif isinstance(msg, t.TrayBlocked):
             self.blockedReceived.emit(msg.items)
         elif isinstance(msg, t.TrayOpenAccessDialog):

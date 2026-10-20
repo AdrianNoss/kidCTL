@@ -144,14 +144,14 @@ async def child_schedule(child_id: int, request: Request, db: Session = Depends(
 
 @router.post("/children/{child_id}/credit", dependencies=[Depends(csrf_protect)])
 async def child_credit(child_id: int, request: Request, day: str = Form(...), extra_minutes: str = Form("0"),
-                 window_end: str = Form(""), db: Session = Depends(get_db)):
+                 window_end: str = Form(""), extra_games: str = Form("0"), db: Session = Depends(get_db)):
     """Direkte Gutschrift ohne Anfrage = Tagesausnahme für genau ein Datum."""
     child = _get_or_404(db, Child, child_id)
     try:
-        the_day, extra, override = sch.parse_credit(child, day, extra_minutes, window_end)
+        the_day, extra, override, games = sch.parse_credit(child, day, extra_minutes, window_end, extra_games)
     except sch.ScheduleError as e:
         return _child_page(request, db, child, status_code=400, error=str(e), credit_day=day)
-    sch.add_credit(db, child, the_day, extra, override)
+    sch.add_credit(db, child, the_day, extra, override, games)
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
     return _redirect(f"/children/{child_id}")

@@ -32,6 +32,7 @@ def to_wire(db: Session, msg: Message) -> p.ChatMessage:
         request_day=msg.request_day, requested_minutes=msg.requested_minutes,
         requested_window_end=msg.requested_window_end, status=msg.status,
         approved_minutes=msg.approved_minutes, approved_window_end=msg.approved_window_end,
+        request_target=msg.request_target if msg.kind == "extension_request" else None,
         access_kind=msg.access_kind, access_key=msg.access_key, access_name=msg.access_name,
         access_scope=msg.access_scope,
     )
@@ -93,7 +94,8 @@ def notify_parents_new(db: Session, msg: Message) -> None:
             parts.append(f"+{msg.requested_minutes} min")
         if msg.requested_window_end:
             parts.append(f"bis {msg.requested_window_end:%H:%M} Uhr")
-        title, body = f"{name} bittet um Verlängerung ({', '.join(parts)})", msg.body
+        what = "mehr Spielzeit" if msg.request_target == "games" else "Verlängerung"
+        title, body = f"{name} bittet um {what} ({', '.join(parts)})", msg.body
     elif msg.kind == "access_request":
         what = "die Website" if msg.access_kind == "domain" else "das Programm"
         title = f"{name} bittet um Freigabe: {msg.access_name}"
@@ -128,7 +130,10 @@ def receive_from_agent(db: Session, device_id: int,
     else:
         if not msg.minutes and msg.window_end is None:
             return p.Ack(client_msg_id=msg.client_msg_id, ok=False, error="empty_request"), None
+        if msg.target == "games" and (not msg.minutes or msg.window_end is not None):
+            return p.Ack(client_msg_id=msg.client_msg_id, ok=False, error="invalid_game_request"), None
         m.kind, m.body = "extension_request", msg.reason.strip()
+        m.request_target = "games" if msg.target == "games" else None
         m.request_day, m.requested_minutes = msg.day, msg.minutes
         m.requested_window_end = msg.window_end
         m.status = "pending" if msg.day >= sch.today_local() else "expired"
@@ -158,8 +163,14 @@ def decide(db: Session, msg: Message, parent_id: int, approve: bool,
     if msg.kind != "extension_request":
         raise sch.ScheduleError("Keine Verlängerungsanfrage.")
     child = db.get(Child, msg.child_id)
+    games = msg.request_target == "games"
+    if games:
+        window_end = None   # Spielzeit: nur Minuten
     if approve:
-        sch.check_credit(child, msg.request_day, minutes, window_end)
+        if games:
+            sch.check_credit(child, msg.request_day, 0, None, minutes)
+        else:
+            sch.check_credit(child, msg.request_day, minutes, window_end)
     elif msg.request_day < sch.today_local():
         raise sch.ScheduleError("Anfrage ist bereits verfallen.")
 
@@ -173,6 +184,9 @@ def decide(db: Session, msg: Message, parent_id: int, approve: bool,
         db.rollback()
         raise sch.ScheduleError("Die Anfrage wurde bereits entschieden.")
     if approve:
-        sch.add_credit(db, child, msg.request_day, minutes, window_end)
+        if games:
+            sch.add_credit(db, child, msg.request_day, 0, None, minutes)
+        else:
+            sch.add_credit(db, child, msg.request_day, minutes, window_end)
     db.commit()
     db.refresh(msg)

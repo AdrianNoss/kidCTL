@@ -52,6 +52,10 @@ def detail_lines(state: t.TrayState) -> list[str]:
              f"Heute genutzt: {fmt_duration(state.used_seconds)} von {fmt_duration(state.allowed_minutes * 60)}"]
     if state.window_start and state.window_end:
         lines.append(f"Erlaubt: {state.window_start:%H:%M}–{state.window_end:%H:%M} Uhr")
+    if state.game_limit_minutes is not None:
+        left = max(0, state.game_limit_minutes * 60 - state.game_used_seconds)
+        lines.append(f"Spielzeit: noch {fmt_duration(left)} von {fmt_duration(state.game_limit_minutes * 60)}"
+                     if left else "Spielzeit für heute aufgebraucht")
     if not state.online:
         lines.append("Offline – Nachrichten werden gesendet, sobald Verbindung besteht")
     elif state.pending_outbox:
@@ -66,6 +70,8 @@ def local_time(dt: datetime) -> str:
 
 
 def request_summary(m: ChatMessage) -> str:
+    if m.request_target == "games":
+        return f"+{m.requested_minutes or 0} min Spielzeit"
     parts = []
     if m.requested_minutes:
         parts.append(f"+{m.requested_minutes} min")

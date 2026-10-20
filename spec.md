@@ -82,6 +82,23 @@ Verlängerungsanfragen.
 - Nutzung endet, wenn Kontingent aufgebraucht **oder** Zeitfenster geschlossen ist.
 - Tageswechsel um 00:00 Europe/Berlin.
 
+### Spiele-Limit (entschieden 2026-10-20)
+- Je Wochentag optional „davon Spiele“: höchstens so viele Minuten Spiele am Tag, innerhalb der
+  Bildschirmzeit (leer = kein eigenes Limit). Ein Gesamtlimit für alle Spiele, kein Limit je Spiel.
+- Als Spiel zählen erkannte Steam-/Heroic-Spiele (`game:`-Schlüssel) und Katalog-Apps der
+  freedesktop-Kategorie `Game` (Gruppe „Spiele“) – nicht die Launcher selbst (Steam, Heroic, Lutris).
+- Spielzeit = Zeit, in der während gezählter Bildschirmzeit mindestens ein Spiel läuft (parallele
+  Spiele zählen einmal). Geräteübergreifend wie die Bildschirmzeit (`usage_report.game_seconds`,
+  `usage_update.others_game_seconds`, Maximum-Regel).
+- Ablauf: Vorwarnung 5 und 1 min vorher (nur bei laufendem Spiel, mit Knopf „Mehr Spielzeit
+  anfragen“), danach werden Spielprozesse geschlossen (SIGTERM, nach 10 s SIGKILL) und bis Tagesende
+  jeder neu gestartete Spielprozess ebenso (Prüfung im 5-s-Takt). Der restliche Rechner bleibt nutzbar;
+  ist die Bildschirmzeit vorbei, gilt der normale Ablauf (Abmeldung). Wirkt unabhängig von der
+  Programmkontrolle.
+- Mehr Spielzeit: Gutschrift „Spielzeit“ je Datum im WebUI (`day_exception.extra_game_minutes`) oder
+  Anfrage aus dem Verlängerungsdialog der Tray-App (Wahl Bildschirmzeit/Spielzeit, nur Minuten;
+  `extension_request.target="games"`), Genehmigung im Chat.
+
 ### Zählung
 - Gezählt wird nur eine aktive, entsperrte Session: logind `Active=yes` und `LockedHint=no`.
   Nur Sitzungen der Klasse `user` (SDDM, TTY, SSH); Greeter, `manager` und `background`
@@ -1041,3 +1058,17 @@ Verlängerungsanfragen.
   Sichtprüfung Tray-Fenster hell/dunkel (offscreen) und Chat-Seite im WebUI (Firefox headless).
   Auf echtem Kinderrechner nicht getestet.
 - 2026-10-20: Nutzer-Test Freigabe-Anfragen (0.24.0) auf dem Kinderrechner: Anfrage, Entscheidung und Freigabe funktionieren.
+- 2026-10-20: Spiele-Limit (Server + Agent/Tray 0.25.0; siehe „Spiele-Limit“). Entscheidungen des
+  Nutzers: ein Gesamtlimit je Tag, Steam/Heroic + Gruppe „Spiele“ ohne Launcher, Vorwarnung und
+  Schließen, mehr Spielzeit über den Verlängerungsdialog. Protokoll abwärtskompatibel ergänzt (Felder
+  mit Standardwerten). Migration: `weekday_rule.game_minutes`, `day_exception.extra_game_minutes`,
+  `usage_record.game_seconds`, `message.request_target`. Getestet: Server 101 grün (neu: Wochenvorlage
+  mit/ohne Spiele-Limit, ungültige Eingabe, Spielzeit-Gutschrift nur mit Limit und addierend,
+  Spielzeit-Anfrage inkl. ungültiger Anfrage, Genehmigung ignoriert Fensterende, Policy-Felder,
+  Spielzeit-Meldung mit Maximum-Regel), Agent 189 grün (neu: Limit inkl. Gutschrift, getrennte
+  Spielzeit-Zählung, Vorwarnung nur bei laufendem Spiel, SIGTERM/SIGKILL, neu gestartete Spiele,
+  gedrosselte Meldung, Warnungen nach Gutschrift wieder scharf, Launcher kein Spiel, Restzeit inkl.
+  andere Geräte, Tray-Status, Spielzeit-Anfrage, Meldung bei Genehmigung, Schließen nur bei laufender
+  Bildschirmzeit), Tray 9 grün mit PySide6 in temporärer venv (neu: Dialog mit Wahl Bildschirm-/
+  Spielzeit, Statuszeile). Migration gegen Entwicklungs-DB (Server-Start), Sichtprüfung Kind-Seite
+  (Firefox headless) und Anfrage-Dialog (offscreen). Auf echtem Kinderrechner nicht getestet.

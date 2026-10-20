@@ -84,7 +84,8 @@ def test_tray_flow(qapp, tmp_path, monkeypatch):
     monkeypatch.setattr(app_mod.RequestDialog, "exec", fake_exec)
     agent.push(t.TrayOpenRequestDialog())
     assert spin(lambda: len(agent.lines) == 3)
-    assert agent.lines[2] == {"type": "extension_request", "minutes": 30, "window_end": None, "reason": "Referat"}
+    assert agent.lines[2] == {"type": "extension_request", "minutes": 30, "window_end": None, "reason": "Referat",
+                              "target": "screen"}
 
     # Aktualisierte Anfrage erscheint im Verlauf
     agent.push(t.TrayChatMessage(message=msg(2, from_child=True, kind="extension_request", body="Referat",
@@ -171,3 +172,28 @@ def test_access_flow(qapp, tmp_path, monkeypatch):
     assert "Freigabe: Website youtube.com" in tray.window.view.toPlainText()
     assert "Heute erlaubt" in tray.window.view.toPlainText()
     tray.blocked.close()
+
+
+def test_game_request_dialog(qapp):
+    from kidctl_tray import texts
+    from kidctl_tray.ui import RequestDialog
+    plain = t.TrayState(restricted=True, allowed=True, remaining_seconds=600, window_end=time(20))
+    d = RequestDialog(plain, target="games")              # ohne Spiele-Limit: keine Auswahl, Bildschirmzeit
+    assert d.screen_choice.isChecked() and not d.games_choice.isChecked()
+    st = plain.model_copy(update={"game_limit_minutes": 60, "game_used_seconds": 45 * 60})
+    assert "Spielzeit: noch 15 min von 1:00 h" in texts.detail_lines(st)
+    assert "Spielzeit für heute aufgebraucht" in texts.detail_lines(st.model_copy(update={"game_used_seconds": 3600}))
+    d = RequestDialog(st, target="games")
+    assert d.games_choice.isChecked()
+    d.later.setChecked(True)
+    d.reason.setPlainText("Level fertig")
+    d.minutes.setValue(20)
+    r = d.request()
+    assert (r.target, r.minutes, r.window_end) == ("games", 20, None)   # Spielzeit: nie Fensterende
+    d.minutes.setValue(0)
+    assert d.request() is None and "Minuten" in d.hint.text()
+    d.screen_choice.setChecked(True)
+    r = d.request()
+    assert r.target == "screen" and r.window_end is not None
+    m = msg(9, from_child=True, kind="extension_request", request_target="games", requested_minutes=20)
+    assert texts.request_summary(m) == "+20 min Spielzeit"

@@ -8,8 +8,8 @@ from datetime import time
 from PySide6.QtCore import QEvent, QRect, Qt, QTime, Signal
 from PySide6.QtGui import QColor, QFont, QIcon, QPainter, QPalette, QPixmap
 from PySide6.QtWidgets import (
-    QCheckBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPlainTextEdit, QPushButton, QScrollArea, QSpinBox, QTextBrowser, QTimeEdit, QVBoxLayout, QWidget,
+    QButtonGroup, QCheckBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout, QLabel, QLineEdit,
+    QPlainTextEdit, QPushButton, QRadioButton, QScrollArea, QSpinBox, QTextBrowser, QTimeEdit, QVBoxLayout, QWidget,
 )
 
 from kidctl_common import tray as t
@@ -54,11 +54,19 @@ def render_icon(text: str, level: str, size: int = 64) -> QIcon:
 
 
 class RequestDialog(QDialog):
-    """Verlängerung für heute anfragen: Minuten und/oder späteres Ende, Begründung Pflicht."""
+    """Verlängerung für heute anfragen: Minuten und/oder späteres Ende, Begründung Pflicht.
+    Mit Spiele-Limit wählbar: Bildschirmzeit oder Spielzeit (nur Minuten)."""
 
-    def __init__(self, state: t.TrayState | None, parent=None) -> None:
+    def __init__(self, state: t.TrayState | None, parent=None, target: str = "screen") -> None:
         super().__init__(parent)
         self.setWindowTitle("Verlängerung anfordern")
+        self.screen_choice = QRadioButton("Bildschirmzeit")
+        self.games_choice = QRadioButton("Spielzeit")
+        group = QButtonGroup(self)
+        group.addButton(self.screen_choice)
+        group.addButton(self.games_choice)
+        has_games = state is not None and state.game_limit_minutes is not None
+        (self.games_choice if has_games and target == "games" else self.screen_choice).setChecked(True)
         self.minutes = QSpinBox(minimum=0, maximum=180, singleStep=5, value=15, suffix=" min")
         self.later = QCheckBox("Länger aufbleiben bis")
         self.until = QTimeEdit(displayFormat="HH:mm")
@@ -72,11 +80,18 @@ class RequestDialog(QDialog):
         self.hint.setStyleSheet("color: #da4453")
 
         form = QFormLayout()
+        if has_games:
+            choice = QHBoxLayout()
+            choice.addWidget(self.screen_choice)
+            choice.addWidget(self.games_choice)
+            form.addRow("Wofür:", choice)
         form.addRow("Mehr Zeit:", self.minutes)
         row = QHBoxLayout()
         row.addWidget(self.later)
         row.addWidget(self.until)
         form.addRow(row)
+        self.games_choice.toggled.connect(self._target_changed)
+        self._target_changed(self.games_choice.isChecked())
         form.addRow("Begründung:", self.reason)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Anfragen")
@@ -88,17 +103,25 @@ class RequestDialog(QDialog):
         lay.addWidget(self.hint)
         lay.addWidget(buttons)
 
+    def _target_changed(self, games: bool) -> None:
+        self.later.setVisible(not games)   # Spielzeit: nur Minuten
+        self.until.setVisible(not games)
+
     def request(self) -> t.TrayExtensionRequest | None:
         reason = self.reason.toPlainText().strip()
-        until = self.until.time().toPython() if self.later.isChecked() else None
+        games = self.games_choice.isChecked()
+        until = self.until.time().toPython() if self.later.isChecked() and not games else None
         if not reason:
             self.hint.setText("Bitte eine Begründung schreiben.")
             return None
         if not self.minutes.value() and until is None:
             self.hint.setText("Bitte Minuten und/oder eine spätere Uhrzeit wählen.")
             return None
+        if games and not self.minutes.value():
+            self.hint.setText("Bitte Minuten wählen.")
+            return None
         return t.TrayExtensionRequest(minutes=self.minutes.value(), window_end=until,
-                                      reason=reason[:MAX_BODY])
+                                      reason=reason[:MAX_BODY], target="games" if games else "screen")
 
     def _check(self) -> None:
         if self.request() is not None:
@@ -239,7 +262,8 @@ class ChatWindow(QWidget):
             bg = own if m.from_child else other
             body = html.escape(m.body).replace("\n", "<br>")
             if m.kind == "extension_request":
-                body = (f"<b>Verlängerung: {html.escape(texts.request_summary(m))}</b><br>{body}"
+                label = "Spielzeit" if m.request_target == "games" else "Verlängerung"
+                body = (f"<b>{label}: {html.escape(texts.request_summary(m))}</b><br>{body}"
                         f"<br><i>{html.escape(texts.request_status(m))}</i>")
             elif m.kind == "access_request":
                 what = f"{texts.kind_label(m.access_kind)} {m.access_name or ''}"

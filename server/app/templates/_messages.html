@@ -4,7 +4,8 @@
   <div class="meta">{{ sender_name(m) }} · {{ m.created_at | localtime }}</div>
   {% if m.kind == "extension_request" %}
     {% set day = weekday_names[m.request_day.weekday()][:2] ~ " " ~ m.request_day.strftime("%d.%m.") %}
-    <div><strong>Verlängerungsanfrage für {{ day }}:</strong>
+    {% set games = m.request_target == "games" %}
+    <div><strong>{{ "Spielzeit-Anfrage" if games else "Verlängerungsanfrage" }} für {{ day }}:</strong>
       {% if m.requested_minutes %}+{{ m.requested_minutes }} min{% endif %}
       {% if m.requested_minutes and m.requested_window_end %} und {% endif %}
       {% if m.requested_window_end %}bis {{ m.requested_window_end.strftime("%H:%M") }} Uhr{% endif %}
@@ -30,13 +31,13 @@
           <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
           <input type="hidden" name="action" value="approve">
           <label>+ <input type="number" name="minutes" min="0" max="{{ max_extra }}" step="5" value="{{ m.requested_minutes or 0 }}" class="short"> min</label>
-          <label>bis <input type="time" name="window_end" value="{{ m.requested_window_end.strftime('%H:%M') if m.requested_window_end else '' }}"></label>
+          {% if not games %}<label>bis <input type="time" name="window_end" value="{{ m.requested_window_end.strftime('%H:%M') if m.requested_window_end else '' }}"></label>{% endif %}
           <button type="submit" class="small secondary">Angepasst genehmigen</button>
         </form>
       </details>
     </div>
     {% elif m.status == "approved" %}
-    <div><span class="pill ok">Genehmigt</span> <span class="muted">{% if m.approved_minutes %}: +{{ m.approved_minutes }} min{% endif %}{% if m.approved_window_end %}{{ "," if m.approved_minutes else ":" }} bis {{ m.approved_window_end.strftime("%H:%M") }} Uhr{% endif %}</span></div>
+    <div><span class="pill ok">Genehmigt</span> <span class="muted">{% if m.approved_minutes %}: +{{ m.approved_minutes }} min{% if games %} Spielzeit{% endif %}{% endif %}{% if m.approved_window_end %}{{ "," if m.approved_minutes else ":" }} bis {{ m.approved_window_end.strftime("%H:%M") }} Uhr{% endif %}</span></div>
     {% elif m.status == "rejected" %}
     <div><span class="pill warn">Abgelehnt</span></div>
     {% elif m.status == "expired" %}

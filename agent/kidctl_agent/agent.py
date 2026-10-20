@@ -21,11 +21,13 @@ from .chat import NEW, ChatStore, Outbox, new_client_msg_id
 from .connection import Connection
 from .dnsfilter import DnsFilter
 from .enforcer import Enforcer
+from .gamelimit import GameLimit
 from .games import GameNames, game_id
 from .kidmounts import STEAM_ROOT, KidMounts, safe_home
 from .loginlock import LoginLock, is_admin
 from .procs import ProcEvents, pids_of, read_environ, read_proc
-from .rules import Decision, day_limits, evaluate
+from .programs import LAUNCHERS, STEAM_KEY, STEAM_SYSTEM
+from .rules import Decision, day_limits, evaluate, game_limit
 from .trayserver import TrayServer
 from .watcher import ProgramWatcher
 
@@ -40,6 +42,12 @@ APPS_EVERY = 6 * 3600.0  # installierte Anwendungen neu einlesen
 # sonst kann die (ältere) gecachte Policy einen Fehlalarm auslösen. Gezählt wird trotzdem.
 STARTUP_SYNC = 10.0   # Sekunden
 DEFAULT_TZ = "Europe/Berlin"
+
+
+def _is_launcher(key: str) -> bool:
+    """Spiele-Launcher (Steam, Heroic, Lutris) zählen nicht als Spiel – nur die gestarteten Spiele."""
+    exe = key[4:] if key.startswith("exe:") else ""
+    return key == STEAM_KEY or exe.startswith(STEAM_SYSTEM) or exe in LAUNCHERS
 
 
 def local_users() -> list[p.LocalUser]:
@@ -63,6 +71,9 @@ class Agent:
         self.outbox = Outbox.load()
         self.tray = TrayServer(self, tray_path)
         self.programs = ProgramWatcher(self)
+        self.gamelimit = GameLimit(desktop, on_request=self.open_game_request_dialog)
+        self.game_keys: set[str] = set()   # Katalog-Apps der Kategorie „Game“ (ohne Launcher)
+        self.gaming: set[str] = set()      # User mit laufendem Spiel (letzter gezählter Takt)
         self._day = None  # zuletzt gesehener lokaler Tag (Ablauf der Freigaben „nur heute“)
         self.mounts = KidMounts()
         self.dns = DnsFilter()
@@ -140,6 +151,7 @@ class Agent:
             await asyncio.to_thread(self.trust_desktops)
         if self._synced or boottime() - self._started >= STARTUP_SYNC:
             await self.enforcer.step(now.date(), sessions, decisions)
+            await self._enforce_games(now.date(), sessions, decisions)
             await self.programs.scan()
         await self.tray.push_states(boottime())
         self._ticks += 1
@@ -148,6 +160,39 @@ class Agent:
             self.usage.save()
             self.apptime.prune(now.date())
             self.apptime.save()
+
+    def is_game(self, key: str) -> bool:
+        return key.startswith("game:") or key in self.game_keys
+
+    def game_remaining(self, user: str, day) -> int | None:
+        """Restspielzeit (Sekunden) heute, ``None`` = kein Spiele-Limit."""
+        child_id = self.policy.users[user]
+        child = next(c for c in self.policy.children if c.id == child_id)
+        limit = game_limit(child, day)
+        if limit is None:
+            return None
+        return limit - self.usage.used_game_seconds(child_id, self.users_of(child_id), day)
+
+    async def _enforce_games(self, day, sessions, decisions: dict[str, Decision]) -> None:
+        """Spiele-Limit je User mit Sitzung, solange Bildschirmzeit bleibt (sonst regelt der Enforcer)."""
+        for s in sessions:
+            if not (s.is_user_session and s.user in decisions and decisions[s.user].allowed):
+                continue
+            remaining = self.game_remaining(s.user, day)
+            procs = self._game_processes(s.uid, s.user) if remaining is not None and remaining <= 0 else []
+            await self.gamelimit.step(s.user, s.uid, day, remaining, s.user in self.gaming, procs)
+
+    def _game_processes(self, uid: int, user: str) -> list[tuple[int, int]]:
+        steam_lib = f"{STEAM_ROOT}/{user}/"
+        out = []
+        for pid in pids_of({uid}):
+            info = read_proc(pid)
+            if info is None:
+                continue
+            key = self._game_key(info, user) or self.app_index.key_for(info, steam_lib)
+            if key and self.is_game(key):
+                out.append((info.pid, info.start))
+        return out
 
     async def _day_changed(self, today) -> None:
         """Freigaben „nur heute“ laufen um Mitternacht ab (auch offline): Programme neu prüfen
@@ -197,6 +242,7 @@ class Agent:
             log.exception("Anwendungen nicht lesbar")
             return
         self.programs.names = {a.key: a.name for a in self.apps}
+        self.game_keys = {a.key for a in self.apps if "Game" in a.categories and not _is_launcher(a.key)}
         self.refresh_index()
 
     def refresh_index(self) -> None:
@@ -306,7 +352,8 @@ class Agent:
         if self.conn is None or not self.conn.connected:
             return
         today = self.now_local().date()
-        entries = [p.UsageEntry(username=u, day=d, seconds=s) for u, d, s in self.usage.report_entries(today)]
+        entries = [p.UsageEntry(username=u, day=d, seconds=s, game_seconds=g)
+                   for u, d, s, g in self.usage.report_entries(today)]
         if entries:
             await self.conn.send(p.UsageReport(entries=entries))
         apps = [p.AppUsageEntry(username=u, day=d, key=k, seconds=s, name=self.apptime.names.get(k, ""))
@@ -321,6 +368,7 @@ class Agent:
         Steam-/Heroic-Spiels zählen für das Spiel (statt für Steam), außerdem „spielt gerade“."""
         alive: set[tuple[int, int]] = set()
         playing: dict[str, dict[str, str]] = {}
+        gaming: set[str] = set()
         for user in users:
             try:
                 uid = pwd.getpwnam(user).pw_uid
@@ -342,8 +390,12 @@ class Agent:
                 elif k := self.app_index.key_for(info, steam_lib + "/"):
                     keys.add(k)
             self.apptime.add(user, day, keys, delta)
+            if any(self.is_game(k) for k in keys):
+                self.usage.add_games(user, day, delta)
+                gaming.add(user)
         self._game_of = {k: v for k, v in self._game_of.items() if k in alive}
         self.playing = playing
+        self.gaming = gaming
 
     def _game_key(self, info, user: str) -> str | None:
         """Spiel eines Prozesses (Umgebung nur bei Kandidaten lesen: Spieleordner, Wine, Container)."""
@@ -412,6 +464,7 @@ class Agent:
             await self.on_chat_message(msg)
         elif isinstance(msg, p.UsageUpdate):
             self.usage.others[(msg.child_id, msg.day.isoformat())] = msg.others_seconds
+            self.usage.others_games[(msg.child_id, msg.day.isoformat())] = msg.others_game_seconds
         elif isinstance(msg, p.Ping):
             await self.conn.send(p.Pong())
 
@@ -440,7 +493,8 @@ class Agent:
                     parts.append(f"+{msg.approved_minutes} Minuten")
                 if msg.approved_window_end:
                     parts.append(f"bis {msg.approved_window_end:%H:%M} Uhr")
-                title, body = "Verlängerung genehmigt", " und ".join(parts) or "Genehmigt."
+                title = "Spielzeit verlängert" if msg.request_target == "games" else "Verlängerung genehmigt"
+                body = " und ".join(parts) or "Genehmigt."
             else:
                 title, body = "Verlängerung abgelehnt", f"{msg.sender_name} hat die Anfrage abgelehnt."
         elif (msg.kind == "access_request" and prev is not None and prev.status == "pending"
@@ -458,10 +512,14 @@ class Agent:
                 await self.desktop.notify(s.user, s.uid, title, body)
                 users.discard(s.user)  # je User nur einmal
 
-    async def open_request_dialog(self, user: str) -> None:
+    async def open_request_dialog(self, user: str, target: str = "screen") -> None:
         """Klick auf „Verlängerung anfordern“ in einer Warnung."""
-        if not await self.tray.send_to_user(user, t.TrayOpenRequestDialog()):
+        if not await self.tray.send_to_user(user, t.TrayOpenRequestDialog(target=target)):
             log.info("Verlängerung angefordert, aber keine Tray-App von %s verbunden", user)
+
+    async def open_game_request_dialog(self, user: str) -> None:
+        """Klick auf „Mehr Spielzeit anfragen“ in einer Spielzeit-Warnung."""
+        await self.open_request_dialog(user, "games")
 
     def _blocked_items(self, user: str) -> dict[str, t.BlockedItem]:
         """Kürzlich Gesperrtes aller Linux-User desselben Kindes (Websites laufen unter einem User),
@@ -520,7 +578,9 @@ class Agent:
             remaining_seconds=d.remaining_seconds, reason=d.reason,
             used_seconds=self.usage.used_seconds(child_id, same, now.date()),
             allowed_minutes=quota // 60, window_start=start, window_end=end,
-            online=self.online, pending_outbox=self.outbox.pending_for(same))
+            online=self.online, pending_outbox=self.outbox.pending_for(same),
+            game_limit_minutes=None if (gl := game_limit(child, now.date())) is None else gl // 60,
+            game_used_seconds=self.usage.used_game_seconds(child_id, same, now.date()))
 
     def tray_history(self, user: str) -> list[p.ChatMessage]:
         return self.chat.history(self.policy.users[user]) if self.policy and user in self.policy.users else []
@@ -533,7 +593,8 @@ class Agent:
     async def tray_request(self, user: str, req: t.TrayExtensionRequest) -> bool:
         self.outbox.add(p.ExtensionRequest(
             client_msg_id=new_client_msg_id(), username=user, day=self.now_local().date(),
-            minutes=req.minutes, window_end=req.window_end, reason=req.reason.strip()))
+            minutes=req.minutes, window_end=None if req.target == "games" else req.window_end,
+            reason=req.reason.strip(), target=req.target))
         await self.flush_outbox()
         return self.online
 

@@ -96,7 +96,7 @@ def test_credit_validation(client, parent):
     today = today_local()
     cases = [
         ({"day": (today - timedelta(days=1)).isoformat(), "extra_minutes": "30"}, "heute oder künftige"),
-        ({"day": today.isoformat(), "extra_minutes": "0"}, "Minuten und/oder"),
+        ({"day": today.isoformat(), "extra_minutes": "0"}, "Spielzeit und/oder"),
         ({"day": today.isoformat(), "extra_minutes": "0", "window_end": "19:00"}, "nach dem regulären Ende"),
         ({"day": today.isoformat(), "extra_minutes": "9999"}, "zwischen 0 und"),
         ({"day": "kaputt", "extra_minutes": "30"}, "Ungültiges Datum"),

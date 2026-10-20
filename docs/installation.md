@@ -223,8 +223,12 @@ Je Kind (Seite des Kindes):
 
 - **Bildschirmzeit**: Wochenvorlage mit Tageskontingent und erlaubtem Zeitfenster (Werktage und
   Wochenende oder jeder Tag einzeln).
-- **Zeit gutschreiben**: zusätzliche Minuten oder ein längeres Zeitfenster für ein bestimmtes Datum.
-  Verlängerungsanfragen aus der Tray-App lassen sich auch direkt im Chat genehmigen.
+- **Spiele-Limit** („davon Spiele“ in der Wochenvorlage): höchstens so viele Minuten Spiele am Tag
+  (Steam, Heroic und Programme der Gruppe „Spiele“, nicht die Launcher). Vorwarnung 5 und 1 Minute
+  vorher, danach werden Spiele geschlossen; der restliche Rechner bleibt nutzbar. Leer = kein Limit.
+- **Zeit gutschreiben**: zusätzliche Minuten, ein längeres Zeitfenster oder zusätzliche Spielzeit für
+  ein bestimmtes Datum. Verlängerungs- und Spielzeit-Anfragen aus der Tray-App lassen sich auch direkt
+  im Chat genehmigen.
 - **Programme**:
   - **Aus**
   - **Nur protokollieren**: zum Einstieg empfohlen, um zu sehen, was genutzt wird.

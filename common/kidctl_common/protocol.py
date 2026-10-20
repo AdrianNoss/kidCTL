@@ -120,6 +120,8 @@ class ExtensionRequest(BaseModel):
     minutes: int = Field(default=0, ge=0, le=720)
     window_end: time | None = None
     reason: str = Field(min_length=1, max_length=MAX_BODY)
+    # Ergänzt 2026-10-20: "games" = mehr Spielzeit (nur Minuten, kein Fensterende)
+    target: Literal["screen", "games"] = "screen"
 
 
 AccessKind = Literal["program", "domain"]
@@ -178,6 +180,7 @@ class ChatMessage(BaseModel):
     status: Literal["pending", "approved", "rejected", "expired"] | None = None
     approved_minutes: int | None = None
     approved_window_end: time | None = None
+    request_target: Literal["screen", "games"] | None = None   # extension_request: Bildschirm- oder Spielzeit
     # Nur für access_request (Freigabe-Anfrage):
     access_kind: AccessKind | None = None
     access_key: str | None = None
@@ -202,12 +205,16 @@ class DayRule(BaseModel):
     quota_minutes: int = Field(ge=0)
     window_start: time
     window_end: time
+    # Spiele-Limit (ergänzt 2026-10-20): höchstens so viele Minuten Spiele am Tag, innerhalb der
+    # Bildschirmzeit; None = kein eigenes Limit
+    game_minutes: int | None = Field(default=None, ge=0)
 
 
 class DayOverride(BaseModel):
     day: date
     extra_minutes: int = Field(default=0, ge=0)
     window_end_override: time | None = None
+    extra_game_minutes: int = Field(default=0, ge=0)   # Spielzeit-Gutschrift
 
 
 ProgramMode = Literal["off", "audit", "enforce"]
@@ -287,6 +294,7 @@ class UsageEntry(BaseModel):
     username: str = Field(max_length=64)
     day: date
     seconds: int = Field(ge=0, le=2 * 86400)
+    game_seconds: int = Field(default=0, ge=0, le=2 * 86400)  # davon mit laufendem Spiel (ergänzt 2026-10-20)
 
 
 class UsageReport(BaseModel):
@@ -301,6 +309,7 @@ class UsageUpdate(BaseModel):
     child_id: int
     day: date
     others_seconds: int
+    others_game_seconds: int = 0
 
 
 # ---------- Programme ----------

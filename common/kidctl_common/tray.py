@@ -37,11 +37,13 @@ class TrayChatSend(BaseModel):
 
 
 class TrayExtensionRequest(BaseModel):
-    """Verlängerung für heute: mehr Minuten und/oder späteres Fensterende, Begründung Pflicht."""
+    """Verlängerung für heute: mehr Minuten und/oder späteres Fensterende, Begründung Pflicht.
+    ``target="games"``: mehr Spielzeit (nur Minuten)."""
     type: Literal["extension_request"] = "extension_request"
     minutes: int = Field(default=0, ge=0, le=720)
     window_end: time | None = None
     reason: str = Field(min_length=1, max_length=MAX_BODY)
+    target: Literal["screen", "games"] = "screen"
 
 
 class TrayGetBlocked(BaseModel):
@@ -71,6 +73,8 @@ class TrayState(BaseModel):
     window_end: time | None = None
     online: bool = False             # Agent mit Server verbunden
     pending_outbox: int = 0          # noch nicht zugestellte Nachrichten/Anfragen
+    game_limit_minutes: int | None = None   # Spiele-Limit heute inkl. Gutschrift (None = keins)
+    game_used_seconds: int = 0
 
 
 class TrayChat(BaseModel):
@@ -93,6 +97,7 @@ class TrayQueued(BaseModel):
 
 class TrayOpenRequestDialog(BaseModel):
     type: Literal["open_request_dialog"] = "open_request_dialog"
+    target: Literal["screen", "games"] = "screen"
 
 
 class BlockedItem(BaseModel):

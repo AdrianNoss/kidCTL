@@ -118,6 +118,7 @@ class WeekdayRule(Base):
     quota_minutes: Mapped[int] = mapped_column(Integer, default=60)
     window_start: Mapped[time] = mapped_column(Time, default=time(8, 0))
     window_end: Mapped[time] = mapped_column(Time, default=time(20, 0))
+    game_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)  # Spiele-Limit; None = keins
 
     child: Mapped[Child] = relationship(back_populates="rules")
 
@@ -132,6 +133,7 @@ class DayException(Base):
     day: Mapped[date] = mapped_column(Date)
     extra_minutes: Mapped[int] = mapped_column(Integer, default=0)
     window_end_override: Mapped[time | None] = mapped_column(Time, nullable=True)
+    extra_game_minutes: Mapped[int] = mapped_column(Integer, default=0)  # Spielzeit-Gutschrift
 
 
 class Device(Base):
@@ -194,6 +196,7 @@ class UsageRecord(Base):
     child_id: Mapped[int | None] = mapped_column(
         ForeignKey("child.id", ondelete="CASCADE"), nullable=True, index=True)
     seconds: Mapped[int] = mapped_column(Integer, default=0)
+    game_seconds: Mapped[int] = mapped_column(Integer, default=0)  # davon mit laufendem Spiel
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
@@ -367,6 +370,7 @@ class Message(Base):
     decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     approved_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     approved_window_end: Mapped[time | None] = mapped_column(Time, nullable=True)
+    request_target: Mapped[str | None] = mapped_column(String(8), nullable=True)  # games = Spielzeit
     # Herkunft vom Agenten (Idempotenz bei Offline-Warteschlange)
     device_id: Mapped[int | None] = mapped_column(
         ForeignKey("device.id", ondelete="SET NULL"), nullable=True)

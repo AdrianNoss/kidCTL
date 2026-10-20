@@ -28,6 +28,9 @@ class Usage:
     def __init__(self) -> None:
         self.local: dict[tuple[str, str], float] = {}
         self.others: dict[tuple[int, str], int] = {}
+        # Spielzeit (Teil der Nutzung, während ein Spiel läuft) – lokal je (User, Tag), andere Geräte je (Kind, Tag)
+        self.games: dict[tuple[str, str], float] = {}
+        self.others_games: dict[tuple[int, str], int] = {}
         self._last_tick: float | None = None
 
     # ---------- Persistenz ----------
@@ -42,18 +45,28 @@ class Usage:
         for key, sec in data.get("others", {}).items():
             child, day = key.split("|", 1)
             u.others[(int(child), day)] = int(sec)
+        for key, sec in data.get("games", {}).items():
+            user, day = key.split("|", 1)
+            u.games[(user, day)] = float(sec)
+        for key, sec in data.get("others_games", {}).items():
+            child, day = key.split("|", 1)
+            u.others_games[(int(child), day)] = int(sec)
         return u
 
     def save(self) -> None:
         store.save(store.USAGE_FILE, {
             "local": {f"{u}|{d}": round(s, 1) for (u, d), s in self.local.items()},
             "others": {f"{c}|{d}": s for (c, d), s in self.others.items()},
+            "games": {f"{u}|{d}": round(s, 1) for (u, d), s in self.games.items()},
+            "others_games": {f"{c}|{d}": s for (c, d), s in self.others_games.items()},
         })
 
     def prune(self, today: date) -> None:
         cutoff = (today - timedelta(days=KEEP_DAYS)).isoformat()
         self.local = {k: v for k, v in self.local.items() if k[1] >= cutoff}
         self.others = {k: v for k, v in self.others.items() if k[1] >= cutoff}
+        self.games = {k: v for k, v in self.games.items() if k[1] >= cutoff}
+        self.others_games = {k: v for k, v in self.others_games.items() if k[1] >= cutoff}
 
     # ---------- Zählen ----------
 
@@ -74,6 +87,12 @@ class Usage:
             self.local[key] = self.local.get(key, 0.0) + delta
         return delta
 
+    def add_games(self, user: str, day: date, seconds: float) -> None:
+        """Spielzeit anrechnen (je Takt einmal, egal wie viele Spiele parallel laufen)."""
+        if seconds > 0:
+            key = (user, day.isoformat())
+            self.games[key] = self.games.get(key, 0.0) + seconds
+
     # ---------- Auswertung ----------
 
     def used_seconds(self, child_id: int, usernames: list[str], day: date) -> int:
@@ -82,8 +101,12 @@ class Usage:
         local = sum(self.local.get((u, d), 0.0) for u in usernames)
         return int(local) + self.others.get((child_id, d), 0)
 
-    def report_entries(self, today: date) -> list[tuple[str, date, int]]:
-        """Zählerstände von gestern und heute für ``usage_report``."""
+    def used_game_seconds(self, child_id: int, usernames: list[str], day: date) -> int:
+        d = day.isoformat()
+        return int(sum(self.games.get((u, d), 0.0) for u in usernames)) + self.others_games.get((child_id, d), 0)
+
+    def report_entries(self, today: date) -> list[tuple[str, date, int, int]]:
+        """Zählerstände (Nutzung, Spielzeit) von gestern und heute für ``usage_report``."""
         days = {today.isoformat(), (today - timedelta(days=1)).isoformat()}
-        return [(u, date.fromisoformat(d), int(s)) for (u, d), s in sorted(self.local.items())
-                if d in days]
+        return [(u, date.fromisoformat(d), int(s), int(self.games.get((u, d), 0.0)))
+                for (u, d), s in sorted(self.local.items()) if d in days]

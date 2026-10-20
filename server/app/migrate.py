@@ -52,6 +52,11 @@ COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
     ("message", "access_key", "VARCHAR(512)"),
     ("message", "access_name", "VARCHAR(255)"),
     ("message", "access_scope", "VARCHAR(16)"),
+    # 2026-10-20: Spiele-Limit
+    ("weekday_rule", "game_minutes", "INTEGER"),
+    ("day_exception", "extra_game_minutes", "INTEGER NOT NULL DEFAULT 0"),
+    ("usage_record", "game_seconds", "INTEGER NOT NULL DEFAULT 0"),
+    ("message", "request_target", "VARCHAR(8)"),
 ]
 
 

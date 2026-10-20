@@ -29,7 +29,7 @@ class TrayApp:
         self.menu.addAction(self.status_action)
         self.menu.addSeparator()
         self.menu.addAction("Chat öffnen", self.show_chat)
-        self.menu.addAction("Verlängerung anfordern …", self.request_extension)
+        self.menu.addAction("Verlängerung anfordern …", lambda: self.request_extension())
         self.menu.addAction("Gesperrt – Freigabe anfragen …", self.show_blocked)
         self.tray.setContextMenu(self.menu)
         self.tray.activated.connect(self._activated)
@@ -46,7 +46,7 @@ class TrayApp:
         self.blocked.refresh.connect(lambda: c.send(t.TrayGetBlocked()))
         c.errorReceived.connect(lambda msg: self.tray.showMessage("KidCTL", msg))
         self.window.sendText.connect(lambda text: c.send(t.TrayChatSend(body=text)))
-        self.window.requestExtension.connect(self.request_extension)
+        self.window.requestExtension.connect(lambda: self.request_extension())
         c.connect_to_agent()
 
     def _activated(self, reason) -> None:
@@ -58,8 +58,8 @@ class TrayApp:
         self.window.raise_()
         self.window.activateWindow()
 
-    def request_extension(self) -> None:
-        dlg = RequestDialog(self.state, self.window if self.window.isVisible() else None)
+    def request_extension(self, target: str = "screen") -> None:
+        dlg = RequestDialog(self.state, self.window if self.window.isVisible() else None, target)
         if dlg.exec() and (req := dlg.request()):
             self.client.send(req)
             self.show_chat()

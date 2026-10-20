@@ -46,9 +46,11 @@ def build_policy(db: Session, device_id: int) -> p.Policy:
         children.append(p.ChildPolicy(
             id=child.id, name=child.name,
             rules=[p.DayRule(weekday=r.weekday, quota_minutes=r.quota_minutes,
-                             window_start=r.window_start, window_end=r.window_end) for r in child.rules],
+                             window_start=r.window_start, window_end=r.window_end,
+                             game_minutes=r.game_minutes) for r in child.rules],
             exceptions=[p.DayOverride(day=e.day, extra_minutes=e.extra_minutes,
-                                      window_end_override=e.window_end_override) for e in excs],
+                                      window_end_override=e.window_end_override,
+                                      extra_game_minutes=e.extra_game_minutes or 0) for e in excs],
             program_mode=child.program_mode,
             allowed_programs=allowed_keys(db, child.id),
             web=web_policy(db, child),
@@ -71,9 +73,7 @@ async def send_policy(db: Session, device_id: int) -> None:
         await manager.send(device_id, pol.model_dump(mode="json"))
         today = sch.today_local()
         for child in pol.children:
-            await manager.send(device_id, p.UsageUpdate(
-                child_id=child.id, day=today,
-                others_seconds=others_seconds(db, device_id, child.id, today)).model_dump(mode="json"))
+            await manager.send(device_id, usage_update(db, device_id, child.id, today).model_dump(mode="json"))
     except Exception:
         log.warning("Policy an Gerät %s nicht zustellbar", device_id, exc_info=True)
 
@@ -108,18 +108,26 @@ def record_usage(db: Session, device_id: int, report: p.UsageReport) -> set[tupl
             rec = UsageRecord(device_id=device_id, username=e.username, day=e.day,
                               child_id=child_id, seconds=0)
             db.add(rec)
-        if e.seconds > rec.seconds:
-            rec.seconds, rec.updated_at = e.seconds, utcnow()
+        if e.seconds > rec.seconds or e.game_seconds > (rec.game_seconds or 0):
+            rec.seconds, rec.updated_at = max(rec.seconds, e.seconds), utcnow()
+            rec.game_seconds = max(rec.game_seconds or 0, e.game_seconds)
             if rec.child_id is not None:
                 changed.add((rec.child_id, e.day))
     db.commit()
     return changed
 
 
-def others_seconds(db: Session, device_id: int, child_id: int, day: date) -> int:
-    return db.scalar(select(func.coalesce(func.sum(UsageRecord.seconds), 0)).where(
+def others_seconds(db: Session, device_id: int, child_id: int, day: date, games: bool = False) -> int:
+    col = UsageRecord.game_seconds if games else UsageRecord.seconds
+    return db.scalar(select(func.coalesce(func.sum(col), 0)).where(
         UsageRecord.child_id == child_id, UsageRecord.day == day,
         UsageRecord.device_id != device_id)) or 0
+
+
+def usage_update(db: Session, device_id: int, child_id: int, day: date) -> p.UsageUpdate:
+    """Nutzung (und Spielzeit) des Kindes an ``day`` auf allen *anderen* Geräten."""
+    return p.UsageUpdate(child_id=child_id, day=day, others_seconds=others_seconds(db, device_id, child_id, day),
+                         others_game_seconds=others_seconds(db, device_id, child_id, day, games=True))
 
 
 async def push_usage_updates(db: Session, changed: set[tuple[int, date]], source_device: int) -> None:
@@ -127,9 +135,7 @@ async def push_usage_updates(db: Session, changed: set[tuple[int, date]], source
     for child_id, day in changed:
         for device_id in device_ids_for_child(db, child_id) - {source_device}:
             if manager.is_online(device_id):
-                await manager.send(device_id, p.UsageUpdate(
-                    child_id=child_id, day=day,
-                    others_seconds=others_seconds(db, device_id, child_id, day)).model_dump(mode="json"))
+                await manager.send(device_id, usage_update(db, device_id, child_id, day).model_dump(mode="json"))
 
 
 @dataclass

@@ -125,7 +125,7 @@ class TrayServer:
             online = await self.handler.tray_chat_send(user, msg.body)
             await self._send(client, t.TrayQueued(kind="chat_send", online=online))
         elif isinstance(msg, t.TrayExtensionRequest):
-            if not msg.minutes and msg.window_end is None:
+            if not msg.minutes and (msg.window_end is None or msg.target == "games"):
                 await self._send(client, t.TrayError(message="Bitte Minuten und/oder ein späteres Ende angeben."))
                 return
             online = await self.handler.tray_request(user, msg)

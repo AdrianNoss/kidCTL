@@ -44,6 +44,14 @@ def day_limits(child: ChildPolicy, day: date) -> tuple[int, time, time]:
     return quota, rule.window_start, end
 
 
+def game_limit(child: ChildPolicy, day: date) -> int | None:
+    """Spiele-Limit (Sekunden) für ``day`` inkl. Spielzeit-Gutschrift; ``None`` = kein Limit."""
+    rule = next((r for r in child.rules if r.weekday == day.weekday()), None)
+    if rule is None or rule.game_minutes is None:
+        return None
+    return (rule.game_minutes + sum(e.extra_game_minutes for e in child.exceptions if e.day == day)) * 60
+
+
 def is_locked(child: ChildPolicy, now: datetime) -> bool:
     if not child.locked:
         return False
