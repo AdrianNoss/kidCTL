@@ -1155,4 +1155,4 @@ Verlängerungsanfragen.
 - 2026-10-21: Backup-Download im WebUI (Einstellungen): Auswahl des Schnappschusses, erneute Eingabe des eigenen Passworts (Rate-Limiting wie Login), nur vorhandene Dateien, Log-Eintrag. Getestet: Server 116 grün (neu: falsches Passwort, fremder Dateiname, gültiger Download ist gzip-SQLite).
 - 2026-10-21: Nutzer-Test auf dem echten Server: Datenbank-Backup, Hinweis auf veraltete Agenten und Backup-Download im WebUI funktionieren.
 - 2026-10-21: Nutzer-Test auf dem echten Server: Mailversand über SMTP mit SSL funktioniert und mit STARTTLS.
-- 2026-10-21: Nutzer-Test noexec-Spieleordner (Steam): gesperrt `/srv/steam/<kind>` mit `noexec,nosuid,nodev`, Start einer Datei daraus → „Permission denied“, `LD_PRELOAD` einer Bibliothek daraus → „failed to map segment“; nach Freigabe sofort ausgehängt.
+- 2026-10-21: Nutzer-Test noexec-Spieleordner (Steam): gesperrt `/srv/steam/<kind>` mit `noexec,nosuid,nodev`, Start einer Datei daraus → „Permission denied“, `LD_PRELOAD` einer Bibliothek daraus → „failed to map segment“; nach Freigabe sofort ausgehängt. Heroic gesperrt: `/srv/heroic/<kind>` ebenfalls `noexec`.
