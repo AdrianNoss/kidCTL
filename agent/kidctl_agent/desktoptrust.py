@@ -30,7 +30,7 @@ log = logging.getLogger("kidctl.desktop")
 MAX_SIZE = 64 * 1024
 USER_DIRS = ".config/user-dirs.dirs"
 
-# ("flatpak", App-ID) oder ("exe", Programmpfad)
+# ("flatpak", App-ID), ("snap", Snap-Name) oder ("exe", Programmpfad)
 Target = tuple[str, str]
 
 
@@ -47,6 +47,8 @@ def entry_target(text: str) -> Target | None:
         return None
     if flatpak_id := e.get("X-Flatpak"):
         return ("flatpak", flatpak_id)
+    if snap := e.get("X-SnapInstanceName"):
+        return ("snap", snap)
     exe = resolve_exec(e.get("Exec", ""))
     return ("exe", exe) if exe else None
 
@@ -73,6 +75,8 @@ def target_allowed(target: Target, allowed) -> bool:
     kind, value = target
     if kind == "flatpak":
         return value in allowed.flatpaks
+    if kind == "snap":
+        return value in allowed.snaps
     return allowed.path_ok(value) or _system_shell_script(value)
 
 

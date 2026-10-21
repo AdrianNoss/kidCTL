@@ -22,13 +22,13 @@ from kidctl_common.i18n import _
 from .dnsfilter import site_of, source_code
 from .procs import pids_of, read_environ, read_proc
 from .kidmounts import STEAM_ROOT
-from .programs import (MAX_ANCESTORS, Allowed, Verdict, base_paths, classify, closure, group_members, load_base,
-                       package_dirs, parse_pacman_qi, service_exes)
+from . import pkgdb
+from .programs import (EXEC_DIRS, MAX_ANCESTORS, Allowed, Verdict, base_paths, classify, closure, group_members, load_base,
+                       package_dirs, service_exes)
 
 log = logging.getLogger("kidctl.programs")
 
 BLOCKED_FILE = "blocked.json"
-PACMAN_DB = "/var/lib/pacman/local"
 MAX_PENDING = 500
 REPORT_DEDUP = {"audit": 600.0, "enforce": 60.0, "domain": 600.0}  # gleiche Meldung höchstens so oft
 NOTIFY_DEDUP = 60.0
@@ -42,6 +42,7 @@ EMPTY_ARGV_RETRIES = 5
 # Software als Hintergrunddienst) – gesperrt und protokolliert, aber ohne Benachrichtigung
 LOGIN_QUIET_SECONDS = 90
 CLK_TCK = os.sysconf("SC_CLK_TCK")
+DBUS_DAEMONS = {"dbus-daemon", "dbus-broker", "dbus-broker-launch"}
 EMPTY_ARGV_DELAY = 0.05  # Sekunden
 
 
@@ -59,7 +60,8 @@ class ProgramWatcher:
         # Kind-PID -> Eltern-PID beim fork() (Netlink): Die echte Abstammung bleibt erhalten, auch wenn der
         # Elternprozess endet und das Kind an einen Subreaper (systemd --user) umgehängt wird
         self.forks: dict[int, int] = {}
-        self._pacman_mtime: float | None = None
+        self.db = pkgdb.detect()   # Paketverwaltung (pacman bzw. dpkg)
+        self._db_mtime: float | None = None
         self._pkg_input: frozenset[str] = frozenset()  # Programme, für die pkg_dirs berechnet sind
         self.names: dict[str, str] = {}             # App-Schlüssel -> Anzeigename (aus .desktop, deutsch bevorzugt)
         self.names_en: dict[str, str] = {}          # App-Schlüssel -> englischer Name (Name= ohne Sprachzusatz)
@@ -305,7 +307,7 @@ class ProgramWatcher:
 
     def base_outdated(self) -> bool:
         try:
-            return os.stat(PACMAN_DB).st_mtime != self._pacman_mtime
+            return self.db is not None and os.stat(self.db.db_path).st_mtime != self._db_mtime
         except OSError:
             return False
 
@@ -315,19 +317,22 @@ class ProgramWatcher:
         return not exes <= self._pkg_input
 
     async def refresh_base(self, app_exes: set[str], extra: set[str] = frozenset()) -> None:
-        """Basisliste neu berechnen (pacman, im Thread). Bei Fehlern bleibt die alte erhalten.
+        """Basisliste neu berechnen (Paketdatenbank, im Thread). Bei Fehlern bleibt die alte erhalten.
         ``extra``: weitere freigegebene Programme (eigene Programme der Eltern) – nur für Paket-Ordner,
         nicht aus der Basisliste genommen."""
+        if self.db is None:
+            log.error("Keine bekannte Paketverwaltung (pacman/dpkg) – Basisliste leer")
+            return
         try:
-            mtime = os.stat(PACMAN_DB).st_mtime
+            mtime = os.stat(self.db.db_path).st_mtime
             exact = await asyncio.to_thread(_compute_base, self.spec.packages, app_exes, self.spec.excludes,
-                                            self.spec.groups)
-            pkg_dirs = await asyncio.to_thread(_compute_pkg_dirs, app_exes | extra)
+                                            self.spec.groups, self.db)
+            pkg_dirs = await asyncio.to_thread(_compute_pkg_dirs, app_exes | extra, self.db)
             self._pkg_input = frozenset(app_exes | extra)
         except (OSError, subprocess.SubprocessError) as e:
             log.error("Basisliste nicht berechenbar (%s) – Programmkontrolle protokolliert nur", e)
             return
-        self.base_exact, self.pkg_dirs, self._pacman_mtime = exact, pkg_dirs, mtime
+        self.base_exact, self.pkg_dirs, self._db_mtime = exact, pkg_dirs, mtime
         self.policy_changed()
         log.info("Basisliste: %d Programme aus %d Wurzelpaketen und Gruppen %s", len(exact),
                  len(self.spec.packages), ", ".join(self.spec.groups) or "–")
@@ -356,7 +361,8 @@ def login_service(info, ancestors, session_starts: list[int] | None) -> bool:
     """Vom systemd-Benutzerdienst des Users kurz nach einer Anmeldung gestartet (Dienst der Anmeldung).
     ``session_starts``: Startzeiten (Ticks) der Sitzungsleiter des Users; ``None`` = noch keine Sitzung bekannt
     (die Sitzungsliste wird nur alle paar Sekunden gelesen – dann gerade erst angemeldet)."""
-    parent = next(iter(ancestors), None)
+    # D-Bus-Aktivierung über dbus-daemon (Ubuntu/Debian): dessen Prozesse zwischen Dienst und systemd überspringen
+    parent = next((a for a in ancestors if os.path.basename(a.exe) not in DBUS_DAEMONS), None)
     if parent is None or parent.uid != info.uid or os.path.basename(parent.exe) != "systemd":
         return False
     if session_starts is None:
@@ -365,24 +371,21 @@ def login_service(info, ancestors, session_starts: list[int] | None) -> bool:
 
 
 def _compute_base(packages: list[str], app_exes: set[str], excludes: list[str],
-                  groups: list[str] = ()) -> frozenset[str]:
-    env = {"LC_ALL": "C", "PATH": "/usr/bin"}
-    qi = subprocess.run(["pacman", "-Qi"], capture_output=True, text=True, env=env, check=True, timeout=60)
-    deps, provides = parse_pacman_qi(qi.stdout)
-    roots = list(packages) + group_members(qi.stdout, list(groups))
+                  groups: list[str] = (), db=None) -> frozenset[str]:
+    db = db or pkgdb.detect()
+    deps, provides, pkg_groups = db.packages()
+    roots = list(packages) + group_members(pkg_groups, list(groups))
     pkgs = sorted(closure(deps, provides, roots))
     if not pkgs:
         return frozenset()
-    ql = subprocess.run(["pacman", "-Qlq", *pkgs], capture_output=True, text=True, env=env, check=True,
-                        timeout=60)
-    files = [f for f in ql.stdout.split() if os.path.isfile(f) and os.access(f, os.X_OK)]
+    files = [f for f in db.files(pkgs) if os.path.isfile(f) and os.access(f, os.X_OK)]
     services = service_exes()
     log.info("Basisliste: %d Programme aus Sitzungsdiensten (Autostart, D-Bus, systemd --user)", len(services))
     # Dienst-Programme liegen teils unter /usr/share (gjs-Skripte von GNOME Shell und GNOME-Apps)
-    return base_paths(files, app_exes, excludes) | base_paths(sorted(services), app_exes, excludes, dirs=("/usr/",))
+    # Ausführbare Dateien der Pakete auch unter /usr/share (z. B. apport, Ubuntus Migrationsskripte)
+    return (base_paths(files, app_exes, excludes, dirs=EXEC_DIRS + ("/usr/share/",))
+            | base_paths(sorted(services), app_exes, excludes, dirs=("/usr/",)))
 
 
-def _compute_pkg_dirs(app_exes: set[str]) -> dict[str, tuple[str, ...]]:
-    ql = subprocess.run(["pacman", "-Ql"], capture_output=True, text=True, env={"LC_ALL": "C", "PATH": "/usr/bin"},
-                        check=True, timeout=120)
-    return package_dirs(ql.stdout, app_exes)
+def _compute_pkg_dirs(app_exes: set[str], db=None) -> dict[str, tuple[str, ...]]:
+    return package_dirs((db or pkgdb.detect()).listing(), app_exes)

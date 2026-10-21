@@ -10,7 +10,7 @@ import os
 from datetime import date, timedelta
 
 from . import store
-from .procs import ProcInfo
+from .procs import ProcInfo, snap_file
 from .programs import GENERIC_DIRS, STEAM_SYSTEM, _program_path, electron_app
 
 APPTIME_FILE = "apptime.json"
@@ -34,6 +34,8 @@ class AppIndex:
         if info.flatpak_id:
             k = f"flatpak:{info.flatpak_id}"
             return k if k in self.keys else None
+        if info.snap_name and f"snap:{info.snap_name}" in self.keys and snap_file(info):
+            return f"snap:{info.snap_name}"
         path = electron_app(info) or _program_path(info)
         if path in self.exes:
             return self.exes[path]

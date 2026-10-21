@@ -193,7 +193,7 @@ async def child_programs(child_id: int, request: Request, db: Session = Depends(
     if mode not in programs.MODES:
         raise HTTPException(400, "Ungültiger Modus")
     child.program_mode = mode
-    keys = {str(k) for k in form.getlist("app") if str(k).startswith(("exe:", "flatpak:"))}
+    keys = {str(k) for k in form.getlist("app") if str(k).startswith(("exe:", "flatpak:", "snap:"))}
     programs.set_allowed(db, child.id, keys)
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))

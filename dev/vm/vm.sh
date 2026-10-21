@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# kidctl Test-VM (Arch Linux + KDE Plasma Wayland) unter QEMU/KVM.
+# kidctl Test-VM (Arch Linux + KDE Plasma Wayland bzw. Ubuntu 24.04 + GNOME) unter QEMU/KVM.
 #
 #   vm.sh create   [--apply]   Image laden, Disk + Seed anlegen
 #   vm.sh start    [--no-gl|--headless]
@@ -12,18 +12,35 @@
 #   vm.sh snapshots
 #
 # Ändernde Befehle laufen ohne --apply nur als Dry-Run.
-# Umgebung: KIDCTL_VM_DIR (Standard ~/.local/share/kidctl-vm), KIDCTL_VM_RAM (8G),
-#           KIDCTL_VM_CPUS (4), KIDCTL_VM_DISK (40G), KIDCTL_VM_SSH_PORT (2222)
+# Umgebung: KIDCTL_VM_DISTRO (arch | ubuntu, Standard arch),
+#           KIDCTL_VM_DIR (Standard ~/.local/share/kidctl-vm bzw. ~/.local/share/kidctl-vm-<distro>),
+#           KIDCTL_VM_RAM (8G), KIDCTL_VM_CPUS (4), KIDCTL_VM_DISK (40G),
+#           KIDCTL_VM_SSH_PORT (2222 Arch, 2223 Ubuntu)
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 HERE="$REPO/dev/vm"
-VM_DIR="${KIDCTL_VM_DIR:-$HOME/.local/share/kidctl-vm}"
+DISTRO="${KIDCTL_VM_DISTRO:-arch}"
+case "$DISTRO" in
+  arch)
+    VM_DIR="${KIDCTL_VM_DIR:-$HOME/.local/share/kidctl-vm}"
+    SSH_PORT="${KIDCTL_VM_SSH_PORT:-2222}"
+    IMG_URL="https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-cloudimg.qcow2"
+    SUM_URL="$IMG_URL.SHA256"
+    PROVISION="provision.sh"
+    ADMIN_GROUP="wheel" ;;
+  ubuntu)
+    VM_DIR="${KIDCTL_VM_DIR:-$HOME/.local/share/kidctl-vm-ubuntu}"
+    SSH_PORT="${KIDCTL_VM_SSH_PORT:-2223}"
+    IMG_URL="https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+    SUM_URL="https://cloud-images.ubuntu.com/noble/current/SHA256SUMS"
+    PROVISION="provision-ubuntu.sh"
+    ADMIN_GROUP="sudo" ;;
+  *) echo "Unbekannte Distribution: $DISTRO" >&2; exit 1 ;;
+esac
 RAM="${KIDCTL_VM_RAM:-8G}"
 CPUS="${KIDCTL_VM_CPUS:-4}"
 DISK_SIZE="${KIDCTL_VM_DISK:-40G}"
-SSH_PORT="${KIDCTL_VM_SSH_PORT:-2222}"
-IMG_URL="https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-cloudimg.qcow2"
 
 BASE="$VM_DIR/base.qcow2"
 DISK="$VM_DIR/disk.qcow2"
@@ -75,8 +92,9 @@ render_user_data() {
   pub="$(cat "$KEY.pub")"
   admin_hash="$(openssl passwd -6 admin)"
   kind_hash="$(openssl passwd -6 kind)"
-  prov="$(base64 -w0 "$HERE/provision.sh")"
+  prov="$(base64 -w0 "$HERE/$PROVISION")"
   sed -e "s|@SSH_KEY@|$pub|" \
+      -e "s|@ADMIN_GROUP@|$ADMIN_GROUP|" \
       -e "s|@ADMIN_HASH@|$admin_hash|" \
       -e "s|@KIND_HASH@|$kind_hash|" \
       -e "s|@PROVISION_B64@|$prov|" \
@@ -94,10 +112,11 @@ cmd_create() {
   if [[ ! -f "$BASE" ]]; then
     info "Arch-Cloud-Image laden (~550 MB) und Prüfsumme verifizieren"
     run curl -fL --progress-bar -o "$BASE.part" "$IMG_URL"
-    run curl -fsSL -o "$BASE.SHA256" "$IMG_URL.SHA256"
+    run curl -fsSL -o "$BASE.SHA256" "$SUM_URL"
     if (( APPLY )); then
       local want got
-      want="$(awk '{print $1}' "$BASE.SHA256")"
+      # Arch: „<hash>  <datei>“ (eine Zeile), Ubuntu: SHA256SUMS mit „<hash> *<datei>“ je Image
+      want="$(awk -v f="$(basename "$IMG_URL")" 'NR==1 && NF==2 && $2 !~ /^\*/ {print $1; exit} $2=="*"f {print $1}' "$BASE.SHA256")"
       got="$(sha256sum "$BASE.part" | awk '{print $1}')"
       [[ "$want" == "$got" ]] || die "Prüfsumme stimmt nicht ($got != $want)"
       mv "$BASE.part" "$BASE"
@@ -122,7 +141,7 @@ cmd_create() {
       "$tmp/user-data" "$tmp/meta-data"
     rm -rf "$tmp"
   else
-    echo "[dry-run] user-data aus $HERE/user-data.tmpl + provision.sh -> $SEED"
+    echo "[dry-run] user-data aus $HERE/user-data.tmpl + $PROVISION -> $SEED"
   fi
 
   (( APPLY )) && info "Fertig. Weiter mit: $0 start" || info "Dry-Run – mit --apply ausführen."
@@ -144,13 +163,14 @@ cmd_start() {
   rm -f "$QMP"
   info "Starte VM (RAM $RAM, $CPUS CPUs, SSH auf 127.0.0.1:$SSH_PORT, Log $LOG)"
   setsid qemu-system-x86_64 \
-    -name kidctl-vm -machine q35,accel=kvm -cpu host -smp "$CPUS" -m "$RAM" \
+    -name "kidctl-vm-$DISTRO" -machine q35,accel=kvm -cpu host -smp "$CPUS" -m "$RAM" \
     -drive file="$DISK",if=virtio,format=qcow2,discard=unmap \
     -drive file="$SEED",media=cdrom,readonly=on \
     -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:"$SSH_PORT"-:22 \
     -virtfs local,path="$REPO",mount_tag=kidctl,security_model=none,readonly=on \
     -device qemu-xhci -device usb-tablet \
     "${display[@]}" \
+    -serial file:"$VM_DIR/serial.log" \
     -qmp unix:"$QMP",server=on,wait=off -pidfile "$PIDFILE" \
     >"$LOG" 2>&1 < /dev/null &
   sleep 2
@@ -240,5 +260,5 @@ case "${1:-}" in
   snapshot) shift; cmd_snapshot "$@" ;;
   restore) shift; cmd_restore "$@" ;;
   snapshots) cmd_snapshots ;;
-  *) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+  *) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
 esac

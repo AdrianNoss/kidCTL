@@ -181,6 +181,8 @@ def test_gnome_services_under_usr_share_and_login_quiet():
     assert not watcher.login_service(sw, [proc(667, "/usr/bin/gnome-shell", 1000)], [login])
     assert not watcher.login_service(sw, [proc(1, "/usr/lib/systemd/systemd", 10, uid=0)], [login])
     assert not watcher.login_service(sw, [], [login])
+    dbus = proc(9917, "/usr/bin/dbus-daemon", 1000)
+    assert watcher.login_service(sw, [dbus, dbus, manager], [login])   # Ubuntu: über dbus-daemon aktiviert
 
 
 def test_session_starts_ignore_manager_session(monkeypatch):

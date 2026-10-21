@@ -3,7 +3,7 @@
 # Split-Paket: kidctl (Agent, Tray, kidctl-Befehl) plus je Desktop kidctl-plasma bzw. kidctl-gnome.
 pkgbase=kidctl
 pkgname=(kidctl kidctl-plasma kidctl-gnome)
-pkgver=0.27.0   # muss agent/kidctl_agent/__init__.py:__version__ entsprechen (Test prüft das)
+pkgver=0.28.0   # muss agent/kidctl_agent/__init__.py:__version__ entsprechen (Test prüft das)
 pkgrel=1
 pkgdesc="Parental Control für Arch Linux – Agent (Bildschirmzeit, Login-Sperre) und Tray-App"
 arch=(any)

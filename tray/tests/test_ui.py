@@ -5,9 +5,9 @@ from datetime import datetime, time, timezone
 
 import pytest
 
-QtWidgets = pytest.importorskip("PySide6.QtWidgets")
-from PySide6.QtCore import QCoreApplication, QElapsedTimer  # noqa: E402
-from PySide6.QtNetwork import QLocalServer  # noqa: E402
+qt = pytest.importorskip("kidctl_tray.qt")
+QtWidgets = qt.QtWidgets
+from kidctl_tray.qt import QCoreApplication, QElapsedTimer, QLocalServer  # noqa: E402
 
 from kidctl_common import tray as t  # noqa: E402
 from kidctl_common.protocol import ChatMessage  # noqa: E402
@@ -126,7 +126,7 @@ def _contrast(a, b):
     ("#141618", "#fcfcfc", "#3daee9"),   # Breeze Dark
 ])
 def test_chat_bubbles_readable_in_light_and_dark(qapp, base, text, highlight):
-    from PySide6.QtGui import QColor, QPalette
+    from kidctl_tray.qt import QColor, QPalette
     from kidctl_tray.ui import bubble_colors
     pal = QPalette()
     pal.setColor(QPalette.ColorRole.Base, QColor(base))

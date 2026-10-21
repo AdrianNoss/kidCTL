@@ -1,0 +1,10 @@
+Name: kidctl Login-Sperre (Bildschirmzeit)
+Default: yes
+Priority: 200
+Account-Type: Additional
+Account:
+	[success=4 default=ignore]	pam_listfile.so onerr=succeed item=user sense=deny file=/run/kidctl/locked-users
+	[success=1 default=ignore]	pam_succeed_if.so quiet service notin gdm-password:gdm-autologin:gdm-fingerprint:gdm-smartcard
+	requisite			pam_nologin.so file=/run/kidctl/locked-message
+	optional			pam_echo.so file=/run/kidctl/locked-message
+	requisite			pam_deny.so

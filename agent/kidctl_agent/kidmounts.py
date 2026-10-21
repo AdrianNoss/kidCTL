@@ -42,7 +42,7 @@ MOUNTINFO = "/proc/self/mountinfo"
 
 def _run(*cmd: str) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, capture_output=True, text=True, timeout=30,
-                          env={"PATH": "/usr/bin", "LC_ALL": "C"})
+                          env={"PATH": "/usr/bin:/usr/sbin", "LC_ALL": "C"})
 
 
 def _unescape(path: str) -> str:

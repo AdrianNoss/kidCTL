@@ -8,7 +8,8 @@ users:
   # Admin: sudo ohne Passwort, SSH nur per Schlüssel; Konsolen-/SDDM-Passwort "admin"
   - name: admin
     gecos: Admin
-    groups: [wheel]
+    groups: [@ADMIN_GROUP@]
+    no_user_group: true   # Ubuntu hat schon eine Gruppe „admin“
     sudo: "ALL=(ALL) NOPASSWD:ALL"
     shell: /bin/bash
     lock_passwd: false

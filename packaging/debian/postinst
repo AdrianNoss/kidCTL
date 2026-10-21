@@ -1,0 +1,25 @@
+#!/bin/sh
+# kidctl (Debian/Ubuntu): Login-Sperre per pam-auth-update, Namensauflösung über Port 53, Dienst neu starten.
+set -e
+case "$1" in
+  configure)
+    pam-auth-update --package
+    /usr/lib/kidctl/kidctl-nsswitch.sh install --apply >/dev/null || true
+    systemctl daemon-reload || true
+    if [ -n "$2" ]; then
+      systemctl try-restart kidctl-agent.service || true
+    else
+      echo "==> kidctl installiert. Login-Sperre über pam-auth-update eingetragen (Profil „kidctl“)."
+      echo "==> Gerät koppeln und Agent starten:"
+      echo "      sudo kidctl enroll https://kids.example.org <KOPPLUNGSCODE>"
+      echo "      sudo systemctl enable --now kidctl-agent.service"
+    fi
+    if [ -x /usr/bin/plasmashell ] && [ ! -e /usr/share/kidctl/desktop/plasma ]; then
+      echo "==> KDE Plasma gefunden: bitte zusätzlich installieren:  sudo apt install kidctl-plasma"
+    fi
+    if [ -x /usr/bin/gnome-shell ] && [ ! -e /usr/share/kidctl/desktop/gnome ]; then
+      echo "==> GNOME gefunden: bitte zusätzlich installieren:  sudo apt install kidctl-gnome"
+    fi
+    ;;
+esac
+exit 0

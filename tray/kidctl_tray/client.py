@@ -5,10 +5,10 @@ from __future__ import annotations
 import os
 
 from pydantic import BaseModel, ValidationError
-from PySide6.QtCore import QObject, QTimer, Signal
-from PySide6.QtNetwork import QLocalSocket
 
 from kidctl_common import tray as t
+
+from .qt import QLocalSocket, QObject, QTimer, Signal
 
 RECONNECT_MS = 3000
 

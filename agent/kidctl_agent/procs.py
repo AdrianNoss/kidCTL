@@ -13,6 +13,9 @@ from dataclasses import dataclass
 log = logging.getLogger("kidctl.procs")
 
 FLATPAK_SCOPE = re.compile(r"app-flatpak-(?P<id>[A-Za-z0-9_.\-]+?)-\d+\.scope")
+# Snap-Apps laufen in snap.<name>.<app>-<uuid>.scope bzw. snap.<name>.<app>.service
+SNAP_UNIT = re.compile(r"/snap\.(?P<name>[a-z0-9][a-z0-9-]*)\.[^/\n]+\.(?:scope|service)$", re.M)
+HOST_MOUNTINFO = "/proc/1/mountinfo"
 
 
 @dataclass(frozen=True)
@@ -29,6 +32,7 @@ class ProcInfo:
     # Eigener Mount-Namespace (Container): Pfade zeigen dann nicht zwingend auf Systemdateien
     mnt_foreign: bool = False
     exe_id: tuple[int, int] | None = None   # (st_dev, st_ino) der tatsächlich laufenden Datei
+    snap_name: str | None = None   # laut Cgroup (nur zusammen mit snap_file() vertrauenswürdig)
 
     @property
     def ident(self) -> tuple:
@@ -104,10 +108,38 @@ def _read_once(pid: int, exe: str | None) -> ProcInfo | None:
     argv = tuple(a.decode(errors="replace") for a in (_read(f"/proc/{pid}/cmdline") or b"").split(b"\0") if a)
     cgroup = (_read(f"/proc/{pid}/cgroup") or b"").decode(errors="replace")
     m = FLATPAK_SCOPE.search(cgroup)
+    snap = SNAP_UNIT.search(cgroup)
     foreign, exe_id = _mount_identity(pid)
     return ProcInfo(pid=pid, uid=uid, ppid=ppid, start=start, exe=exe, argv=argv, tty=tty_nr != 0,
                     flatpak_id=m.group("id") if m else None, parent_exe=_exe(ppid) or "",
-                    mnt_foreign=foreign, exe_id=exe_id)
+                    mnt_foreign=foreign, exe_id=exe_id, snap_name=snap.group("name") if snap else None)
+
+
+_snap_devs: set[int] = set()
+
+
+def snap_devices(mountinfo: str = HOST_MOUNTINFO) -> set[int]:
+    """Geräte der eingehängten Snap-Images (squashfs unter /snap, Sicht des Systems)."""
+    out = set()
+    for line in (_read(mountinfo) or b"").decode(errors="replace").splitlines():
+        left, _sep, right = line.partition(" - ")
+        f = left.split()
+        if len(f) > 4 and f[4].startswith("/snap/") and right.split(" ")[0] == "squashfs":
+            major, _c, minor = f[2].partition(":")
+            out.add(os.makedev(int(major), int(minor)))
+    return out
+
+
+def snap_file(info: "ProcInfo", mountinfo: str = HOST_MOUNTINFO) -> bool:
+    """Läuft der Prozess wirklich in einer Snap-Sandbox? Eigener Mount-Namespace und Programmdatei aus einem
+    Snap-Image (schreibgeschützt, nur ein Admin installiert Snaps). Der Name der Cgroup allein genügt nicht:
+    Eine gleichnamige Unit kann das Kind selbst anlegen."""
+    global _snap_devs
+    if not (info.snap_name and info.mnt_foreign and info.exe_id):
+        return False
+    if info.exe_id[0] not in _snap_devs:
+        _snap_devs = snap_devices(mountinfo)   # neue Revision eingehängt
+    return info.exe_id[0] in _snap_devs
 
 
 def read_environ(pid: int) -> dict[str, str]:

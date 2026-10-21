@@ -337,8 +337,8 @@ def test_custom_program_package_dirs_recomputed():
     calls = []
     import kidctl_agent.watcher as wmod
     orig_base, orig_dirs = wmod._compute_base, wmod._compute_pkg_dirs
-    wmod._compute_base = lambda pk, app_exes, ex, gr=(): calls.append(("base", set(app_exes))) or frozenset({"/usr/bin/x"})
-    wmod._compute_pkg_dirs = lambda exes: calls.append(("dirs", set(exes))) or {"/usr/bin/git": ("/usr/lib/git-core",)}
+    wmod._compute_base = lambda pk, app_exes, ex, gr=(), db=None: calls.append(("base", set(app_exes))) or frozenset({"/usr/bin/x"})
+    wmod._compute_pkg_dirs = lambda exes, db=None: calls.append(("dirs", set(exes))) or {"/usr/bin/git": ("/usr/lib/git-core",)}
     try:
         assert w.pkg_dirs_outdated({"/usr/bin/git"})
         asyncio.run(w.refresh_base({"/usr/bin/kate"}, {"/usr/bin/git"}))

@@ -11,12 +11,10 @@ from __future__ import annotations
 import os
 import sys
 
-from PySide6.QtCore import QTimer
-from PySide6.QtGui import QAction
-from PySide6.QtNetwork import QLocalServer, QLocalSocket
-from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 
 from kidctl_common import tray as t
+
+from .qt import QAction, QApplication, QLocalServer, QLocalSocket, QMenu, QMessageBox, QSystemTrayIcon, QTimer
 
 from . import texts
 from .texts import _

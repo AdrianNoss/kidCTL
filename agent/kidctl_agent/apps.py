@@ -20,6 +20,7 @@ APP_DIRS = (
     "/usr/share/applications",
     "/usr/local/share/applications",
     "/var/lib/flatpak/exports/share/applications",  # nur systemweite Flatpaks
+    "/var/lib/snapd/desktop/applications",          # Snaps (nur ein Admin installiert sie)
 )
 SEARCH_PATH = "/usr/local/bin:/usr/bin:/bin"
 ETC_SHELLS = "/etc/shells"
@@ -66,6 +67,8 @@ def parse_desktop(path: Path) -> AppEntry | None:
         return None
     if flatpak_id := e.get("X-Flatpak"):
         key = f"flatpak:{flatpak_id}"
+    elif snap := e.get("X-SnapInstanceName"):
+        key = f"snap:{snap}"
     else:
         exe = resolve_exec(e.get("Exec", ""))
         if exe is None:

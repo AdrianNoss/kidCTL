@@ -228,7 +228,7 @@ def nft_ruleset(ports_by_uid: dict[int, int]) -> str:
 
 def _run(*cmd: str, input: str | None = None) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, input=input, capture_output=True, text=True, timeout=60,
-                          env={"PATH": "/usr/bin", "LC_ALL": "C"})
+                          env={"PATH": "/usr/bin:/usr/sbin", "LC_ALL": "C"})
 
 
 class DnsFilter:

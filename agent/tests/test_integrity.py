@@ -159,3 +159,23 @@ def test_gdm_autologin_for_child(tmp_path):
     assert integrity.check_gdm_autologin({"tom"}, conf) == []               # Admin/anderer User
     conf.write_text("[daemon]\nAutomaticLoginEnable=false\nAutomaticLogin=lea\n")
     assert integrity.check_gdm_autologin({"lea"}, conf) == []
+
+
+def test_pam_debian_profile(tmp_path):
+    """Debian/Ubuntu: pam-auth-update schreibt das Profil ohne Markierung nach common-account."""
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[2]
+    profile = (root / "packaging/debian/kidctl.pam-config").read_text()
+    lines = [ln.strip() for ln in profile.split("Account:\n", 1)[1].splitlines() if ln.strip()]
+    common = tmp_path / "common-account"
+    common.write_text("account\t[success=1 new_authtok_reqd=done default=ignore]\tpam_unix.so\n"
+                      "account\trequisite\t\t\tpam_deny.so\naccount\trequired\t\t\tpam_permit.so\n"
+                      + "".join(f"account\t{ln}\n" for ln in lines) + "# end of pam-auth-update config\n")
+    assert integrity.check_pam(common).ok
+    # gleicher Ablauf wie der Arch-Block (Sprungweiten zählen nur die eigenen Zeilen)
+    assert [next(w for w in ln.split() if w.endswith(".so")) for ln in lines] == [
+        "pam_listfile.so", "pam_succeed_if.so", "pam_nologin.so", "pam_echo.so", "pam_deny.so"]
+    assert lines[0].startswith("[success=4") and lines[1].startswith("[success=1")
+    common.write_text(common.read_text().replace("\taccount\t[success=4", "#account\t[success=4")
+                      .replace("account\t[success=4", "#account\t[success=4"))
+    assert not integrity.check_pam(common).ok

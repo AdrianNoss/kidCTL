@@ -257,7 +257,8 @@ Provides        : None
 
 
 def test_closure_and_base_paths():
-    deps, provides = programs.parse_pacman_qi(QI)
+    from kidctl_agent.pkgdb import parse_pacman_qi
+    deps, provides, _groups = parse_pacman_qi(QI)
     assert deps["bash"] == ["readline", "glibc"] and provides["kwin"] == "kwin-git"
     assert programs.closure(deps, provides, ["plasma-desktop", "fehlt"]) == {
         "plasma-desktop", "plasma-workspace", "kwin-git", "bash"}
@@ -359,11 +360,12 @@ Depends On      : None
 
 
 def test_group_members():
-    assert programs.group_members(QI_GROUPS, ["plasma"]) == ["powerdevil"]
-    assert programs.group_members(QI_GROUPS, ["kf6"]) == ["baloo", "kidletime"]
-    assert programs.group_members(QI_GROUPS, []) == []
-    deps, provides = programs.parse_pacman_qi(QI_GROUPS)
-    assert programs.closure(deps, provides, programs.group_members(QI_GROUPS, ["plasma"])) == {
+    from kidctl_agent.pkgdb import parse_pacman_qi
+    deps, provides, groups = parse_pacman_qi(QI_GROUPS)
+    assert programs.group_members(groups, ["plasma"]) == ["powerdevil"]
+    assert programs.group_members(groups, ["kf6"]) == ["baloo", "kidletime"]
+    assert programs.group_members(groups, []) == []
+    assert programs.closure(deps, provides, programs.group_members(groups, ["plasma"])) == {
         "powerdevil", "kidletime"}
 
 
@@ -386,8 +388,9 @@ def test_compute_base_uses_groups(monkeypatch, tmp_path):
         calls.append(cmd)
         out = QI_GROUPS if cmd[1] == "-Qi" else f"{exe}\n"
         return subprocess.CompletedProcess(cmd, 0, out, "")
-    monkeypatch.setattr(watcher.subprocess, "run", fake_run)
+    from kidctl_agent import pkgdb
+    monkeypatch.setattr(pkgdb.subprocess, "run", fake_run)
     monkeypatch.setattr(watcher, "base_paths", lambda files, app_exes, excludes, dirs=None: frozenset(files))
     monkeypatch.setattr(watcher, "service_exes", lambda: {"/usr/bin/kdeconnectd"})
-    assert watcher._compute_base([], set(), [], ["plasma"]) == {str(exe), "/usr/bin/kdeconnectd"}
-    assert calls[1][:2] == ["pacman", "-Qlq"] and set(calls[1][2:]) == {"powerdevil", "kidletime"}
+    assert watcher._compute_base([], set(), [], ["plasma"], pkgdb.Pacman()) == {str(exe), "/usr/bin/kdeconnectd"}
+    assert list(calls[1][:2]) == ["pacman", "-Qlq"] and set(calls[1][2:]) == {"powerdevil", "kidletime"}

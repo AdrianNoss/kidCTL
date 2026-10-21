@@ -27,6 +27,7 @@ from .webfilter import normalize_domain
 
 SCOPES = {"permanent": N_("Dauerhaft erlaubt"), "today": N_("Heute erlaubt")}
 _FLATPAK = re.compile(r"^flatpak:[A-Za-z0-9_.-]{3,255}$")
+_SNAP = re.compile(r"^snap:[a-z0-9][a-z0-9-]{0,39}$")
 
 
 class AccessError(ValueError):
@@ -40,6 +41,8 @@ def valid_key(kind: str, key: str) -> str | None:
         return f"domain:{d}" if d else None
     if key.startswith("flatpak:"):
         return key if _FLATPAK.match(key) else None
+    if key.startswith("snap:"):
+        return key if _SNAP.match(key) else None
     try:
         return programs.custom_key(key[4:]) if key.startswith("exe:/") else None
     except ValueError:

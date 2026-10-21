@@ -1,7 +1,8 @@
 """Programm-Whitelist: Entscheidung je Prozess (ohne I/O, testbar).
 
 Reihenfolge:
-1. Flatpak (erkannt über die Cgroup ``app-flatpak-<id>-*.scope``): nur freigegebene App-IDs.
+1. Flatpak (erkannt über die Cgroup ``app-flatpak-<id>-*.scope``): nur freigegebene App-IDs. Snap ebenso
+   (Cgroup ``snap.<name>.…``, nur mit Programmdatei aus einem Snap-Image, siehe ``procs.snap_file``).
 2. Programm selbst freigegeben (Basisliste, Eltern-Liste oder im Verzeichnis einer freigegebenen
    App, z. B. Chromium-Hilfsprozesse) -> erlaubt.
 3. Shells: ``-c befehl`` oder Skriptdatei aus Systemverzeichnissen erlaubt; interaktiv (liest vom
@@ -51,7 +52,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .procs import ProcInfo
+from .procs import ProcInfo, snap_file
 
 BASE_FILE = Path(os.environ.get("KIDCTL_BASE_PROGRAMS", "/usr/lib/kidctl/base-programs.txt"))
 
@@ -107,7 +108,8 @@ INTERP_PATH_ENV = {"PYTHONPATH", "PYTHONHOME", "PYTHONUSERBASE", "PYTHONPLATLIBD
 # Immer erlaubt (kidctl selbst) bzw. nie in der Basis (Loader startet beliebige Programme)
 BUILTIN_BASE = ["/usr/lib/kidctl/*"]
 BUILTIN_EXCLUDE = ["/usr/lib/ld-linux*", "/usr/lib64/ld-linux*", "/usr/lib/ld-*.so*"]
-EXEC_DIRS = ("/usr/bin/", "/usr/lib/")
+# Programmverzeichnisse (Debian/Ubuntu zusätzlich /usr/libexec, /usr/sbin, /usr/games)
+EXEC_DIRS = ("/usr/bin/", "/usr/lib/", "/usr/libexec/", "/usr/sbin/", "/usr/games/")
 
 
 @dataclass
@@ -139,42 +141,9 @@ def load_base(path: Path = BASE_FILE) -> BaseSpec:
     return spec
 
 
-def _qi_blocks(text: str):
-    """``pacman -Qi`` (LC_ALL=C) -> Felder je Paket (Fortsetzungszeilen angehängt)."""
-    for block in text.strip().split("\n\n"):
-        fields: dict[str, str] = {}
-        key = None
-        for line in block.splitlines():
-            m = re.match(r"^(\S[^:]*?)\s*: (.*)$", line)
-            if m:
-                key = m.group(1)
-                fields[key] = m.group(2)
-            elif key:
-                fields[key] += " " + line.strip()
-        if fields.get("Name"):
-            yield fields
-
-
-def _names(v: str) -> list[str]:
-    return [re.split(r"[<>=]", x)[0] for x in v.split()] if v and v != "None" else []
-
-
-def parse_pacman_qi(text: str) -> tuple[dict[str, list[str]], dict[str, str]]:
-    """``pacman -Qi`` (LC_ALL=C) -> (Paket -> Abhängigkeiten, bereitgestellter Name -> Paket)."""
-    deps: dict[str, list[str]] = {}
-    provides: dict[str, str] = {}
-    for fields in _qi_blocks(text):
-        name = fields["Name"]
-        deps[name] = _names(fields.get("Depends On", ""))
-        for prov in _names(fields.get("Provides", "")):
-            provides.setdefault(prov, name)
-    return deps, provides
-
-
-def group_members(text: str, groups: list[str]) -> list[str]:
-    """Installierte Pakete, die zu einer der ``groups`` gehören (Feld „Groups“ von ``pacman -Qi``)."""
-    wanted = set(groups)
-    return sorted(f["Name"] for f in _qi_blocks(text) if wanted & set(_names(f.get("Groups", ""))))
+def group_members(groups: dict[str, set[str]], wanted: list[str]) -> list[str]:
+    """Installierte Pakete, die zu einer der Gruppen ``wanted`` gehören (``groups``: Paket -> Gruppen)."""
+    return sorted(pkg for pkg, gs in groups.items() if gs & set(wanted))
 
 
 def closure(deps: dict[str, list[str]], provides: dict[str, str], roots: list[str]) -> set[str]:
@@ -318,7 +287,7 @@ PKG_DIR_PREFIXES = ("/usr/lib/", "/usr/libexec/", "/usr/share/", "/opt/")
 
 
 def package_dirs(listing: str, exes: set[str]) -> dict[str, tuple[str, ...]]:
-    """``pacman -Ql`` -> App-Programm -> eigene Ordner seines Pakets: Verzeichnisse, die keinem
+    """``pacman -Ql`` bzw. ``Dpkg.listing()`` -> App-Programm -> eigene Ordner seines Pakets: Verzeichnisse, die keinem
     anderen Paket gehören (jeweils nur das oberste, z. B. ``/usr/lib/heroic``)."""
     owners: dict[str, set[str]] = {}
     dirs_of: dict[str, list[str]] = {}
@@ -330,7 +299,7 @@ def package_dirs(listing: str, exes: set[str]) -> dict[str, tuple[str, ...]]:
             dirs_of.setdefault(pkg, []).append(path)
         elif path in exes:
             pkg_of[path] = pkg
-        elif path.startswith("/usr/bin/") and (real := os.path.realpath(path)) in exes:
+        elif path.startswith(("/usr/bin/", "/usr/games/")) and (real := os.path.realpath(path)) in exes:
             pkg_of.setdefault(real, pkg)  # z. B. /usr/bin/app -> /usr/lib/app/app
     out = {}
     for exe, pkg in pkg_of.items():
@@ -357,6 +326,7 @@ class Allowed:
         # Steam gilt als freigegeben, wenn der Steam-Starter freigegeben ist
         self.steam_enabled = any(e.startswith(STEAM_SYSTEM) or e == "/usr/bin/steam" for e in self.exes)
         self.flatpaks = {k[8:] for k in self.keys if k.startswith("flatpak:")}
+        self.snaps = {k[5:] for k in self.keys if k.startswith("snap:")}
         self.app_dirs = {d for d in (os.path.dirname(e) for e in self.exes) if d not in GENERIC_DIRS}
         for e in self.exes:
             self.app_dirs.update(self.pkg_dirs.get(e, ()))
@@ -590,6 +560,10 @@ def classify(info: ProcInfo, allowed: Allowed,
         if info.flatpak_id in allowed.flatpaks:
             return None
         return Verdict(f"flatpak:{info.flatpak_id}", info.flatpak_id)
+    if info.snap_name and snap_file(info):
+        if info.snap_name in allowed.snaps:
+            return None
+        return Verdict(f"snap:{info.snap_name}", info.snap_name)
 
     exe = info.exe
     name = os.path.basename(exe)

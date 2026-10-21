@@ -20,3 +20,6 @@ PrivateDevices=yes
 ProtectKernelTunables=yes
 ProtectControlGroups=yes
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+# Ubuntu/Debian: das AppArmor-Profil von unbound erlaubt nur dessen eigene Pfade, nicht /run/kidctl/dns –
+# abgeschottet ist der Dienst über systemd (eigener Benutzer, System schreibgeschützt). „-“: ohne AppArmor egal.
+AppArmorProfile=-unconfined

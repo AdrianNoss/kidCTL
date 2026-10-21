@@ -18,7 +18,8 @@ from kidctl_common.protocol import IntegrityCheck
 from .dnsfilter import BASE_PORT, NFT_TABLE, UNIT
 from .kidmounts import noexec_mounts, safe_home
 
-PAM_FILE = Path("/etc/pam.d/system-login")
+PAM_FILE = Path("/etc/pam.d/system-login")          # Arch: Block per kidctl-pam.sh
+PAM_FILE_DEBIAN = Path("/etc/pam.d/common-account")  # Debian/Ubuntu: per pam-auth-update (Profil „kidctl“)
 PAM_MARK = "# kidctl begin"
 PAM_LINE = "pam_listfile.so onerr=succeed item=user sense=deny file=/run/kidctl/locked-users"
 NSSWITCH = Path("/etc/nsswitch.conf")
@@ -35,18 +36,22 @@ DESKTOP_PACKAGES = {
 
 def _run(*cmd: str) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, capture_output=True, text=True, timeout=30,
-                          env={"PATH": "/usr/bin", "LC_ALL": "C"})
+                          env={"PATH": "/usr/bin:/usr/sbin", "LC_ALL": "C"})
 
 
-def check_pam() -> IntegrityCheck:
+def check_pam(debian: Path = PAM_FILE_DEBIAN) -> IntegrityCheck:
     label = "Login-Sperre (PAM)"
+    path = debian if debian.exists() else PAM_FILE
     try:
-        text = PAM_FILE.read_text()
+        text = path.read_text()
     except OSError as e:
-        return IntegrityCheck(id="pam", label=label, ok=False, detail=f"{PAM_FILE} nicht lesbar: {e}")
-    ok = any(line.startswith(PAM_MARK) for line in text.splitlines()) and PAM_LINE in text
+        return IntegrityCheck(id="pam", label=label, ok=False, detail=f"{path} nicht lesbar: {e}")
+    if path == debian:   # pam-auth-update schreibt keine Markierung
+        ok = any(PAM_LINE in line and not line.lstrip().startswith("#") for line in text.splitlines())
+    else:
+        ok = any(line.startswith(PAM_MARK) for line in text.splitlines()) and PAM_LINE in text
     return IntegrityCheck(id="pam", label=label, ok=ok,
-                          detail="" if ok else f"kidctl-Block in {PAM_FILE} fehlt oder wurde verändert")
+                          detail="" if ok else f"kidctl-Block in {path} fehlt oder wurde verändert")
 
 
 def check_nsswitch() -> IntegrityCheck:
@@ -96,6 +101,11 @@ def check_noexec(kid_users: set[str], mounts=noexec_mounts, libraries: set[str] 
     return out
 
 
+def install_hint(package: str) -> str:
+    return f"sudo apt install {package}" if Path("/var/lib/dpkg/status").exists() and not Path(
+        "/var/lib/pacman/local").exists() else f"sudo pacman -S {package}"
+
+
 def check_desktop_packages(packages: dict[str, tuple[str, str]] = DESKTOP_PACKAGES) -> list[IntegrityCheck]:
     """Für jeden installierten Desktop das passende Paket (``kidctl-plasma`` bzw. ``kidctl-gnome``)."""
     out = []
@@ -104,7 +114,7 @@ def check_desktop_packages(packages: dict[str, tuple[str, str]] = DESKTOP_PACKAG
             continue
         ok = Path(marker).exists()
         out.append(IntegrityCheck(id=f"desktop:{desktop}", label=f"Desktop-Paket kidctl-{desktop}", ok=ok,
-                                  detail="" if ok else f"fehlt – sudo pacman -S kidctl-{desktop}"))
+                                  detail="" if ok else f"fehlt – {install_hint(f'kidctl-{desktop}')}"))
     return out
 
 

@@ -1,0 +1,96 @@
+# kidctl – feste Basisliste der Programm-Whitelist für Debian/Ubuntu/Mint/Pop!_OS (für Eltern unsichtbar).
+# Format wie packaging/arch/base-programs.txt. Paketgruppen gibt es hier nicht (nur die Pseudogruppe
+# „essential“): Metapakete der Desktops ziehen den Rest über Depends und Recommends nach (nur installierte
+# Pakete zählen).
+#
+#   pkg:<paket>   Wurzelpaket: alle ausführbaren Dateien seiner gesamten Abhängigkeitskette – außer
+#                 Programmen mit sichtbarem .desktop-Eintrag (Apps = Eltern-Entscheidung),
+#                 Shells/Interpreter und Ausschlüssen.
+#   <muster>      zusätzlich erlaubter Pfad (fnmatch-Glob)
+#   !<muster>     nie Basis (Eltern können es trotzdem einzeln freigeben)
+
+# --- Grundsystem: Essential-Pakete (grep, sed, coreutils, …) – hängen von nichts ab, sind aber immer da ---
+group:essential
+
+# --- GNOME (Ubuntu, Debian, Pop!_OS 22.04) ---
+pkg:ubuntu-desktop-minimal
+pkg:ubuntu-desktop
+pkg:ubuntu-session
+pkg:task-gnome-desktop
+pkg:gnome-core
+pkg:gdm3
+pkg:gnome-shell
+pkg:gnome-session-bin
+pkg:gnome-settings-daemon
+pkg:xdg-desktop-portal-gnome
+pkg:gnome-keyring
+pkg:gnome-shell-extension-appindicator
+pkg:gnome-shell-extension-ubuntu-dock
+pkg:gnome-shell-extension-desktop-icons-ng
+# Hilfsskripte (gjs) von GNOME Shell und systemweiten Erweiterungen (AppIndicator, Desktop-Icons, Dock)
+/usr/share/gnome-shell/*
+# Dateien (Nautilus): Ubuntus Desktop-Symbole (Erweiterung „Desktop Icons NG“) starten es alle paar Sekunden
+# per D-Bus – ohne Freigabe endlose Neustarts und Sperrmeldungen. Unter Ubuntu daher Teil der Oberfläche.
+/usr/bin/nautilus
+# --- KDE Plasma (Kubuntu, Debian) ---
+pkg:kubuntu-desktop
+pkg:task-kde-desktop
+pkg:kde-plasma-desktop
+pkg:plasma-desktop
+pkg:plasma-workspace
+pkg:kwin-wayland
+pkg:sddm
+pkg:plasma-nm
+pkg:plasma-pa
+pkg:xdg-desktop-portal-kde
+# --- Audio, Portale, Netzwerk ---
+pkg:pipewire
+pkg:pipewire-pulse
+pkg:wireplumber
+pkg:xdg-desktop-portal-gtk
+pkg:xwayland
+pkg:network-manager
+# --- Flatpak/Snap-Laufzeit (Apps selbst über App-ID bzw. Snap-Name geregelt) ---
+pkg:flatpak
+pkg:snapd
+
+# --- Eingabemethoden (ibus-Engines als Python-Skripte, nicht ausführbar) ---
+/usr/share/ibus-*/engine/*
+
+# --- harmlose Hilfsprogramme, die Skripte aufrufen ---
+/usr/bin/which
+
+# --- vom Agenten im Namen des Kindes gestartet (Benachrichtigung, Abmeldung, GNOME-Suche) ---
+/usr/bin/notify-send
+/usr/bin/busctl
+/usr/bin/gsettings
+
+# --- Terminals nie als Basis ---
+!/usr/bin/gnome-terminal*
+!/usr/libexec/gnome-terminal-server
+!/usr/bin/kgx
+!/usr/bin/ptyxis
+!/usr/bin/konsole
+!/usr/bin/yakuake
+!/usr/bin/xterm
+!/usr/bin/uxterm
+!/usr/bin/koi8rxterm
+!/usr/bin/lxterm
+!/usr/bin/x-terminal-emulator
+!/usr/bin/alacritty
+!/usr/bin/kitty
+!/usr/bin/foot
+
+# --- universelle Netzwerk-Werkzeuge nie als Basis ---
+!/usr/bin/socat*
+!/usr/bin/filan
+!/usr/bin/procan
+!/usr/bin/nc
+!/usr/bin/nc.openbsd
+!/usr/bin/netcat
+!/usr/bin/ncat
+
+# --- Container/VMs nie als Basis ---
+!/usr/bin/systemd-nspawn
+!/usr/bin/systemd-vmspawn
+!/usr/bin/systemd-run

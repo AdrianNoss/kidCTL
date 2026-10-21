@@ -1,0 +1,9 @@
+#!/bin/sh
+# kidctl (Debian/Ubuntu): Zustand nur bei „purge“ löschen (Geräte-Token, Policy, Nutzung).
+set -e
+case "$1" in
+  purge) rm -rf /var/lib/kidctl ;;
+  remove) echo "==> Zustand (Geräte-Token, Policy, Nutzung) bleibt in /var/lib/kidctl – löschen mit: apt purge kidctl" ;;
+esac
+systemctl daemon-reload 2>/dev/null || true
+exit 0

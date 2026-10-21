@@ -5,11 +5,10 @@ from __future__ import annotations
 import html
 from datetime import time
 
-from PySide6.QtCore import QEvent, QRect, Qt, QTime, Signal
-from PySide6.QtGui import QColor, QFont, QIcon, QPainter, QPalette, QPixmap
-from PySide6.QtWidgets import (
-    QButtonGroup, QCheckBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPlainTextEdit, QPushButton, QRadioButton, QScrollArea, QSpinBox, QTextBrowser, QTimeEdit, QVBoxLayout, QWidget,
+from .qt import (  # noqa: F401 – PySide6 oder PyQt6
+    QButtonGroup, QCheckBox, QColor, QDialog, QDialogButtonBox, QEvent, QFont, QFormLayout, QHBoxLayout, QIcon, QLabel,
+    QLineEdit, QPainter, QPalette, QPixmap, QPlainTextEdit, QPushButton, QRadioButton, QRect, QScrollArea, QSpinBox, Qt,
+    QTextBrowser, QTime, QTimeEdit, QVBoxLayout, QWidget, Signal,
 )
 
 from kidctl_common import tray as t
@@ -111,7 +110,8 @@ class RequestDialog(QDialog):
     def request(self) -> t.TrayExtensionRequest | None:
         reason = self.reason.toPlainText().strip()
         games = self.games_choice.isChecked()
-        until = self.until.time().toPython() if self.later.isChecked() and not games else None
+        q = self.until.time()   # toPython() gibt es nur in PySide6
+        until = time(q.hour(), q.minute()) if self.later.isChecked() and not games else None
         if not reason:
             self.hint.setText(_("Bitte eine Begründung schreiben."))
             return None

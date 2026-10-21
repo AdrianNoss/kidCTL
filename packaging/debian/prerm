@@ -1,0 +1,21 @@
+#!/bin/sh
+# kidctl (Debian/Ubuntu): beim Entfernen alle Laufzeit-Änderungen zurücknehmen (nicht bei Upgrades).
+set -e
+case "$1" in
+  remove|deconfigure)
+    systemctl disable --now kidctl-agent.service 2>/dev/null || true
+    systemctl stop kidctl-noexec.service 2>/dev/null || true   # nimmt noexec zurück
+    # noexec-Homes und -Spieleordner (transiente Mounts des Agenten) aushängen
+    for u in $(systemctl list-units --type=mount --all --plain --no-legend 2>/dev/null | awk '{print $1}'); do
+      case "$(systemctl show "$u" -p Description --value)" in
+        "kidctl: noexec-Home"|"kidctl: noexec-Spieleordner") systemctl stop "$u" || true ;;
+      esac
+    done
+    pam-auth-update --package --remove kidctl
+    /usr/lib/kidctl/kidctl-nsswitch.sh remove --apply >/dev/null || true
+    systemctl stop 'kidctl-dns@*.service' 2>/dev/null || true
+    nft delete table inet kidctl_dns 2>/dev/null || true
+    rm -rf /run/kidctl
+    ;;
+esac
+exit 0
