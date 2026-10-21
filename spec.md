@@ -1132,3 +1132,4 @@ Verlängerungsanfragen.
   die Sperre verhinderte das automatische Entsperren der Brieftasche. Agent 0.26.2 erlaubt nur genau diesen
   Aufruf mit pam_kwallet_init als Vorfahr. Getestet: Agent 197 grün (neu: erlaubt nur von pam_kwallet_init,
   nicht ohne Vorfahr, nicht mit anderem Ziel, fremdem Socket oder zusätzlichen Argumenten).
+- 2026-10-21: Nutzer-Test 0.26.2: keine Sperrmeldungen mehr beim Plasma-Login (KWallet-socat, Sitzungsdienste, srt-logger, which, ldd).
