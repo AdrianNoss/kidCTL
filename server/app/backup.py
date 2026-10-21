@@ -59,6 +59,11 @@ def backups() -> list[BackupInfo]:
     return sorted(out, key=lambda b: b.at, reverse=True)
 
 
+def find(name: str) -> BackupInfo | None:
+    """Backup nach Dateiname (nur vorhandene Schnappschüsse – kein Pfad von außen)."""
+    return next((b for b in backups() if b.path.name == name), None)
+
+
 def latest() -> BackupInfo | None:
     found = backups()
     return found[0] if found else None

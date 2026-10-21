@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import delete, select
@@ -15,7 +15,8 @@ from .. import backup
 from ..i18n import _
 from ..config import settings
 from ..db import get_db
-from ..models import ParentSession, PushSubscription
+from .. import accounts
+from ..models import Parent, ParentSession, PushSubscription
 from ..push import send_to_parents_sync
 from ..security import csrf_protect, require_session
 from ..web import render
@@ -40,13 +41,33 @@ def manifest():
 @router.get("/settings")
 def settings_page(request: Request, sess: ParentSession = Depends(require_session),
                   db: Session = Depends(get_db)):
+    return _settings(request, db, sess)
+
+
+def _settings(request: Request, db: Session, sess: ParentSession, status_code: int = 200, **ctx):
     count = len(db.scalars(select(PushSubscription.id)
                            .where(PushSubscription.parent_id == sess.parent_id)).all())
-    return render(request, "settings.html", push_enabled=settings.push_enabled,
+    return render(request, "settings.html", status_code=status_code, push_enabled=settings.push_enabled,
                   vapid_public_key=settings.vapid_public_key, subscription_count=count,
                   sent=request.query_params.get("sent"), backups=backup.backups(), backup_error=backup.last_error(),
                   backup_keep=backup.KEEP, backup_hour=backup.BACKUP_HOUR,
-                  backup_done=request.query_params.get("backup"))
+                  backup_done=request.query_params.get("backup"), **ctx)
+
+
+@router.post("/settings/backup/download")
+def backup_download(request: Request, name: str = Form(""), current_password: str = Form(""),
+                    sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    """Backup herunterladen – enthält Passwort-Hashes und Authenticator-Schlüssel, daher erneut mit Passwort."""
+    parent = db.get(Parent, sess.parent_id)
+    info = backup.find(name)
+    error = _("Backup nicht gefunden.") if info is None else accounts.check_password(db, request, parent,
+                                                                                      current_password)
+    if error:
+        db.commit()   # Fehlversuch zählt
+        return _settings(request, db, sess, 400, download_error=error)
+    log.warning("Backup %s heruntergeladen von %s", info.path.name, parent.username)
+    return FileResponse(info.path, media_type="application/gzip", filename=info.path.name,
+                        headers={"Cache-Control": "no-store"})
 
 
 @router.post("/settings/backup")

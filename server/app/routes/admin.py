@@ -521,15 +521,7 @@ def _profile(request: Request, parent: Parent, status_code: int = 200, **ctx):
                   mail_enabled=settings.mail_enabled, intervals=report.INTERVALS, send_hour=report.SEND_HOUR, **ctx)
 
 
-def _check_password(db: Session, request: Request, parent: Parent, password: str) -> str | None:
-    """Aktuelles Passwort prüfen (mit Rate-Limiting wie beim Login)."""
-    ip = client_ip(request)
-    if is_rate_limited(db, "login", ip, parent.username):
-        return _("Zu viele Fehlversuche. Bitte später erneut versuchen.")
-    if not verify_password(password, parent.password_hash):
-        record_failure(db, "login", ip, parent.username)
-        return _("Aktuelles Passwort ist falsch.")
-    return None
+_check_password = accounts.check_password
 
 
 PROFILE_NOTICES = {"saved": N_("Profil gespeichert."), "password": N_("Passwort geändert. Andere Sitzungen wurden abgemeldet."),

@@ -13,6 +13,16 @@
   {% else %}<p class="muted">{{ _("Noch kein Backup vorhanden.") }}</p>{% endif %}
   {% if backup_error %}<p class="warn"><small>{{ _("Letzter Fehler:") }} {{ backup_error }}</small></p>{% endif %}
   <p class="muted"><small>{{ _("Täglich ab {hour}:00 Uhr ein geprüfter Schnappschuss der Datenbank, die letzten {keep} bleiben erhalten. Bei einem Fehler oder ohne Backup seit 2 Tagen kommt eine Push-Nachricht. Das externe Backup des Servers sollte den Ordner data/ mitsichern.").format(hour=backup_hour, keep=backup_keep) }}</small></p>
+  {% if backups %}
+  <form method="post" action="/settings/backup/download" class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>{{ _("Backup") }} <select name="name">{% for b in backups %}<option value="{{ b.path.name }}">{{ fmt_datetime(b.at) }} ({{ fmt_size(b.size) }})</option>{% endfor %}</select></label>
+    <label>{{ _("Aktuelles Passwort") }} <input type="password" name="current_password" required autocomplete="current-password"></label>
+    <button type="submit" class="secondary">{{ _("Herunterladen") }}</button>
+  </form>
+  {% if download_error %}<p class="error">{{ download_error }}</p>{% endif %}
+  <p class="muted"><small>{{ _("Das Backup enthält Passwort-Hashes und Authenticator-Schlüssel aller Eltern – sicher aufbewahren.") }}</small></p>
+  {% endif %}
   <form method="post" action="/settings/backup">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <button type="submit" class="secondary">{{ _("Jetzt sichern") }}</button>

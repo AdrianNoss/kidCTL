@@ -1152,3 +1152,4 @@ Verlängerungsanfragen.
   veraltetes Backup mit einmaligem Alarm, Einstellungsseite und „Jetzt sichern“, neueste Version aus dem
   Repo inkl. 0.26.10 > 0.26.2 und Signatur-/Datenbankdateien ignoriert, Hinweis in WebUI, Push nur einmal
   und erst nach einem Tag). Sichttest Einstellungsseite mit echtem Backup des Entwicklungsservers.
+- 2026-10-21: Backup-Download im WebUI (Einstellungen): Auswahl des Schnappschusses, erneute Eingabe des eigenen Passworts (Rate-Limiting wie Login), nur vorhandene Dateien, Log-Eintrag. Getestet: Server 116 grün (neu: falsches Passwort, fremder Dateiname, gültiger Download ist gzip-SQLite).

@@ -1568,3 +1568,15 @@ msgid_plural "{n} Backups vorhanden"
 msgstr[0] "{n} backup available"
 msgstr[1] "{n} backups available"
 
+msgid "Backup"
+msgstr "Backup"
+
+msgid "Herunterladen"
+msgstr "Download"
+
+msgid "Backup nicht gefunden."
+msgstr "Backup not found."
+
+msgid "Das Backup enthält Passwort-Hashes und Authenticator-Schlüssel aller Eltern – sicher aufbewahren."
+msgstr "The backup contains the password hashes and authenticator keys of all parents – keep it safe."
+

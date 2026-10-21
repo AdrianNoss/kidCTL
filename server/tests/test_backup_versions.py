@@ -116,3 +116,19 @@ def test_update_hint_and_alarm_once(client, parent, tmp_path, monkeypatch):
     with SessionLocal() as db:
         dev_id = db.scalar(select(Device.id).where(Device.name == "PC"))
     assert "Update verfügbar: 0.26.2" in client.get(f"/devices/{dev_id}").text
+
+
+def test_download_requires_password(client, parent):
+    _clear()
+    login(client, parent)
+    info = backup.run()
+    page = client.get("/settings").text
+    tok = csrf_from(page)
+    assert "Herunterladen" in page
+    r = client.post("/settings/backup/download", data={"csrf_token": tok, "name": info.path.name, "current_password": "falsch"})
+    assert r.status_code == 400 and "Aktuelles Passwort ist falsch." in r.text
+    r = client.post("/settings/backup/download", data={"csrf_token": tok, "name": "../kidctl.db", "current_password": "x"})
+    assert r.status_code == 400 and "Backup nicht gefunden." in r.text
+    from conftest import PASSWORD
+    r = client.post("/settings/backup/download", data={"csrf_token": tok, "name": info.path.name, "current_password": PASSWORD})
+    assert r.status_code == 200 and gzip.decompress(r.content)[:15] == b"SQLite format 3"

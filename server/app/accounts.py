@@ -72,6 +72,18 @@ def find_by_login(db: Session, ident: str) -> Parent | None:
     return matches[0] if len(matches) == 1 else None
 
 
+def check_password(db: Session, request, parent: Parent, password: str) -> str | None:
+    """Aktuelles Passwort prüfen (mit Rate-Limiting wie beim Login); Fehlertext oder ``None``."""
+    from .security import client_ip, is_rate_limited, record_failure, verify_password
+    ip = client_ip(request)
+    if is_rate_limited(db, "login", ip, parent.username):
+        return _("Zu viele Fehlversuche. Bitte später erneut versuchen.")
+    if not verify_password(password, parent.password_hash):
+        record_failure(db, "login", ip, parent.username)
+        return _("Aktuelles Passwort ist falsch.")
+    return None
+
+
 # ---------- TOTP ----------
 
 def totp_step(secret: str, code: str) -> int | None:
