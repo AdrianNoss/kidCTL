@@ -1121,3 +1121,4 @@ Verlängerungsanfragen.
   Migration gegen Entwicklungs-DB (Server-Start). Auf echtem Kinderrechner nicht getestet.
 - 2026-10-21: Nutzer-Test Spiele-Limit (0.25.0) auf dem Kinderrechner: Vorwarnung erscheint, danach wird das Spiel geschlossen.
 - 2026-10-21: Nutzer-Test Spielzeit-Anfrage (0.25.0): Anfrage aus dem Verlängerungsdialog, Genehmigung im Chat funktioniert.
+- 2026-10-21: Nutzer-Test WebUI auf Englisch (Server mit i18n) funktioniert. Kinderrechner auf Englisch noch nicht getestet.
