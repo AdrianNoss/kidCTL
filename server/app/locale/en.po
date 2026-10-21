@@ -15,9 +15,6 @@ msgstr "Devices"
 msgid "Eltern"
 msgstr "Parents"
 
-msgid "Benachrichtigungen"
-msgstr "Notifications"
-
 msgid "Profil"
 msgstr "Profile"
 
@@ -1514,4 +1511,60 @@ msgstr "“Of which games”: at most this much time with games (Steam, Heroic a
 
 msgid "schule.de"
 msgstr "school.example"
+
+msgid "Agent {old} ist veraltet, verfügbar ist {new}. Auf dem Rechner „pacman -Syu“ ausführen."
+msgstr "Agent {old} is outdated, {new} is available. Run “pacman -Syu” on the computer."
+
+msgid "Auf dem Rechner „pacman -Syu“ ausführen"
+msgstr "Run “pacman -Syu” on the computer"
+
+msgid "Backup erstellt."
+msgstr "Backup created."
+
+msgid "Backup fehlgeschlagen (Details im Server-Log)."
+msgstr "Backup failed (details in the server log)."
+
+msgid "Datenbank-Backup"
+msgstr "Database backup"
+
+msgid "Datenbank-Backup fehlgeschlagen"
+msgstr "Database backup failed"
+
+msgid "Datenbank-Backup veraltet"
+msgstr "Database backup outdated"
+
+msgid "Jetzt sichern"
+msgstr "Back up now"
+
+msgid "Letzter Fehler:"
+msgstr "Last error:"
+
+msgid "Letztes Backup: {when} ({size})"
+msgstr "Last backup: {when} ({size})"
+
+msgid "Noch kein Backup vorhanden."
+msgstr "No backup yet."
+
+msgid "Push-Benachrichtigungen"
+msgstr "Push notifications"
+
+msgid "Seit über 2 Tagen kein neues Backup."
+msgstr "No new backup for more than 2 days."
+
+msgid "Täglich ab {hour}:00 Uhr ein geprüfter Schnappschuss der Datenbank, die letzten {keep} bleiben erhalten. Bei einem Fehler oder ohne Backup seit 2 Tagen kommt eine Push-Nachricht. Das externe Backup des Servers sollte den Ordner data/ mitsichern."
+msgstr "Every day from {hour}:00 a verified snapshot of the database; the last {keep} are kept. If a backup fails or none was made for 2 days, you get a push notification. The server’s external backup should include the data/ folder."
+
+msgid "Update für „{name}“ verfügbar"
+msgstr "Update available for “{name}”"
+
+msgid "Update verfügbar: {new}. Auf dem Rechner „pacman -Syu“ ausführen."
+msgstr "Update available: {new}. Run “pacman -Syu” on the computer."
+
+msgid "Update: {old} → {new}"
+msgstr "Update: {old} → {new}"
+
+msgid "{n} Backup vorhanden"
+msgid_plural "{n} Backups vorhanden"
+msgstr[0] "{n} backup available"
+msgstr[1] "{n} backups available"
 

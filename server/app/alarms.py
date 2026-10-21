@@ -1,4 +1,5 @@
-"""Hintergrund-Alarme: Gerät hat sich zu lange nicht gemeldet."""
+"""Hintergrund-Alarme: Gerät hat sich zu lange nicht gemeldet; Agent einen Tag nach einer neuen Version im
+Repository immer noch veraltet (einmal je Gerät und Version)."""
 
 from __future__ import annotations
 
@@ -9,7 +10,7 @@ from datetime import timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from . import push
+from . import push, versions
 from .i18n import _
 from .db import SessionLocal
 from .models import Device, utcnow
@@ -41,8 +42,34 @@ def due_offline_alarms(db: Session) -> list[tuple[Device, int]]:
     return due
 
 
+UPDATE_GRACE = timedelta(days=1)   # so lange nach Veröffentlichung Zeit für pacman -Syu
+
+
+def due_update_alarms(db: Session, release: versions.Release | None = None) -> list[tuple[Device, str]]:
+    """Geräte mit veraltetem Agenten, für die jetzt ein Hinweis fällig ist; markiert sie (kein Commit)."""
+    release = release or versions.latest()
+    if release is None or utcnow() - release.published < UPDATE_GRACE:
+        return []
+    due = []
+    for dev in db.scalars(select(Device).where(Device.revoked_at.is_(None))):
+        if versions.update_for(dev.agent_version, release) and dev.update_alerted != release.version:
+            dev.update_alerted = release.version
+            due.append((dev, release.version))
+    return due
+
+
 def check_once() -> int:
     with SessionLocal() as db:
+        for dev, version in due_update_alarms(db):
+            log.warning("Agent auf Gerät %s (%s) veraltet: %s, verfügbar %s", dev.id, dev.name, dev.agent_version,
+                        version)
+            push.send_to_parents_sync(
+                lambda name=dev.name: _("Update für „{name}“ verfügbar").format(name=name),
+                lambda old=dev.agent_version, new=version: _(
+                    "Agent {old} ist veraltet, verfügbar ist {new}. Auf dem Rechner „pacman -Syu“ ausführen.").format(
+                    old=old, new=new),
+                url=f"/devices/{dev.id}", tag=f"update-{dev.id}")
+        db.commit()
         due = due_offline_alarms(db)
         for dev, hours in due:
             log.warning("Offline-Alarm: Gerät %s (%s) seit %d h ohne Meldung", dev.id, dev.name, hours)

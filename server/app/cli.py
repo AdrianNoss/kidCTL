@@ -118,6 +118,14 @@ def vapid_keys(_args: argparse.Namespace) -> int:
     return 0
 
 
+def backup(_args: argparse.Namespace) -> int:
+    """Datenbank-Backup sofort erstellen (wie der tägliche Lauf)."""
+    from . import backup as bk
+    info = bk.run()
+    print(f"Backup: {info.path} ({info.size} Bytes)")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(prog="kidctl-server")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -132,6 +140,8 @@ def main() -> int:
     rt.set_defaults(func=reset_totp)
     vk = sub.add_parser("vapid-keys", help="VAPID-Schlüssel für Web Push erzeugen (für .env)")
     vk.set_defaults(func=vapid_keys)
+    bp = sub.add_parser("backup", help="Datenbank-Backup jetzt erstellen (nach <data>/backups)")
+    bp.set_defaults(func=backup)
     args = ap.parse_args()
     return args.func(args)
 

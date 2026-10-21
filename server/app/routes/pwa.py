@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -10,6 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from .. import backup
 from ..i18n import _
 from ..config import settings
 from ..db import get_db
@@ -19,6 +21,7 @@ from ..security import csrf_protect, require_session
 from ..web import render
 
 STATIC = Path(__file__).resolve().parent.parent / "static"
+log = logging.getLogger("kidctl.backup")
 router = APIRouter()
 
 
@@ -41,7 +44,21 @@ def settings_page(request: Request, sess: ParentSession = Depends(require_sessio
                            .where(PushSubscription.parent_id == sess.parent_id)).all())
     return render(request, "settings.html", push_enabled=settings.push_enabled,
                   vapid_public_key=settings.vapid_public_key, subscription_count=count,
-                  sent=request.query_params.get("sent"))
+                  sent=request.query_params.get("sent"), backups=backup.backups(), backup_error=backup.last_error(),
+                  backup_keep=backup.KEEP, backup_hour=backup.BACKUP_HOUR,
+                  backup_done=request.query_params.get("backup"))
+
+
+@router.post("/settings/backup")
+def backup_now(sess: ParentSession = Depends(csrf_protect)):
+    """Backup sofort erstellen (z. B. vor einem Update)."""
+    try:
+        backup.run()
+        result = "ok"
+    except Exception:
+        log.exception("Backup fehlgeschlagen")
+        result = "error"
+    return RedirectResponse(f"/settings?backup={result}#backup", status_code=303)
 
 
 class SubscriptionKeys(BaseModel):

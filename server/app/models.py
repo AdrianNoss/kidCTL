@@ -156,6 +156,7 @@ class Device(Base):
     offline_alerted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     integrity_json: Mapped[str] = mapped_column(Text, default="")  # letzte IntegrityReport.checks
     integrity_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    update_alerted: Mapped[str] = mapped_column(String(32), default="")  # Version, zu der schon gewarnt wurde
 
     @property
     def integrity_checks(self) -> list[dict]:

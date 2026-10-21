@@ -309,6 +309,30 @@ root sperren und Firmware- sowie Bootloader-Passwort setzen: [`docs/haertung.md`
 Ein Server-Update vor den Agenten ist unproblematisch, weil der Server auch die vorherige
 Protokollversion unterstützt. Zu alte Agenten markiert das WebUI.
 
+Ist im Repository eine neuere Agent-Version als auf einem Rechner, zeigen Übersicht, Geräteliste und
+Geräteseite „Update: alt → neu“. Ist das Paket seit einem Tag veröffentlicht und der Rechner immer noch
+nicht aktualisiert, kommt einmalig eine Push-Nachricht.
+
+## Backup und Wiederherstellung
+
+Der Server legt täglich ab 3 Uhr einen geprüften Schnappschuss der Datenbank an:
+`data/backups/kidctl-JJJJ-MM-TT-HHMM.db.gz`. Die letzten 14 bleiben erhalten. Zeitpunkt und Größe des
+letzten Backups stehen im WebUI unter **Einstellungen**, dort gibt es auch „Jetzt sichern“. Schlägt ein
+Backup fehl oder gibt es seit 2 Tagen keines, kommt eine Push-Nachricht. Per Kommandozeile:
+`docker compose exec kidctl python -m app.cli backup`.
+
+Das externe Backup des Servers sollte `./data` mitsichern, dann sind die Schnappschüsse dabei.
+
+Wiederherstellen:
+
+```bash
+docker compose stop kidctl
+cp data/kidctl.db data/kidctl.db.vorher            # aktuellen Stand aufheben
+gunzip -c data/backups/kidctl-2026-10-21-0300.db.gz > data/kidctl.db
+rm -f data/kidctl.db-wal data/kidctl.db-shm
+docker compose start kidctl
+```
+
 ## Deinstallation (Kinderrechner)
 
 ```bash

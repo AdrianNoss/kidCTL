@@ -552,6 +552,16 @@ Verlängerungsanfragen.
     `ProtectSystem`). Meldung an den Server nur bei Änderung; Push-Alarm nur für **neu**
     fehlschlagende Prüfungen. WebUI: Abschnitt „Integrität“ je Gerät, Hinweis in Übersicht/Geräteliste.
 
+## Backup (entschieden 2026-10-21)
+
+- Täglich ab 03:00 (Server-Zeitzone) ein Schnappschuss per SQLite-Backup-API (konsistent auch während
+  Schreibzugriffen), `integrity_check` auf der Kopie, gzip, Rechte 0600, atomar nach
+  `<data>/backups/kidctl-JJJJ-MM-TT-HHMM.db.gz`; die neuesten 14 bleiben. Nach Fehlschlag frühestens nach
+  einer Stunde erneut. CLI `app.cli backup`, WebUI „Einstellungen“ (vormals „Benachrichtigungen“) mit
+  letztem Backup, Fehler und „Jetzt sichern“.
+- Alarm per Push bei Fehlschlag oder ohne Backup seit 2 Tagen, einmal je Störung (erneut erst nach einem
+  erfolgreichen Backup). Externe Sicherung von `./data` bleibt Aufgabe des Hosts.
+
 ## Verteilung & Updates
 
 - Client als PKGBUILD: Agent, Tray-App, systemd-Unit, PAM-Konfiguration, nftables-Regeln,
@@ -1133,3 +1143,12 @@ Verlängerungsanfragen.
   Aufruf mit pam_kwallet_init als Vorfahr. Getestet: Agent 197 grün (neu: erlaubt nur von pam_kwallet_init,
   nicht ohne Vorfahr, nicht mit anderem Ziel, fremdem Socket oder zusätzlichen Argumenten).
 - 2026-10-21: Nutzer-Test 0.26.2: keine Sperrmeldungen mehr beim Plasma-Login (KWallet-socat, Sitzungsdienste, srt-logger, which, ldd).
+- 2026-10-21: Datenbank-Backup und Hinweis auf veraltete Agenten (nur Server). Entscheidungen des Nutzers:
+  täglich 03:00 mit 14 Tagen Aufbewahrung; Backup im WebUI sichtbar mit Alarm; veralteter Agent als
+  Hinweis in Übersicht/Geräteliste/Geräteseite plus einmal Push je Gerät und Version, wenn das Paket seit
+  einem Tag im Repository liegt (`device.update_alerted`; neueste Version aus den Paketdateien in
+  `<data>/repo`, numerischer Vergleich). Getestet: Server 115 grün (neu: Schnappschuss gültig/entpackbar
+  mit Inhalt, Rechte 0600, Aufbewahrung 14, Fälligkeit ab 03:00, Fehlschlag mit einmaligem Alarm,
+  veraltetes Backup mit einmaligem Alarm, Einstellungsseite und „Jetzt sichern“, neueste Version aus dem
+  Repo inkl. 0.26.10 > 0.26.2 und Signatur-/Datenbankdateien ignoriert, Hinweis in WebUI, Push nur einmal
+  und erst nach einem Tag). Sichttest Einstellungsseite mit echtem Backup des Entwicklungsservers.

@@ -1,7 +1,25 @@
 {% extends "base.html" %}
-{% block title %}{{ _("Benachrichtigungen") }} – KidCTL{% endblock %}
+{% block title %}{{ _("Einstellungen") }} – KidCTL{% endblock %}
 {% block content %}
-<div class="page-head"><h1>{{ _("Benachrichtigungen") }}</h1></div>
+<div class="page-head"><h1>{{ _("Einstellungen") }}</h1></div>
+
+<section class="card" id="backup">
+  <div class="card-head"><h2>{{ _("Datenbank-Backup") }}</h2>
+    {% if backup_error %}<span class="pill warn">{{ _("Fehler") }}</span>{% elif backups %}<span class="pill ok">{{ _("aktuell") if (backups[0].at.date() >= today_minus(1)) else _("veraltet") }}</span>{% endif %}</div>
+  {% if backup_done == "ok" %}<p class="success">{{ _("Backup erstellt.") }}</p>{% elif backup_done == "error" %}<p class="error">{{ _("Backup fehlgeschlagen (Details im Server-Log).") }}</p>{% endif %}
+  {% if backups %}
+  <p>{{ _("Letztes Backup: {when} ({size})").format(when=fmt_datetime(backups[0].at), size=fmt_size(backups[0].size)) }}<br>
+    <small class="muted">{{ ngettext("{n} Backup vorhanden", "{n} Backups vorhanden", backups | length).format(n=backups | length) }} · data/backups/</small></p>
+  {% else %}<p class="muted">{{ _("Noch kein Backup vorhanden.") }}</p>{% endif %}
+  {% if backup_error %}<p class="warn"><small>{{ _("Letzter Fehler:") }} {{ backup_error }}</small></p>{% endif %}
+  <p class="muted"><small>{{ _("Täglich ab {hour}:00 Uhr ein geprüfter Schnappschuss der Datenbank, die letzten {keep} bleiben erhalten. Bei einem Fehler oder ohne Backup seit 2 Tagen kommt eine Push-Nachricht. Das externe Backup des Servers sollte den Ordner data/ mitsichern.").format(hour=backup_hour, keep=backup_keep) }}</small></p>
+  <form method="post" action="/settings/backup">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <button type="submit" class="secondary">{{ _("Jetzt sichern") }}</button>
+  </form>
+</section>
+
+<h2 class="section-title">{{ _("Push-Benachrichtigungen") }}</h2>
 {% if not push_enabled %}
 <section class="card">
   <p class="warn">{{ _("Web Push ist auf dem Server nicht konfiguriert.") }}</p>

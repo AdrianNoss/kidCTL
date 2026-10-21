@@ -304,3 +304,4 @@ details > summary { cursor:pointer; color:var(--ink-2); font-weight:600; font-si
 
 /* ---------- Sprachumschalter (Seiten ohne Anmeldung) ---------- */
 .lang-switch { text-align:center; margin:1rem 0 0; font-size:.85rem; color:var(--muted); }
+.section-title { margin:1.6rem 0 .8rem; }

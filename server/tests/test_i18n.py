@@ -104,7 +104,7 @@ def test_english_pages_render(client, parent):
     for url, text in [("/", "Overview"), ("/children", "Add child"), ("/children/1", "Weekly schedule"),
                       ("/children/1/stats", "Screen time per day"), ("/children/1/protokoll", "Activity log"),
                       ("/children/1/protokoll?kind=game", "Games"), ("/children/1/chat", "No messages yet."),
-                      ("/devices", "Add device"), ("/parents", "Parent accounts"), ("/settings", "Notifications"),
+                      ("/devices", "Add device"), ("/parents", "Parent accounts"), ("/settings", "Settings"),
                       ("/profile", "Usage report by email"), ("/profile/report/preview", "Weekly report")]:
         r = client.get(url)
         assert r.status_code == 200 and text in r.text, url

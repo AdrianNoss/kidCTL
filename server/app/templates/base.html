@@ -19,7 +19,7 @@
   <div class="topbar-inner">
     <a href="/" class="brand"><span class="mark" aria-hidden="true"></span>KidCTL</a>
     <nav class="nav">
-      {% for href, label in [("/", _("Übersicht")), ("/children", _("Kinder")), ("/devices", _("Geräte")), ("/parents", _("Eltern")), ("/settings", _("Benachrichtigungen"))] %}
+      {% for href, label in [("/", _("Übersicht")), ("/children", _("Kinder")), ("/devices", _("Geräte")), ("/parents", _("Eltern")), ("/settings", _("Einstellungen"))] %}
       <a href="{{ href }}" class="btn ghost small{% if (href == '/' and path == '/') or (href != '/' and path.startswith(href)) %} active{% endif %}">{{ label }}</a>
       {% endfor %}
     </nav>
