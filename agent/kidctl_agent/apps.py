@@ -71,7 +71,7 @@ def parse_desktop(path: Path) -> AppEntry | None:
         key = f"exe:{exe}"
     categories = [c.strip()[:64] for c in e.get("Categories", "").split(";") if c.strip()][:20]
     return AppEntry(key=key, name=name[:255], icon=e.get("Icon", "")[:255], desktop_id=path.name[:255],
-                    categories=categories)
+                    categories=categories, name_en=(e.get("Name[en]") or e.get("Name") or "")[:255])
 
 
 def scan_shells(etc_shells: str = ETC_SHELLS) -> list[AppEntry]:

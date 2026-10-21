@@ -21,9 +21,13 @@ from .chat import NEW, ChatStore, Outbox, new_client_msg_id
 from .connection import Connection
 from .dnsfilter import DnsFilter
 from .enforcer import Enforcer
+from kidctl_common import i18n
+from kidctl_common.i18n import _
+
 from .gamelimit import GameLimit
 from .games import GameNames, game_id
 from .kidmounts import STEAM_ROOT, KidMounts, safe_home
+from .lang import UserLanguages
 from .loginlock import LoginLock, is_admin
 from .procs import ProcEvents, pids_of, read_environ, read_proc
 from .programs import LAUNCHERS, STEAM_KEY, STEAM_SYSTEM
@@ -44,6 +48,26 @@ STARTUP_SYNC = 10.0   # Sekunden
 DEFAULT_TZ = "Europe/Berlin"
 
 
+def _chat_texts(msg: p.ChatMessage, change: str) -> tuple[str, str]:
+    """(Titel, Text) der Benachrichtigung zu einer neuen Nachricht bzw. Entscheidung (aktuelle Sprache)."""
+    if change == NEW and not msg.from_child:
+        return _("Nachricht von {name}").format(name=msg.sender_name), msg.body
+    if msg.kind == "extension_request":
+        if msg.status != "approved":
+            return _("Verlängerung abgelehnt"), _("{name} hat die Anfrage abgelehnt.").format(name=msg.sender_name)
+        parts = []
+        if msg.approved_minutes:
+            parts.append(_("+{n} Minuten").format(n=msg.approved_minutes))
+        if msg.approved_window_end:
+            parts.append(_("bis {time} Uhr").format(time=f"{msg.approved_window_end:%H:%M}"))
+        title = _("Spielzeit verlängert") if msg.request_target == "games" else _("Verlängerung genehmigt")
+        return title, _(" und ").join(parts) or _("Genehmigt.")
+    if msg.status != "approved":
+        return _("Freigabe abgelehnt"), _("„{name}“ bleibt gesperrt.").format(name=msg.access_name)
+    text = _("„{name}“ ist heute erlaubt.") if msg.access_scope == "today" else _("„{name}“ ist ab jetzt erlaubt.")
+    return _("Freigabe erteilt"), text.format(name=msg.access_name)
+
+
 def _is_launcher(key: str) -> bool:
     """Spiele-Launcher (Steam, Heroic, Lutris) zählen nicht als Spiel – nur die gestarteten Spiele."""
     exe = key[4:] if key.startswith("exe:") else ""
@@ -60,7 +84,7 @@ class Agent:
     def __init__(self, logind, desktop, device: dict | None = None, tray_path: str | None = None) -> None:
         self.logind = logind
         self.desktop = desktop
-        self.enforcer = Enforcer(logind, desktop, on_request=self.open_request_dialog)
+        self.enforcer = Enforcer(logind, desktop, on_request=self.open_request_dialog, lang_of=self.lang_of)
         self.usage = Usage.load()
         self.apptime = AppTime.load()
         self.app_index = AppIndex(set())
@@ -70,8 +94,9 @@ class Agent:
         self.chat = ChatStore.load()
         self.outbox = Outbox.load()
         self.tray = TrayServer(self, tray_path)
+        self.langs = UserLanguages()   # Sprache der Meldungen je Kind (Plasma-Sitzung)
         self.programs = ProgramWatcher(self)
-        self.gamelimit = GameLimit(desktop, on_request=self.open_game_request_dialog)
+        self.gamelimit = GameLimit(desktop, on_request=self.open_game_request_dialog, lang_of=self.lang_of)
         self.game_keys: set[str] = set()   # Katalog-Apps der Kategorie „Game“ (ohne Launcher)
         self.gaming: set[str] = set()      # User mit laufendem Spiel (letzter gezählter Takt)
         self._day = None  # zuletzt gesehener lokaler Tag (Ablauf der Freigaben „nur heute“)
@@ -242,6 +267,7 @@ class Agent:
             log.exception("Anwendungen nicht lesbar")
             return
         self.programs.names = {a.key: a.name for a in self.apps}
+        self.programs.names_en = {a.key: a.name_en for a in self.apps if a.name_en}
         self.game_keys = {a.key for a in self.apps if "Game" in a.categories and not _is_launcher(a.key)}
         self.refresh_index()
 
@@ -483,32 +509,14 @@ class Agent:
             await self._notify_chat(msg, prev, change)
 
     async def _notify_chat(self, msg: p.ChatMessage, prev: p.ChatMessage | None, change: str) -> None:
-        if change == NEW and not msg.from_child:
-            title, body = f"Nachricht von {msg.sender_name}", msg.body
-        elif (msg.kind == "extension_request" and prev is not None and prev.status == "pending"
-              and msg.status in ("approved", "rejected")):
-            if msg.status == "approved":
-                parts = []
-                if msg.approved_minutes:
-                    parts.append(f"+{msg.approved_minutes} Minuten")
-                if msg.approved_window_end:
-                    parts.append(f"bis {msg.approved_window_end:%H:%M} Uhr")
-                title = "Spielzeit verlängert" if msg.request_target == "games" else "Verlängerung genehmigt"
-                body = " und ".join(parts) or "Genehmigt."
-            else:
-                title, body = "Verlängerung abgelehnt", f"{msg.sender_name} hat die Anfrage abgelehnt."
-        elif (msg.kind == "access_request" and prev is not None and prev.status == "pending"
-              and msg.status in ("approved", "rejected")):
-            if msg.status == "approved":
-                title = "Freigabe erteilt"
-                body = f"„{msg.access_name}“ ist {'heute' if msg.access_scope == 'today' else 'ab jetzt'} erlaubt."
-            else:
-                title, body = "Freigabe abgelehnt", f"„{msg.access_name}“ bleibt gesperrt."
-        else:
+        decided = prev is not None and prev.status == "pending" and msg.status in ("approved", "rejected")
+        if not ((change == NEW and not msg.from_child) or (decided and msg.kind in ("extension_request", "access_request"))):
             return
         users = set(self.users_of(msg.child_id))
         for s in self._sessions:
             if s.is_user_session and s.user in users:
+                with i18n.use(self.lang_of(s.user)):   # Sprache der Sitzung dieses Kindes
+                    title, body = _chat_texts(msg, change)
                 await self.desktop.notify(s.user, s.uid, title, body)
                 users.discard(s.user)  # je User nur einmal
 
@@ -534,7 +542,9 @@ class Agent:
                    if m.kind == "access_request" and m.status == "pending"}
         pending |= {i.key for i in self.outbox.items.values()
                     if isinstance(i, p.AccessRequest) and self.policy.users.get(i.username) == child_id}
-        return {k: i.model_copy(update={"pending": k in pending}) for k, i in out.items()}
+        with i18n.use(self.lang_of(user)):   # Programmnamen in der Sprache des Kindes
+            return {k: i.model_copy(update={"pending": k in pending, "name": self.programs.display_name(k, i.name)})
+                    for k, i in out.items()}
 
     def tray_blocked(self, user: str) -> t.TrayBlocked:
         items = sorted(self._blocked_items(user).values(), key=lambda i: i.last_at, reverse=True)
@@ -552,15 +562,19 @@ class Agent:
         """Freigabe anfragen (nur für kürzlich Gesperrtes; Name/Art aus der eigenen Liste).
         Rückgabe (online, Fehlertext)."""
         item = self._blocked_items(user).get(key)
-        if item is None:
-            return self.online, "Dieser Eintrag ist nicht (mehr) in der Liste der Sperren."
-        if item.pending:
-            return self.online, "Schon angefragt – warte auf die Antwort deiner Eltern."
+        with i18n.use(self.lang_of(user)):
+            if item is None:
+                return self.online, _("Dieser Eintrag ist nicht (mehr) in der Liste der Sperren.")
+            if item.pending:
+                return self.online, _("Schon angefragt – warte auf die Antwort deiner Eltern.")
         self.outbox.add(p.AccessRequest(client_msg_id=new_client_msg_id(), username=user,
                                         access_kind=item.access_kind, key=item.key, name=item.name[:255],
                                         reason=reason.strip()))
         await self.flush_outbox()
         return self.online, ""
+
+    def lang_of(self, user: str) -> str:
+        return self.langs.lang_of(user)
 
     # ---------- Tray-Schnittstelle (für TrayServer) ----------
 

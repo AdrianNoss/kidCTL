@@ -301,3 +301,6 @@ details > summary { cursor:pointer; color:var(--ink-2); font-weight:600; font-si
 /* ---------- Profil: Nutzungsbericht ---------- */
 .report-form { display:flex; gap:.6rem; align-items:flex-end; flex-wrap:wrap; margin-bottom:.8rem; }
 .report-form label { margin:0; }
+
+/* ---------- Sprachumschalter (Seiten ohne Anmeldung) ---------- */
+.lang-switch { text-align:center; margin:1rem 0 0; font-size:.85rem; color:var(--muted); }

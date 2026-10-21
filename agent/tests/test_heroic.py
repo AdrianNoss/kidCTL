@@ -118,6 +118,8 @@ def test_orphaned_launcher_child_keeps_lineage(tmp_path):
         pass
 
     class FakeAgent:
+
+        lang_of = staticmethod(lambda user: "de")
         policy = None
         desktop = type("D", (), {"notify": staticmethod(notify)})()
 
@@ -293,6 +295,8 @@ def test_short_lived_child_after_parent_exited():
         pass
 
     class FakeAgent:
+
+        lang_of = staticmethod(lambda user: "de")
         policy = None
         desktop = type("D", (), {"notify": staticmethod(notify)})()
 
@@ -326,6 +330,8 @@ def test_custom_program_package_dirs_recomputed():
     from kidctl_agent.watcher import ProgramWatcher
 
     class FakeAgent:
+
+        lang_of = staticmethod(lambda user: "de")
         policy = None
     w = ProgramWatcher(FakeAgent())
     calls = []

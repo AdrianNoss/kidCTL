@@ -11,6 +11,9 @@ from datetime import date
 
 from .accounting import boottime
 from .logind import SessionInfo
+from kidctl_common import i18n
+from kidctl_common.i18n import _, ngettext
+
 from .rules import LOCKED, REASON_TEXT, Decision
 
 log = logging.getLogger("kidctl.enforcer")
@@ -22,7 +25,8 @@ RECOVER_DELAY = 10    # danach prüfen, ob SDDM wieder einen Anmeldebildschirm z
 
 
 class Enforcer:
-    def __init__(self, logind, desktop, clock=boottime, on_request=None) -> None:
+    def __init__(self, logind, desktop, clock=boottime, on_request=None, lang_of=lambda user: "de") -> None:
+        self.lang_of = lang_of  # Sprache der Meldungen je User
         self.logind = logind
         self.desktop = desktop
         self.on_request = on_request  # async (user) -> None: Klick auf „Verlängerung anfordern“
@@ -49,48 +53,49 @@ class Enforcer:
 
         now = self.clock()
         for user, user_sessions in by_user.items():
-            d = decisions[user]
-            uid = user_sessions[0].uid
-            if d.allowed:
-                self.hard.pop(user, None)
-                if self.deadline.pop(user, None) is not None:
-                    unlocked = self.ending_reason.pop(user, None) == LOCKED
-                    await self.desktop.notify(user, uid, "Wieder freigegeben" if unlocked else "Bildschirmzeit verlängert",
-                                              f"Noch {_fmt(d.remaining_seconds)}.")
-                await self._warn(user, uid, day, d.remaining_seconds)
-                continue
+            with i18n.use(self.lang_of(user)):   # Texte in der Sprache des Kindes
+                d = decisions[user]
+                uid = user_sessions[0].uid
+                if d.allowed:
+                    self.hard.pop(user, None)
+                    if self.deadline.pop(user, None) is not None:
+                        unlocked = self.ending_reason.pop(user, None) == LOCKED
+                        await self.desktop.notify(user, uid, _("Wieder freigegeben") if unlocked else _("Bildschirmzeit verlängert"),
+                                                  _("Noch {time}.").format(time=_fmt(d.remaining_seconds)))
+                    await self._warn(user, uid, day, d.remaining_seconds)
+                    continue
 
-            if user not in self.deadline and user not in self.hard:
-                grace = GRACE_SECONDS if d.grace_seconds is None else d.grace_seconds
-                self.deadline[user] = now + grace
-                self.ending_reason[user] = d.reason
-                log.info("Zeit für %s abgelaufen (%s) – Abmeldung in %d s", user, d.reason, grace)
-                locked = d.reason == LOCKED
-                when = ("Du wirst jetzt abgemeldet." if grace <= 0 else
-                        f"Abmeldung in {grace} Sekunden – bitte jetzt speichern." if grace == GRACE_SECONDS else
-                        f"Abmeldung in {_fmt(grace)} – bitte rechtzeitig speichern.")
-                await self.desktop.notify(
-                    user, uid, "Gesperrt" if locked else "Bildschirmzeit zu Ende",
-                    f"{REASON_TEXT.get(d.reason, '')} {when}", critical=True,
-                    on_action=None if locked else self.on_request)  # Verlängerung hebt keine Sperre auf
-                if grace <= 0:
+                if user not in self.deadline and user not in self.hard:
+                    grace = GRACE_SECONDS if d.grace_seconds is None else d.grace_seconds
+                    self.deadline[user] = now + grace
+                    self.ending_reason[user] = d.reason
+                    log.info("Zeit für %s abgelaufen (%s) – Abmeldung in %d s", user, d.reason, grace)
+                    locked = d.reason == LOCKED
+                    when = (_("Du wirst jetzt abgemeldet.") if grace <= 0 else
+                            _("Abmeldung in {n} Sekunden – bitte jetzt speichern.").format(n=grace) if grace == GRACE_SECONDS else
+                            _("Abmeldung in {time} – bitte rechtzeitig speichern.").format(time=_fmt(grace)))
+                    await self.desktop.notify(
+                        user, uid, _("Gesperrt") if locked else _("Bildschirmzeit zu Ende"),
+                        f"{_(REASON_TEXT[d.reason]) if d.reason in REASON_TEXT else ''} {when}", critical=True,
+                        on_action=None if locked else self.on_request)  # Verlängerung hebt keine Sperre auf
+                    if grace <= 0:
+                        del self.deadline[user]
+                        await self._end(user, uid, user_sessions, d.reason, now)
+                elif (user in self.deadline and user not in self.reminded
+                      and 0 < self.deadline[user] - now <= 60
+                      and self.ending_reason.get(user) == LOCKED and d.grace_seconds and d.grace_seconds > 60):
+                    self.reminded.add(user)
+                    await self.desktop.notify(user, uid, _("Gesperrt"), _("Abmeldung in 1 Minute – bitte jetzt speichern."),
+                                              critical=True)
+                elif user in self.deadline and now >= self.deadline[user]:
                     del self.deadline[user]
                     await self._end(user, uid, user_sessions, d.reason, now)
-            elif (user in self.deadline and user not in self.reminded
-                  and 0 < self.deadline[user] - now <= 60
-                  and self.ending_reason.get(user) == LOCKED and d.grace_seconds and d.grace_seconds > 60):
-                self.reminded.add(user)
-                await self.desktop.notify(user, uid, "Gesperrt", "Abmeldung in 1 Minute – bitte jetzt speichern.",
-                                          critical=True)
-            elif user in self.deadline and now >= self.deadline[user]:
-                del self.deadline[user]
-                await self._end(user, uid, user_sessions, d.reason, now)
-            elif user in self.hard and now >= self.hard[user]:
-                del self.hard[user]
-                log.warning("Plasma-Abmeldung von %s wirkt nicht – beende hart", user)
-                await self._terminate(user_sessions, d.reason)
-                if any(s.graphical for s in user_sessions):
-                    self.recover_at = now + RECOVER_DELAY
+                elif user in self.hard and now >= self.hard[user]:
+                    del self.hard[user]
+                    log.warning("Plasma-Abmeldung von %s wirkt nicht – beende hart", user)
+                    await self._terminate(user_sessions, d.reason)
+                    if any(s.graphical for s in user_sessions):
+                        self.recover_at = now + RECOVER_DELAY
 
         await self._recover_greeter(sessions, now)
 
@@ -128,11 +133,11 @@ class Enforcer:
         due = [m for m in WARN_MINUTES if remaining <= m * 60 and m not in warned]
         if due:
             warned.update(due)  # bei Anmeldung mit wenig Restzeit nur eine Warnung
-            await self.desktop.notify(user, uid, "Bildschirmzeit",
-                                       f"Noch {_fmt(remaining)} – danach wirst du abgemeldet.",
+            await self.desktop.notify(user, uid, _("Bildschirmzeit"),
+                                       _("Noch {time} – danach wirst du abgemeldet.").format(time=_fmt(remaining)),
                                        critical=min(due) == 1, on_action=self.on_request)
 
 
 def _fmt(seconds: int) -> str:
     minutes = max(1, round(seconds / 60))
-    return "1 Minute" if minutes == 1 else f"{minutes} Minuten"
+    return ngettext("{n} Minute", "{n} Minuten", minutes).format(n=minutes)

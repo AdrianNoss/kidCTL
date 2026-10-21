@@ -1512,3 +1512,6 @@ msgstr "“Monitor only” blocks nothing but reports what would be blocked – 
 msgid "„davon Spiele“: höchstens so viel Zeit mit Spielen (Steam, Heroic und Programme der Gruppe „Spiele“) – danach werden Spiele mit Vorwarnung geschlossen, der Rest des Rechners bleibt nutzbar. Leer = kein eigenes Limit."
 msgstr "“Of which games”: at most this much time with games (Steam, Heroic and apps in the “Games” group) – afterwards games are closed after a warning, the rest of the computer stays usable. Empty = no separate limit."
 
+msgid "schule.de"
+msgstr "school.example"
+

@@ -1,130 +1,80 @@
 # KidCTL
 
-Selbst gehostete Kindersicherung für **Arch Linux mit KDE Plasma (Wayland)**. Ein zentraler Server
-mit Eltern-WebUI (auch als App aufs Handy) steuert einen Root-Agenten auf jedem Kinderrechner. Alle
-Daten bleiben auf dem eigenen Server, es gibt keine Cloud und kein Konto bei Dritten.
+**English** · [Deutsch](README.de.md)
 
-## Funktionen
+Self-hosted parental control for **Arch Linux with KDE Plasma (Wayland)**. A central server with a
+parents' web interface (installable as an app on your phone) controls a root agent on each child's
+computer. All data stays on your own server – no cloud, no third-party account.
 
-- **Bildschirmzeit**:
-  - Tageskontingent und Zeitfenster je Wochentag, Zählung über alle Rechner eines Kindes.
-  - Warnungen vor Ablauf, danach Abmeldung und Login-Sperre (SDDM und TTY).
-  - Funktioniert auch offline mit der zuletzt bekannten Regel.
-- **Verlängerungen und Chat**: Das Kind fragt in der Tray-App nach mehr Zeit oder schreibt eine
-  Nachricht, die Eltern antworten per Push auf dem Handy.
-- **Programm-Whitelist**:
-  - Modi „Nur protokollieren“ oder „Sperren“.
-  - Katalog der installierten Apps, Flatpak (systemweit) und Steam.
-  - Eigene Programme im Home sind durch noexec blockiert.
-- **Website-Filter** (DNS):
-  - Whitelist mit Dienst-Bundles (YouTube, Wikipedia, Lern-Apps, Microsoft 365) oder Blacklist mit
-    Sperrlisten (HaGeZi, OISD, StevenBlack).
-  - SafeSearch je Kind.
-  - DNS-over-HTTPS bzw. DoT der Browser sind gesperrt.
-- **Auswertung**: Statistik pro Tag und Programm sowie ein Protokoll gesperrter Programme und
-  Domains. Ein Verlauf erlaubter Websites wird **nicht** gespeichert.
-- **Alarme per Push**:
-  - Gerät zu lange offline.
-  - Schutzmaßnahme manipuliert, z. B. PAM, nftables oder noexec.
-- **Sicherheit**:
-  - Eltern-Login nur mit TOTP, Rate-Limiting, CSRF-Schutz.
-  - Signiertes Pacman-Repository für Updates.
+The web interface, emails, push notifications and everything the child sees (notifications, tray
+app) are available in **English and German**. Parents choose their language in their profile
+(default: browser language); on the child's computer the language of the Plasma session is used.
 
-## Architektur
+## Features
 
-```
- Eltern (Browser / PWA)                     Kinderrechner (Arch + Plasma)
-          │ HTTPS                          ┌──────────────────────────────┐
-          ▼                                │ kidctl-agent (root, systemd) │
- ┌──────────────────────┐   WebSocket      │  Zeit · PAM · Prozesse ·     │
- │ Server (FastAPI)     │◄─────────────────┤  Unbound/nftables · noexec   │
- │ Docker hinter Traefik│   (ausgehend)    └──────────────┬───────────────┘
- │ SQLite · Web Push    │                                 │ Unix-Socket
- │ /repo (Pacman-Repo)  │                  ┌──────────────┴───────────────┐
- └──────────────────────┘                  │ Tray-App (PySide6, Kind)     │
-                                           └──────────────────────────────┘
-```
-
-- **Server**: Python/FastAPI, SQLAlchemy/SQLite, Jinja2. Er liefert auch das signierte
-  Pacman-Repository aus.
-- **Agent**: Python/asyncio als root.
-  - Hält als Einziger das Geräte-Token.
-  - Setzt alles auf Systemebene durch: logind, PAM, Netlink-Prozessereignisse, Unbound je Kind,
-    nftables, systemd-Mounts.
-- **Tray-App**: zeigt Restzeit und Chat an. Sie ist rein kosmetisch, ihr Beenden ändert nichts an
-  der Durchsetzung.
-
-Grundregel: root und Accounts in `wheel`/`sudo`/`admin` werden **nie** eingeschränkt.
+- **Screen time**: daily limit and allowed hours per weekday, counted across all of a child's
+  computers; warnings before the end, then sign-out and sign-in lock (SDDM and TTY). Works offline
+  with the last known rules.
+- **Game limit**: optional separate daily limit for games (Steam, Heroic and apps in the "Games"
+  group); games are closed after a warning, the rest of the computer stays usable.
+- **Requests and chat**: the child asks for more time, more game time or access to a blocked app or
+  website from the tray app; parents answer from their phone (push notification) – "always allow",
+  "today only" or "decline".
+- **App allow list**: "monitor only" or "block" mode; catalogue of installed apps, Flatpak
+  (system-wide), Steam and Heroic; programs in the home directory are blocked via noexec.
+- **Web filter** (DNS): allow list with service bundles (YouTube, Wikipedia, learning apps,
+  Microsoft 365) or block list (HaGeZi, OISD, StevenBlack); SafeSearch per child; browsers'
+  DNS-over-HTTPS/DoT is blocked.
+- **Reports**: statistics per day, app and game, an activity log of blocked actions and an optional
+  weekly or monthly usage report by email. No history of allowed websites is stored.
+- **Alerts**: device offline for too long, protection tampered with (PAM, nftables, noexec).
+- **Security**: TOTP-only parent sign-in, rate limiting, CSRF protection, signed pacman repository
+  for updates. Root and accounts in `wheel`/`sudo`/`admin` are **never** restricted.
 
 ## Installation
 
-Quellcode: <https://github.com/AdrianNoss/kidCTL>
+The step-by-step guide is currently available in German only:
+**[docs/installation.md](docs/installation.md)** (server, pacman repository, child computers, web
+interface) and **[docs/haertung.md](docs/haertung.md)** (hardening against physical access).
 
-Schritt für Schritt in **[docs/installation.md](docs/installation.md)**: Server, Pacman-Repository,
-Kinderrechner und WebUI. Kurzfassung:
+Short version:
 
 ```bash
-# Server
-cp .env.example .env            # SECRET_KEY, BASE_URL setzen; Traefik-Netz in docker-compose.yml
+# Server (Docker behind Traefik)
+cp .env.example .env            # set SECRET_KEY, BASE_URL; Traefik network in docker-compose.yml
 docker compose up -d --build
 docker compose exec kidctl python -m app.cli create-parent
 
-# Kinderrechner (nach Einrichtung des Repos)
+# Child's computer (after setting up the repository)
 sudo pacman -S kidctl
-sudo kidctl enroll https://kids.example.org <KOPPLUNGSCODE>
+sudo kidctl enroll https://kids.example.org <PAIRING-CODE>
 sudo systemctl enable --now kidctl-agent.service
 ```
 
-Danach die Rechner gegen physischen Zugriff härten: **[docs/haertung.md](docs/haertung.md)**.
+## Limitations
 
-## Grenzen
+KDE Plasma on Wayland only; no protection against physical access without hardening; no idle
+detection; no `flatpak --user`; Steam can only be controlled as a whole; VPNs are not detected. The
+full list is in [`spec.md`](spec.md) (German).
 
-- Nur KDE Plasma auf Wayland. Andere Desktops und X11 werden nicht unterstützt.
-- Kein Schutz gegen physischen Zugriff ohne Härtung, also gegen Live-USB oder Bootmenü.
-- Keine Leerlauferkennung. Kein `flatpak --user`. Steam ist nur als Ganzes steuerbar.
-- VPNs werden nicht aktiv erkannt.
+## Development
 
-Die vollständige Liste steht in [`spec.md`](spec.md) unter „Bewusst nicht umgesetzt / Restlücken“.
-
-## Repository-Struktur
-
-| Pfad | Inhalt |
-|---|---|
-| `server/` | FastAPI-App, Templates, PWA, Dockerfile, Tests |
-| `agent/` | Root-Agent (`kidctl_agent`), Tests |
-| `tray/` | Tray-App (`kidctl_tray`) |
-| `common/` | Gemeinsames, versioniertes Protokoll (`kidctl_common`) |
-| `packaging/arch/` | PKGBUILD, systemd-Units, Install-Skript |
-| `packaging/pam`, `dns`, `mounts`, `sddm` | Login-Sperre, DNS-Filter und Browser-Policies, noexec, Anmeldebildschirm |
-| `packaging/repo/` | Skripte für das signierte Pacman-Repository |
-| `dev/` | Entwicklungsserver, WebUI-Testskript, Test-VM (QEMU/KVM) |
-| `docs/` | Installations- und Härtungsanleitung |
-| `spec.md` | Lebende Spezifikation mit Changelog |
-
-## Entwicklung
+The specification ([`spec.md`](spec.md)), conventions ([`CLAUDE.md`](CLAUDE.md)) and code comments
+are in German. Translations live in `server/app/locale/en.po`, `agent/kidctl_agent/locale/en.po` and
+`tray/kidctl_tray/locale/en.po`; German is the source language in the code, and tests check that
+every marked text has an English translation.
 
 ```bash
-dev/devserver.sh                 # lokaler Server auf 127.0.0.1:8000 (Testaccount wird angelegt)
-
-# Tests (venv mit server/requirements.txt + pytest httpx dbus-next websockets)
+dev/devserver.sh                 # local server on 127.0.0.1:8000 (creates a test account)
 cd server && python -m pytest -q tests
 cd agent  && python -m pytest -q tests
 cd tray   && QT_QPA_PLATFORM=offscreen python -m pytest -q tests
 ```
 
-Systemnahe Teile wie PAM, nftables und Mounts **nie auf dem Entwicklungsrechner** scharf schalten,
-sondern in der Test-VM ausprobieren: [`dev/vm/README.md`](dev/vm/README.md). Änderungen werden
-zuerst in `spec.md` beschrieben und im Changelog datiert. Konventionen stehen in
-[`CLAUDE.md`](CLAUDE.md).
+## License
 
-## Lizenz
-
-[PolyForm Noncommercial 1.0.0](LICENSE): Nutzung, Änderung und Weitergabe sind für
-**nicht-kommerzielle** Zwecke frei, privat ebenso wie durch Schulen, Vereine oder Behörden.
-Kommerzielle Nutzung ist nicht erlaubt. Bei jeder Weitergabe müssen die Lizenz und der Hinweis
-`Required Notice` mit dem ursprünglichen Autor erhalten bleiben.
-
-Weil kommerzielle Nutzung ausgeschlossen ist, ist KidCTL im Sinne der OSI „source-available“ und
-nicht „Open Source“.
+[PolyForm Noncommercial 1.0.0](LICENSE): free to use, modify and share for **non-commercial**
+purposes (private use as well as schools, associations or public authorities). Commercial use is not
+permitted. KidCTL is therefore "source-available", not "open source" in the OSI sense.
 
 Copyright © 2026 Adrian Noss

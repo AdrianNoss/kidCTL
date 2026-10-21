@@ -88,6 +88,8 @@ def _watcher(ps):
         pass
 
     class FakeAgent:
+
+        lang_of = staticmethod(lambda user: "de")
         policy = None
         desktop = type("D", (), {"notify": staticmethod(notify)})()
 

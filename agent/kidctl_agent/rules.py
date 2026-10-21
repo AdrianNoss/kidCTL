@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime, time, timezone
 
+from kidctl_common.i18n import N_
 from kidctl_common.protocol import ChildPolicy
 
 # Gründe, warum die Nutzung nicht (mehr) erlaubt ist
@@ -77,9 +78,9 @@ def evaluate(child: ChildPolicy, now_local: datetime, used_seconds: int) -> Deci
     return Decision(True, min(left_quota, _seconds(end) - now_s))
 
 
-REASON_TEXT = {
-    LOCKED: "Deine Eltern haben den Rechner gesperrt.",
-    QUOTA: "Bildschirmzeit für heute aufgebraucht.",
-    WINDOW_NOT_OPEN: "Die erlaubte Nutzungszeit hat noch nicht begonnen.",
-    WINDOW_CLOSED: "Die erlaubte Nutzungszeit ist für heute vorbei.",
+REASON_TEXT = {   # mit N_ markiert, Übersetzung bei der Anzeige
+    LOCKED: N_("Deine Eltern haben den Rechner gesperrt."),
+    QUOTA: N_("Bildschirmzeit für heute aufgebraucht."),
+    WINDOW_NOT_OPEN: N_("Die erlaubte Nutzungszeit hat noch nicht begonnen."),
+    WINDOW_CLOSED: N_("Die erlaubte Nutzungszeit ist für heute vorbei."),
 }

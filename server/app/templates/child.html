@@ -11,7 +11,7 @@
 {% endmacro %}
 {% block content %}
 <div class="page-head">
-  <div><span class="eyebrow">Kind</span><h1>{{ child.name }}</h1>
+  <div><span class="eyebrow">{{ _("Kind") }}</span><h1>{{ child.name }}</h1>
     {% if playing %}<span class="pill play" title="{{ _('Spielt gerade') }}">▶ {{ _("spielt gerade: {games}").format(games=playing | join(", ")) }}</span>{% endif %}</div>
   <div class="actions">
     <a href="/children/{{ child.id }}/chat" class="btn secondary">{{ _("Chat") }}</a>
@@ -134,7 +134,7 @@
     </div>
     <label><span class="mode-whitelist">{{ _("Weitere freigegebene Domains") }}</span><span class="mode-blacklist">{{ _("Ausnahmen (trotz Sperrliste erlaubt)") }}</span>
       <span class="field-note">{{ _("Je Zeile eine Domain, gilt inkl. Subdomains") }}</span>
-      <textarea name="allow" rows="3" placeholder="schule.de">{{ web.allow | join("\n") }}</textarea></label>
+      <textarea name="allow" rows="3" placeholder="{{ _('schule.de') }}">{{ web.allow | join("\n") }}</textarea></label>
 
     <div class="mode-blacklist">
     <h3>{{ _("Sperrlisten") }}</h3>

@@ -122,6 +122,9 @@ class FakeDesktop:
 
 
 class FakeAgent:
+
+
+    lang_of = staticmethod(lambda user: "de")
     def __init__(self, mode, allowed_programs=(), users=None):
         import getpass
         self.user = getpass.getuser()

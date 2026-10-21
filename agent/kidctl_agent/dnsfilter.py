@@ -137,6 +137,19 @@ def report_sources(web: p.WebFilter, lists: dict[str, list[str]]) -> dict[str, s
     return src
 
 
+def source_code(source: str) -> tuple[str, str]:
+    """Quelle aus ``report_sources`` -> sprachneutraler Code und Parameter (für die Übersetzung im WebUI)."""
+    if source == "nicht freigegeben":
+        return "not_allowed", ""
+    if source == "von Eltern gesperrt":
+        return "parent_deny", ""
+    if source == "DNS-over-HTTPS-Anbieter":
+        return "doh", ""
+    if source.startswith("Sperrliste "):
+        return "blocklist", source.removeprefix("Sperrliste ")
+    return "", ""
+
+
 def parse_blocked(line: str) -> tuple[str, str] | None:
     """Unbound log-local-actions: ``info: <zone> always_nxdomain <client> <anfrage> <typ> <klasse>``."""
     parts = line.split()

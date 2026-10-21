@@ -364,6 +364,8 @@ class Verdict:
     name: str
     detail: str = ""
     grantable: bool = True  # False: eine Freigabe von ``key`` würde nichts ändern (keine Anfrage anbieten)
+    code: str = ""          # sprachneutrale Begründung (Server übersetzt), ``detail`` = deutscher Rückfall
+    arg: str = ""
 
 
 def script_arg(interp: str, argv: tuple[str, ...]) -> str | None:
@@ -587,7 +589,8 @@ def classify(info: ProcInfo, allowed: Allowed,
         return bool(allowed.launchers) and any(is_launcher_process(a, allowed) for a in chain())
 
     def steam_blocked() -> Verdict:
-        return Verdict(STEAM_KEY, "Steam", f"nicht freigegeben – {os.path.basename(path)}")
+        return Verdict(STEAM_KEY, "Steam", f"nicht freigegeben – {os.path.basename(path)}",
+                       code="steam_not_allowed", arg=os.path.basename(path))
 
     path = _program_path(info)
     if not matches_host(info):
@@ -596,13 +599,14 @@ def classify(info: ProcInfo, allowed: Allowed,
             return None
         if from_steam():
             return steam_blocked()
-        return Verdict(f"exe:{exe}", name, "Container: Datei weicht vom System ab", grantable=False)
+        return Verdict(f"exe:{exe}", name, "Container: Datei weicht vom System ab", grantable=False, code="container")
     if allowed.steam_root and path.startswith(allowed.steam_root):
         if not allowed.steam_enabled:
             return steam_blocked()
         if is_steam_process(info, allowed.steam_root) or from_steam() or from_launcher():
             return None
-        return Verdict(f"exe:{path}", os.path.basename(path), "Steam-Bibliothek (über Steam gestartet nötig)", grantable=False)
+        return Verdict(f"exe:{path}", os.path.basename(path), "Steam-Bibliothek (über Steam gestartet nötig)", grantable=False,
+                       code="steam_library")
 
     if allowed.path_ok(exe):
         return None
@@ -621,13 +625,14 @@ def classify(info: ProcInfo, allowed: Allowed,
         if app is not None and allowed.path_ok(app):
             env = environ() if environ is not None else {}
             if electron_args_unsafe(info) or any(env.get(k) for k in ELECTRON_UNSAFE_ENV):
-                return Verdict(f"exe:{app}", os.path.basename(app), f"Electron mit fremdem Code ({name})", grantable=False)
+                return Verdict(f"exe:{app}", os.path.basename(app), f"Electron mit fremdem Code ({name})", grantable=False,
+                               code="electron_injected", arg=name)
             return None
         if app is None and any(_allowed_electron_main(a, allowed) for a in chain()):
             return None  # Hilfsprozess (Renderer, GPU, Crashpad) einer erlaubten Electron-App
         if app is not None:
-            return Verdict(f"exe:{app}", os.path.basename(app), f"Electron-App ({name})")
-        return Verdict(f"exe:{exe}", name, "Electron ohne freigegebene App")
+            return Verdict(f"exe:{app}", os.path.basename(app), f"Electron-App ({name})", code="electron_app", arg=name)
+        return Verdict(f"exe:{exe}", name, "Electron ohne freigegebene App", code="electron_no_app")
 
     if name in SHELLS or re.sub(r"[0-9.]+$", "", name) in SHELLS:
         mode, script = shell_mode(info.argv)
@@ -637,19 +642,20 @@ def classify(info: ProcInfo, allowed: Allowed,
             real = os.path.realpath(script) if os.path.isabs(script) else script
             if real.startswith(SYSTEM_SCRIPT_DIRS) or allowed.path_ok(real):
                 return None
-            return Verdict(f"exe:{real}", os.path.basename(real), f"Skript ({name})")
-        return Verdict(f"exe:{exe}", name, "interaktive Shell")
+            return Verdict(f"exe:{real}", os.path.basename(real), f"Skript ({name})", code="script", arg=name)
+        return Verdict(f"exe:{exe}", name, "interaktive Shell", code="interactive_shell")
 
     if INTERPRETER.match(name):
         script = script_arg(name, info.argv)
         if script is None:
-            return Verdict(f"exe:{exe}", name, "Interpreter ohne freigegebenes Skript")
+            return Verdict(f"exe:{exe}", name, "Interpreter ohne freigegebenes Skript", code="interpreter_no_script")
         real = os.path.realpath(script) if os.path.isabs(script) else script
         if os.path.isabs(real) and allowed.path_ok(real):
             reason = interpreter_injection(name, environ() if environ is not None else {}, allowed.home)
             if reason is None:
                 return None
-            return Verdict(f"exe:{real}", os.path.basename(real), f"eingeschleuster Code ({reason})", grantable=False)
-        return Verdict(f"exe:{real}", os.path.basename(real), f"Skript ({name})")
+            return Verdict(f"exe:{real}", os.path.basename(real), f"eingeschleuster Code ({reason})", grantable=False,
+                           code="injected", arg=reason)
+        return Verdict(f"exe:{real}", os.path.basename(real), f"Skript ({name})", code="script", arg=name)
 
     return Verdict(f"exe:{exe}", name)

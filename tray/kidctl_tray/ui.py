@@ -16,6 +16,7 @@ from kidctl_common import tray as t
 from kidctl_common.protocol import MAX_BODY, ChatMessage
 
 from . import texts
+from .texts import _
 
 COLORS = {"ok": "#27ae60", "warning": "#f39c12", "critical": "#da4453", "offline": "#7f8c8d"}
 
@@ -59,22 +60,22 @@ class RequestDialog(QDialog):
 
     def __init__(self, state: t.TrayState | None, parent=None, target: str = "screen") -> None:
         super().__init__(parent)
-        self.setWindowTitle("Verlängerung anfordern")
-        self.screen_choice = QRadioButton("Bildschirmzeit")
-        self.games_choice = QRadioButton("Spielzeit")
+        self.setWindowTitle(_("Verlängerung anfordern"))
+        self.screen_choice = QRadioButton(_("Bildschirmzeit"))
+        self.games_choice = QRadioButton(_("Spielzeit"))
         group = QButtonGroup(self)
         group.addButton(self.screen_choice)
         group.addButton(self.games_choice)
         has_games = state is not None and state.game_limit_minutes is not None
         (self.games_choice if has_games and target == "games" else self.screen_choice).setChecked(True)
         self.minutes = QSpinBox(minimum=0, maximum=180, singleStep=5, value=15, suffix=" min")
-        self.later = QCheckBox("Länger aufbleiben bis")
+        self.later = QCheckBox(_("Länger aufbleiben bis"))
         self.until = QTimeEdit(displayFormat="HH:mm")
         end = state.window_end if state and state.window_end else time(20, 0)
         self.until.setTime(QTime(min(end.hour + 1, 23), end.minute))
         self.until.setEnabled(False)
         self.later.toggled.connect(self.until.setEnabled)
-        self.reason = QPlainTextEdit(placeholderText="Warum brauchst du mehr Zeit?")
+        self.reason = QPlainTextEdit(placeholderText=_("Warum brauchst du mehr Zeit?"))
         self.reason.setMaximumHeight(90)
         self.hint = QLabel()
         self.hint.setStyleSheet("color: #da4453")
@@ -84,18 +85,18 @@ class RequestDialog(QDialog):
             choice = QHBoxLayout()
             choice.addWidget(self.screen_choice)
             choice.addWidget(self.games_choice)
-            form.addRow("Wofür:", choice)
-        form.addRow("Mehr Zeit:", self.minutes)
+            form.addRow(_("Wofür:"), choice)
+        form.addRow(_("Mehr Zeit:"), self.minutes)
         row = QHBoxLayout()
         row.addWidget(self.later)
         row.addWidget(self.until)
         form.addRow(row)
         self.games_choice.toggled.connect(self._target_changed)
         self._target_changed(self.games_choice.isChecked())
-        form.addRow("Begründung:", self.reason)
+        form.addRow(_("Begründung:"), self.reason)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Anfragen")
-        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText("Abbrechen")
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText(_("Anfragen"))
+        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(_("Abbrechen"))
         buttons.accepted.connect(self._check)
         buttons.rejected.connect(self.reject)
         lay = QVBoxLayout(self)
@@ -112,13 +113,13 @@ class RequestDialog(QDialog):
         games = self.games_choice.isChecked()
         until = self.until.time().toPython() if self.later.isChecked() and not games else None
         if not reason:
-            self.hint.setText("Bitte eine Begründung schreiben.")
+            self.hint.setText(_("Bitte eine Begründung schreiben."))
             return None
         if not self.minutes.value() and until is None:
-            self.hint.setText("Bitte Minuten und/oder eine spätere Uhrzeit wählen.")
+            self.hint.setText(_("Bitte Minuten und/oder eine spätere Uhrzeit wählen."))
             return None
         if games and not self.minutes.value():
-            self.hint.setText("Bitte Minuten wählen.")
+            self.hint.setText(_("Bitte Minuten wählen."))
             return None
         return t.TrayExtensionRequest(minutes=self.minutes.value(), window_end=until,
                                       reason=reason[:MAX_BODY], target="games" if games else "screen")
@@ -134,15 +135,15 @@ class AccessDialog(QDialog):
     def __init__(self, item: t.BlockedItem, parent=None) -> None:
         super().__init__(parent)
         self.item = item
-        self.setWindowTitle("Freigabe anfragen")
+        self.setWindowTitle(_("Freigabe anfragen"))
         title = QLabel(f"<b>{html.escape(item.name)}</b> ({texts.kind_label(item.access_kind)})")
-        info = QLabel("Deine Eltern bekommen die Anfrage und können sie dauerhaft oder nur für heute erlauben.")
+        info = QLabel(_("Deine Eltern bekommen die Anfrage und können sie dauerhaft oder nur für heute erlauben."))
         info.setWordWrap(True)
-        self.reason = QPlainTextEdit(placeholderText="Wofür brauchst du das? (freiwillig)")
+        self.reason = QPlainTextEdit(placeholderText=_("Wofür brauchst du das? (freiwillig)"))
         self.reason.setMaximumHeight(90)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Anfragen")
-        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText("Abbrechen")
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText(_("Anfragen"))
+        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(_("Abbrechen"))
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         lay = QVBoxLayout(self)
@@ -160,10 +161,10 @@ class BlockedWindow(QWidget):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("Gesperrt – Freigabe anfragen")
+        self.setWindowTitle(_("Gesperrt – Freigabe anfragen"))
         self.resize(420, 460)
-        hint = QLabel("Programme und Websites, die in den letzten 24 Stunden gesperrt wurden. "
-                      "Websites sind je Hauptdomain zusammengefasst.")
+        hint = QLabel(_("Programme und Websites, die in den letzten 24 Stunden gesperrt wurden. "
+                        "Websites sind je Hauptdomain zusammengefasst."))
         hint.setWordWrap(True)
         self.list = QVBoxLayout()
         self.list.addStretch(1)
@@ -171,7 +172,7 @@ class BlockedWindow(QWidget):
         inner.setLayout(self.list)
         area = QScrollArea(widgetResizable=True)
         area.setWidget(inner)
-        reload_ = QPushButton("Aktualisieren")
+        reload_ = QPushButton(_("Aktualisieren"))
         reload_.clicked.connect(self.refresh.emit)
         lay = QVBoxLayout(self)
         lay.addWidget(hint)
@@ -186,14 +187,14 @@ class BlockedWindow(QWidget):
             if w is not None:
                 w.deleteLater()
         if not items:
-            self.list.insertWidget(0, QLabel("<i>In den letzten 24 Stunden wurde nichts gesperrt.</i>"))
+            self.list.insertWidget(0, QLabel("<i>" + html.escape(_("In den letzten 24 Stunden wurde nichts gesperrt.")) + "</i>"))
         for i, item in enumerate(items):
             row = QWidget()
             h = QHBoxLayout(row)
             h.setContentsMargins(0, 2, 0, 2)
             label = QLabel(f"<b>{html.escape(item.name)}</b><br><small>{html.escape(texts.blocked_line(item))}</small>")
             label.setWordWrap(True)
-            button = QPushButton("Angefragt" if item.pending else "Anfragen …")
+            button = QPushButton(_("Angefragt") if item.pending else _("Anfragen …"))
             button.setEnabled(not item.pending)
             button.clicked.connect(lambda _=False, it=item: self.requestAccess.emit(it))
             h.addWidget(label, 1)
@@ -207,17 +208,17 @@ class ChatWindow(QWidget):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("Bildschirmzeit & Nachrichten")
+        self.setWindowTitle(_("Bildschirmzeit & Nachrichten"))
         self.resize(420, 520)
         self.status = QLabel()
         self.status.setWordWrap(True)
         self.view = QTextBrowser()
         self.view.setOpenLinks(False)
-        self.input = QLineEdit(placeholderText="Nachricht an deine Eltern …", maxLength=MAX_BODY)
+        self.input = QLineEdit(placeholderText=_("Nachricht an deine Eltern …"), maxLength=MAX_BODY)
         self.input.returnPressed.connect(self._send)
-        send = QPushButton("Senden")
+        send = QPushButton(_("Senden"))
         send.clicked.connect(self._send)
-        req = QPushButton("Verlängerung anfordern …")
+        req = QPushButton(_("Verlängerung anfordern …"))
         req.clicked.connect(self.requestExtension.emit)
         row = QHBoxLayout()
         row.addWidget(self.input)
@@ -242,7 +243,7 @@ class ChatWindow(QWidget):
 
     def set_state(self, state: t.TrayState | None, connected: bool) -> None:
         if not connected:
-            self.status.setText("Keine Verbindung zum kidctl-Dienst.")
+            self.status.setText(_("Keine Verbindung zum kidctl-Dienst."))
         elif state is not None and state.restricted:
             self.status.setText("<br>".join(html.escape(x) for x in texts.detail_lines(state)))
 
@@ -262,17 +263,17 @@ class ChatWindow(QWidget):
             bg = own if m.from_child else other
             body = html.escape(m.body).replace("\n", "<br>")
             if m.kind == "extension_request":
-                label = "Spielzeit" if m.request_target == "games" else "Verlängerung"
-                body = (f"<b>{label}: {html.escape(texts.request_summary(m))}</b><br>{body}"
+                label = _("Spielzeit") if m.request_target == "games" else _("Verlängerung")
+                body = (f"<b>{html.escape(label)}: {html.escape(texts.request_summary(m))}</b><br>{body}"
                         f"<br><i>{html.escape(texts.request_status(m))}</i>")
             elif m.kind == "access_request":
                 what = f"{texts.kind_label(m.access_kind)} {m.access_name or ''}"
-                body = (f"<b>Freigabe: {html.escape(what)}</b>" + (f"<br>{body}" if body else "")
+                body = (f"<b>{html.escape(_('Freigabe:'))} {html.escape(what)}</b>" + (f"<br>{body}" if body else "")
                         + f"<br><i>{html.escape(texts.access_status(m))}</i>")
-            who = "Du" if m.from_child else html.escape(m.sender_name)
+            who = html.escape(_("Du")) if m.from_child else html.escape(m.sender_name)
             parts.append(
                 f'<table width="100%"><tr><td align="{align}">'
                 f'<div style="background:{bg}; color:{fg}; padding:6px;"><small>{who} · {texts.local_time(m.created_at)}'
                 f"</small><br>{body}</div></td></tr></table>")
-        self.view.setHtml("".join(parts) or "<i>Noch keine Nachrichten.</i>")
+        self.view.setHtml("".join(parts) or "<i>" + html.escape(_("Noch keine Nachrichten.")) + "</i>")
         self.view.verticalScrollBar().setValue(self.view.verticalScrollBar().maximum())

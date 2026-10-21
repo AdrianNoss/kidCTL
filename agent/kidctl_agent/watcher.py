@@ -16,7 +16,10 @@ from kidctl_common import tray as t
 
 from . import store
 from .accounting import boottime
-from .dnsfilter import site_of
+from kidctl_common import i18n
+from kidctl_common.i18n import _
+
+from .dnsfilter import site_of, source_code
 from .procs import pids_of, read_environ, read_proc
 from .kidmounts import STEAM_ROOT
 from .programs import (MAX_ANCESTORS, Allowed, Verdict, base_paths, classify, closure, group_members, load_base,
@@ -54,7 +57,8 @@ class ProgramWatcher:
         self.forks: dict[int, int] = {}
         self._pacman_mtime: float | None = None
         self._pkg_input: frozenset[str] = frozenset()  # Programme, für die pkg_dirs berechnet sind
-        self.names: dict[str, str] = {}             # App-Schlüssel -> Anzeigename (aus .desktop)
+        self.names: dict[str, str] = {}             # App-Schlüssel -> Anzeigename (aus .desktop, deutsch bevorzugt)
+        self.names_en: dict[str, str] = {}          # App-Schlüssel -> englischer Name (Name= ohne Sprachzusatz)
         self.handled: set[tuple] = set()  # bereits geprüfte Prozesse (ProcInfo.ident)
         self.last_report: dict[tuple[str, str], float] = {}
         self.last_notify: dict[tuple[str, str], float] = {}
@@ -182,15 +186,27 @@ class ProgramWatcher:
         if now - self.last_notify.get((user, key), -1e9) < NOTIFY_DEDUP:
             return
         self.last_notify[(user, key)] = now
-        if not grantable:
-            await self.agent.desktop.notify(user, uid, "Programm gesperrt", f"„{name}“ ist nicht freigegeben.")
+        with i18n.use(self.agent.lang_of(user)):
+            name = self.display_name(key, name)
+            title = _("Programm gesperrt")
+            if not grantable:
+                body, action = _("„{name}“ ist nicht freigegeben.").format(name=name), None
+            else:
+                body = _("„{name}“ ist nicht freigegeben. Du kannst deine Eltern um Freigabe bitten.").format(name=name)
+                action = _("Freigabe anfragen")
+        if action is None:
+            await self.agent.desktop.notify(user, uid, title, body)
             return
 
         async def ask(u: str) -> None:
             await self.agent.open_access_dialog(u, key)
-        await self.agent.desktop.notify(user, uid, "Programm gesperrt",
-                                        f"„{name}“ ist nicht freigegeben. Du kannst deine Eltern um Freigabe bitten.",
-                                        on_action=ask, action="Freigabe anfragen")
+        await self.agent.desktop.notify(user, uid, title, body, on_action=ask, action=action)
+
+    def display_name(self, key: str, fallback: str) -> str:
+        """Programmname in der aktuellen Sprache (englischer Name aus der .desktop-Datei, falls vorhanden)."""
+        if i18n.current() == "en" and (en := self.names_en.get(key)):
+            return en
+        return self.names.get(key, fallback)
 
     def remember(self, user: str, kind: str, key: str, name: str) -> None:
         """Gesperrten Eintrag für „Freigabe anfragen“ merken (Websites je Hauptdomain)."""
@@ -220,7 +236,7 @@ class ProgramWatcher:
         self.last_report[k] = now
         self.pending.append(p.BlockedEvent(username=user, at=datetime.now(timezone.utc), kind=kind,
                                            key=verdict.key[:512], name=name[:255], detail=verdict.detail[:255],
-                                           audit=audit))
+                                           audit=audit, detail_code=verdict.code[:32], detail_arg=verdict.arg[:255]))
         del self.pending[:-MAX_PENDING]
         self._save()
         return True
@@ -267,7 +283,9 @@ class ProgramWatcher:
         if detail not in NOT_REQUESTABLE:
             site = site_of(domain)
             self.remember(user, "domain", f"domain:{site}", site)
-        return self._record(user, Verdict(f"domain:{domain}", domain, detail), domain, audit=False, kind="domain")
+        code, arg = source_code(detail)
+        return self._record(user, Verdict(f"domain:{domain}", domain, detail, code=code, arg=arg), domain,
+                            audit=False, kind="domain")
 
     # ---------- Basisliste aus der Paketkette ----------
 

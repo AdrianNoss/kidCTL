@@ -14,6 +14,9 @@ from pydantic import BaseModel, ValidationError
 
 from kidctl_common import tray as t
 
+from kidctl_common import i18n
+from kidctl_common.i18n import _
+
 from . import loginlock
 
 log = logging.getLogger("kidctl.tray")
@@ -100,7 +103,9 @@ class TrayServer:
                 try:
                     msg = t.tray_to_agent.validate_json(line)
                 except ValidationError as e:
-                    await self._send(client, t.TrayError(message=f"ungültige Nachricht: {e.error_count()} Fehler"))
+                    with i18n.use(self.handler.lang_of(client.user)):
+                        text = _("ungültige Nachricht: {n} Fehler").format(n=e.error_count())
+                    await self._send(client, t.TrayError(message=text))
                     continue
                 await self._dispatch(client, msg)
         except (ConnectionError, asyncio.LimitOverrunError, ValueError):
@@ -119,14 +124,16 @@ class TrayServer:
                 await self._send(client, t.TrayChat(messages=self.handler.tray_history(user)))
             return
         if not self.handler.tray_state(user).restricted:
-            await self._send(client, t.TrayError(message="Dieser Benutzer ist keinem Kind zugeordnet."))
+            with i18n.use(self.handler.lang_of(user)):
+                await self._send(client, t.TrayError(message=_("Dieser Benutzer ist keinem Kind zugeordnet.")))
             return
         if isinstance(msg, t.TrayChatSend):
             online = await self.handler.tray_chat_send(user, msg.body)
             await self._send(client, t.TrayQueued(kind="chat_send", online=online))
         elif isinstance(msg, t.TrayExtensionRequest):
             if not msg.minutes and (msg.window_end is None or msg.target == "games"):
-                await self._send(client, t.TrayError(message="Bitte Minuten und/oder ein späteres Ende angeben."))
+                with i18n.use(self.handler.lang_of(user)):
+                    await self._send(client, t.TrayError(message=_("Bitte Minuten und/oder ein späteres Ende angeben.")))
                 return
             online = await self.handler.tray_request(user, msg)
             await self._send(client, t.TrayQueued(kind="extension_request", online=online))

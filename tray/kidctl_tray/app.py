@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 from kidctl_common import tray as t
 
 from . import texts
+from .texts import _
 from .client import AgentClient
 from .ui import AccessDialog, BlockedWindow, ChatWindow, RequestDialog, render_icon
 
@@ -25,12 +26,12 @@ class TrayApp:
         self.tray.setToolTip("KidCTL")
 
         self.menu = QMenu()
-        self.status_action = QAction("Verbinde …", enabled=False)
+        self.status_action = QAction(_("Verbinde …"), enabled=False)
         self.menu.addAction(self.status_action)
         self.menu.addSeparator()
-        self.menu.addAction("Chat öffnen", self.show_chat)
-        self.menu.addAction("Verlängerung anfordern …", lambda: self.request_extension())
-        self.menu.addAction("Gesperrt – Freigabe anfragen …", self.show_blocked)
+        self.menu.addAction(_("Chat öffnen"), self.show_chat)
+        self.menu.addAction(_("Verlängerung anfordern …"), lambda: self.request_extension())
+        self.menu.addAction(_("Gesperrt – Freigabe anfragen …"), self.show_blocked)
         self.tray.setContextMenu(self.menu)
         self.tray.activated.connect(self._activated)
 
@@ -72,7 +73,7 @@ class TrayApp:
 
     def request_access(self, item: t.BlockedItem) -> None:
         if item.pending:
-            self.tray.showMessage("KidCTL", f"„{item.name}“ ist schon angefragt.")
+            self.tray.showMessage("KidCTL", _("„{name}“ ist schon angefragt.").format(name=item.name))
             return
         parent = self.blocked if self.blocked.isVisible() else None
         dlg = AccessDialog(item, parent)
@@ -83,7 +84,7 @@ class TrayApp:
     def _connection_changed(self, connected: bool) -> None:
         if not connected:
             self.tray.setIcon(render_icon("…", "offline"))
-            self.status_action.setText("Keine Verbindung zum kidctl-Dienst")
+            self.status_action.setText(_("Keine Verbindung zum kidctl-Dienst"))
         self.window.set_state(self.state, connected)
 
     def _state_changed(self, state: t.TrayState) -> None:
@@ -102,6 +103,7 @@ class TrayApp:
 
 
 def main() -> int:
+    texts.setup_language()   # vor dem Aufbau der Fenster
     app = QApplication(sys.argv)
     app.setApplicationName("kidctl-tray")
     app.setDesktopFileName("kidctl-tray")

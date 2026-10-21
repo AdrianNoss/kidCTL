@@ -104,7 +104,8 @@ In `.env` (danach `docker compose up -d`):
 | `SMTP_FROM` | Absender, z. B. `KidCTL <kidctl@example.org>` |
 
 Jedes Elternteil trägt unter **Profil** (Klick auf den eigenen Namen oben rechts) seine E-Mail-Adresse
-ein. Dort lassen sich auch Benutzername, Anzeigename, Passwort und der Authenticator ändern.
+ein und wählt dort die Sprache (Automatisch nach Browser, Deutsch oder English) für WebUI, Mails und
+Push. Dort lassen sich auch Benutzername, Anzeigename, Passwort und der Authenticator ändern.
 
 | Problem | Lösung |
 |---|---|
@@ -317,3 +318,10 @@ sudo rm -rf /var/lib/kidctl    # Geräte-Token und Zustand (bleiben sonst erhalt
 
 Danach im WebUI beim Gerät „Token widerrufen“. Den Repository-Eintrag `[kidctl]` bei Bedarf
 aus `/etc/pacman.conf` entfernen.
+
+## Sprache
+
+KidCTL spricht Deutsch und Englisch. Eltern wählen die Sprache im Profil (Standard: Browsersprache).
+Auf dem Kinderrechner gilt die Sprache der Plasma-Sitzung des Kindes (Systemeinstellungen → Region &
+Sprache), vor der Anmeldung die Systemsprache aus `/etc/locale.conf`. Alles, was nicht mit `de`
+beginnt, ergibt Englisch.

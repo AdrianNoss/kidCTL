@@ -1,0 +1,144 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgid " und "
+msgstr " and "
+
+msgid "+{n} Minuten"
+msgstr "+{n} minutes"
+
+msgid "Abmeldung in 1 Minute – bitte jetzt speichern."
+msgstr "Signing out in 1 minute – please save now."
+
+msgid "Abmeldung in {n} Sekunden – bitte jetzt speichern."
+msgstr "Signing out in {n} seconds – please save now."
+
+msgid "Abmeldung in {time} – bitte rechtzeitig speichern."
+msgstr "Signing out in {time} – please save in time."
+
+msgid "Bildschirmzeit"
+msgstr "Screen time"
+
+msgid "Bildschirmzeit für heute aufgebraucht, außerhalb der erlaubten Zeit oder von den Eltern gesperrt. Bitte bei den Eltern melden."
+msgstr "Screen time for today is used up, outside the allowed hours, or locked by your parents. Please talk to your parents."
+
+msgid "Bildschirmzeit für heute aufgebraucht."
+msgstr "Screen time for today is used up."
+
+msgid "Bildschirmzeit verlängert"
+msgstr "Screen time extended"
+
+msgid "Bildschirmzeit zu Ende"
+msgstr "Screen time is over"
+
+msgid "Bitte Minuten und/oder ein späteres Ende angeben."
+msgstr "Please choose minutes and/or a later end time."
+
+msgid "Deine Eltern haben den Rechner gesperrt."
+msgstr "Your parents have locked the computer."
+
+msgid "Die erlaubte Nutzungszeit hat noch nicht begonnen."
+msgstr "The allowed hours have not started yet."
+
+msgid "Die erlaubte Nutzungszeit ist für heute vorbei."
+msgstr "The allowed hours are over for today."
+
+msgid "Dieser Benutzer ist keinem Kind zugeordnet."
+msgstr "This user is not assigned to a child."
+
+msgid "Dieser Eintrag ist nicht (mehr) in der Liste der Sperren."
+msgstr "This entry is not (or no longer) in the list of blocked items."
+
+msgid "Du wirst jetzt abgemeldet."
+msgstr "You are being signed out now."
+
+msgid "Freigabe abgelehnt"
+msgstr "Access declined"
+
+msgid "Freigabe anfragen"
+msgstr "Ask for access"
+
+msgid "Freigabe erteilt"
+msgstr "Access granted"
+
+msgid "Genehmigt."
+msgstr "Approved."
+
+msgid "Gesperrt"
+msgstr "Locked"
+
+msgid "Mehr Spielzeit anfragen"
+msgstr "Ask for more game time"
+
+msgid "Nachricht von {name}"
+msgstr "Message from {name}"
+
+msgid "Noch {n} Minute Spielzeit – danach werden Spiele geschlossen. Bitte speichern."
+msgid_plural "Noch {n} Minuten Spielzeit – danach werden Spiele geschlossen. Bitte speichern."
+msgstr[0] "{n} minute of game time left – games will be closed afterwards. Please save."
+msgstr[1] "{n} minutes of game time left – games will be closed afterwards. Please save."
+
+msgid "Noch {time} – danach wirst du abgemeldet."
+msgstr "{time} left – then you will be signed out."
+
+msgid "Noch {time}."
+msgstr "{time} left."
+
+msgid "Programm gesperrt"
+msgstr "App blocked"
+
+msgid "Schon angefragt – warte auf die Antwort deiner Eltern."
+msgstr "Already requested – wait for your parents’ answer."
+
+msgid "Spiele werden für heute geschlossen. Du kannst um mehr Spielzeit bitten."
+msgstr "Games are closed for today. You can ask for more game time."
+
+msgid "Spielzeit"
+msgstr "Game time"
+
+msgid "Spielzeit aufgebraucht"
+msgstr "Game time used up"
+
+msgid "Spielzeit verlängert"
+msgstr "Game time extended"
+
+msgid "Verlängerung abgelehnt"
+msgstr "Request for more time declined"
+
+msgid "Verlängerung genehmigt"
+msgstr "More time approved"
+
+msgid "Wieder freigegeben"
+msgstr "Unlocked again"
+
+msgid "bis {time} Uhr"
+msgstr "until {time}"
+
+msgid "ungültige Nachricht: {n} Fehler"
+msgstr "invalid message: {n} errors"
+
+msgid "{name} hat die Anfrage abgelehnt."
+msgstr "{name} declined the request."
+
+msgid "{n} Minute"
+msgid_plural "{n} Minuten"
+msgstr[0] "{n} minute"
+msgstr[1] "{n} minutes"
+
+msgid "„{name}“ bleibt gesperrt."
+msgstr "“{name}” stays blocked."
+
+msgid "„{name}“ ist ab jetzt erlaubt."
+msgstr "“{name}” is allowed from now on."
+
+msgid "„{name}“ ist heute erlaubt."
+msgstr "“{name}” is allowed today."
+
+msgid "„{name}“ ist nicht freigegeben."
+msgstr "“{name}” is not allowed."
+
+msgid "„{name}“ ist nicht freigegeben. Du kannst deine Eltern um Freigabe bitten."
+msgstr "“{name}” is not allowed. You can ask your parents for access."
+

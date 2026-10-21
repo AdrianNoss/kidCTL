@@ -1,25 +1,39 @@
-"""Anzeigetexte und Formatierung (ohne Qt, testbar)."""
+"""Anzeigetexte und Formatierung (ohne Qt, testbar). Sprache: Sitzung des Kindes (Umgebung der Tray-App),
+sonst ``/etc/locale.conf``; ``de*`` -> Deutsch, sonst Englisch."""
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
+from pathlib import Path
 
+from kidctl_common import i18n
 from kidctl_common import tray as t
+from kidctl_common.i18n import N_, _, ngettext
 from kidctl_common.protocol import ChatMessage
 
+i18n.install(Path(__file__).parent / "locale" / "en.po")
+
 REASON = {
-    "quota": "Bildschirmzeit für heute aufgebraucht",
-    "window_not_open": "Die erlaubte Zeit hat noch nicht begonnen",
-    "window_closed": "Die erlaubte Zeit ist für heute vorbei",
-    "locked": "Von deinen Eltern gesperrt",
+    "quota": N_("Bildschirmzeit für heute aufgebraucht"),
+    "window_not_open": N_("Die erlaubte Zeit hat noch nicht begonnen"),
+    "window_closed": N_("Die erlaubte Zeit ist für heute vorbei"),
+    "locked": N_("Von deinen Eltern gesperrt"),
 }
+
+
+def setup_language(environ=os.environ) -> str:
+    """Sprache der Tray-App festlegen (einmal beim Start)."""
+    lang = i18n.from_environ(dict(environ)) or i18n.system_language()
+    i18n.set_current(lang)
+    return lang
 
 
 def fmt_duration(seconds: int) -> str:
     minutes = max(0, seconds) // 60
     if minutes < 60:
         return f"{minutes} min"
-    return f"{minutes // 60}:{minutes % 60:02d} h"
+    return f"{minutes // 60}:{minutes % 60:02d} h" if i18n.current() == "de" else i18n.fmt_minutes(minutes)
 
 
 def icon_text(state: t.TrayState) -> str:
@@ -40,44 +54,53 @@ def level(state: t.TrayState) -> str:
 
 def status_line(state: t.TrayState) -> str:
     if not state.allowed:
-        return REASON.get(state.reason or "", "Keine Bildschirmzeit")
-    text = f"Noch {fmt_duration(state.remaining_seconds)}"
+        reason = REASON.get(state.reason or "")
+        return _(reason) if reason else _("Keine Bildschirmzeit")
     if state.window_end:
-        text += f" (heute bis {state.window_end:%H:%M} Uhr)"
-    return text
+        return _("Noch {time} (heute bis {end} Uhr)").format(time=fmt_duration(state.remaining_seconds),
+                                                            end=f"{state.window_end:%H:%M}")
+    return _("Noch {time}").format(time=fmt_duration(state.remaining_seconds))
 
 
 def detail_lines(state: t.TrayState) -> list[str]:
     lines = [status_line(state),
-             f"Heute genutzt: {fmt_duration(state.used_seconds)} von {fmt_duration(state.allowed_minutes * 60)}"]
+             _("Heute genutzt: {used} von {allowed}").format(used=fmt_duration(state.used_seconds),
+                                                             allowed=fmt_duration(state.allowed_minutes * 60))]
     if state.window_start and state.window_end:
-        lines.append(f"Erlaubt: {state.window_start:%H:%M}–{state.window_end:%H:%M} Uhr")
+        lines.append(_("Erlaubt: {start}–{end} Uhr").format(start=f"{state.window_start:%H:%M}",
+                                                            end=f"{state.window_end:%H:%M}"))
     if state.game_limit_minutes is not None:
         left = max(0, state.game_limit_minutes * 60 - state.game_used_seconds)
-        lines.append(f"Spielzeit: noch {fmt_duration(left)} von {fmt_duration(state.game_limit_minutes * 60)}"
-                     if left else "Spielzeit für heute aufgebraucht")
+        lines.append(_("Spielzeit: noch {left} von {total}").format(
+            left=fmt_duration(left), total=fmt_duration(state.game_limit_minutes * 60))
+            if left else _("Spielzeit für heute aufgebraucht"))
     if not state.online:
-        lines.append("Offline – Nachrichten werden gesendet, sobald Verbindung besteht")
+        lines.append(_("Offline – Nachrichten werden gesendet, sobald Verbindung besteht"))
     elif state.pending_outbox:
-        lines.append(f"{state.pending_outbox} Nachricht(en) werden gesendet …")
+        lines.append(ngettext("{n} Nachricht wird gesendet …", "{n} Nachrichten werden gesendet …",
+                                   state.pending_outbox).format(n=state.pending_outbox))
     return lines
 
 
 def local_time(dt: datetime) -> str:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone().strftime("%d.%m. %H:%M")
+    return i18n.fmt_datetime(dt.astimezone(), year=False)
+
+
+def _until(t_) -> str:
+    return _("bis {time} Uhr").format(time=f"{t_:%H:%M}")
 
 
 def request_summary(m: ChatMessage) -> str:
     if m.request_target == "games":
-        return f"+{m.requested_minutes or 0} min Spielzeit"
+        return _("+{n} min Spielzeit").format(n=m.requested_minutes or 0)
     parts = []
     if m.requested_minutes:
         parts.append(f"+{m.requested_minutes} min")
     if m.requested_window_end:
-        parts.append(f"bis {m.requested_window_end:%H:%M} Uhr")
-    return " und ".join(parts)
+        parts.append(_until(m.requested_window_end))
+    return _(" und ").join(parts)
 
 
 def request_status(m: ChatMessage) -> str:
@@ -86,25 +109,25 @@ def request_status(m: ChatMessage) -> str:
         if m.approved_minutes:
             parts.append(f"+{m.approved_minutes} min")
         if m.approved_window_end:
-            parts.append(f"bis {m.approved_window_end:%H:%M} Uhr")
-        return "✔ Genehmigt" + (f": {' und '.join(parts)}" if parts else "")
-    return {"pending": "⏳ Wartet auf Antwort", "rejected": "✘ Abgelehnt",
-            "expired": "Verfallen (Tag vorbei)"}.get(m.status or "", "")
+            parts.append(_until(m.approved_window_end))
+        return "✔ " + _("Genehmigt") + (f": {_(' und ').join(parts)}" if parts else "")
+    return {"pending": "⏳ " + _("Wartet auf Antwort"), "rejected": "✘ " + _("Abgelehnt"),
+            "expired": _("Verfallen (Tag vorbei)")}.get(m.status or "", "")
 
 
 def kind_label(kind: str | None) -> str:
-    return "Website" if kind == "domain" else "Programm"
+    return _("Website") if kind == "domain" else _("Programm")
 
 
 def access_status(m: ChatMessage) -> str:
     if m.status == "approved":
-        return "✔ Heute erlaubt" if m.access_scope == "today" else "✔ Dauerhaft erlaubt"
-    return {"pending": "⏳ Wartet auf Antwort", "rejected": "✘ Abgelehnt"}.get(m.status or "", "")
+        return "✔ " + (_("Heute erlaubt") if m.access_scope == "today" else _("Dauerhaft erlaubt"))
+    return {"pending": "⏳ " + _("Wartet auf Antwort"), "rejected": "✘ " + _("Abgelehnt")}.get(m.status or "", "")
 
 
 def blocked_line(item: t.BlockedItem) -> str:
     """„Website · zuletzt 14:03 · 3×“"""
-    parts = [kind_label(item.access_kind), f"zuletzt {local_time(item.last_at)}"]
+    parts = [kind_label(item.access_kind), _("zuletzt {time}").format(time=local_time(item.last_at))]
     if item.count > 1:
         parts.append(f"{item.count}×")
     return " · ".join(parts)

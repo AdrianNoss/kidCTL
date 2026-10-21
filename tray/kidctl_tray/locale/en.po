@@ -1,0 +1,190 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgid " und "
+msgstr " and "
+
+msgid "+{n} min Spielzeit"
+msgstr "+{n} min game time"
+
+msgid "Abbrechen"
+msgstr "Cancel"
+
+msgid "Abgelehnt"
+msgstr "Declined"
+
+msgid "Aktualisieren"
+msgstr "Refresh"
+
+msgid "Anfragen"
+msgstr "Ask"
+
+msgid "Anfragen …"
+msgstr "Ask …"
+
+msgid "Angefragt"
+msgstr "Requested"
+
+msgid "Begründung:"
+msgstr "Reason:"
+
+msgid "Bildschirmzeit"
+msgstr "Screen time"
+
+msgid "Bildschirmzeit & Nachrichten"
+msgstr "Screen time & messages"
+
+msgid "Bildschirmzeit für heute aufgebraucht"
+msgstr "Screen time for today is used up"
+
+msgid "Bitte Minuten und/oder eine spätere Uhrzeit wählen."
+msgstr "Please choose minutes and/or a later time."
+
+msgid "Bitte Minuten wählen."
+msgstr "Please choose minutes."
+
+msgid "Bitte eine Begründung schreiben."
+msgstr "Please write a reason."
+
+msgid "Chat öffnen"
+msgstr "Open chat"
+
+msgid "Dauerhaft erlaubt"
+msgstr "Always allowed"
+
+msgid "Deine Eltern bekommen die Anfrage und können sie dauerhaft oder nur für heute erlauben."
+msgstr "Your parents get the request and can allow it always or just for today."
+
+msgid "Die erlaubte Zeit hat noch nicht begonnen"
+msgstr "The allowed hours have not started yet"
+
+msgid "Die erlaubte Zeit ist für heute vorbei"
+msgstr "The allowed hours are over for today"
+
+msgid "Du"
+msgstr "You"
+
+msgid "Erlaubt: {start}–{end} Uhr"
+msgstr "Allowed: {start}–{end}"
+
+msgid "Freigabe anfragen"
+msgstr "Ask for access"
+
+msgid "Freigabe:"
+msgstr "Access:"
+
+msgid "Genehmigt"
+msgstr "Approved"
+
+msgid "Gesperrt – Freigabe anfragen"
+msgstr "Blocked – ask for access"
+
+msgid "Gesperrt – Freigabe anfragen …"
+msgstr "Blocked – ask for access …"
+
+msgid "Heute erlaubt"
+msgstr "Allowed today"
+
+msgid "Heute genutzt: {used} von {allowed}"
+msgstr "Used today: {used} of {allowed}"
+
+msgid "In den letzten 24 Stunden wurde nichts gesperrt."
+msgstr "Nothing was blocked in the last 24 hours."
+
+msgid "Keine Bildschirmzeit"
+msgstr "No screen time"
+
+msgid "Keine Verbindung zum kidctl-Dienst"
+msgstr "No connection to the kidctl service"
+
+msgid "Keine Verbindung zum kidctl-Dienst."
+msgstr "No connection to the kidctl service."
+
+msgid "Länger aufbleiben bis"
+msgstr "Stay up until"
+
+msgid "Mehr Zeit:"
+msgstr "More time:"
+
+msgid "Nachricht an deine Eltern …"
+msgstr "Message to your parents …"
+
+msgid "Noch keine Nachrichten."
+msgstr "No messages yet."
+
+msgid "Noch {time}"
+msgstr "{time} left"
+
+msgid "Noch {time} (heute bis {end} Uhr)"
+msgstr "{time} left (today until {end})"
+
+msgid "Offline – Nachrichten werden gesendet, sobald Verbindung besteht"
+msgstr "Offline – messages will be sent once connected"
+
+msgid "Programm"
+msgstr "App"
+
+msgid "Programme und Websites, die in den letzten 24 Stunden gesperrt wurden. Websites sind je Hauptdomain zusammengefasst."
+msgstr "Apps and websites blocked in the last 24 hours. Websites are grouped by main domain."
+
+msgid "Senden"
+msgstr "Send"
+
+msgid "Spielzeit"
+msgstr "Game time"
+
+msgid "Spielzeit für heute aufgebraucht"
+msgstr "Game time for today is used up"
+
+msgid "Spielzeit: noch {left} von {total}"
+msgstr "Game time: {left} of {total} left"
+
+msgid "Verbinde …"
+msgstr "Connecting …"
+
+msgid "Verfallen (Tag vorbei)"
+msgstr "Expired (day over)"
+
+msgid "Verlängerung"
+msgstr "More time"
+
+msgid "Verlängerung anfordern"
+msgstr "Ask for more time"
+
+msgid "Verlängerung anfordern …"
+msgstr "Ask for more time …"
+
+msgid "Von deinen Eltern gesperrt"
+msgstr "Locked by your parents"
+
+msgid "Wartet auf Antwort"
+msgstr "Waiting for an answer"
+
+msgid "Warum brauchst du mehr Zeit?"
+msgstr "Why do you need more time?"
+
+msgid "Website"
+msgstr "Website"
+
+msgid "Wofür brauchst du das? (freiwillig)"
+msgstr "What do you need it for? (optional)"
+
+msgid "Wofür:"
+msgstr "For:"
+
+msgid "bis {time} Uhr"
+msgstr "until {time}"
+
+msgid "zuletzt {time}"
+msgstr "last {time}"
+
+msgid "„{name}“ ist schon angefragt."
+msgstr "“{name}” has already been requested."
+
+msgid "{n} Nachricht wird gesendet …"
+msgid_plural "{n} Nachrichten werden gesendet …"
+msgstr[0] "{n} message is being sent …"
+msgstr[1] "{n} messages are being sent …"
+

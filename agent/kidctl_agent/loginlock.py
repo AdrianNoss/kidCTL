@@ -15,15 +15,19 @@ import re
 import tempfile
 from pathlib import Path
 
+from kidctl_common import i18n
+from kidctl_common.i18n import N_
 from kidctl_common.protocol import USERNAME_PATTERN
+
+from .lang import system_language
 
 log = logging.getLogger("kidctl.loginlock")
 
 RUN_DIR = Path(os.environ.get("KIDCTL_RUN_DIR", "/run/kidctl"))
 LOCKED_FILE = "locked-users"
 MESSAGE_FILE = "locked-message"
-MESSAGE = ("Bildschirmzeit für heute aufgebraucht, außerhalb der erlaubten Zeit oder von den Eltern "
-           "gesperrt. Bitte bei den Eltern melden.")
+MESSAGE = N_("Bildschirmzeit für heute aufgebraucht, außerhalb der erlaubten Zeit oder von den Eltern "
+             "gesperrt. Bitte bei den Eltern melden.")   # Sprache: /etc/locale.conf (vor der Anmeldung)
 
 ADMIN_GROUPS = ("wheel", "sudo", "admin")
 
@@ -69,7 +73,8 @@ class LoginLock:
         if users == self._current:
             return
         if self._current is None:
-            _write(MESSAGE_FILE, MESSAGE + "\n")
+            with i18n.use(system_language()):
+                _write(MESSAGE_FILE, i18n.gettext(MESSAGE) + "\n")
         _write(LOCKED_FILE, "".join(f"{u}\n" for u in users))
         if users != (self._current or []):
             log.info("Login gesperrt für: %s", ", ".join(users) or "niemanden")

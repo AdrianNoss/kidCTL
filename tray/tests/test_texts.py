@@ -27,7 +27,7 @@ def test_status_and_details():
     assert texts.status_line(st(allowed=False, reason="window_closed")) == "Die erlaubte Zeit ist für heute vorbei"
     lines = texts.detail_lines(st(online=False))
     assert "Heute genutzt: 15 min von 1:00 h" in lines and any("Offline" in x for x in lines)
-    assert any("2 Nachricht(en)" in x for x in texts.detail_lines(st(pending_outbox=2)))
+    assert "2 Nachrichten werden gesendet …" in texts.detail_lines(st(pending_outbox=2))
 
 
 def test_request_texts():

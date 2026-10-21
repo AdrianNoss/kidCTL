@@ -60,6 +60,36 @@ Verlängerungsanfragen.
 - Nachrichten und Verlängerungsanfragen werden in eine Warteschlange gestellt.
 - Offline sind keine neuen Genehmigungen möglich.
 
+## Sprache / Internationalisierung (entschieden 2026-10-21)
+
+- Deutsch und Englisch für alles, was Eltern und Kinder sehen: WebUI, E-Mails, Push, Benachrichtigungen
+  des Agenten, Tray-App, Sperrtext beim Login. Logs (Journal), CLI und Doku bleiben deutsch; kurze
+  englische `README.md` (deutsche Fassung `README.de.md`).
+- Regel überall: `de*` -> Deutsch, alles andere (auch leer/`C`/`fr_FR`) -> Englisch.
+- Eltern: Profil-Einstellung „Automatisch (Browser)“ (Standard) / Deutsch / English. Vorrang im WebUI:
+  feste Profilsprache > Umschalter „Deutsch · English“ auf Seiten ohne Anmeldung (Cookie) >
+  `Accept-Language` (höchster q-Wert). Mails und Push: feste Sprache, sonst die bei der letzten
+  Anmeldung erkannte (`parent.detected_language`), sonst Deutsch. „Passwort vergessen“ nimmt die
+  Sprache des Accounts, nicht die des anfragenden Browsers. Push wird je Elternteil in dessen Sprache
+  erzeugt.
+- Kind: Sprache seiner Plasma-Sitzung (Umgebung von plasmashell u. a., LC_ALL > LC_MESSAGES > LANGUAGE >
+  LANG, 60 s zwischengespeichert); ohne Sitzung (Login-Sperrtext) `/etc/locale.conf`. Die Tray-App nimmt
+  die Sprache ihrer eigenen Umgebung.
+- Sperrprotokoll: Der Agent schickt zusätzlich einen sprachneutralen Code mit Parameter
+  (`blocked_event.detail_code/detail_arg`); der Server übersetzt je Elternteil. Ältere Einträge/Agenten:
+  deutscher Text. Programmnamen: Agent meldet zusätzlich `Name=` (`app_entry.name_en`); Eltern und Kind
+  sehen den Namen ihrer Sprache. Integritätsprüfungen: Bezeichnung aus der Prüfkennung übersetzt, Details
+  bleiben deutsch.
+- Formate Englisch: „Tue 20 Oct 2026, 14:03“ (24 h), Dauer „1 h 20 min“, „+25%“. Deutsch unverändert.
+  Zeitzone bleibt die des Servers.
+- Technik: gettext-artige `.po`-Kataloge ohne Abhängigkeit (`kidctl_common/i18n.py`, eigener Leser),
+  Deutsch als Ausgangssprache im Code (`_()`, `ngettext()`, `N_()` für Konstanten), je Bestandteil
+  `locale/en.po`. Tests je Bestandteil: jeder markierte Text hat eine englische Übersetzung mit gleichen
+  Platzhaltern, keine verwaisten Übersetzungen. Begriffe: Screen time, Daily limit, Allowed hours,
+  Weekly schedule, Add time / Bonus time, Request for more time, Game time / Game limit, Lock now,
+  Access request / Ask for access, Always allow / Today only, App control (Off / Monitor only / Block),
+  Web filter (Allow list / Block list), Activity log, Pair device, Usage report.
+
 ## Datenmodell (Kern)
 
 - **Elternteil** (Account) – mehrere, gleichberechtigt.
@@ -1072,3 +1102,20 @@ Verlängerungsanfragen.
   Bildschirmzeit), Tray 9 grün mit PySide6 in temporärer venv (neu: Dialog mit Wahl Bildschirm-/
   Spielzeit, Statuszeile). Migration gegen Entwicklungs-DB (Server-Start), Sichtprüfung Kind-Seite
   (Firefox headless) und Anfrage-Dialog (offscreen). Auf echtem Kinderrechner nicht getestet.
+- 2026-10-21: Internationalisierung Deutsch/Englisch (Server + Agent/Tray 0.26.0; siehe „Sprache /
+  Internationalisierung“). Entscheidungen des Nutzers per Rückfrage: Umfang (WebUI, Mails, Push, alles
+  beim Kind; Logs/CLI deutsch), Sitzungssprache des Kindes, Rückfall Englisch, Browsersprache mit
+  Profil-Auswahl und Umschalter, zuletzt erkannte Sprache für Mails/Push, Codes im Sperrprotokoll,
+  englische Programmnamen, Formate mit Monatsnamen/24 h, Deutsch als Ausgangssprache, Begriffsliste,
+  kurze englische README. Protokoll abwärtskompatibel ergänzt (`name_en`, `detail_code`, `detail_arg`).
+  Migration: `parent.language`, `parent.detected_language`, `device_app.name_en`,
+  `blocked_event.detail_code/detail_arg`. Getestet: Server 110 grün (neu: Katalog vollständig/keine
+  verwaisten Einträge, Sprachregeln, Formate, .po-Leser, Browsersprache, Umschalter inkl. Schutz gegen
+  fremde Weiterleitung, Profilsprache und erkannte Sprache, alle Hauptseiten auf Englisch ohne deutsche
+  Reste, Nutzungsbericht/„Passwort vergessen“/Push in der Sprache des Empfängers), Agent 196 grün (neu:
+  Katalog vollständig, /etc/locale.conf, Sitzungssprache mit Zwischenspeicher und Rückfall, englische
+  Spielzeit-Meldungen, Codes im Sperrprotokoll, englischer Programmname), Tray 12 grün mit PySide6 in
+  temporärer venv (neu: Katalog, Sprachwahl, englische Statuszeilen). Bestehende Tests nutzen Deutsch
+  über `Accept-Language`. Sichtprüfung Englisch: Kind-Seite, Statistik, Protokoll, Profil, Anmeldung,
+  Nutzungsbericht (Firefox headless) sowie Sperrliste, Anfrage-Dialog und Chat der Tray-App (offscreen).
+  Migration gegen Entwicklungs-DB (Server-Start). Auf echtem Kinderrechner nicht getestet.

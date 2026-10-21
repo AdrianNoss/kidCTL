@@ -49,7 +49,7 @@ def server(tmp_path):
             break
         except httpx.HTTPError:
             time.sleep(0.1)
-    web = httpx.Client(base_url=base)
+    web = httpx.Client(base_url=base, headers={"Accept-Language": "de-DE"})
     tok = lambda html: re.search(r'name="csrf_token" value="([^"]+)"', html).group(1)  # noqa: E731
     web.post("/login", data={"csrf_token": tok(web.get("/login").text), "username": "mama",
                              "password": "ein-langes-passwort", "totp": pyotp.TOTP(secret).now()})

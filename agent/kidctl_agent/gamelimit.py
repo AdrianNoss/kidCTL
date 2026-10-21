@@ -10,6 +10,9 @@ import os
 import signal
 from datetime import date
 
+from kidctl_common import i18n
+from kidctl_common.i18n import _, ngettext
+
 from .accounting import boottime
 
 log = logging.getLogger("kidctl.games")
@@ -20,7 +23,8 @@ NOTIFY_DEDUP = 60.0   # „Spielzeit aufgebraucht“ höchstens so oft
 
 
 class GameLimit:
-    def __init__(self, desktop, kill=os.kill, clock=boottime, on_request=None) -> None:
+    def __init__(self, desktop, kill=os.kill, clock=boottime, on_request=None, lang_of=lambda user: "de") -> None:
+        self.lang_of = lang_of
         self.desktop = desktop
         self.kill, self.clock = kill, clock
         self.on_request = on_request   # async (user) -> None: Klick auf „Mehr Spielzeit anfragen“
@@ -58,9 +62,10 @@ class GameLimit:
             log.info("Spielzeit von %s aufgebraucht – schließe %d Spielprozess(e)", user, len(processes))
             if now - self.last_notify.get(user, -1e9) >= NOTIFY_DEDUP:
                 self.last_notify[user] = now
-                await self.desktop.notify(user, uid, "Spielzeit aufgebraucht",
-                                          "Spiele werden für heute geschlossen. Du kannst um mehr Spielzeit bitten.",
-                                          critical=True, on_action=self.on_request, action="Mehr Spielzeit anfragen")
+                with i18n.use(self.lang_of(user)):
+                    title, body = _("Spielzeit aufgebraucht"), _("Spiele werden für heute geschlossen. Du kannst um mehr Spielzeit bitten.")
+                    action = _("Mehr Spielzeit anfragen")
+                await self.desktop.notify(user, uid, title, body, critical=True, on_action=self.on_request, action=action)
 
     async def _warn(self, user: str, uid: int, day: date, remaining: int, gaming: bool) -> None:
         warned = self.warned.setdefault((user, day), set())
@@ -69,8 +74,10 @@ class GameLimit:
         if due and gaming:
             warned.update(due)
             minutes = max(1, round(remaining / 60))
-            await self.desktop.notify(user, uid, "Spielzeit",
-                                      f"Noch {'1 Minute' if minutes == 1 else f'{minutes} Minuten'} Spielzeit – "
-                                      "danach werden Spiele geschlossen. Bitte speichern.",
-                                      critical=min(due) == 1, on_action=self.on_request,
-                                      action="Mehr Spielzeit anfragen")
+            with i18n.use(self.lang_of(user)):
+                body = (ngettext("Noch {n} Minute Spielzeit – danach werden Spiele geschlossen. Bitte speichern.",
+                                 "Noch {n} Minuten Spielzeit – danach werden Spiele geschlossen. Bitte speichern.",
+                                 minutes).format(n=minutes))
+                title, action = _("Spielzeit"), _("Mehr Spielzeit anfragen")
+            await self.desktop.notify(user, uid, title, body, critical=min(due) == 1, on_action=self.on_request,
+                                      action=action)

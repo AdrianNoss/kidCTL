@@ -57,6 +57,25 @@ def from_environ(env: dict[str, str]) -> str | None:
     return None
 
 
+def parse_locale_conf(text: str) -> dict[str, str]:
+    """``/etc/locale.conf`` (KEY=value, Kommentare, Anführungszeichen) -> dict."""
+    out = {}
+    for line in text.splitlines():
+        key, sep, value = line.strip().partition("=")
+        if sep and not key.startswith("#"):
+            out[key.strip()] = value.strip().strip("'\"")
+    return out
+
+
+def system_language(path: Path | str = "/etc/locale.conf") -> str:
+    """Systemsprache (ohne Eintrag: Englisch)."""
+    try:
+        env = parse_locale_conf(Path(path).read_text())
+    except OSError:
+        env = {}
+    return from_environ(env) or "en"
+
+
 # ---------- Katalog ----------
 
 def _unquote(s: str) -> str:
