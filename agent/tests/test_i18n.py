@@ -47,9 +47,11 @@ def _proc(pid, exe):
 
 
 def test_session_language_and_cache():
-    procs = {10: _proc(10, "/usr/lib/systemd/systemd"), 11: _proc(11, "/usr/bin/plasmashell"),
-             12: _proc(12, "/usr/bin/konsole")}
-    envs = {10: {"LANG": "de_DE.UTF-8"}, 11: {"LANG": "en_GB.UTF-8"}, 12: {"LANG": "de_DE.UTF-8"}}
+    procs = {9: _proc(9, "/usr/bin/startplasma-wayland"), 10: _proc(10, "/usr/lib/systemd/systemd"),
+             11: _proc(11, "/usr/bin/plasmashell"), 12: _proc(12, "/usr/bin/konsole")}
+    # startplasma hat noch die Systemsprache in der Startumgebung (setzt LANGUAGE erst danach)
+    envs = {9: {"LANG": "de_DE.UTF-8"}, 10: {"LANG": "de_DE.UTF-8"},
+            11: {"LANG": "de_DE.UTF-8", "LANGUAGE": "en_US"}, 12: {"LANG": "de_DE.UTF-8"}}
     clock = [0.0]
     langs = UserLanguages(list_pids=lambda uids: list(procs), read=procs.get, environ=lambda pid: envs[pid],
                           clock=lambda: clock[0], system=lambda: "de")
@@ -61,7 +63,14 @@ def test_session_language_and_cache():
     assert langs.lang_of("gibt-es-nicht") == "de"            # ohne Sitzung: /etc/locale.conf
     del procs[11]
     clock[0] = 200
-    assert langs.lang_of(ME) == "de"                         # anderer Sitzungsprozess als Rückfall
+    assert langs.lang_of(ME) == "de"                         # anderer Prozess (konsole) als Rückfall
+    # Tray-App (Python-Skript) hat Vorrang: zeigt dem Kind dieselbe Sprache
+    procs[13] = ProcInfo(pid=13, uid=procs[12].uid, ppid=1, start=1, exe="/usr/bin/python3.14",
+                         argv=("/usr/bin/python3", "-E", "-s", "/usr/lib/kidctl/kidctl-tray-main.py"), tty=False,
+                         flatpak_id=None)
+    envs[13] = {"LANG": "de_DE.UTF-8", "LANGUAGE": "en_GB:en"}
+    clock[0] = 300
+    assert langs.lang_of(ME) == "en"
 
 
 def test_notifications_in_child_language():

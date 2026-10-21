@@ -49,12 +49,14 @@ def from_accept_language(header: str | None) -> str:
 
 
 def from_environ(env: dict[str, str]) -> str | None:
-    """Sprache einer Prozessumgebung (Vorrang wie gettext: LC_ALL, LC_MESSAGES, LANGUAGE, LANG);
-    ``None``, wenn nichts gesetzt ist."""
-    for key in ("LC_ALL", "LC_MESSAGES", "LANGUAGE", "LANG"):
-        if value := env.get(key, "").strip():
-            return normalize(value)
-    return None
+    """Sprache einer Prozessumgebung wie gettext: ``LANGUAGE`` hat Vorrang (so setzt Plasma die gewählte
+    Sprache), außer die Locale ist ``C``/``POSIX``; sonst LC_ALL, LC_MESSAGES, LANG. ``None``, wenn nichts
+    gesetzt ist."""
+    locale = next((env[k].strip() for k in ("LC_ALL", "LC_MESSAGES", "LANG") if env.get(k, "").strip()), "")
+    language = env.get("LANGUAGE", "").strip()
+    if language and locale.split(".")[0] not in ("C", "POSIX"):
+        return normalize(language)
+    return normalize(locale) if locale else None
 
 
 def parse_locale_conf(text: str) -> dict[str, str]:

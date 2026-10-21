@@ -37,6 +37,10 @@ def test_language_rules():
     assert core.from_accept_language(None) == "en"
     assert core.from_environ({"LANG": "de_DE.UTF-8", "LC_MESSAGES": "en_GB.UTF-8"}) == "en"
     assert core.from_environ({"LANGUAGE": "de:en", "LANG": "en_US.UTF-8"}) == "de"
+    # Plasma: Formate deutsch, Sprache englisch -> LANGUAGE gewinnt (wie gettext)
+    assert core.from_environ({"LANG": "de_DE.UTF-8", "LC_MESSAGES": "de_DE.UTF-8", "LANGUAGE": "en_US"}) == "en"
+    assert core.from_environ({"LC_ALL": "C", "LANGUAGE": "de_DE"}) == "en"            # C-Locale: LANGUAGE zählt nicht
+    assert core.from_environ({"LANGUAGE": "de"}) == "de"
     assert core.from_environ({}) is None
 
 
