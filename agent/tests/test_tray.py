@@ -31,7 +31,7 @@ class FakeDesktop:
     async def notify(self, user, uid, title, body, critical=False, on_action=None, action=None):
         self.sent.append((user, title, body))
 
-    async def logout(self, user, uid):
+    async def logout(self, user, uid, desktop=""):
         return True
 
     async def restart_display_manager(self):

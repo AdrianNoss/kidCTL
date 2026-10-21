@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo
 from kidctl_common import protocol as p
 from kidctl_common import tray as t
 
-from . import desktoptrust, integrity, kidmounts, sdnotify, store
+from . import desktoptrust, gnomesearch, integrity, kidmounts, sdnotify, store
 from .accounting import Usage, boottime
 from .apps import scan_apps
 from .apptime import AppIndex, AppTime
@@ -26,6 +26,7 @@ from kidctl_common.i18n import _
 
 from .gamelimit import GameLimit
 from .games import GameNames, game_id
+from .gnomesearch import GnomeSearch
 from .kidmounts import STEAM_ROOT, KidMounts, safe_home
 from .lang import UserLanguages
 from .loginlock import LoginLock, is_admin
@@ -94,7 +95,9 @@ class Agent:
         self.chat = ChatStore.load()
         self.outbox = Outbox.load()
         self.tray = TrayServer(self, tray_path)
-        self.langs = UserLanguages()   # Sprache der Meldungen je Kind (Plasma-Sitzung)
+        self.langs = UserLanguages()   # Sprache der Meldungen je Kind (Desktop-Sitzung)
+        # GNOME-Suchanbieter nicht freigegebener Apps abschalten (nur mit echtem UserSession-Objekt)
+        self.gnome_search = GnomeSearch(getattr(desktop, "_as_user", lambda *a: None))
         self.programs = ProgramWatcher(self)
         self.gamelimit = GameLimit(desktop, on_request=self.open_game_request_dialog, lang_of=self.lang_of)
         self.game_keys: set[str] = set()   # Katalog-Apps der Kategorie „Game“ (ohne Launcher)
@@ -174,6 +177,7 @@ class Agent:
             await self.sync_mounts()
         if self._ticks % DESKTOP_EVERY == 0:
             await asyncio.to_thread(self.trust_desktops)
+            await asyncio.to_thread(self.sync_gnome_search)
         if self._synced or boottime() - self._started >= STARTUP_SYNC:
             await self.enforcer.step(now.date(), sessions, decisions)
             await self._enforce_games(now.date(), sessions, decisions)
@@ -288,6 +292,33 @@ class Agent:
             except Exception:
                 log.exception("Desktop-Verknüpfungen von %s nicht prüfbar", user)
 
+    def sync_gnome_search(self) -> None:
+        """GNOME-Suchanbieter nicht freigegebener Apps für Kinder im Modus „Sperren“ abschalten (siehe
+        gnomesearch); sonst früher abgeschaltete wieder einschalten. Nur bei laufender GNOME-Sitzung."""
+        running = getattr(self.desktop, "running_desktop", None)
+        if running is None:
+            return
+        targets = {user: (uid, mode, allowed) for uid, (user, mode, allowed) in self.programs.targets().items()}
+        users = set(targets) | set(self.gnome_search.managed)
+        if not users:
+            return
+        found = gnomesearch.providers()
+        for user in sorted(users):
+            try:
+                uid = targets[user][0] if user in targets else pwd.getpwnam(user).pw_uid
+            except KeyError:
+                continue
+            if running(uid) != "gnome":
+                continue
+            blocked = set()
+            if user in targets and targets[user][1] == "enforce":
+                allowed = targets[user][2]
+                blocked = {d for d, target in found.items() if not desktoptrust.target_allowed(target, allowed)}
+            try:
+                self.gnome_search.sync(user, uid, blocked)
+            except Exception:
+                log.exception("GNOME-Suche von %s nicht anpassbar", user)
+
     async def sync_mounts(self) -> None:
         """noexec-Homes und Spiele-Bibliotheken an die Policy angleichen (systemd, im Thread)."""
         users = self.programs.users()
@@ -340,7 +371,10 @@ class Agent:
         return ([integrity.check_pam(), integrity.check_nsswitch(), integrity.check_browser_policies()]
                 + integrity.check_noexec(self.programs.users(), libraries=self.locked_libraries())
                 + integrity.check_libraries(self.mounts.lib_problems)
-                + integrity.check_dns(self.web_children()))
+                + integrity.check_dns(self.web_children())
+                + integrity.check_desktop_packages()
+                + integrity.check_gdm_autologin(set(self.policy.users) if self.policy else set())
+                + integrity.check_tray(self.tray.tray_icons(), set(self.policy.users) if self.policy else set()))
 
     async def check_integrity(self) -> None:
         """Prüfen, Selbstverwaltetes (nftables, Resolver, Mounts) reparieren, bei Änderung melden."""

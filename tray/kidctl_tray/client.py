@@ -34,6 +34,7 @@ class AgentClient(QObject):
         self.sock.readyRead.connect(self._on_ready_read)
         self._timer = QTimer(self, singleShot=True, interval=RECONNECT_MS)
         self._timer.timeout.connect(self.connect_to_agent)
+        self.tray_icon: bool | None = None   # Tray-Symbol sichtbar? (an den Agenten gemeldet)
 
     @property
     def is_connected(self) -> bool:
@@ -43,13 +44,19 @@ class AgentClient(QObject):
         if self.sock.state() == QLocalSocket.LocalSocketState.UnconnectedState:
             self.sock.connectToServer(self.path)
 
+    def set_tray_icon(self, visible: bool) -> None:
+        """Sichtbarkeit des Tray-Symbols melden (erneutes ``hello`` nur bei Änderung)."""
+        if visible != self.tray_icon:
+            self.tray_icon = visible
+            self.send(t.TrayHello(tray_icon=visible))
+
     def _schedule_reconnect(self) -> None:
         if not self._timer.isActive():
             self._timer.start()
 
     def _on_connected(self) -> None:
         self.connectionChanged.emit(True)
-        self.send(t.TrayHello())
+        self.send(t.TrayHello(tray_icon=self.tray_icon))
 
     def _on_disconnected(self) -> None:
         self.connectionChanged.emit(False)

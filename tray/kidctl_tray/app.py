@@ -1,11 +1,20 @@
-"""Tray-App: Symbol mit Restzeit, Menü, Chatfenster, Anfrage-Dialog."""
+"""Tray-App: Symbol mit Restzeit, Menü, Chatfenster, Anfrage-Dialog.
+
+``kidctl-tray --show`` (Eintrag „KidCTL“ in der GNOME-Anwendungsübersicht) öffnet das Fenster; läuft die
+Tray-App schon, bittet es sie darüber über einen Socket in ``$XDG_RUNTIME_DIR`` (nur eine Instanz je User).
+GNOME zeigt das Tray-Symbol nur mit der AppIndicator-Erweiterung – ob es sichtbar ist, meldet die App dem
+Agenten (Integritätsprüfung).
+"""
 
 from __future__ import annotations
 
+import os
 import sys
 
+from PySide6.QtCore import QTimer
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
+from PySide6.QtNetwork import QLocalServer, QLocalSocket
+from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 
 from kidctl_common import tray as t
 
@@ -13,6 +22,9 @@ from . import texts
 from .texts import _
 from .client import AgentClient
 from .ui import AccessDialog, BlockedWindow, ChatWindow, RequestDialog, render_icon
+
+ICON_CHECK_MS = 30_000   # Sichtbarkeit des Tray-Symbols prüfen (Erweiterung ein-/ausgeschaltet)
+INSTANCE_SOCKET = "kidctl-tray.sock"
 
 
 class TrayApp:
@@ -45,10 +57,22 @@ class TrayApp:
         c.openAccessDialog.connect(self.request_access)
         self.blocked.requestAccess.connect(self.request_access)
         self.blocked.refresh.connect(lambda: c.send(t.TrayGetBlocked()))
-        c.errorReceived.connect(lambda msg: self.tray.showMessage("KidCTL", msg))
+        c.errorReceived.connect(self.info)
         self.window.sendText.connect(lambda text: c.send(t.TrayChatSend(body=text)))
         self.window.requestExtension.connect(lambda: self.request_extension())
+        self.window.showBlocked.connect(self.show_blocked)
+        c.set_tray_icon(QSystemTrayIcon.isSystemTrayAvailable())
+        self._icon_timer = QTimer(interval=ICON_CHECK_MS)
+        self._icon_timer.timeout.connect(lambda: c.set_tray_icon(QSystemTrayIcon.isSystemTrayAvailable()))
+        self._icon_timer.start()
         c.connect_to_agent()
+
+    def info(self, text: str) -> None:
+        """Kurzer Hinweis: als Tray-Meldung, ohne sichtbares Tray-Symbol als Dialog."""
+        if self.tray.isVisible() and QSystemTrayIcon.isSystemTrayAvailable():
+            self.tray.showMessage("KidCTL", text)
+        else:
+            QMessageBox.information(self.window if self.window.isVisible() else None, "KidCTL", text)
 
     def _activated(self, reason) -> None:
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
@@ -73,7 +97,7 @@ class TrayApp:
 
     def request_access(self, item: t.BlockedItem) -> None:
         if item.pending:
-            self.tray.showMessage("KidCTL", _("„{name}“ ist schon angefragt.").format(name=item.name))
+            self.info(_("„{name}“ ist schon angefragt.").format(name=item.name))
             return
         parent = self.blocked if self.blocked.isVisible() else None
         dlg = AccessDialog(item, parent)
@@ -102,13 +126,54 @@ class TrayApp:
         self.tray.show()
 
 
+def instance_path() -> str | None:
+    runtime = os.environ.get("XDG_RUNTIME_DIR")
+    return os.path.join(runtime, INSTANCE_SOCKET) if runtime else None
+
+
+def ask_running_instance(path: str) -> bool:
+    """Laufende Tray-App bitten, ihr Fenster zu zeigen. False = keine läuft."""
+    sock = QLocalSocket()
+    sock.connectToServer(path)
+    if not sock.waitForConnected(500):
+        return False
+    sock.write(b"show\n")
+    sock.flush()
+    sock.waitForBytesWritten(500)
+    sock.disconnectFromServer()
+    return True
+
+
+def serve_instance(path: str, tray: TrayApp) -> QLocalServer:
+    server = QLocalServer()
+    server.setSocketOptions(QLocalServer.SocketOption.UserAccessOption)
+    QLocalServer.removeServer(path)   # verwaister Socket einer abgestürzten Instanz
+    server.listen(path)
+
+    def on_connection() -> None:
+        while (conn := server.nextPendingConnection()) is not None:
+            conn.readyRead.connect(lambda c=conn: c.readAll() and tray.show_chat())
+            conn.disconnected.connect(conn.deleteLater)
+    server.newConnection.connect(on_connection)
+    return server
+
+
 def main() -> int:
     texts.setup_language()   # vor dem Aufbau der Fenster
+    show = "--show" in sys.argv[1:]
     app = QApplication(sys.argv)
     app.setApplicationName("kidctl-tray")
-    app.setDesktopFileName("kidctl-tray")
+    # GNOME: Fenster dem sichtbaren Eintrag „KidCTL“ zuordnen (Symbol im Dock, anheftbar)
+    gnome = "gnome" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
+    app.setDesktopFileName("kidctl" if gnome else "kidctl-tray")
     app.setQuitOnLastWindowClosed(False)
+    path = instance_path()
+    if path and ask_running_instance(path):
+        return 0   # läuft schon – Fenster dort geöffnet
     tray = TrayApp(app)  # Referenz halten – sonst räumt Python Objekt und Verbindungen ab
+    server = serve_instance(path, tray) if path else None
+    if show:
+        tray.show_chat()
     code = app.exec()
-    del tray
+    del tray, server
     return code

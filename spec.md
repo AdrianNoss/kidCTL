@@ -52,7 +52,59 @@ Verlängerungsanfragen.
   - Spricht nur lokal mit dem Agenten über Unix-Socket; Agent prüft UID per `SO_PEERCRED`.
   - Rein kosmetisch: Beenden der Tray-App hat keinen Einfluss auf Zählung/Durchsetzung.
   - Gehört zur festen Basis-Whitelist.
-- Unterstützte Umgebung: **ausschließlich KDE Plasma auf Wayland**.
+- Unterstützte Umgebung: **KDE Plasma und GNOME, jeweils auf Wayland** (GNOME ergänzt 2026-10-21,
+  siehe „Desktop-Umgebungen“). X11 und andere Desktops werden nicht unterstützt.
+
+### Desktop-Umgebungen (entschieden 2026-10-21)
+- Plasma (SDDM) und GNOME (GDM) auf Wayland; beide dürfen auf demselben Rechner installiert sein. Der Agent
+  erkennt den Desktop je Sitzung: logind `Desktop` (SDDM trägt `KDE` ein, GDM nichts), sonst die laufende
+  Shell des Kindes (`gnome-shell` bzw. `plasmashell`).
+- Pakete (Split-PKGBUILD): `kidctl` (Agent, Tray, Login-Sperre, Filter), `kidctl-plasma` (SDDM-Theme;
+  hängt von `sddm`, `plasma-desktop` ab), `kidctl-gnome` (`gnome-shell-extension-appindicator` als
+  Voreinstellung für alle User per Schema-Override `90_kidctl.gschema.override`, Eintrag „KidCTL“ in der
+  Anwendungsübersicht). Beide legen `/usr/share/kidctl/desktop/<desktop>` an; fehlt das Paket zu einem
+  installierten Desktop (`plasmashell` bzw. `gnome-shell` vorhanden), Hinweis bei pacman und
+  Integritätsprüfung `desktop:<desktop>`. Bestehende Plasma-Rechner: einmalig `pacman -S kidctl-plasma`.
+- Tray unter GNOME: Symbol über die AppIndicator-Erweiterung (nicht gesperrt – eine dconf-Sperre gälte für
+  alle User). Die Tray-App meldet dem Agenten im `hello` (`tray_icon`), ob ein Tray-Symbol möglich ist
+  (alle 30 s geprüft, bei Änderung neues `hello`); nicht sichtbar → Integritätsprüfung `tray:<user>`.
+  „KidCTL“ in der Anwendungsübersicht startet `kidctl-tray --show`: Läuft die Tray-App schon, öffnet sie
+  ihr Fenster (Socket `$XDG_RUNTIME_DIR/kidctl-tray.sock`, eine Instanz je User). Das Fenster zeigt
+  Restzeit, Chat, „Verlängerung anfordern“ und „Gesperrt – Freigabe anfragen“. Ohne Tray-Symbol erscheinen
+  Hinweise der Tray-App als Dialog. Symbol `kidctl` (eigenes SVG) für Tray-Einträge und Benachrichtigungen.
+- Abmeldung GNOME: `org.gnome.SessionManager.Logout(1)` (ohne Rückfrage). Ist Plasma installiert, startet
+  D-Bus `org.kde.Shutdown` auch in einer GNOME-Sitzung und meldet Erfolg – daher entscheidet die laufende
+  Shell, ohne Treffer zuerst GNOME, dann Plasma. Danach wie bisher hart nach 20 s.
+- Login-Sperre unter GDM: `gdm-password`/`-autologin`/`-fingerprint`/`-smartcard` binden `system-local-login`
+  → `system-login` ein, der kidctl-Block greift. GDM zeigt PAM-Infotexte (`pam_echo`) nicht an, wohl aber
+  Fehlermeldungen; das SDDM-Theme sieht umgekehrt nur Infotexte. Der Block gibt den Hinweis daher je Dienst
+  aus: GDM-Dienste per `pam_nologin file=/run/kidctl/locked-message` (Fehlermeldung, lehnt ab), alle
+  anderen wie bisher per `pam_echo` (Unterscheidung `pam_succeed_if service notin …`). GNOME entsperrt den
+  Sperrbildschirm über `gdm-password` – die Login-Sperre gilt dort auch (unkritisch, die Sitzung wird bei
+  Zeitende ohnehin beendet).
+- GDM-Autologin für Kinder nicht unterstützt: Lehnt PAM die automatische Anmeldung beim Start von GDM ab,
+  startet GDM keinen Anmeldebildschirm (schwarz; in der VM auch ohne kidctl mit abgelaufenem Konto
+  nachgestellt). Integritätsprüfung `gdm-autologin:<user>` meldet `AutomaticLogin` eines Kindes in
+  `/etc/gdm/custom.conf`.
+- Sprache: GNOME übernimmt die Kontosprache (AccountsService) beim Login in die Sitzungsumgebung; der Agent
+  liest `gnome-shell`/`gnome-session-binary`, ohne Sitzung `Languages=`/`Language=` aus
+  `/var/lib/AccountsService/users/<user>`, sonst `/etc/locale.conf`.
+- Basisliste: Gruppe `gnome` und `gdm`, `gnome-shell`, `mutter`, `gnome-session`, `gnome-settings-daemon`,
+  `xdg-desktop-portal-gnome`, `gnome-keyring`; Hilfsskripte unter `/usr/share/gnome-shell/` (Dienste von
+  GNOME Shell, Werkzeuge systemweiter Erweiterungen). Sitzungsdienste (D-Bus, systemd --user) zählen jetzt
+  auch mit Programm unter `/usr/share` (gjs-Skripte). Terminals `kgx`, `gnome-terminal`, `ptyxis` nie Basis.
+  `gjs`/`gjs-console` und die SpiderMonkey-Shell (`js<N>`) gelten als Interpreter (`-c`/`-e` = Inline-Code,
+  `GJS_PATH` außerhalb des Systems = eingeschleust) – GNOME-Apps wie Wetter oder Karten sind gjs-Skripte und
+  werden über ihr Skript freigegeben.
+- Dienste beim Login ohne Benachrichtigung: Startet der systemd-Benutzerdienst eines Kindes innerhalb von
+  90 s nach Beginn einer Anmeldung (Start des Sitzungsleiters laut logind; neue Sitzung noch nicht gelesen
+  → wie Anmeldung) ein nicht freigegebenes Programm, wird es gesperrt und protokolliert, aber ohne Popup
+  und ohne Eintrag zum Anfragen (z. B. GNOME Software als Hintergrunddienst, der als App gilt).
+- GNOME-Suche: Die Shell startet beim Tippen die Suchanbieter der Apps per D-Bus. Für Kinder im Modus
+  „Sperren“ trägt der Agent die Anbieter nicht freigegebener Apps (`/usr/share/gnome-shell/search-providers`,
+  `DesktopId`) per `gsettings` als Kind in `org.gnome.desktop.search-providers disabled` ein und nimmt sie
+  nach einer Freigabe bzw. ohne Programmkontrolle wieder heraus; Einträge des Kindes bleiben
+  (`gnome-search.json`). Nur bei laufender GNOME-Sitzung, nur bei Änderung.
 
 ### Offline-Verhalten
 - Letzte bekannte Policy wird weiter durchgesetzt.
@@ -72,8 +124,9 @@ Verlängerungsanfragen.
   Anmeldung erkannte (`parent.detected_language`), sonst Deutsch. „Passwort vergessen“ nimmt die
   Sprache des Accounts, nicht die des anfragenden Browsers. Push wird je Elternteil in dessen Sprache
   erzeugt.
-- Kind: Sprache seiner Plasma-Sitzung (Umgebung von plasmashell u. a., LC_ALL > LC_MESSAGES > LANGUAGE >
-  LANG, 60 s zwischengespeichert); ohne Sitzung (Login-Sperrtext) `/etc/locale.conf`. Die Tray-App nimmt
+- Kind: Sprache seiner Desktop-Sitzung (Umgebung von plasmashell, gnome-shell u. a., LC_ALL > LC_MESSAGES >
+  LANGUAGE > LANG, 60 s zwischengespeichert); ohne Sitzung die GNOME-Kontosprache (AccountsService), sonst
+  (Login-Sperrtext) `/etc/locale.conf`. Die Tray-App nimmt
   die Sprache ihrer eigenen Umgebung.
 - Sperrprotokoll: Der Agent schickt zusätzlich einen sprachneutralen Code mit Parameter
   (`blocked_event.detail_code/detail_arg`); der Server übersetzt je Elternteil. Ältere Einträge/Agenten:
@@ -131,7 +184,7 @@ Verlängerungsanfragen.
 
 ### Zählung
 - Gezählt wird nur eine aktive, entsperrte Session: logind `Active=yes` und `LockedHint=no`.
-  Nur Sitzungen der Klasse `user` (SDDM, TTY, SSH); Greeter, `manager` und `background`
+  Nur Sitzungen der Klasse `user` (SDDM, GDM, TTY, SSH); Greeter, `manager` und `background`
   werden weder gezählt noch beendet. Je User wird höchstens einmal pro Takt gezählt.
 - Die 60 s Countdown nach Zeitende zählen mit (Überziehung um bis zu 1 min möglich).
 - Keine Leerlauferkennung.
@@ -152,21 +205,23 @@ Verlängerungsanfragen.
   „aktuell / veraltet / noch nicht übertragen“.
 
 ### Ablauf bei Zeitende
-- Vorwarnungen bei 15, 5 und 1 Minute(n) als KDE-Benachrichtigung mit Knopf
+- Vorwarnungen bei 15, 5 und 1 Minute(n) als Desktop-Benachrichtigung mit Knopf
   „Verlängerung anfordern“.
 - Nach Ablauf 60 Sekunden Countdown zum Speichern, dann Abmeldung:
-  - Grafische Sitzungen (Wayland/X11) über Plasma (`org.kde.Shutdown.logout`, ohne Rückfrage).
+  - Grafische Sitzungen über den Desktop: Plasma `org.kde.Shutdown.logout`, GNOME
+    `org.gnome.SessionManager.Logout(1)` (je ohne Rückfrage; siehe „Desktop-Umgebungen“).
     `TerminateSession` würde den Sitzungsleiter `sddm-helper` mitbeenden – SDDM wertet das als
     Absturz und zeigt keinen Anmeldebildschirm mehr (im VM-Test beobachtet).
   - Wirkt die Plasma-Abmeldung nach 20 s nicht: hart per `TerminateSession`; zeigt seat0 danach
     weder Greeter noch andere Sitzung, wird `display-manager.service` neu gestartet.
   - TTY-/SSH-Sitzungen direkt per `TerminateSession`.
-- Login-Sperre per PAM (gilt für SDDM und TTY), solange kein Kontingent/Zeitfenster verfügbar.
+- Login-Sperre per PAM (gilt für SDDM, GDM und TTY), solange kein Kontingent/Zeitfenster verfügbar.
   - Agent schreibt alle 5 s `/run/kidctl/locked-users` (zugeordnete User ohne Zeit, root 0644)
     und `/run/kidctl/locked-message`; sofort beim Start aus der gecachten Policy.
   - PAM: markierter Block am Ende des Account-Teils von `/etc/pam.d/system-login`
-    (`pam_listfile` sense=deny `onerr=succeed`, `pam_echo` Hinweis, `pam_deny`). Greift für SDDM,
-    SDDM-Autologin, TTY (`login`) und SSH; nicht für Bildschirmsperre (`kde`) und `systemd-user`.
+    (`pam_listfile` sense=deny `onerr=succeed`, Hinweis per `pam_echo` bzw. für GDM `pam_nologin`,
+    `pam_deny`). Greift für SDDM, SDDM-Autologin, GDM, TTY (`login`) und SSH; nicht für die
+    Plasma-Bildschirmsperre (`kde`) und `systemd-user`.
   - Ausfallsicher: fehlt/unlesbar die Sperrdatei, ist die Anmeldung erlaubt. Kein Python im
     Anmeldepfad.
   - Ein-/Austragen per `packaging/pam/kidctl-pam.sh install|remove [--apply]` (Dry-Run-Standard,
@@ -564,14 +619,15 @@ Verlängerungsanfragen.
 
 ## Verteilung & Updates
 
-- Client als PKGBUILD: Agent, Tray-App, systemd-Unit, PAM-Konfiguration, nftables-Regeln,
+- Client als Split-PKGBUILD (`kidctl`, `kidctl-plasma`, `kidctl-gnome`): Agent, Tray-App, systemd-Unit, PAM-Konfiguration, nftables-Regeln,
   Firefox/Chromium-Policies, Mount-Konfiguration (`noexec`, Steam-Bind-Mount).
 - Eigenes, GPG-signiertes Pacman-Repository als statisches Verzeichnis im Docker/Traefik-Stack.
 - Updates über normales `pacman -Syu`.
 - Umsetzung (2026-10-14, entschieden: lokal bauen, eigener Schlüssel): `packaging/repo/`
   - `kidctl-repo-key.sh`: Ed25519-Signierschlüssel in eigenem GPG-Ordner
     (`~/.local/share/kidctl-repo/gnupg`), Export des öffentlichen Schlüssels.
-  - `kidctl-repo-build.sh`: `makepkg --sign` (mit `--nodeps`, reines Python) + `repo-add --sign`.
+  - `kidctl-repo-build.sh`: `makepkg --sign` (mit `--nodeps`, reines Python) + `repo-add --sign` (alle
+    Pakete des Split-PKGBUILD).
   - `kidctl-repo-publish.sh`: `rsync` nach `./data/repo` des Stacks; Server liefert es unter `/repo/`.
   - `kidctl-repo-client.sh`: Schlüssel holen, **gegen Fingerabdruck prüfen**, `pacman-key --lsign-key`,
     `[kidctl]` mit `SigLevel = Required DatabaseRequired` (Sicherung `pacman.conf.kidctl.bak`).
@@ -582,7 +638,10 @@ Verlängerungsanfragen.
 
 - Kein Schutz gegen physischen Zugriff (nur Härtungs-Anleitung `docs/haertung.md`).
 - Keine Leerlauferkennung.
-- Keine Unterstützung anderer Desktops als KDE Plasma (Wayland).
+- Keine Unterstützung anderer Desktops als KDE Plasma und GNOME (Wayland), kein X11.
+- Kein GDM-Autologin für Kinder (GDM bliebe bei Login-Sperre schwarz, Integritätsprüfung meldet es).
+- Plasma-Widgets und GNOME-Erweiterungen, die das Kind selbst installiert, laufen als QML/JavaScript in der
+  Shell und sind keine Programmstarts; Zeitlimit, Webfilter und Abmeldung umgehen sie nicht.
 - Kein `flatpak --user`, keine Pro-Spiel-Steuerung bei Steam und Heroic.
 - „Nicht-Steam-Spiel hinzufügen“ als bekannte Restlücke. Gleiche Wirkung: Die Steam-Bibliothek
   gehört dem Kind (Steam aktualisiert sich selbst) – `steam.sh`/Client sind ersetzbar. **Wer Steam
@@ -1156,3 +1215,25 @@ Verlängerungsanfragen.
 - 2026-10-21: Nutzer-Test auf dem echten Server: Datenbank-Backup, Hinweis auf veraltete Agenten und Backup-Download im WebUI funktionieren.
 - 2026-10-21: Nutzer-Test auf dem echten Server: Mailversand über SMTP mit SSL funktioniert und mit STARTTLS.
 - 2026-10-21: Nutzer-Test noexec-Spieleordner (Steam): gesperrt `/srv/steam/<kind>` mit `noexec,nosuid,nodev`, Start einer Datei daraus → „Permission denied“, `LD_PRELOAD` einer Bibliothek daraus → „failed to map segment“; nach Freigabe sofort ausgehängt. Heroic gesperrt: `/srv/heroic/<kind>` ebenfalls `noexec`.
+- 2026-10-21: GNOME-Unterstützung (Paket 0.27.0, per /grill-me abgestimmt: Plasma und GNOME auch auf einem
+  Rechner, Tray per AppIndicator plus Eintrag „KidCTL“, Split-Pakete `kidctl`/`kidctl-plasma`/`kidctl-gnome`,
+  erst VM, dann echter Rechner). Details unter „Desktop-Umgebungen“. Bei der Umsetzung ergänzt: Hinweis der
+  Login-Sperre unter GDM per `pam_nologin` (GDM zeigt keine PAM-Infotexte), gjs als Interpreter, Sitzungs-
+  dienste unter `/usr/share`, Dienste beim Login ohne Popup, Abschalten der GNOME-Suchanbieter nicht
+  freigegebener Apps, Integritätsprüfungen Desktop-Paket, Tray-Symbol und GDM-Autologin. Getestet: Agent 209,
+  Server 116, Tray 13 Tests grün (neu u. a. Abmeldung je Desktop inkl. unbekanntem Desktop, Sprache aus
+  gnome-shell/AccountsService, Basisliste/Pakete, Login-Dienste, Suchanbieter, `--show`/eine Instanz,
+  `tray_icon`). VM (Arch, GNOME 51 + GDM neben Plasma 6): Pakete gebaut; Update nur von `kidctl` zeigt
+  Hinweise auf beide Desktop-Pakete; Schema-Override schaltet AppIndicator ein. Audit-Login unter GNOME
+  zeigte 5 Programme (gjs-Dienste von GNOME Shell, AppIndicator-Werkzeug, GNOME Software) – danach im
+  Modus „Sperren“ Login ohne Popup (Software still gesperrt). Tray-Symbol sichtbar, „KidCTL“ über die
+  GNOME-Suche öffnet das Fenster der laufenden Tray-App; Erweiterung abgeschaltet → Integrität „Tray-Symbol
+  … nicht sichtbar“. Zeitende: Vorwarnung, Countdown, Abmeldung über GNOME ohne hartes Beenden, GDM zeigt
+  den Anmeldebildschirm; gesperrter Login in GDM zeigt den Hinweis (zuvor nur „Sorry, password
+  authentication didn't work“), SDDM zeigt ihn weiter (Theme), `pamtest.py`: login/sshd/sddm Infotext,
+  gdm-password/-autologin Fehlermeldung, admin erlaubt. GDM-Autologin eines Kindes bei Sperre → schwarzer
+  Bildschirm (auch ohne kidctl) → Integritätsmeldung im WebUI. Kontosprache Englisch → Benachrichtigung
+  „App blocked“ englisch. Suche nach „weather“ ohne Sperren; Freigabe „Dateien“ nimmt ihren Suchanbieter
+  aus der Liste. Plasma auf demselben Rechner: Login ohne Sperrmeldungen, Abmeldung über Plasma
+  (`Desktop KDE`) ohne hartes Beenden. Nicht getestet: echter Rechner, Tray-Menü per Maus unter GNOME,
+  „Freigabe anfragen“-Knopf in GNOME-Benachrichtigungen.

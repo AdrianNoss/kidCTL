@@ -37,3 +37,18 @@ def test_python_user_site_blocked(tmp_path):
     assert v.key == f"exe:{SCRIPT}" and "site-packages" in v.detail
     # gilt nur für Python
     assert interpreter_injection("perl", {}, str(tmp_path)) is None
+
+
+def test_gjs_is_interpreter():
+    """GNOME-Apps laufen als gjs-Skripte: Skript entscheidet, Inline-Code (-c) und GJS_PATH sind gesperrt."""
+    from kidctl_agent.programs import Allowed, ProcInfo, classify, script_arg
+    app = "/usr/share/org.gnome.Weather/org.gnome.Weather"
+    a = Allowed(["/usr/bin/kwin_wayland"], {f"exe:{app}"}, home="/home/k")
+
+    def proc(*argv, exe="/usr/bin/gjs-console"):
+        return ProcInfo(pid=5, uid=1001, ppid=1, start=1, exe=exe, argv=argv, tty=False, flatpak_id=None)
+    assert script_arg("gjs", ("gjs", "-m", "/usr/bin/sushi")) == "/usr/bin/sushi"
+    assert classify(proc("/usr/bin/gjs-console", app), a, environ=lambda: {}) is None
+    assert classify(proc("/usr/bin/gjs-console", app), a, environ=lambda: {"GJS_PATH": "/home/k/js"}).code == "injected"
+    assert classify(proc("gjs", "-c", "print(1)", exe="/usr/bin/gjs"), a).code == "interpreter_no_script"
+    assert classify(proc("gjs", "/home/k/spiel.js", exe="/usr/bin/gjs"), a).code == "script"

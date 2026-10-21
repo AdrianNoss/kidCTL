@@ -27,8 +27,11 @@ SOCKET_PATH = "/run/kidctl/tray.sock"
 # ---------- Tray -> Agent ----------
 
 class TrayHello(BaseModel):
+    """``tray_icon``: Ist das Tray-Symbol sichtbar (unter GNOME nur mit AppIndicator-Erweiterung)? Ändert sich
+    das, sendet die Tray-App ``hello`` erneut. ``None`` = ältere Tray-App."""
     type: Literal["hello"] = "hello"
     version: int = TRAY_PROTOCOL_VERSION
+    tray_icon: bool | None = None
 
 
 class TrayChatSend(BaseModel):

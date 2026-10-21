@@ -23,6 +23,8 @@ APP_DIRS = (
 )
 SEARCH_PATH = "/usr/local/bin:/usr/bin:/bin"
 ETC_SHELLS = "/etc/shells"
+# Eigene Einträge (GNOME: „KidCTL“ in der Anwendungsübersicht) – immer erlaubt, keine Eltern-Entscheidung
+OWN_KEYS = {"exe:/usr/bin/kidctl-tray"}
 # Shells, die Eltern einzeln freigeben können (haben keinen Startmenü-Eintrag)
 SELECTABLE_SHELLS = {"sh", "bash", "fish", "zsh", "dash", "ksh", "mksh", "tcsh", "csh", "nu", "elvish", "xonsh"}
 
@@ -101,7 +103,7 @@ def scan_apps(dirs=APP_DIRS, etc_shells: str = ETC_SHELLS) -> list[AppEntry]:
             continue
         for f in sorted(base.rglob("*.desktop")):
             app = parse_desktop(f)
-            if app and app.key not in seen:
+            if app and app.key not in seen and app.key not in OWN_KEYS:
                 seen[app.key] = app
     for sh in scan_shells(etc_shells):
         seen.setdefault(sh.key, sh)

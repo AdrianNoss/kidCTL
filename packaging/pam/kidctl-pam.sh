@@ -8,15 +8,19 @@
 # Ohne --apply nur Dry-Run (zeigt das Ergebnis als Diff). Vor jeder Änderung Sicherung nach
 # <datei>.kidctl.bak (erste Originalversion bleibt erhalten).
 #
-# Der Block greift für alles, was system-login im Account-Teil einbindet: SDDM (inkl. Autologin),
+# Der Block greift für alles, was system-login im Account-Teil einbindet: SDDM und GDM (inkl. Autologin),
 # TTY-Login, SSH. Fehlt /run/kidctl/locked-users, ist die Anmeldung erlaubt (onerr=succeed).
 set -euo pipefail
 
 PAM_FILE="${KIDCTL_PAM_FILE:-/etc/pam.d/system-login}"
 BEGIN="# kidctl begin – Login-Sperre Bildschirmzeit (verwaltet von kidctl-pam.sh)"
 END="# kidctl end"
+# Hinweis: GDM zeigt nur PAM-Fehlermeldungen (pam_nologin), SDDM-Theme und TTY/SSH Infotexte (pam_echo).
+GDM_SERVICES="gdm-password:gdm-autologin:gdm-fingerprint:gdm-smartcard"
 BLOCK="$BEGIN
-account    [success=2 default=ignore]  pam_listfile.so onerr=succeed item=user sense=deny file=/run/kidctl/locked-users
+account    [success=4 default=ignore]  pam_listfile.so onerr=succeed item=user sense=deny file=/run/kidctl/locked-users
+account    [success=1 default=ignore]  pam_succeed_if.so quiet service notin $GDM_SERVICES
+account    requisite                   pam_nologin.so file=/run/kidctl/locked-message
 account    optional                    pam_echo.so file=/run/kidctl/locked-message
 account    requisite                   pam_deny.so
 $END"

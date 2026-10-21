@@ -2,22 +2,33 @@
 
 _pam() { /usr/lib/kidctl/kidctl-pam.sh "$1" --apply >/dev/null; }
 _nss() { /usr/lib/kidctl/kidctl-nsswitch.sh "$1" --apply >/dev/null; }
+# Hinweis, wenn zu einem installierten Desktop das passende kidctl-Paket fehlt
+_desktop_hint() {
+  [ -x /usr/bin/plasmashell ] && [ ! -e /usr/share/kidctl/desktop/plasma ] && \
+    echo "==> KDE Plasma gefunden: bitte zusätzlich installieren:  sudo pacman -S kidctl-plasma"
+  [ -x /usr/bin/gnome-shell ] && [ ! -e /usr/share/kidctl/desktop/gnome ] && \
+    echo "==> GNOME gefunden: bitte zusätzlich installieren:  sudo pacman -S kidctl-gnome"
+  true
+}
 
 post_install() {
   _pam install
   _nss install
   cat <<'MSG'
 ==> kidctl installiert. Login-Sperre in /etc/pam.d/system-login eingetragen
-    (Sicherung: system-login.kidctl.bak), SDDM-Theme „kidctl“ aktiv ab nächstem Anmeldebildschirm.
+    (Sicherung: system-login.kidctl.bak).
+==> Je Desktop zusätzlich: kidctl-plasma (KDE Plasma) bzw. kidctl-gnome (GNOME).
 ==> Gerät koppeln und Agent starten:
       sudo kidctl enroll https://kids.nossco.de <KOPPLUNGSCODE>
       sudo systemctl enable --now kidctl-agent.service
 MSG
+  _desktop_hint
 }
 
 post_upgrade() {
   _pam install
   _nss install
+  _desktop_hint
   systemctl daemon-reload
   systemctl try-restart kidctl-agent.service
 }

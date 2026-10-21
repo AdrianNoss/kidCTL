@@ -58,10 +58,11 @@ BASE_FILE = Path(os.environ.get("KIDCTL_BASE_PROGRAMS", "/usr/lib/kidctl/base-pr
 SHELLS = {"sh", "bash", "dash", "zsh", "fish", "ksh", "mksh", "tcsh", "csh", "busybox"}
 INTERPRETER = re.compile(
     r"^(python[0-9.]*|perl[0-9.]*|ruby[0-9.]*|irb|node|nodejs|lua[0-9.]*|luajit|php[0-9.]*"
-    r"|tclsh[0-9.]*|wish[0-9.]*|guile[0-9.]*|Rscript|julia)$")
+    r"|tclsh[0-9.]*|wish[0-9.]*|guile[0-9.]*|Rscript|julia|gjs|gjs-console|js[0-9]+)$")
 # Optionen, die Code direkt ausführen bzw. interaktiv machen (je Interpreter, Einbuchstaben-Flags)
 INLINE_FLAGS = {"python": "cmi", "perl": "eE", "ruby": "e", "irb": "", "node": "epi", "nodejs": "epi",
-                "lua": "ei", "luajit": "ei", "php": "ra", "Rscript": "e", "julia": "ei"}
+                "lua": "ei", "luajit": "ei", "php": "ra", "Rscript": "e", "julia": "ei",
+                "gjs": "ci", "gjs-console": "ci", "js": "eif"}   # gjs (GNOME-Apps), SpiderMonkey-Shell
 INLINE_LONG = {"--eval", "--print", "--interactive", "--command", "--module"}
 # Optionen mit separatem Wert (überspringen)
 VALUE_OPTS = {"-W", "-X", "-I", "-r", "--require", "-l"}
@@ -101,7 +102,7 @@ INTERP_CODE_ENV = {"PYTHONINSPECT", "PYTHONSTARTUP", "PERL5OPT", "PERL5DB", "RUB
 INTERP_PATH_ENV = {"PYTHONPATH", "PYTHONHOME", "PYTHONUSERBASE", "PYTHONPLATLIBDIR", "PERL5LIB", "PERLLIB",
                    "RUBYLIB", "NODE_PATH", "TCLLIBPATH", "GUILE_LOAD_PATH", "GUILE_LOAD_COMPILED_PATH",
                    "JULIA_LOAD_PATH", "R_LIBS", "R_LIBS_USER", "LUA_PATH", "LUA_CPATH", "LUA_PATH_5_4",
-                   "LUA_CPATH_5_4"}
+                   "LUA_CPATH_5_4", "GJS_PATH"}
 
 # Immer erlaubt (kidctl selbst) bzw. nie in der Basis (Loader startet beliebige Programme)
 BUILTIN_BASE = ["/usr/lib/kidctl/*"]
@@ -297,12 +298,13 @@ def is_shell_or_interpreter(path: str) -> bool:
     return name in SHELLS or re.sub(r"[0-9.]+$", "", name) in SHELLS or bool(INTERPRETER.match(name))
 
 
-def base_paths(files: list[str], app_exes: set[str], excludes: list[str]) -> frozenset[str]:
+def base_paths(files: list[str], app_exes: set[str], excludes: list[str],
+               dirs: tuple[str, ...] = EXEC_DIRS) -> frozenset[str]:
     """Ausführbare Dateien der Paketkette, ohne Apps (Eltern-Entscheidung), Shells/Interpreter,
-    Bibliotheken und Ausschlüsse."""
+    Bibliotheken und Ausschlüsse. ``dirs``: erlaubte Verzeichnisse (Sitzungsdienste auch unter /usr/share)."""
     out = set()
     for f in files:
-        if not f.startswith(EXEC_DIRS) or re.search(r"\.so(\.|$)", f):
+        if not f.startswith(dirs) or re.search(r"\.so(\.|$)", f):
             continue
         if f in app_exes or is_shell_or_interpreter(f):
             continue

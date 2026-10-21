@@ -17,7 +17,9 @@ UID = pwd.getpwnam(ME).pw_uid
 
 PAM_OK = """account    include    system-auth
 # kidctl begin – Login-Sperre Bildschirmzeit (verwaltet von kidctl-pam.sh)
-account    [success=2 default=ignore]  pam_listfile.so onerr=succeed item=user sense=deny file=/run/kidctl/locked-users
+account    [success=4 default=ignore]  pam_listfile.so onerr=succeed item=user sense=deny file=/run/kidctl/locked-users
+account    [success=1 default=ignore]  pam_succeed_if.so quiet service notin gdm-password:gdm-autologin:gdm-fingerprint:gdm-smartcard
+account    requisite                   pam_nologin.so file=/run/kidctl/locked-message
 account    optional                    pam_echo.so file=/run/kidctl/locked-message
 account    requisite                   pam_deny.so
 # kidctl end
@@ -101,6 +103,8 @@ def test_agent_repairs_and_reports_on_change(monkeypatch, tmp_path):
     a.conn = FakeConn()
     state = {"broken": True}
     monkeypatch.setattr(integrity, "check_noexec", lambda users, libraries=(): [])
+    monkeypatch.setattr(integrity, "check_desktop_packages", lambda: [])
+    monkeypatch.setattr(integrity, "check_gdm_autologin", lambda users: [])
 
     def fake_dns(children, run=None):
         return [p.IntegrityCheck(id="dns:1", label="Website-Filter Kind 1", ok=not state["broken"],
@@ -126,3 +130,32 @@ def test_agent_repairs_and_reports_on_change(monkeypatch, tmp_path):
     files(tmp_path, monkeypatch, pam="kaputt\n")       # /etc-Datei: nur melden
     asyncio.run(a.check_integrity())
     assert len(a.conn.sent) == 2 and not next(c for c in a.conn.sent[-1].checks if c.id == "pam").ok
+
+
+def test_desktop_packages(tmp_path):
+    shell, marker = tmp_path / "gnome-shell", tmp_path / "gnome"
+    pkgs = {"gnome": (str(shell), str(marker)), "plasma": (str(tmp_path / "plasmashell"), str(tmp_path / "plasma"))}
+    assert integrity.check_desktop_packages(pkgs) == []      # kein Desktop installiert
+    shell.touch()
+    (c,) = integrity.check_desktop_packages(pkgs)
+    assert (c.id, c.ok, c.label) == ("desktop:gnome", False, "Desktop-Paket kidctl-gnome")
+    assert "pacman -S kidctl-gnome" in c.detail
+    marker.touch()
+    assert [c.ok for c in integrity.check_desktop_packages(pkgs)] == [True]
+
+
+def test_tray_icon_check():
+    checks = integrity.check_tray({"lea": False, "tom": True, "papa": False}, {"lea", "tom"})
+    assert [(c.id, c.ok) for c in checks] == [("tray:lea", False), ("tray:tom", True)]   # papa: kein Kind
+    assert "AppIndicator" in checks[0].detail
+
+
+def test_gdm_autologin_for_child(tmp_path):
+    conf = tmp_path / "custom.conf"
+    assert integrity.check_gdm_autologin({"lea"}, conf) == []               # keine Datei
+    conf.write_text("# GDM\n[daemon]\nAutomaticLoginEnable=True\nAutomaticLogin=lea\n")
+    (c,) = integrity.check_gdm_autologin({"lea"}, conf)
+    assert (c.id, c.ok) == ("gdm-autologin:lea", False) and "schwarz" in c.detail
+    assert integrity.check_gdm_autologin({"tom"}, conf) == []               # Admin/anderer User
+    conf.write_text("[daemon]\nAutomaticLoginEnable=false\nAutomaticLogin=lea\n")
+    assert integrity.check_gdm_autologin({"lea"}, conf) == []

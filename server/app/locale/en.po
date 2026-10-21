@@ -1580,3 +1580,12 @@ msgstr "Backup not found."
 msgid "Das Backup enthält Passwort-Hashes und Authenticator-Schlüssel aller Eltern – sicher aufbewahren."
 msgstr "The backup contains the password hashes and authenticator keys of all parents – keep it safe."
 
+msgid "Desktop-Paket kidctl-{desktop}"
+msgstr "Desktop package kidctl-{desktop}"
+
+msgid "Tray-Symbol von {user}"
+msgstr "Tray icon of {user}"
+
+msgid "GDM-Autologin für {user}"
+msgstr "GDM auto-login for {user}"
+

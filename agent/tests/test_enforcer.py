@@ -20,13 +20,15 @@ class FakeNotifier:
     def __init__(self):
         self.sent = []
         self.logouts = []
+        self.desktops = []
         self.dm_restarts = 0
 
     async def notify(self, user, uid, title, body, critical=False, on_action=None, action=None):
         self.sent.append((user, title, body, critical))
 
-    async def logout(self, user, uid):
+    async def logout(self, user, uid, desktop=""):
         self.logouts.append(user)
+        self.desktops.append(desktop)
         return True
 
     async def restart_display_manager(self):
@@ -40,9 +42,9 @@ class Clock:
         return self.t
 
 
-def sess(sid, user="max", cls="user", active=True, locked=False, type="tty", seat=""):
+def sess(sid, user="max", cls="user", active=True, locked=False, type="tty", seat="", desktop=""):
     return SessionInfo(id=sid, uid=1001, user=user, session_class=cls, active=active,
-                       locked=locked, state="active", type=type, seat=seat)
+                       locked=locked, state="active", type=type, seat=seat, desktop=desktop)
 
 
 def make():
@@ -147,6 +149,66 @@ def test_graphical_session_logged_out_via_plasma():
     clk.t += LOGOUT_TIMEOUT
     run(e.step(DAY, [sessions[2]], gone))
     assert lg.terminated == ["3"] and nt.dm_restarts == 0
+
+
+def test_gnome_session_logged_out_via_gnome(monkeypatch):
+    e, lg, nt, clk = make()
+    desk = sess("2", type="wayland", seat="seat0", desktop="GNOME")
+    gone = {"max": Decision(False, 0, QUOTA)}
+    run(e.step(DAY, [desk], gone))
+    clk.t += GRACE_SECONDS
+    run(e.step(DAY, [desk], gone))
+    assert nt.logouts == ["max"] and nt.desktops == ["GNOME"] and lg.terminated == []
+
+    # Aufruf je Desktop
+    from kidctl_agent import usersession
+    calls = []
+
+    running = "gnome"   # Desktop, dessen Dienst antwortet
+
+    class Proc:
+        def __init__(self, ok):
+            self.returncode = 0 if ok else 1
+
+        async def wait(self):
+            return self.returncode
+
+    async def fake_spawn(self, cmd, capture=False):
+        call = cmd[cmd.index("call") + 1:]
+        calls.append(call)
+        return Proc(call == list(usersession.LOGOUT_CALLS[running]))
+    monkeypatch.setattr(usersession.UserSession, "_spawn", fake_spawn)
+    monkeypatch.setattr(usersession.UserSession, "_as_user", lambda self, user, uid, *cmd: list(cmd))
+    gnome, plasma = list(usersession.LOGOUT_CALLS["gnome"]), list(usersession.LOGOUT_CALLS["plasma"])
+    for desktop in ("GNOME", "ubuntu:GNOME"):
+        assert run(usersession.UserSession().logout("max", 1001, desktop))
+    assert calls == [gnome, gnome] and gnome[-3:] == ["Logout", "u", "1"]
+    calls.clear()
+    # GDM: Desktop unbekannt -> laufende Shell entscheidet
+    monkeypatch.setattr(usersession.UserSession, "running_desktop", lambda self, uid: "gnome")
+    assert run(usersession.UserSession().logout("max", 1001, ""))
+    assert calls == [gnome]
+    calls.clear()
+    monkeypatch.setattr(usersession.UserSession, "running_desktop", lambda self, uid: None)
+    assert run(usersession.UserSession().logout("max", 1001, ""))      # keine Shell gefunden: GNOME zuerst
+    assert calls == [gnome]
+    calls.clear()
+    running = "plasma"
+    assert run(usersession.UserSession().logout("max", 1001, ""))
+    assert calls == [gnome, plasma]
+    assert not run(usersession.UserSession().logout("max", 1001, "GNOME"))
+
+    from kidctl_agent.procs import ProcInfo
+    procs = {5: "/usr/bin/kwin_wayland", 6: "/usr/bin/plasmashell"}
+    monkeypatch.undo()
+    monkeypatch.setattr(usersession, "pids_of", lambda uids: list(procs))
+    monkeypatch.setattr(usersession, "read_proc", lambda pid: ProcInfo(pid=pid, uid=1001, ppid=1, start=1, exe=procs[pid],
+                                                                       argv=(), tty=False, flatpak_id=None))
+    assert usersession.UserSession().running_desktop(1001) == "plasma"
+    procs[6] = "/usr/bin/gnome-shell"
+    assert usersession.UserSession().running_desktop(1001) == "gnome"
+    del procs[6]
+    assert usersession.UserSession().running_desktop(1001) is None
 
 
 def test_hard_terminate_and_greeter_recovery_when_logout_fails():

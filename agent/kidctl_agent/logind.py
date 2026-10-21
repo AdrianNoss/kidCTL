@@ -24,6 +24,8 @@ class SessionInfo:
     state: str           # online | active | closing
     type: str = "unspecified"  # wayland | x11 | tty | unspecified
     seat: str = ""
+    desktop: str = ""    # XDG_SESSION_DESKTOP, z. B. KDE, gnome (GDM trägt ihn nicht ein)
+    leader: int = 0      # PID des Sitzungsleiters (sddm-helper, gdm-session-worker, login …)
 
     @property
     def graphical(self) -> bool:
@@ -70,7 +72,9 @@ class Logind:
                 id=sid, uid=uid, user=user,
                 session_class=props["Class"].value, active=props["Active"].value,
                 locked=props["LockedHint"].value, state=props["State"].value,
-                type=props["Type"].value, seat=props["Seat"].value[0]))
+                type=props["Type"].value, seat=props["Seat"].value[0],
+                desktop=props["Desktop"].value if "Desktop" in props else "",
+                leader=props["Leader"].value if "Leader" in props else 0))
         return out
 
     async def terminate(self, session_id: str) -> None:

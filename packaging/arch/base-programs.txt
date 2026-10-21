@@ -27,6 +27,20 @@ pkg:plasma-pa
 pkg:kscreen
 pkg:kde-gtk-config
 pkg:breeze-gtk
+# --- GNOME-Sitzung (Wayland) ---
+# Gruppe deckt die Hintergrunddienste einer vollen GNOME-Installation ab (gsd-*, gnome-shell-Helfer,
+# Tracker/LocalSearch, gvfs, Evolution-Data-Server …); sichtbare Apps daraus (Dateien, Software,
+# Einstellungen …) bleiben Eltern-Entscheidung. Nicht installierte Pakete/Gruppen werden übersprungen.
+group:gnome
+pkg:gdm
+pkg:gnome-shell
+pkg:mutter
+pkg:gnome-session
+pkg:gnome-settings-daemon
+pkg:xdg-desktop-portal-gnome
+pkg:gnome-keyring
+# Hilfsskripte (gjs) von GNOME Shell und systemweit installierten Erweiterungen (z. B. AppIndicator)
+/usr/share/gnome-shell/*
 # --- Audio, Portale ---
 pkg:pipewire
 pkg:pipewire-pulse
@@ -39,7 +53,7 @@ pkg:flatpak
 # --- harmlose Hilfsprogramme, die Skripte (z. B. steam.sh) aufrufen ---
 /usr/bin/which
 
-# --- vom Agenten im Namen des Kindes gestartet (Benachrichtigung, Plasma-Abmeldung) ---
+# --- vom Agenten im Namen des Kindes gestartet (Benachrichtigung, Abmeldung über Plasma/GNOME) ---
 /usr/bin/notify-send
 /usr/bin/busctl
 
@@ -54,6 +68,10 @@ pkg:flatpak
 !/usr/bin/alacritty
 !/usr/bin/kitty
 !/usr/bin/foot
+!/usr/bin/kgx
+!/usr/bin/gnome-terminal*
+!/usr/bin/ptyxis
+!/usr/lib/gnome-terminal-server
 
 # --- universelle Netzwerk-Werkzeuge (kommen über Gruppen-Abhängigkeiten mit) nie als Basis ---
 !/usr/bin/socat*

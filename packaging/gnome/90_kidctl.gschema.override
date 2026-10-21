@@ -1,0 +1,4 @@
+# kidctl: AppIndicator-Erweiterung für alle User einschalten, damit GNOME das Tray-Symbol zeigt.
+# Gilt als Voreinstellung – wer die Liste der Erweiterungen selbst geändert hat, behält seine Auswahl.
+[org.gnome.shell]
+enabled-extensions=['appindicatorsupport@rgcjonas.gmail.com']

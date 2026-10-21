@@ -156,3 +156,50 @@ def test_kwallet_unlock_socat_only_from_pam_kwallet_init():
     assert classify(foreign, a, ancestors=lambda: [init]) is not None                 # Socket eines anderen Users
     extra = proc("/usr/bin/socat1", ["socat", "STDIN", sock, "-v"], pid=47)
     assert classify(extra, a, ancestors=lambda: [init]) is not None                   # zusätzliche Argumente
+
+
+def test_gnome_services_under_usr_share_and_login_quiet():
+    from kidctl_agent import watcher
+    from kidctl_agent.procs import ProcInfo
+    from kidctl_agent.programs import base_paths
+    svc = ["/usr/share/gnome-shell/org.gnome.Shell.Notifications", "/usr/share/org.gnome.Characters/bg",
+           "/home/k/x", "/usr/bin/gnome-software"]
+    assert base_paths(svc, {"/usr/bin/gnome-software"}, [], dirs=("/usr/",)) == set(svc[:2])
+    assert base_paths(svc, set(), []) == {"/usr/bin/gnome-software"}   # Paketdateien weiter nur bin/lib
+
+    def proc(pid, exe, start, uid=1001):
+        return ProcInfo(pid=pid, uid=uid, ppid=1, start=start, exe=exe, argv=(exe,), tty=False, flatpak_id=None)
+    manager = proc(588, "/usr/lib/systemd/systemd", 10)    # läuft seit einer früheren Anmeldung weiter
+    tick = watcher.CLK_TCK
+    login = 1000                                            # Start des Sitzungsleiters (gdm-session-worker)
+    sw = proc(955, "/usr/bin/gnome-software", login + 5 * tick)
+    assert watcher.login_service(sw, [manager], [login])              # beim Login: ohne Benachrichtigung
+    assert watcher.login_service(sw, [manager], None)                 # Sitzung noch nicht in der Liste
+    late = proc(956, "/usr/bin/gnome-software", login + 600 * tick)
+    assert not watcher.login_service(late, [manager], [login])        # später vom Kind geöffnet
+    assert watcher.login_service(late, [manager], [login, login + 590 * tick])  # zweite Anmeldung
+    assert not watcher.login_service(sw, [proc(667, "/usr/bin/gnome-shell", 1000)], [login])
+    assert not watcher.login_service(sw, [proc(1, "/usr/lib/systemd/systemd", 10, uid=0)], [login])
+    assert not watcher.login_service(sw, [], [login])
+
+
+def test_session_starts_ignore_manager_session(monkeypatch):
+    from types import SimpleNamespace
+
+    from kidctl_agent import watcher
+    from kidctl_agent.logind import SessionInfo
+    from kidctl_agent.procs import ProcInfo
+
+    def sess(sid, cls, leader):
+        return SessionInfo(id=sid, uid=1001, user="kind", session_class=cls, active=True, locked=False,
+                           state="active", type="wayland", leader=leader)
+    starts = {588: 10, 14978: 5000}
+    monkeypatch.setattr(watcher, "read_proc", lambda pid: ProcInfo(pid=pid, uid=0, ppid=1, start=starts[pid],
+                                                                   exe="/x", argv=(), tty=False, flatpak_id=None)
+                        if pid in starts else None)
+    w = SimpleNamespace(agent=SimpleNamespace(_sessions=[sess("2", "manager", 588)]))
+    assert watcher.ProgramWatcher._session_starts(w, 1001) is None     # neue Anmeldung noch nicht gelesen
+    w.agent._sessions.append(sess("23", "user", 999))          # alte Anmeldung, Leiter schon beendet
+    assert watcher.ProgramWatcher._session_starts(w, 1001) is None
+    w.agent._sessions.append(sess("24", "user", 14978))
+    assert watcher.ProgramWatcher._session_starts(w, 1001) == [5000]

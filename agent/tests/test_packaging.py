@@ -34,3 +34,22 @@ def test_base_list_excludes_socat():
     spec = programs.load_base(ROOT / "packaging/arch/base-programs.txt")
     base = programs.base_paths(["/usr/bin/socat", "/usr/bin/socat1", "/usr/bin/kded6"], set(), spec.excludes)
     assert base == {"/usr/bin/kded6"}
+
+
+def test_split_packages_and_gnome_base():
+    pkgbuild = (ROOT / "packaging/arch/PKGBUILD").read_text()
+    assert "pkgname=(kidctl kidctl-plasma kidctl-gnome)" in pkgbuild
+    for name in ("kidctl", "kidctl-plasma", "kidctl-gnome"):
+        assert f"package_{name}()" in pkgbuild
+    # Desktop-Pakete legen die Markierung an, die die Integritätsprüfung erwartet
+    from kidctl_agent import integrity
+    for desktop, (_prog, marker) in integrity.DESKTOP_PACKAGES.items():
+        assert f'"$pkgdir{marker}"' in pkgbuild, desktop
+    from kidctl_agent import programs
+    spec = programs.load_base(ROOT / "packaging/arch/base-programs.txt")
+    assert "gnome" in spec.groups and "gdm" in spec.packages
+    base = programs.base_paths(["/usr/bin/kgx", "/usr/bin/gnome-terminal", "/usr/lib/gnome-terminal-server",
+                                "/usr/bin/gjs", "/usr/lib/gsd-power"], set(), spec.excludes)
+    assert base == {"/usr/lib/gsd-power"}   # Terminals nie, gjs als Interpreter nie
+    desktop = (ROOT / "packaging/gnome/kidctl.desktop").read_text()
+    assert "Exec=/usr/bin/kidctl-tray --show" in desktop and "OnlyShowIn=GNOME;" in desktop

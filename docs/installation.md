@@ -17,7 +17,7 @@ In den Beispielen steht `kids.example.org` für die eigene Subdomain.
 |---|---|
 | Server | Linux mit Docker + Docker Compose, laufender **Traefik** mit certresolver `letsencrypt` und Middleware `secHeaders@file`, DNS-Eintrag für die Subdomain |
 | Bau-Rechner | Arch Linux mit `base-devel`, `git`, `gnupg`, `rsync`, SSH-Zugang zum Server |
-| Kinderrechner | Arch Linux mit **KDE Plasma (Wayland)** und **SDDM**, Internetzugang, ein Admin-Account mit `sudo` |
+| Kinderrechner | Arch Linux mit **KDE Plasma** (SDDM) und/oder **GNOME** (GDM), jeweils unter Wayland, Internetzugang, ein Admin-Account mit `sudo` |
 | Eltern | Smartphone mit Authenticator-App (TOTP, z. B. Aegis, Google Authenticator) |
 
 ## 1. Server
@@ -175,13 +175,30 @@ So kann man sich als Admin nicht selbst aussperren.
 curl -O https://kids.example.org/repo/kidctl-repo-client.sh
 sudo bash kidctl-repo-client.sh https://kids.example.org/repo <FINGERABDRUCK>           # Probelauf
 sudo bash kidctl-repo-client.sh https://kids.example.org/repo <FINGERABDRUCK> --apply
-sudo pacman -S kidctl
+sudo pacman -S kidctl kidctl-plasma   # KDE Plasma
+sudo pacman -S kidctl kidctl-gnome    # GNOME
 ```
 
-Das Skript bricht ab, wenn der Schlüssel nicht zum Fingerabdruck passt. Bei der Installation trägt
-das Paket die Login-Sperre in `/etc/pam.d/system-login` ein (Sicherung
-`system-login.kidctl.bak`), stellt `/etc/nsswitch.conf` auf den DNS-Filter um und aktiviert das
-SDDM-Theme sowie die Browser-Policies gegen DNS-over-HTTPS.
+Sind beide Desktops installiert, beide Pakete installieren. Das Skript bricht ab, wenn der Schlüssel
+nicht zum Fingerabdruck passt. Bei der Installation trägt `kidctl` die Login-Sperre in
+`/etc/pam.d/system-login` ein (Sicherung `system-login.kidctl.bak`), stellt `/etc/nsswitch.conf` auf
+den DNS-Filter um und aktiviert die Browser-Policies gegen DNS-over-HTTPS.
+
+| Paket | Inhalt |
+|---|---|
+| `kidctl` | Agent, Tray-App, `kidctl`-Befehl, Login-Sperre, Website-Filter |
+| `kidctl-plasma` | SDDM-Theme mit dem Hinweis der Login-Sperre |
+| `kidctl-gnome` | AppIndicator-Erweiterung (Tray-Symbol in der oberen Leiste, für alle User voreingestellt), Eintrag „KidCTL“ in der Anwendungsübersicht |
+
+Fehlt zu einem installierten Desktop das passende Paket, weist `pacman` darauf hin und das WebUI
+meldet es unter „Integrität“.
+
+**GNOME:** Keine automatische Anmeldung (`AutomaticLogin` in `/etc/gdm/custom.conf`) für Kinder
+einrichten. Lehnt die Login-Sperre sie beim Start ab, zeigt GDM keinen Anmeldebildschirm, sondern
+bleibt schwarz (Verhalten von GDM). Das WebUI meldet eine solche Einstellung unter „Integrität“.
+Schaltet ein Kind die Erweiterung „AppIndicator“ ab, fehlt nur das Tray-Symbol – das WebUI meldet
+das, Restzeit und Chat bleiben über „KidCTL“ in der Anwendungsübersicht erreichbar. Wieder
+einschalten als Kind: `gnome-extensions enable appindicatorsupport@rgcjonas.gmail.com`.
 
 Ohne Repository (z. B. zum Ausprobieren) geht es auch direkt aus dem Git-Checkout:
 `cd packaging/arch && makepkg -si`.
@@ -305,6 +322,7 @@ root sperren und Firmware- sowie Bootloader-Passwort setzen: [`docs/haertung.md`
 |---|---|
 | Server | `git pull && docker compose up -d --build`. Datenbank-Migrationen laufen beim Start automatisch. |
 | Client-Paket | `pkgver` in `packaging/arch/PKGBUILD` und `agent/kidctl_agent/__init__.py` erhöhen, dann 2.2 ausführen. Die Kinderrechner bekommen das Update mit `sudo pacman -Syu`. |
+| Ab 0.27.0 | Das SDDM-Theme steckt jetzt im Paket `kidctl-plasma`. Auf bestehenden Plasma-Rechnern einmalig `sudo pacman -Syu kidctl-plasma`, sonst fehlt der Hinweis im Anmeldebildschirm. |
 
 Ein Server-Update vor den Agenten ist unproblematisch, weil der Server auch die vorherige
 Protokollversion unterstützt. Zu alte Agenten markiert das WebUI.
@@ -336,7 +354,7 @@ docker compose start kidctl
 ## Deinstallation (Kinderrechner)
 
 ```bash
-sudo pacman -R kidctl          # nimmt PAM-, nsswitch-, nftables- und Mount-Änderungen zurück
+sudo pacman -R kidctl-plasma kidctl-gnome kidctl   # nur installierte nennen; nimmt PAM-, nsswitch-, nftables- und Mount-Änderungen zurück
 sudo rm -rf /var/lib/kidctl    # Geräte-Token und Zustand (bleiben sonst erhalten)
 ```
 
@@ -346,6 +364,7 @@ aus `/etc/pacman.conf` entfernen.
 ## Sprache
 
 KidCTL spricht Deutsch und Englisch. Eltern wählen die Sprache im Profil (Standard: Browsersprache).
-Auf dem Kinderrechner gilt die Sprache der Plasma-Sitzung des Kindes (Systemeinstellungen → Region &
-Sprache), vor der Anmeldung die Systemsprache aus `/etc/locale.conf`. Alles, was nicht mit `de`
+Auf dem Kinderrechner gilt die Sprache der Desktop-Sitzung des Kindes (Plasma: Systemeinstellungen →
+Region & Sprache; GNOME: Einstellungen → System → Region & Sprache), vor der Anmeldung unter GNOME
+die dort gewählte Sprache, sonst die Systemsprache aus `/etc/locale.conf`. Alles, was nicht mit `de`
 beginnt, ergibt Englisch.

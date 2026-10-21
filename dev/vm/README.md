@@ -45,6 +45,20 @@ SSH-Passwort-Login ist aus, der Port ist nur lokal gebunden (`127.0.0.1:2222`).
 - `dev/webctl.py` bedient das WebUI per Kommandozeile (Kind anlegen, koppeln, zuordnen, Gutschrift,
   Programm-Modus …), z. B. `dev/webctl.py pair "VM"` → `sudo kidctl enroll --insecure-http http://10.0.2.2:8000 <code>`.
 
+## GNOME in der VM
+
+Die VM kann zusätzlich GNOME mit GDM haben (Rechner mit beiden Desktops; Snapshot `vor-gnome` ist der
+Stand davor):
+
+```bash
+dev/vm/vm.sh ssh 'sudo pacman -Syu --needed gnome gdm gnome-shell-extension-appindicator'
+dev/vm/vm.sh ssh 'sudo systemctl disable sddm && sudo systemctl enable gdm && sudo reboot'   # zurück: umgekehrt
+```
+
+Pakete aus dem Repo bauen und installieren: `kidctl`, `kidctl-plasma` und `kidctl-gnome` (siehe
+`packaging/arch/README.md`). Keine automatische Anmeldung für `kind` unter GDM lassen – bei
+Login-Sperre bleibt GDM sonst schwarz.
+
 ## Snapshots (Rettung bei Aussperrung)
 
 ```bash

@@ -1,24 +1,29 @@
 # Lokaler Build aus dem Repo: cd packaging/arch && makepkg
 # (bei schreibgeschütztem Repo: BUILDDIR=/var/tmp/kb PKGDEST=/var/tmp/kb makepkg)
-pkgname=kidctl
-pkgver=0.26.2   # muss agent/kidctl_agent/__init__.py:__version__ entsprechen (Test prüft das)
+# Split-Paket: kidctl (Agent, Tray, kidctl-Befehl) plus je Desktop kidctl-plasma bzw. kidctl-gnome.
+pkgbase=kidctl
+pkgname=(kidctl kidctl-plasma kidctl-gnome)
+pkgver=0.27.0   # muss agent/kidctl_agent/__init__.py:__version__ entsprechen (Test prüft das)
 pkgrel=1
-pkgdesc="Parental Control für KDE Plasma – Agent (Bildschirmzeit, Login-Sperre) und Tray-App"
+pkgdesc="Parental Control für Arch Linux – Agent (Bildschirmzeit, Login-Sperre) und Tray-App"
 arch=(any)
 url="https://github.com/AdrianNoss/kidCTL"
 license=(PolyForm-Noncommercial-1.0.0)
-depends=(
-  python python-pydantic python-websockets python-dbus-next pyside6
-  libnotify util-linux systemd pam sddm plasma-desktop unbound nftables
-)
-install=kidctl.install
 source=(kidctl kidctl-main.py kidctl-agent.service kidctl-tray kidctl-tray-main.py kidctl-tray.desktop
-        base-programs.txt)
-sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP)  # lokale Dateien aus dem Repo
+        base-programs.txt kidctl.svg)
+sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)  # lokale Dateien aus dem Repo
 
 _root="$(realpath "$startdir/../..")"
 
-package() {
+package_kidctl() {
+  depends=(
+    python python-pydantic python-websockets python-dbus-next pyside6
+    libnotify util-linux systemd pam unbound nftables
+  )
+  optdepends=('kidctl-plasma: für KDE Plasma (SDDM-Hinweis der Login-Sperre)'
+              'kidctl-gnome: für GNOME (Tray-Symbol, Eintrag in der Anwendungsübersicht)')
+  install=kidctl.install
+
   local lib="$pkgdir/usr/lib/kidctl"
   install -d "$lib"
   cp -r "$_root/agent/kidctl_agent" "$_root/common/kidctl_common" "$_root/tray/kidctl_tray" "$lib/"
@@ -45,10 +50,30 @@ package() {
   install -Dm755 "$srcdir/kidctl-tray" "$pkgdir/usr/bin/kidctl-tray"
   install -Dm644 "$srcdir/kidctl-tray.desktop" "$pkgdir/usr/share/applications/kidctl-tray.desktop"
   install -Dm644 "$srcdir/kidctl-tray.desktop" "$pkgdir/etc/xdg/autostart/kidctl-tray.desktop"
+  install -Dm644 "$srcdir/kidctl.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/kidctl.svg"
+}
 
+package_kidctl-plasma() {
+  pkgdesc="Parental Control – Anpassungen für KDE Plasma (SDDM-Theme mit Hinweis der Login-Sperre)"
+  depends=("kidctl=$pkgver" sddm plasma-desktop)
+
+  # Markierung für die Integritätsprüfung (Desktop-Paket installiert)
+  install -Dm644 /dev/null "$pkgdir/usr/share/kidctl/desktop/plasma"
   # SDDM-Theme (Breeze-Hülle mit Hinweisen der Login-Sperre)
   local theme="$pkgdir/usr/share/sddm/themes/kidctl"
   install -Dm644 -t "$theme" "$_root/packaging/sddm/theme/Main.qml" "$_root/packaging/sddm/theme/metadata.desktop"
   ln -s /usr/share/sddm/themes/breeze/theme.conf "$theme/theme.conf"
   install -Dm644 "$_root/packaging/sddm/zz-kidctl-theme.conf" "$pkgdir/etc/sddm.conf.d/zz-kidctl-theme.conf"
+}
+
+package_kidctl-gnome() {
+  pkgdesc="Parental Control – Anpassungen für GNOME (Tray-Symbol per AppIndicator, Eintrag „KidCTL“)"
+  depends=("kidctl=$pkgver" gdm gnome-shell gnome-shell-extension-appindicator)
+
+  install -Dm644 /dev/null "$pkgdir/usr/share/kidctl/desktop/gnome"
+  # AppIndicator-Erweiterung als Voreinstellung für alle User (Schema-Override, pacman-Hook kompiliert)
+  install -Dm644 "$_root/packaging/gnome/90_kidctl.gschema.override" \
+    "$pkgdir/usr/share/glib-2.0/schemas/90_kidctl.gschema.override"
+  # Eintrag in der Anwendungsübersicht (öffnet das Fenster der Tray-App)
+  install -Dm644 "$_root/packaging/gnome/kidctl.desktop" "$pkgdir/usr/share/applications/kidctl.desktop"
 }

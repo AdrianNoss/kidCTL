@@ -37,6 +37,7 @@ class _Client:
         self.writer = writer
         self.last_state: t.TrayState | None = None
         self.last_sent = 0.0
+        self.tray_icon: bool | None = None
 
 
 class TrayServer:
@@ -78,6 +79,14 @@ class TrayServer:
             await self._send(c, msg)
         return len(targets)
 
+    def tray_icons(self) -> dict[str, bool]:
+        """User -> Tray-Symbol sichtbar (in mindestens einer verbundenen Tray-App); ohne Meldung kein Eintrag."""
+        out: dict[str, bool] = {}
+        for c in list(self.clients):
+            if c.tray_icon is not None:
+                out[c.user] = out.get(c.user, False) or c.tray_icon
+        return out
+
     async def push_states(self, now: float) -> None:
         """Zustand an alle Clients – bei Änderung sofort, sonst alle ``STATE_REFRESH`` s."""
         for c in list(self.clients):
@@ -117,6 +126,7 @@ class TrayServer:
     async def _dispatch(self, client: _Client, msg) -> None:
         user = client.user
         if isinstance(msg, t.TrayHello):
+            client.tray_icon = msg.tray_icon
             state = self.handler.tray_state(user)
             client.last_state = state
             await self._send(client, state)

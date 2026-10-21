@@ -55,6 +55,12 @@ def label_for(check: dict) -> str:
         return _("noexec-Home von {user}").format(user=arg)
     if kind == "noexec" and arg:
         return _("noexec-Spieleordner {path}").format(path=arg)
+    if kind == "desktop" and arg:
+        return _("Desktop-Paket kidctl-{desktop}").format(desktop=arg)
+    if kind == "gdm-autologin" and arg:
+        return _("GDM-Autologin für {user}").format(user=arg)
+    if kind == "tray" and arg:
+        return _("Tray-Symbol von {user}").format(user=arg)
     if kind == "dns" and arg:
         return _("Website-Filter Kind {id}").format(id=arg)
     if kind in _LIBRARIES and arg:

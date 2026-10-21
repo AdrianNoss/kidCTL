@@ -54,7 +54,7 @@ def test_session_language_and_cache():
             11: {"LANG": "de_DE.UTF-8", "LANGUAGE": "en_US"}, 12: {"LANG": "de_DE.UTF-8"}}
     clock = [0.0]
     langs = UserLanguages(list_pids=lambda uids: list(procs), read=procs.get, environ=lambda pid: envs[pid],
-                          clock=lambda: clock[0], system=lambda: "de")
+                          clock=lambda: clock[0], system=lambda: "de", accounts=lambda user: None)
     assert langs.lang_of(ME) == "en"                         # Plasma-Sitzung, nicht systemd/konsole
     envs[11] = {"LANG": "de_DE.UTF-8"}
     assert langs.lang_of(ME) == "en"                         # zwischengespeichert
@@ -71,6 +71,30 @@ def test_session_language_and_cache():
     envs[13] = {"LANG": "de_DE.UTF-8", "LANGUAGE": "en_GB:en"}
     clock[0] = 300
     assert langs.lang_of(ME) == "en"
+
+
+def test_gnome_session_and_accounts_language(tmp_path):
+    from kidctl_agent.lang import accounts_language
+    (tmp_path / "lea").write_text("[User]\nLanguage=en_GB.UTF-8\nSession=gnome\n")
+    (tmp_path / "tom").write_text("[User]\nSession=gnome\n")
+    (tmp_path / "max").write_text("[User]\nLanguages=de_DE.UTF-8;en_US.UTF-8;\n")   # neueres Format
+    assert accounts_language("lea", tmp_path) == "en"
+    assert accounts_language("max", tmp_path) == "de"
+    assert accounts_language("tom", tmp_path) is None        # keine Sprache gewählt
+    assert accounts_language("fehlt", tmp_path) is None
+
+    procs = {20: _proc(20, "/usr/lib/gdm-wayland-session"), 21: _proc(21, "/usr/bin/gnome-shell"),
+             22: _proc(22, "/usr/bin/nautilus")}
+    envs = {20: {"LANG": "de_DE.UTF-8"}, 21: {"LANG": "en_US.UTF-8"}, 22: {"LANG": "de_DE.UTF-8"}}
+    accounts = {ME: "fr"}
+    langs = UserLanguages(list_pids=lambda uids: list(procs), read=procs.get, environ=lambda pid: envs[pid],
+                          clock=iter(range(0, 10**6, 100)).__next__, system=lambda: "de",
+                          accounts=lambda user: accounts.get(user))
+    assert langs.lang_of(ME) == "en"                         # gnome-shell
+    del procs[21]
+    assert langs.lang_of(ME) == "fr"                         # ohne Shell: Kontoeinstellung vor anderen Prozessen
+    accounts.clear()
+    assert langs.lang_of(ME) == "de"                         # anderer Prozess (gdm-wayland-session ignoriert)
 
 
 def test_notifications_in_child_language():

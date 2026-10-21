@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=KidCTL
+GenericName=Screen time
+GenericName[de]=Bildschirmzeit
+Comment=Time left, messages to your parents, ask for more time
+Comment[de]=Restzeit, Nachrichten an die Eltern, Verlängerung anfordern
+Exec=/usr/bin/kidctl-tray --show
+Icon=kidctl
+Terminal=false
+Categories=Utility;
+OnlyShowIn=GNOME;

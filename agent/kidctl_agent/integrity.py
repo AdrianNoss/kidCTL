@@ -7,6 +7,7 @@ das meldet er nur; Laufzeit-Zustand (nftables, Resolver, Mounts) stellt er selbs
 
 from __future__ import annotations
 
+import configparser
 import json
 import pwd
 import subprocess
@@ -24,6 +25,12 @@ NSSWITCH = Path("/etc/nsswitch.conf")
 FIREFOX_POLICY = Path("/etc/firefox/policies/policies.json")
 CHROMIUM_POLICY = Path("/etc/chromium/policies/managed/kidctl.json")
 SHARED_NOEXEC = ("/tmp", "/var/tmp", "/dev/shm")
+GDM_CONF = Path("/etc/gdm/custom.conf")
+# Desktop -> (Programm, an dem er erkannt wird; Markierungsdatei des passenden kidctl-Pakets)
+DESKTOP_PACKAGES = {
+    "plasma": ("/usr/bin/plasmashell", "/usr/share/kidctl/desktop/plasma"),
+    "gnome": ("/usr/bin/gnome-shell", "/usr/share/kidctl/desktop/gnome"),
+}
 
 
 def _run(*cmd: str) -> subprocess.CompletedProcess:
@@ -87,6 +94,41 @@ def check_noexec(kid_users: set[str], mounts=noexec_mounts, libraries: set[str] 
         out.append(IntegrityCheck(id=f"noexec:{path}", label=f"noexec-Spieleordner {path}", ok=ok,
                                   detail="" if ok else f"{path} nicht noexec eingehängt"))
     return out
+
+
+def check_desktop_packages(packages: dict[str, tuple[str, str]] = DESKTOP_PACKAGES) -> list[IntegrityCheck]:
+    """Für jeden installierten Desktop das passende Paket (``kidctl-plasma`` bzw. ``kidctl-gnome``)."""
+    out = []
+    for desktop, (program, marker) in packages.items():
+        if not Path(program).exists():
+            continue
+        ok = Path(marker).exists()
+        out.append(IntegrityCheck(id=f"desktop:{desktop}", label=f"Desktop-Paket kidctl-{desktop}", ok=ok,
+                                  detail="" if ok else f"fehlt – sudo pacman -S kidctl-{desktop}"))
+    return out
+
+
+def check_gdm_autologin(kid_users: set[str], conf: Path = GDM_CONF) -> list[IntegrityCheck]:
+    """GDM bleibt schwarz (kein Anmeldebildschirm), wenn die automatische Anmeldung beim Start abgelehnt wird –
+    bei einem Kind also in jeder gesperrten Zeit. Automatische Anmeldung für Kinder daher melden."""
+    cp = configparser.ConfigParser(interpolation=None, strict=False)
+    try:
+        cp.read_string(conf.read_text(errors="replace"))
+    except (OSError, configparser.Error):
+        return []
+    daemon = cp["daemon"] if cp.has_section("daemon") else {}
+    user = daemon.get("AutomaticLogin", "").strip()
+    if daemon.get("AutomaticLoginEnable", "").strip().lower() not in ("true", "1") or user not in kid_users:
+        return []
+    return [IntegrityCheck(id=f"gdm-autologin:{user}", label=f"GDM-Autologin für {user}", ok=False,
+                           detail=f"bei Login-Sperre bleibt der Bildschirm schwarz – in {conf} abschalten")]
+
+
+def check_tray(icons: dict[str, bool], kid_users: set[str]) -> list[IntegrityCheck]:
+    """Tray-Symbol der angemeldeten Kinder sichtbar? (``icons``: User -> sichtbar, laut Tray-App)"""
+    return [IntegrityCheck(id=f"tray:{user}", label=f"Tray-Symbol von {user}", ok=visible,
+                           detail="" if visible else "nicht sichtbar – unter GNOME die Erweiterung „AppIndicator“ einschalten")
+            for user, visible in sorted(icons.items()) if user in kid_users]
 
 
 LIBRARY_LABELS = {"steam": "Steam-Bibliothek", "heroic": "Heroic-Spieleordner"}

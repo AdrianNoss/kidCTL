@@ -2,18 +2,18 @@
 
 **English** · [Deutsch](README.de.md)
 
-Self-hosted parental control for **Arch Linux with KDE Plasma (Wayland)**. A central server with a
+Self-hosted parental control for **Arch Linux with KDE Plasma or GNOME (Wayland)**. A central server with a
 parents' web interface (installable as an app on your phone) controls a root agent on each child's
 computer. All data stays on your own server – no cloud, no third-party account.
 
 The web interface, emails, push notifications and everything the child sees (notifications, tray
 app) are available in **English and German**. Parents choose their language in their profile
-(default: browser language); on the child's computer the language of the Plasma session is used.
+(default: browser language); on the child's computer the language of the desktop session is used.
 
 ## Features
 
 - **Screen time**: daily limit and allowed hours per weekday, counted across all of a child's
-  computers; warnings before the end, then sign-out and sign-in lock (SDDM and TTY). Works offline
+  computers; warnings before the end, then sign-out and sign-in lock (SDDM, GDM and TTY). Works offline
   with the last known rules.
 - **Game limit**: optional separate daily limit for games (Steam, Heroic and apps in the "Games"
   group); games are closed after a warning, the rest of the computer stays usable.
@@ -46,14 +46,14 @@ docker compose up -d --build
 docker compose exec kidctl python -m app.cli create-parent
 
 # Child's computer (after setting up the repository)
-sudo pacman -S kidctl
+sudo pacman -S kidctl kidctl-plasma   # or kidctl-gnome (both if both desktops are installed)
 sudo kidctl enroll https://kids.example.org <PAIRING-CODE>
 sudo systemctl enable --now kidctl-agent.service
 ```
 
 ## Limitations
 
-KDE Plasma on Wayland only; no protection against physical access without hardening; no idle
+KDE Plasma and GNOME on Wayland only (no X11, no other desktops); no GDM auto-login for children; no protection against physical access without hardening; no idle
 detection; no `flatpak --user`; Steam can only be controlled as a whole; VPNs are not detected. The
 full list is in [`spec.md`](spec.md) (German).
 

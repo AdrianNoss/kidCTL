@@ -59,7 +59,8 @@ def test_tray_flow(qapp, tmp_path, monkeypatch):
     agent = FakeAgent(str(tmp_path / "tray.sock"))
     tray = app_mod.TrayApp(qapp, str(tmp_path / "tray.sock"))
     assert spin(lambda: agent.lines)               # hello
-    assert agent.lines[0] == {"type": "hello", "version": t.TRAY_PROTOCOL_VERSION}
+    # offscreen: kein Tray-Symbol möglich -> wird gemeldet (Integritätsprüfung)
+    assert agent.lines[0] == {"type": "hello", "version": t.TRAY_PROTOCOL_VERSION, "tray_icon": False}
 
     agent.push(t.TrayState(restricted=True, child_name="Max", allowed=True, remaining_seconds=12 * 60,
                            used_seconds=48 * 60, allowed_minutes=60, window_start=time(8),
@@ -197,3 +198,29 @@ def test_game_request_dialog(qapp):
     assert r.target == "screen" and r.window_end is not None
     m = msg(9, from_child=True, kind="extension_request", request_target="games", requested_minutes=20)
     assert texts.request_summary(m) == "+20 min Spielzeit"
+
+
+def test_icon_change_and_single_instance(qapp, tmp_path, monkeypatch):
+    agent = FakeAgent(str(tmp_path / "tray.sock"))
+    tray = app_mod.TrayApp(qapp, str(tmp_path / "tray.sock"))
+    assert spin(lambda: agent.lines)
+    tray.client.set_tray_icon(False)                 # unverändert: nichts senden
+    tray.client.set_tray_icon(True)                  # AppIndicator eingeschaltet -> erneut hello
+    assert spin(lambda: len(agent.lines) == 2)
+    assert agent.lines[1] == {"type": "hello", "version": t.TRAY_PROTOCOL_VERSION, "tray_icon": True}
+
+    # zweiter Start mit --show: laufende Instanz zeigt ihr Fenster, keine zweite Tray-App
+    path = str(tmp_path / "instance.sock")
+    assert not app_mod.ask_running_instance(path)    # noch keine Instanz
+    server = app_mod.serve_instance(path, tray)
+    assert not tray.window.isVisible()
+    assert app_mod.ask_running_instance(path)
+    assert spin(lambda: tray.window.isVisible())
+    tray.window.hide()
+    server.close()
+
+    # Hinweis ohne Tray-Symbol als Dialog
+    shown = []
+    monkeypatch.setattr(app_mod.QMessageBox, "information", lambda *a: shown.append(a[-1]))
+    tray.info("Test")
+    assert shown == ["Test"]

@@ -38,6 +38,10 @@ RECENT_MAX = 100            # je User
 NOT_REQUESTABLE = {"DNS-over-HTTPS-Anbieter"}  # Domain-Sperren, die eine Freigabe nicht aufhebt
 # Leere Argumentliste: meist mitten im exec() gelesen -> kurz warten und erneut lesen
 EMPTY_ARGV_RETRIES = 5
+# Dienste, die der systemd-Benutzerdienst so kurz nach einer Anmeldung startet, kommen vom System (z. B. GNOME
+# Software als Hintergrunddienst) – gesperrt und protokolliert, aber ohne Benachrichtigung
+LOGIN_QUIET_SECONDS = 90
+CLK_TCK = os.sysconf("SC_CLK_TCK")
 EMPTY_ARGV_DELAY = 0.05  # Sekunden
 
 
@@ -170,9 +174,12 @@ class ProgramWatcher:
                 self.kill(pid, signal.SIGKILL)
             except ProcessLookupError:
                 pass
-            if verdict.grantable:
-                self.remember(user, "program", verdict.key, name)
-            await self._notify(user, info.uid, verdict.key, name, verdict.grantable)
+            if login_service(info, ancestors(), self._session_starts(info.uid)):
+                log.info("Dienst beim Login gesperrt (ohne Benachrichtigung): %s von %s", name, user)
+            else:
+                if verdict.grantable:
+                    self.remember(user, "program", verdict.key, name)
+                await self._notify(user, info.uid, verdict.key, name, verdict.grantable)
         new = self._record(user, verdict, name, audit=mode != "enforce")
         # Log gedrosselt wie das Protokoll (z. B. Firefox startet viele Prozesse)
         log.log(logging.WARNING if new else logging.DEBUG, "%s: %s (%s%s) von %s, PID %s; Eltern: %s; Aufruf: %s",
@@ -180,6 +187,13 @@ class ProgramWatcher:
                 f", {verdict.detail}" if verdict.detail else "", user, pid, _describe(info, ancestors()),
                 " ".join(info.argv)[:300])
         return info.ident
+
+    def _session_starts(self, uid: int) -> list[int] | None:
+        # nur echte Anmeldungen – der systemd-Benutzerdienst ist selbst eine Sitzung (Klasse manager)
+        leaders = [s.leader for s in getattr(self.agent, "_sessions", [])
+                   if s.uid == uid and s.leader and s.is_user_session]
+        # Leiter beendet = Sitzung im Abbau (Liste wird nur alle paar Sekunden gelesen) – wie unbekannt
+        return [info.start for pid in leaders if (info := read_proc(pid)) is not None] or None
 
     async def _notify(self, user: str, uid: int, key: str, name: str, grantable: bool = True) -> None:
         now = self.clock()
@@ -338,6 +352,18 @@ def _describe(info, chain: tuple) -> str:
     return " ← ".join(parts) or "–"
 
 
+def login_service(info, ancestors, session_starts: list[int] | None) -> bool:
+    """Vom systemd-Benutzerdienst des Users kurz nach einer Anmeldung gestartet (Dienst der Anmeldung).
+    ``session_starts``: Startzeiten (Ticks) der Sitzungsleiter des Users; ``None`` = noch keine Sitzung bekannt
+    (die Sitzungsliste wird nur alle paar Sekunden gelesen – dann gerade erst angemeldet)."""
+    parent = next(iter(ancestors), None)
+    if parent is None or parent.uid != info.uid or os.path.basename(parent.exe) != "systemd":
+        return False
+    if session_starts is None:
+        return True
+    return any(0 <= info.start - start < LOGIN_QUIET_SECONDS * CLK_TCK for start in session_starts)
+
+
 def _compute_base(packages: list[str], app_exes: set[str], excludes: list[str],
                   groups: list[str] = ()) -> frozenset[str]:
     env = {"LC_ALL": "C", "PATH": "/usr/bin"}
@@ -352,7 +378,8 @@ def _compute_base(packages: list[str], app_exes: set[str], excludes: list[str],
     files = [f for f in ql.stdout.split() if os.path.isfile(f) and os.access(f, os.X_OK)]
     services = service_exes()
     log.info("Basisliste: %d Programme aus Sitzungsdiensten (Autostart, D-Bus, systemd --user)", len(services))
-    return base_paths(files + sorted(services), app_exes, excludes)
+    # Dienst-Programme liegen teils unter /usr/share (gjs-Skripte von GNOME Shell und GNOME-Apps)
+    return base_paths(files, app_exes, excludes) | base_paths(sorted(services), app_exes, excludes, dirs=("/usr/",))
 
 
 def _compute_pkg_dirs(app_exes: set[str]) -> dict[str, tuple[str, ...]]:

@@ -2,7 +2,7 @@
 
 [English](README.md) · **Deutsch**
 
-Selbst gehostete Kindersicherung für **Arch Linux mit KDE Plasma (Wayland)**. Ein zentraler Server
+Selbst gehostete Kindersicherung für **Arch Linux mit KDE Plasma oder GNOME (Wayland)**. Ein zentraler Server
 mit Eltern-WebUI (auch als App aufs Handy) steuert einen Root-Agenten auf jedem Kinderrechner. Alle
 Daten bleiben auf dem eigenen Server, es gibt keine Cloud und kein Konto bei Dritten.
 
@@ -10,7 +10,7 @@ Daten bleiben auf dem eigenen Server, es gibt keine Cloud und kein Konto bei Dri
 
 - **Bildschirmzeit**:
   - Tageskontingent und Zeitfenster je Wochentag, Zählung über alle Rechner eines Kindes.
-  - Warnungen vor Ablauf, danach Abmeldung und Login-Sperre (SDDM und TTY).
+  - Warnungen vor Ablauf, danach Abmeldung und Login-Sperre (SDDM, GDM und TTY).
   - Funktioniert auch offline mit der zuletzt bekannten Regel.
 - **Verlängerungen und Chat**: Das Kind fragt in der Tray-App nach mehr Zeit oder schreibt eine
   Nachricht, die Eltern antworten per Push auf dem Handy.
@@ -35,7 +35,7 @@ Daten bleiben auf dem eigenen Server, es gibt keine Cloud und kein Konto bei Dri
 ## Architektur
 
 ```
- Eltern (Browser / PWA)                     Kinderrechner (Arch + Plasma)
+ Eltern (Browser / PWA)              Kinderrechner (Arch + Plasma/GNOME)
           │ HTTPS                          ┌──────────────────────────────┐
           ▼                                │ kidctl-agent (root, systemd) │
  ┌──────────────────────┐   WebSocket      │  Zeit · PAM · Prozesse ·     │
@@ -72,7 +72,7 @@ docker compose up -d --build
 docker compose exec kidctl python -m app.cli create-parent
 
 # Kinderrechner (nach Einrichtung des Repos)
-sudo pacman -S kidctl
+sudo pacman -S kidctl kidctl-plasma   # bzw. kidctl-gnome (bei beiden Desktops beide)
 sudo kidctl enroll https://kids.example.org <KOPPLUNGSCODE>
 sudo systemctl enable --now kidctl-agent.service
 ```
@@ -81,7 +81,8 @@ Danach die Rechner gegen physischen Zugriff härten: **[docs/haertung.md](docs/h
 
 ## Grenzen
 
-- Nur KDE Plasma auf Wayland. Andere Desktops und X11 werden nicht unterstützt.
+- Nur KDE Plasma und GNOME auf Wayland. Andere Desktops und X11 werden nicht unterstützt.
+- Unter GNOME keine automatische Anmeldung (GDM) für Kinder – bei Login-Sperre bliebe der Bildschirm schwarz.
 - Kein Schutz gegen physischen Zugriff ohne Härtung, also gegen Live-USB oder Bootmenü.
 - Keine Leerlauferkennung. Kein `flatpak --user`. Steam ist nur als Ganzes steuerbar.
 - VPNs werden nicht aktiv erkannt.
@@ -97,7 +98,7 @@ Die vollständige Liste steht in [`spec.md`](spec.md) unter „Bewusst nicht umg
 | `tray/` | Tray-App (`kidctl_tray`) |
 | `common/` | Gemeinsames, versioniertes Protokoll (`kidctl_common`) |
 | `packaging/arch/` | PKGBUILD, systemd-Units, Install-Skript |
-| `packaging/pam`, `dns`, `mounts`, `sddm` | Login-Sperre, DNS-Filter und Browser-Policies, noexec, Anmeldebildschirm |
+| `packaging/pam`, `dns`, `mounts`, `sddm`, `gnome` | Login-Sperre, DNS-Filter und Browser-Policies, noexec, Anmeldebildschirm, GNOME-Anpassungen |
 | `packaging/repo/` | Skripte für das signierte Pacman-Repository |
 | `dev/` | Entwicklungsserver, WebUI-Testskript, Test-VM (QEMU/KVM) |
 | `docs/` | Installations- und Härtungsanleitung |

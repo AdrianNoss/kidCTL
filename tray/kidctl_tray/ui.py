@@ -205,6 +205,7 @@ class BlockedWindow(QWidget):
 class ChatWindow(QWidget):
     sendText = Signal(str)
     requestExtension = Signal()
+    showBlocked = Signal()
 
     def __init__(self) -> None:
         super().__init__()
@@ -220,6 +221,8 @@ class ChatWindow(QWidget):
         send.clicked.connect(self._send)
         req = QPushButton(_("Verlängerung anfordern …"))
         req.clicked.connect(self.requestExtension.emit)
+        blocked = QPushButton(_("Gesperrt – Freigabe anfragen …"))
+        blocked.clicked.connect(self.showBlocked.emit)
         row = QHBoxLayout()
         row.addWidget(self.input)
         row.addWidget(send)
@@ -227,7 +230,10 @@ class ChatWindow(QWidget):
         lay.addWidget(self.status)
         lay.addWidget(self.view, 1)
         lay.addLayout(row)
-        lay.addWidget(req)
+        buttons = QHBoxLayout()
+        buttons.addWidget(req)
+        buttons.addWidget(blocked)
+        lay.addLayout(buttons)
         self.messages: dict[int, ChatMessage] = {}
 
     def changeEvent(self, event) -> None:  # Farbschema gewechselt -> Blasen neu einfärben

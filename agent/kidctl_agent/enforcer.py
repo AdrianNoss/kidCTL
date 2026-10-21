@@ -1,7 +1,7 @@
 """Durchsetzung: Vorwarnungen, 60-s-Countdown, Beenden der Sitzungen.
 
-Grafische Sitzungen werden über Plasma abgemeldet (sonst bleibt SDDM ohne Anmeldebildschirm
-zurück); erst wenn das nicht wirkt, hart per ``TerminateSession``.
+Grafische Sitzungen werden über den Desktop (Plasma bzw. GNOME) abgemeldet (sonst bleibt SDDM ohne
+Anmeldebildschirm zurück); erst wenn das nicht wirkt, hart per ``TerminateSession``.
 """
 
 from __future__ import annotations
@@ -20,8 +20,8 @@ log = logging.getLogger("kidctl.enforcer")
 
 WARN_MINUTES = (15, 5, 1)
 GRACE_SECONDS = 60
-LOGOUT_TIMEOUT = 20   # so lange auf die Plasma-Abmeldung warten, dann hart beenden
-RECOVER_DELAY = 10    # danach prüfen, ob SDDM wieder einen Anmeldebildschirm zeigt
+LOGOUT_TIMEOUT = 20   # so lange auf die Abmeldung über den Desktop warten, dann hart beenden
+RECOVER_DELAY = 10    # danach prüfen, ob der Display-Manager wieder einen Anmeldebildschirm zeigt
 
 
 class Enforcer:
@@ -92,7 +92,7 @@ class Enforcer:
                     await self._end(user, uid, user_sessions, d.reason, now)
                 elif user in self.hard and now >= self.hard[user]:
                     del self.hard[user]
-                    log.warning("Plasma-Abmeldung von %s wirkt nicht – beende hart", user)
+                    log.warning("Abmeldung von %s über den Desktop wirkt nicht – beende hart", user)
                     await self._terminate(user_sessions, d.reason)
                     if any(s.graphical for s in user_sessions):
                         self.recover_at = now + RECOVER_DELAY
@@ -103,8 +103,9 @@ class Enforcer:
         graphical = [s for s in sessions if s.graphical]
         await self._terminate([s for s in sessions if not s.graphical], reason)
         if graphical:
-            log.warning("Melde %s von Plasma ab (%s)", user, reason)
-            await self.desktop.logout(user, uid)
+            desktop = graphical[0].desktop
+            log.warning("Melde %s ab (%s, Desktop %s)", user, reason, desktop or "?")
+            await self.desktop.logout(user, uid, desktop)
             self.hard[user] = now + LOGOUT_TIMEOUT
 
     async def _terminate(self, sessions: list[SessionInfo], reason) -> None:
