@@ -21,7 +21,7 @@ def report(**states):
 def test_alarm_only_for_new_failures(client, parent, monkeypatch):
     alarms = []
     monkeypatch.setattr(integrity.push, "notify_parents",
-                        lambda title, body, url="/", tag=None: alarms.append((title, body, url)))
+                        lambda title, body, url="/", tag=None: alarms.append((title(), body(), url)))
     cid, tok = _setup(client, parent)
     with device(client, tok, "Laptop Max", map_to=cid) as (ws, dev_id):
         _policy(ws)

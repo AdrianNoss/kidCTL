@@ -18,6 +18,8 @@ import pyotp
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
+from . import i18n
+from .i18n import _
 from . import mail
 from .config import settings
 from .models import Parent, ParentSession, ParentToken, utcnow
@@ -35,26 +37,26 @@ EMAIL_RE = re.compile(r"^[^@\s<>\"',;]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24
 
 def password_error(pw: str, repeat: str | None = None) -> str | None:
     if len(pw) < 12:
-        return "Passwort muss mindestens 12 Zeichen haben."
+        return _("Passwort muss mindestens 12 Zeichen haben.")
     if len(pw.encode()) > 72:
-        return "Passwort darf höchstens 72 Bytes haben."
+        return _("Passwort darf höchstens 72 Bytes haben.")
     if repeat is not None and pw != repeat:
-        return "Die Passwörter stimmen nicht überein."
+        return _("Die Passwörter stimmen nicht überein.")
     return None
 
 
 def username_error(db: Session, username: str, parent_id: int | None = None) -> str | None:
     if not USERNAME_RE.match(username):
-        return "Benutzername: 1–64 Zeichen, nur Buchstaben, Ziffern und . _ @ -"
+        return _("Benutzername: 1–64 Zeichen, nur Buchstaben, Ziffern und . _ @ -")
     other = db.scalar(select(Parent).where(func.lower(Parent.username) == username.lower()))
     if other is not None and other.id != parent_id:
-        return "Benutzername existiert bereits."
+        return _("Benutzername existiert bereits.")
     return None
 
 
 def email_error(email: str) -> str | None:
     if email and not EMAIL_RE.match(email):
-        return "Ungültige E-Mail-Adresse."
+        return _("Ungültige E-Mail-Adresse.")
     return None
 
 
@@ -135,21 +137,26 @@ def start_password_reset(db: Session, ident: str) -> bool:
     raw = create_token(db, parent, "password_reset", timedelta(minutes=RESET_MINUTES))
     db.commit()
     link = f"{settings.base_url}/reset/{raw}"
-    return mail.send(parent.email, "KidCTL: Passwort zurücksetzen",
-                     f"Hallo {parent.display_name or parent.username},\n\n"
-                     f"für deinen KidCTL-Account „{parent.username}“ wurde ein neues Passwort angefordert.\n"
-                     f"Über diesen Link kannst du es {RESET_MINUTES} Minuten lang einmal neu setzen:\n\n{link}\n\n"
-                     "Zum Anmelden brauchst du danach weiterhin deine Authenticator-App.\n"
-                     "Falls du das nicht warst, kannst du diese Mail ignorieren.\n")
+    with i18n.use(i18n.parent_language(parent)):   # Sprache des Accounts, nicht des anfragenden Browsers
+        return mail.send(parent.email, _("KidCTL: Passwort zurücksetzen"),
+                         _("Hallo {name},").format(name=parent.display_name or parent.username) + "\n\n"
+                         + _("für deinen KidCTL-Account „{username}“ wurde ein neues Passwort angefordert.").format(
+                             username=parent.username) + "\n"
+                         + _("Über diesen Link kannst du es {minutes} Minuten lang einmal neu setzen:").format(
+                             minutes=RESET_MINUTES) + f"\n\n{link}\n\n"
+                         + _("Zum Anmelden brauchst du danach weiterhin deine Authenticator-App.") + "\n"
+                         + _("Falls du das nicht warst, kannst du diese Mail ignorieren.") + "\n")
 
 
-def notify(parent: Parent, subject: str, text: str) -> None:
-    """Sicherheitshinweis an die hinterlegte Adresse (falls vorhanden)."""
+def notify(parent: Parent, subject: str, text: str, **fmt) -> None:
+    """Sicherheitshinweis an die hinterlegte Adresse (falls vorhanden). ``subject``/``text`` sind mit ``N_``
+    markierte Texte und werden in der Sprache des Elternteils gesendet."""
     if parent.email:
-        mail.send(parent.email, f"KidCTL: {subject}",
-                  f"Hallo {parent.display_name or parent.username},\n\n{text}\n\n"
-                  "Falls du das nicht warst, melde dich sofort an, ändere dein Passwort und prüfe die "
-                  "Eltern-Accounts.\n")
+        with i18n.use(i18n.parent_language(parent)):
+            mail.send(parent.email, f"KidCTL: {_(subject)}",
+                      _("Hallo {name},").format(name=parent.display_name or parent.username) + f"\n\n{_(text).format(**fmt)}\n\n"
+                      + _("Falls du das nicht warst, melde dich sofort an, ändere dein Passwort und prüfe die "
+                          "Eltern-Accounts.") + "\n")
 
 
 def new_secret() -> str:

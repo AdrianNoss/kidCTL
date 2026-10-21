@@ -22,7 +22,7 @@
     const boxes = [...group.querySelectorAll('input[type="checkbox"]')];
     const n = boxes.filter((b) => b.checked).length;
     const pill = group.querySelector(".app-count");
-    pill.textContent = `${n} von ${boxes.length} erlaubt`;
+    pill.textContent = root.dataset.countText.replace("{n}", n).replace("{total}", boxes.length);
     pill.classList.toggle("ok", n > 0);
   }
 

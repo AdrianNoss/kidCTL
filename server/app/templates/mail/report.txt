@@ -1,35 +1,35 @@
 {% autoescape false %}KidCTL – {{ period.title }} {{ period.label }}
 
-Hallo {{ parent.display_name or parent.username }},
-hier ist die Übersicht über die Nutzung {{ "der Woche" if period.interval == "weekly" else "des Monats" }}.
+{{ _("Hallo {name},").format(name=parent.display_name or parent.username) }}
+{{ _("hier ist die Übersicht über die Nutzung der Woche.") if period.interval == "weekly" else _("hier ist die Übersicht über die Nutzung des Monats.") }}
 {% for r in reports %}
 
 == {{ r.child.name }} ==
-Bildschirmzeit: {{ fmt(r.total) }}{% if r.change is not none %} ({{ "+" if r.change > 0 else "" }}{{ r.change }} % ggü. {{ period.compare_label }}){% endif %}
-Ø pro Tag: {{ fmt(r.avg) }} (an {{ r.active_days }} von {{ r.days | length }} Tagen genutzt)
-Über dem Limit: {{ r.over_days | length }} {{ "Tag" if r.over_days | length == 1 else "Tage" }}{% for d in r.over_days %}{{ ": " if loop.first else ", " }}{{ weekday(d.day) }} {{ d.day.strftime('%d.%m.') }} (+{{ d.used - d.allowed }} min){% endfor %}
+{{ _("Bildschirmzeit") }}: {{ fmt(r.total) }}{% if r.change is not none %} ({{ _("{change} ggü. {period}").format(change=fmt_percent(r.change, signed=True), period=period.compare_label) }}){% endif %}
+{{ _("Ø pro Tag") }}: {{ fmt(r.avg) }} ({{ _("an {n} von {total} Tagen genutzt").format(n=r.active_days, total=r.days | length) }})
+{{ _("Über dem Limit") }}: {{ ngettext("{n} Tag", "{n} Tage", r.over_days | length).format(n=r.over_days | length) }}{% for d in r.over_days %}{{ ": " if loop.first else ", " }}{{ fmt_date(d.day, with_weekday=True, year=False) }} (+{{ d.used - d.allowed }} min){% endfor %}
 
-Je Tag:
-{% for d in r.days %}  {{ weekday(d.day) }} {{ d.day.strftime('%d.%m.') }}  {{ fmt(d.used) }} von {{ fmt(d.allowed) }}{{ "  über Limit" if d.over else "" }}
+{{ _("Je Tag:") }}
+{% for d in r.days %}  {{ fmt_date(d.day, with_weekday=True, year=False) }}  {{ _("{used} von {allowed}").format(used=fmt(d.used), allowed=fmt(d.allowed)) }}{{ "  " ~ _("über Limit") if d.over else "" }}
 {% endfor %}
 {%- if r.apps %}
-Meistgenutzte Programme:
+{{ _("Meistgenutzte Programme") }}:
 {% for a in r.apps %}  {{ a.name }}: {{ fmt(a.minutes) }}
 {% endfor %}{% endif %}
 {%- if r.games %}
-Spiele{% if r.game_sessions %} ({{ r.game_sessions }} Sitzungen){% endif %}:
+{{ _("Spiele") }}{% if r.game_sessions %} ({{ ngettext("{n} Sitzung", "{n} Sitzungen", r.game_sessions).format(n=r.game_sessions) }}){% endif %}:
 {% for a in r.games %}  {{ a.name }} ({{ a.launcher }}): {{ fmt(a.minutes) }}
 {% endfor %}{% endif %}
-Gesperrte Aktionen: {{ r.blocked or "keine" }}
-{% for kind, name, count in r.blocked_top %}  {{ "Website" if kind == "domain" else "Programm" }}: {{ name }} ({{ count }}×)
+{{ _("Gesperrte Aktionen") }}: {{ r.blocked or _("keine") }}
+{% for kind, name, count in r.blocked_top %}  {{ _("Website") if kind == "domain" else _("Programm") }}: {{ name }} ({{ count }}×)
 {% endfor -%}
-Verlängerungsanfragen: {% if r.requests %}{{ r.requests }}, davon {{ r.approved }} genehmigt{% else %}keine{% endif %}
-Gutschriften: {% if r.credits %}+{{ fmt(r.credits) }}{% else %}keine{% endif %}
-Statistik: {{ base_url }}/children/{{ r.child.id }}/stats
+{{ _("Verlängerungsanfragen") }}: {% if r.requests %}{{ _("{n}, davon {approved} genehmigt").format(n=r.requests, approved=r.approved) }}{% else %}{{ _("keine") }}{% endif %}
+{{ _("Gutschriften") }}: {% if r.credits %}+{{ fmt(r.credits) }}{% else %}{{ _("keine") }}{% endif %}
+{{ _("Statistik") }}: {{ base_url }}/children/{{ r.child.id }}/stats
 {% else %}
-Noch keine Kinder angelegt.
+{{ _("Noch keine Kinder angelegt.") }}
 {% endfor %}
 
 --
-Bericht ändern oder abbestellen: {{ base_url }}/profile
+{{ _("Bericht ändern oder abbestellen") }}: {{ base_url }}/profile
 {% endautoescape %}

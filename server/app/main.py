@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import alarms, blocklog, policy, report, webfilter
+from . import alarms, blocklog, i18n, policy, report, webfilter
 from .config import settings
 from .db import SessionLocal, init_db
 from .routes import admin, api, auth, pwa
@@ -62,6 +62,14 @@ app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")
 _repo_dir = Path(settings.data_dir) / "repo"
 _repo_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/repo", StaticFiles(directory=str(_repo_dir)), name="repo")
+
+
+@app.middleware("http")
+async def _language(request: Request, call_next):
+    """Sprache der Anfrage für Texte in Code und Templates (ContextVar, gilt für den ganzen Ablauf)."""
+    if not request.url.path.startswith(("/static/", "/repo/", "/api/")):
+        i18n.set_current(await asyncio.to_thread(i18n.request_language, request))
+    return await call_next(request)
 
 
 @app.exception_handler(LoginRequired)

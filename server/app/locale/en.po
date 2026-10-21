@@ -1,0 +1,1514 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgid "Übersicht"
+msgstr "Overview"
+
+msgid "Kinder"
+msgstr "Children"
+
+msgid "Geräte"
+msgstr "Devices"
+
+msgid "Eltern"
+msgstr "Parents"
+
+msgid "Benachrichtigungen"
+msgstr "Notifications"
+
+msgid "Profil"
+msgstr "Profile"
+
+msgid "Abmelden"
+msgstr "Sign out"
+
+msgid "Anmelden"
+msgstr "Sign in"
+
+msgid "Benutzername"
+msgstr "Username"
+
+msgid "Passwort"
+msgstr "Password"
+
+msgid "Authenticator-Code"
+msgstr "Authenticator code"
+
+msgid "Passwort vergessen?"
+msgstr "Forgot password?"
+
+msgid "Account angelegt"
+msgstr "Account created"
+
+msgid "Account „{name}“ angelegt"
+msgstr "Account “{name}” created"
+
+msgid "TOTP jetzt in der Authenticator-App einrichten."
+msgstr "Set up TOTP in your authenticator app now."
+
+msgid "Dieser QR-Code wird nur einmal angezeigt."
+msgstr "This QR code is shown only once."
+
+msgid "Fertig"
+msgstr "Done"
+
+msgid "Gerät koppeln"
+msgstr "Pair device"
+
+msgid "Kopplungscode (einmalig, {minutes} Minuten gültig bis {time} Uhr):"
+msgstr "Pairing code (single use, valid for {minutes} minutes until {time}):"
+
+msgid "Auf dem Kinderrechner ausführen:"
+msgstr "Run on the child’s computer:"
+
+msgid "Zurück zu den Geräten"
+msgstr "Back to devices"
+
+msgid "Authenticator zurückgesetzt"
+msgstr "Authenticator reset"
+
+msgid "Authenticator von „{name}“ zurückgesetzt"
+msgstr "Authenticator of “{name}” reset"
+
+msgid "Der bisherige Authenticator gilt nicht mehr, alle Sitzungen dieses Accounts wurden beendet."
+msgstr "The previous authenticator no longer works, and all sessions of this account have been ended."
+
+msgid "Gib diesen Link an {name} weiter (persönlich oder per Messenger)."
+msgstr "Pass this link on to {name} (in person or via messenger)."
+
+msgid "Er ist {hours} Stunden gültig, nur einmal verwendbar und verlangt zusätzlich das Passwort."
+msgstr "It is valid for {hours} hours, can be used only once and also asks for the password."
+
+msgid "Dieser Link wird nur jetzt angezeigt. Bei Bedarf einfach erneut zurücksetzen."
+msgstr "This link is shown only now. If needed, simply reset again."
+
+msgid "Neues Passwort"
+msgstr "New password"
+
+msgid "Dieser Link ist ungültig oder abgelaufen."
+msgstr "This link is invalid or has expired."
+
+msgid "Neuen Link anfordern"
+msgstr "Request a new link"
+
+msgid "Neues Passwort (min. 12 Zeichen)"
+msgstr "New password (min. 12 characters)"
+
+msgid "Wiederholen"
+msgstr "Repeat"
+
+msgid "Passwort speichern"
+msgstr "Save password"
+
+msgid "Automatisch (Browser)"
+msgstr "Automatic (browser)"
+
+msgid "Passwort vergessen"
+msgstr "Forgot password"
+
+msgid "Falls ein Account mit hinterlegter E-Mail-Adresse existiert, ist ein Link unterwegs. Er ist 30 Minuten gültig."
+msgstr "If an account with a stored email address exists, a link is on its way. It is valid for 30 minutes."
+
+msgid "Zur Anmeldung"
+msgstr "Go to sign in"
+
+msgid "Auf diesem Server ist kein E-Mail-Versand eingerichtet."
+msgstr "Email sending is not set up on this server."
+
+msgid "Ein anderes Elternteil kann dir unter „Eltern“ helfen, oder der Server-Admin setzt das Passwort per Kommandozeile zurück"
+msgstr "Another parent can help you under “Parents”, or the server admin can reset the password on the command line"
+
+msgid "Benutzername oder E-Mail"
+msgstr "Username or email"
+
+msgid "Du bekommst einen Link, mit dem du ein neues Passwort setzt. Zum Anmelden brauchst du danach weiterhin deine Authenticator-App."
+msgstr "You will receive a link to set a new password. You will still need your authenticator app to sign in afterwards."
+
+msgid "Link senden"
+msgstr "Send link"
+
+msgid "Abbrechen"
+msgstr "Cancel"
+
+msgid "Authenticator einrichten"
+msgstr "Set up authenticator"
+
+msgid "Dieser Link ist ungültig, abgelaufen oder wurde schon verwendet."
+msgstr "This link is invalid, has expired or has already been used."
+
+msgid "Ein anderes Elternteil kann unter „Eltern“ einen neuen Link erzeugen."
+msgstr "Another parent can create a new link under “Parents”."
+
+msgid "Account {name}: QR-Code mit der Authenticator-App scannen, dann Passwort und den angezeigten Code eingeben."
+msgstr "Account {name}: scan the QR code with your authenticator app, then enter your password and the code shown."
+
+msgid "Ohne Kamera: Schlüssel"
+msgstr "Without a camera: key"
+
+msgid "Code aus der App"
+msgstr "Code from the app"
+
+msgid "Einrichten"
+msgstr "Set up"
+
+msgid "Neuer Authenticator"
+msgstr "New authenticator"
+
+msgid "QR-Code mit der neuen Authenticator-App scannen, dann Passwort und den Code der neuen App eingeben."
+msgstr "Scan the QR code with the new authenticator app, then enter your password and the code from the new app."
+
+msgid "Diese Seite gilt {minutes} Minuten."
+msgstr "This page is valid for {minutes} minutes."
+
+msgid "Aktuelles Passwort"
+msgstr "Current password"
+
+msgid "Code aus der neuen App"
+msgstr "Code from the new app"
+
+msgid "Bestätigen"
+msgstr "Confirm"
+
+msgid "Chat"
+msgstr "Chat"
+
+msgid "Einstellungen"
+msgstr "Settings"
+
+msgid "Statistik"
+msgstr "Statistics"
+
+msgid "Protokoll"
+msgstr "Activity log"
+
+msgid "{name} ist noch keinem Linux-Benutzer zugeordnet – Nachrichten werden erst nach der Zuordnung zugestellt."
+msgstr "{name} is not assigned to a Linux user yet – messages will be delivered once assigned."
+
+msgid "Nachricht an {name}"
+msgstr "Message to {name}"
+
+msgid "Senden"
+msgstr "Send"
+
+msgid "Gerät"
+msgstr "Device"
+
+msgid "Host"
+msgstr "Host"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Zuletzt gesehen"
+msgstr "Last seen"
+
+msgid "widerrufen"
+msgstr "revoked"
+
+msgid "Integritätsfehler"
+msgstr "Integrity error"
+
+msgid "Agent veraltet"
+msgstr "Agent outdated"
+
+msgid "Noch keine Geräte gekoppelt."
+msgstr "No devices paired yet."
+
+msgid "Gerät hinzufügen"
+msgstr "Add device"
+
+msgid "Gerätename, z. B. Laptop Max"
+msgstr "Device name, e.g. Max's laptop"
+
+msgid "Gerätename"
+msgstr "Device name"
+
+msgid "Kopplungscode erzeugen"
+msgstr "Create pairing code"
+
+msgid "Web Push ist auf dem Server nicht konfiguriert."
+msgstr "Web Push is not configured on the server."
+
+msgid "VAPID-Schlüssel erzeugen und in .env eintragen, dann Container neu starten:"
+msgstr "Generate VAPID keys, add them to .env and restart the container:"
+
+msgid "Dieser Browser unterstützt keine Push-Benachrichtigungen. Auf dem iPhone: Seite erst zum Home-Bildschirm hinzufügen und von dort öffnen."
+msgstr "This browser does not support push notifications. On iPhone: add the page to the home screen first and open it from there."
+
+msgid "Benachrichtigungen sind im Browser blockiert – bitte in den Website-Einstellungen erlauben."
+msgstr "Notifications are blocked in the browser – please allow them in the site settings."
+
+msgid "Auf diesem Gerät aktiv."
+msgstr "Active on this device."
+
+msgid "Auf diesem Gerät nicht aktiv."
+msgstr "Not active on this device."
+
+msgid "Aktivieren fehlgeschlagen:"
+msgstr "Enabling failed:"
+
+msgid "Deaktivieren fehlgeschlagen:"
+msgstr "Disabling failed:"
+
+msgid "Push-Benachrichtigungen bei neuen Nachrichten und Anfragen – pro Gerät/Browser einzeln aktivieren."
+msgstr "Push notifications for new messages and requests – enable separately on each device/browser."
+
+msgid "Prüfe …"
+msgstr "Checking …"
+
+msgid "Auf diesem Gerät aktivieren"
+msgstr "Enable on this device"
+
+msgid "Auf diesem Gerät deaktivieren"
+msgstr "Disable on this device"
+
+msgid "iPhone/iPad: Seite zuerst über „Teilen → Zum Home-Bildschirm“ als App installieren und von dort öffnen."
+msgstr "iPhone/iPad: first install the page as an app via “Share → Add to Home Screen” and open it from there."
+
+msgid "Test"
+msgstr "Test"
+
+msgid "Aktive Geräte für deinen Account:"
+msgstr "Active devices for your account:"
+
+msgid "Test-Benachrichtigung senden"
+msgstr "Send test notification"
+
+msgid "{n} zugestellt"
+msgstr "{n} delivered"
+
+msgid "offene Anfragen"
+msgstr "open requests"
+
+msgid "Kind mit allen Regeln löschen?"
+msgstr "Delete child with all rules?"
+
+msgid "Löschen"
+msgstr "Delete"
+
+msgid "Noch keine Kinder angelegt."
+msgstr "No children added yet."
+
+msgid "Kind anlegen"
+msgstr "Add child"
+
+msgid "Name"
+msgstr "Name"
+
+msgid "Anlegen"
+msgstr "Add"
+
+msgid "Kind"
+msgstr "Child"
+
+msgid "Heute genutzt"
+msgstr "Used today"
+
+msgid "Rest"
+msgstr "Left"
+
+msgid "Fenster"
+msgstr "Hours"
+
+msgid "Spielt gerade"
+msgstr "Playing now"
+
+msgid "gesperrt bis {time}"
+msgstr "locked until {time}"
+
+msgid "gesperrt"
+msgstr "locked"
+
+msgid "von {total}"
+msgstr "of {total}"
+
+msgid "überzogen um {n} min"
+msgstr "over by {n} min"
+
+msgid "Freigeben"
+msgstr "Unlock"
+
+msgid "Sperrt alle Rechner von {name} bis zur Freigabe (Abmeldung nach 1 Minute Vorwarnung)"
+msgstr "Locks all of {name}'s computers until unlocked (sign-out after a 1-minute warning)"
+
+msgid "Jetzt sperren"
+msgstr "Lock now"
+
+msgid "Summe über alle Geräte, Stand der letzten Meldungen. Überziehung durch gleichzeitige Offline-Nutzung wird nur angezeigt, nicht verrechnet."
+msgstr "Total across all devices as of the latest reports. Overruns from simultaneous offline use are only shown, not deducted."
+
+msgid "Eltern-Accounts"
+msgstr "Parent accounts"
+
+msgid "keine E-Mail hinterlegt"
+msgstr "no email stored"
+
+msgid "Authenticator von {name} zurücksetzen? Der bisherige wird sofort ungültig, du bekommst einen Einrichtungslink zum Weitergeben."
+msgstr "Reset {name}'s authenticator? The current one stops working immediately, and you get a setup link to pass on."
+
+msgid "Authenticator zurücksetzen"
+msgstr "Reset authenticator"
+
+msgid "Account löschen?"
+msgstr "Delete account?"
+
+msgid "angemeldet"
+msgstr "signed in"
+
+msgid "Account hinzufügen"
+msgstr "Add account"
+
+msgid "Anzeigename"
+msgstr "Display name"
+
+msgid "E-Mail (optional, für „Passwort vergessen“)"
+msgstr "Email (optional, for “Forgot password”)"
+
+msgid "Passwort (min. 12 Zeichen)"
+msgstr "Password (min. 12 characters)"
+
+msgid "Angaben"
+msgstr "Details"
+
+msgid "Benutzername (Anmeldung)"
+msgstr "Username (sign-in)"
+
+msgid "E-Mail"
+msgstr "Email"
+
+msgid "für „Passwort vergessen“"
+msgstr "for “Forgot password”"
+
+msgid "Sprache"
+msgstr "Language"
+
+msgid "(bei neuem Benutzernamen oder neuer E-Mail)"
+msgstr "(when changing username or email)"
+
+msgid "Die Sprache gilt für das WebUI, E-Mails und Push-Benachrichtigungen. „Automatisch“ folgt der Sprache des Browsers."
+msgstr "The language applies to the web interface, emails and push notifications. “Automatic” follows the browser language."
+
+msgid "Auf diesem Server ist kein E-Mail-Versand eingerichtet (SMTP in .env) – „Passwort vergessen“ ist dann nicht verfügbar."
+msgstr "Email sending is not set up on this server (SMTP in .env) – “Forgot password” is not available."
+
+msgid "Speichern"
+msgstr "Save"
+
+msgid "Nutzungsbericht per E-Mail"
+msgstr "Usage report by email"
+
+msgid "Eine Zusammenfassung je Kind: Bildschirmzeit je Tag, Tage über dem Limit, meistgenutzte Programme und Spiele, gesperrte Aktionen und Verlängerungsanfragen."
+msgstr "A summary per child: screen time per day, days over the limit, most used apps and games, blocked actions and requests for more time."
+
+msgid "Versand ab {hour} Uhr für die abgelaufene Woche bzw. den abgelaufenen Monat."
+msgstr "Sent from {hour}:00 for the past week or month."
+
+msgid "Dafür oben zuerst eine E-Mail-Adresse eintragen."
+msgstr "Enter an email address above first."
+
+msgid "Auf diesem Server ist kein E-Mail-Versand eingerichtet (SMTP in .env)."
+msgstr "Email sending is not set up on this server (SMTP in .env)."
+
+msgid "Bericht"
+msgstr "Report"
+
+msgid "Vorschau"
+msgstr "Preview"
+
+msgid "Jetzt an {email} senden"
+msgstr "Send to {email} now"
+
+msgid "Vorschau und „Jetzt senden“ zeigen die letzte Woche."
+msgstr "Preview and “Send now” show the last week."
+
+msgid "Vorschau und „Jetzt senden“ zeigen den letzten Monat."
+msgstr "Preview and “Send now” show the last month."
+
+msgid "Passwort ändern"
+msgstr "Change password"
+
+msgid "Neues Passwort wiederholen"
+msgstr "Repeat new password"
+
+msgid "Andere angemeldete Geräte werden danach abgemeldet."
+msgstr "Other signed-in devices will be signed out."
+
+msgid "Authenticator"
+msgstr "Authenticator"
+
+msgid "Für ein neues Handy oder eine andere App: neuen QR-Code erzeugen und mit einem Code bestätigen. Bis zur Bestätigung gilt der bisherige Authenticator."
+msgstr "For a new phone or another app: create a new QR code and confirm it with a code. The previous authenticator stays valid until then."
+
+msgid "Authenticator verloren und nicht mehr angemeldet? Ein anderes Elternteil kann ihn unter „Eltern“ zurücksetzen."
+msgstr "Lost your authenticator and signed out? Another parent can reset it under “Parents”."
+
+msgid "Neuen Authenticator einrichten"
+msgstr "Set up a new authenticator"
+
+msgid "Alle Geräte"
+msgstr "All devices"
+
+msgid "Hostname"
+msgstr "Hostname"
+
+msgid "Token widerrufen am {when}"
+msgstr "Token revoked on {when}"
+
+msgid "Agent"
+msgstr "Agent"
+
+msgid "veraltet – Server unterstützt {versions}. Agent per pacman -Syu aktualisieren; Durchsetzung läuft mit letzter Policy weiter."
+msgstr "outdated – server supports {versions}. Update the agent with pacman -Syu; enforcement continues with the last policy."
+
+msgid "Policy"
+msgstr "Policy"
+
+msgid "aktuell"
+msgstr "up to date"
+
+msgid "veraltet"
+msgstr "outdated"
+
+msgid "wird beim nächsten Verbinden übertragen"
+msgstr "will be sent on next connection"
+
+msgid "noch nicht übertragen"
+msgstr "not sent yet"
+
+msgid "Gekoppelt am"
+msgstr "Paired on"
+
+msgid "Integrität"
+msgstr "Integrity"
+
+msgid "Fehler"
+msgstr "Error"
+
+msgid "alle Schutzmaßnahmen intakt"
+msgstr "all protections intact"
+
+msgid "Stand {when}"
+msgstr "As of {when}"
+
+msgid "Benutzer-Zuordnung"
+msgstr "User assignment"
+
+msgid "Nicht zugeordnete Linux-Benutzer werden nie eingeschränkt."
+msgstr "Unassigned Linux users are never restricted."
+
+msgid "Linux-Benutzer"
+msgstr "Linux user"
+
+msgid "nicht mehr vorhanden"
+msgstr "no longer present"
+
+msgid "nicht eingeschränkt"
+msgstr "not restricted"
+
+msgid "Zuordnung speichern"
+msgstr "Save assignment"
+
+msgid "Der Agent hat noch keine Benutzer gemeldet."
+msgstr "The agent has not reported any users yet."
+
+msgid "Alarm, wenn länger als"
+msgstr "Alert if no report for more than"
+
+msgid "Stunden ohne Meldung"
+msgstr "hours"
+
+msgid "Geräte-Token widerrufen? Das Gerät muss danach neu gekoppelt werden."
+msgstr "Revoke device token? The device will have to be paired again."
+
+msgid "Token widerrufen"
+msgstr "Revoke token"
+
+msgid " und "
+msgstr " and "
+
+msgid "(keine)"
+msgstr "(none)"
+
+msgid "(optional)"
+msgstr "(optional)"
+
+msgid "+{n} min"
+msgstr "+{n} min"
+
+msgid "+{n} min Spielzeit"
+msgstr "+{n} min game time"
+
+msgid "+{time} Gutschrift"
+msgstr "+{time} bonus time"
+
+msgid "1 Stunde"
+msgstr "1 hour"
+
+msgid "2 Stunden"
+msgstr "2 hours"
+
+msgid "30 Minuten"
+msgstr "30 minutes"
+
+msgid "30 Tage"
+msgstr "30 days"
+
+msgid "7 Tage"
+msgstr "7 days"
+
+msgid "ANTON (Lern-App)"
+msgstr "ANTON (learning app)"
+
+msgid "Abgelehnt"
+msgstr "Declined"
+
+msgid "Ablehnen"
+msgstr "Decline"
+
+msgid "Abmeldung in"
+msgstr "Sign-out in"
+
+msgid "Aktuelles Passwort ist falsch."
+msgstr "Current password is wrong."
+
+msgid "Alle"
+msgstr "All"
+
+msgid "Alles (90 Tage)"
+msgstr "Everything (90 days)"
+
+msgid "Als Tabelle"
+msgstr "As a table"
+
+msgid "Anfrage für das Programm {name}"
+msgstr "Request for the app {name}"
+
+msgid "Anfrage für die Website {name}"
+msgstr "Request for the website {name}"
+
+msgid "Anfrage ist bereits verfallen."
+msgstr "The request has already expired."
+
+msgid "Angepasst genehmigen"
+msgstr "Approve with changes"
+
+msgid "Anmeldung fehlgeschlagen."
+msgstr "Sign-in failed."
+
+msgid "Anpassen …"
+msgstr "Adjust …"
+
+msgid "Anzahl"
+msgstr "Count"
+
+msgid "Anzeigen"
+msgstr "Show"
+
+msgid "Art"
+msgstr "Type"
+
+msgid "Aus"
+msgstr "Off"
+
+msgid "Ausnahmen (trotz Sperrliste erlaubt)"
+msgstr "Exceptions (allowed despite block list)"
+
+msgid "Authenticator eingerichtet"
+msgstr "Authenticator set up"
+
+msgid "Authenticator eingerichtet. Bitte mit Passwort und dem neuen Code anmelden."
+msgstr "Authenticator set up. Please sign in with your password and the new code."
+
+msgid "Authenticator geändert"
+msgstr "Authenticator changed"
+
+msgid "Bekannte DNS-over-HTTPS-Anbieter sind immer gesperrt; verschlüsseltes DNS (Port 853) ebenso."
+msgstr "Known DNS-over-HTTPS providers are always blocked, as is encrypted DNS (port 853)."
+
+msgid "Benutzer"
+msgstr "User"
+
+msgid "Benutzername existiert bereits."
+msgstr "Username already exists."
+
+msgid "Benutzername: 1–64 Zeichen, nur Buchstaben, Ziffern und . _ @ -"
+msgstr "Username: 1–64 characters, only letters, digits and . _ @ -"
+
+msgid "Bericht ändern oder abbestellen"
+msgstr "Change or unsubscribe report"
+
+msgid "Bildschirmzeit"
+msgstr "Screen time"
+
+msgid "Bildschirmzeit aller Geräte zusammen; Programme laufen teils parallel und zählen jeweils voll. Das Limit ist das aktuell eingestellte Tageslimit inklusive Gutschriften."
+msgstr "Screen time across all devices; apps sometimes run in parallel and each counts fully. The limit is the currently set daily limit including bonus time."
+
+msgid "Bildschirmzeit der letzten {n} Tage"
+msgstr "Screen time of the last {n} days"
+
+msgid "Bildschirmzeit je Tag"
+msgstr "Screen time per day"
+
+msgid "Bitte Minuten, Spielzeit und/oder ein späteres Fensterende angeben."
+msgstr "Please enter minutes, game time and/or a later end of allowed hours."
+
+msgid "Bitte einen absoluten Programmpfad angeben, z. B. /usr/bin/git"
+msgstr "Please enter an absolute program path, e.g. /usr/bin/git"
+
+msgid "Blacklist (alles außer Gesperrtem)"
+msgstr "Block list (everything except blocked)"
+
+msgid "Browser-Policies gegen DNS-over-HTTPS"
+msgstr "Browser policies against DNS-over-HTTPS"
+
+msgid "Büro"
+msgstr "Office"
+
+msgid "Container: Datei weicht vom System ab"
+msgstr "Container: file differs from the system"
+
+msgid "DNS-over-HTTPS-Anbieter"
+msgstr "DNS-over-HTTPS provider"
+
+msgid "Danach gelten wieder Kontingent und Zeitfenster."
+msgstr "Afterwards the daily limit and allowed hours apply again."
+
+msgid "Das Fensterende muss nach dem regulären Ende ({time}) liegen."
+msgstr "The end of allowed hours must be after the regular end ({time})."
+
+msgid "Datum"
+msgstr "Date"
+
+msgid "Dauer"
+msgstr "Duration"
+
+msgid "Dauerhaft erlauben"
+msgstr "Always allow"
+
+msgid "Dauerhaft erlaubt"
+msgstr "Always allowed"
+
+msgid "Der Code passt nicht zum neuen QR-Code."
+msgstr "The code does not match the new QR code."
+
+msgid "Die Anfrage wurde bereits entschieden."
+msgstr "The request has already been decided."
+
+msgid "Die E-Mail-Adresse des KidCTL-Accounts „{username}“ wurde von dieser Adresse auf „{email}“ geändert."
+msgstr "The email address of the KidCTL account “{username}” was changed from this address to “{email}”."
+
+msgid "Die Einrichtung ist abgelaufen. Bitte neu starten."
+msgstr "The setup has expired. Please start again."
+
+msgid "Die Passwörter stimmen nicht überein."
+msgstr "The passwords do not match."
+
+msgid "Die letzten {n} Einträge."
+msgstr "The last {n} entries."
+
+msgid "Diese Woche"
+msgstr "This week"
+
+msgid "Du erhältst diese Mail, weil du im Profil den Nutzungsbericht „{interval}“ aktiviert hast."
+msgstr "You receive this email because you enabled the usage report “{interval}” in your profile."
+
+msgid "Eigene Programme"
+msgstr "Custom apps"
+
+msgid "Eigenes Programm hinzufügen"
+msgstr "Add custom app"
+
+msgid "Eigenes Programm „{name}“ entfernen? Die Freigabe wird entzogen."
+msgstr "Remove custom app “{name}”? It will no longer be allowed."
+
+msgid "Ein Kind namens „{name}“ existiert bereits."
+msgstr "A child named “{name}” already exists."
+
+msgid "Eintrag entfernen"
+msgstr "Remove entry"
+
+msgid "Einträge werden nach {n} Tagen gelöscht"
+msgstr "Entries are deleted after {n} days"
+
+msgid "Electron mit fremdem Code ({arg})"
+msgstr "Electron with foreign code ({arg})"
+
+msgid "Electron ohne freigegebene App"
+msgstr "Electron without an allowed app"
+
+msgid "Electron-App ({arg})"
+msgstr "Electron app ({arg})"
+
+msgid "Entfernen"
+msgstr "Remove"
+
+msgid "Entwicklung"
+msgstr "Development"
+
+msgid "Erfasst werden Spiele aus Steam und Heroic, etwa minutengenau. Der Spielname stammt vom Rechner des Kindes."
+msgstr "Games from Steam and Heroic are recorded, accurate to about a minute. The game name comes from the child’s computer."
+
+msgid "Erwachseneninhalte"
+msgstr "Adult content"
+
+msgid "Falls du das nicht warst, kannst du diese Mail ignorieren."
+msgstr "If this wasn’t you, you can ignore this email."
+
+msgid "Falls du das nicht warst, melde dich sofort an, ändere dein Passwort und prüfe die Eltern-Accounts."
+msgstr "If this wasn’t you, sign in immediately, change your password and check the parent accounts."
+
+msgid "Falls du das nicht warst, melde dich sofort an."
+msgstr "If this wasn’t you, sign in immediately."
+
+msgid "Fehler:"
+msgstr "Error:"
+
+msgid "Fenster bis"
+msgstr "Hours until"
+
+msgid "Fenster von"
+msgstr "Allowed from"
+
+msgid "Fensterende"
+msgstr "End of allowed hours"
+
+msgid "Freigabe-Anfrage:"
+msgstr "Access request:"
+
+msgid "Freigegebene Dienste"
+msgstr "Allowed services"
+
+msgid "Für den Nutzungsbericht zuerst eine E-Mail-Adresse eintragen."
+msgstr "Enter an email address first to receive the usage report."
+
+msgid "Für diesen Tag ist kein Spiele-Limit eingestellt – Spielzeit-Gutschrift nicht nötig."
+msgstr "No game limit is set for this day – bonus game time is not needed."
+
+msgid "Ganzes Protokoll"
+msgstr "Full activity log"
+
+msgid "Genehmigen"
+msgstr "Approve"
+
+msgid "Genehmigt"
+msgstr "Approved"
+
+msgid "Gerät „{name}“ offline"
+msgstr "Device “{name}” offline"
+
+msgid "Gesamt"
+msgstr "Total"
+
+msgid "Gesperrt"
+msgstr "Blocked"
+
+msgid "Gesperrt und angefragt"
+msgstr "Blocked and requested"
+
+msgid "Gesperrte Aktionen"
+msgstr "Blocked actions"
+
+msgid "Gestern"
+msgstr "Yesterday"
+
+msgid "Gilt nur für das gewählte Datum. Minuten werden zu einer bestehenden Gutschrift addiert."
+msgstr "Applies only to the selected date. Minutes are added to existing bonus time."
+
+msgid "Glücksspiel"
+msgstr "Gambling"
+
+msgid "Google, Bing, DuckDuckGo; YouTube im eingeschränkten Modus"
+msgstr "Google, Bing, DuckDuckGo; YouTube in restricted mode"
+
+msgid "Grafik"
+msgstr "Graphics"
+
+msgid "Gutschreiben"
+msgstr "Add time"
+
+msgid "Gutschriften"
+msgstr "Bonus time"
+
+msgid "Gutschriften sind nur für heute oder künftige Tage möglich."
+msgstr "Bonus time can only be added for today or future days."
+
+msgid "HaGeZi Glücksspiel"
+msgstr "HaGeZi Gambling"
+
+msgid "Hallo {name},"
+msgstr "Hello {name},"
+
+msgid "Heroic-Spieleordner"
+msgstr "Heroic games folder"
+
+msgid "Heute"
+msgstr "Today"
+
+msgid "Heute erlaubt"
+msgstr "Allowed today"
+
+msgid "Hinzufügen und erlauben"
+msgstr "Add and allow"
+
+msgid "Häufigste Einträge"
+msgstr "Most frequent entries"
+
+msgid "In diesem Zeitraum wurde keine Bildschirmzeit erfasst."
+msgstr "No screen time was recorded in this period."
+
+msgid "Integritätsfehler auf „{name}“"
+msgstr "Integrity error on “{name}”"
+
+msgid "Internet"
+msgstr "Internet"
+
+msgid "Internet & Kommunikation"
+msgstr "Internet & communication"
+
+msgid "Internet-Einstellungen gespeichert."
+msgstr "Internet settings saved."
+
+msgid "Interpreter ohne freigegebenes Skript"
+msgstr "Interpreter without an allowed script"
+
+msgid "Je Tag:"
+msgstr "Per day:"
+
+msgid "Je Zeile eine Domain, gilt inkl. Subdomains"
+msgstr "One domain per line, includes subdomains"
+
+msgid "Jeder Tag einzeln"
+msgstr "Each day separately"
+
+msgid "Jetzt freigeben"
+msgstr "Unlock now"
+
+msgid "Kein Programm gefunden."
+msgstr "No app found."
+
+msgid "Keine"
+msgstr "None"
+
+msgid "Keine Einträge für diese Filter."
+msgstr "No entries for these filters."
+
+msgid "Keine Freigabe-Anfrage."
+msgstr "Not an access request."
+
+msgid "Keine Programmzeit erfasst."
+msgstr "No app time recorded."
+
+msgid "Keine Spiele für diese Filter."
+msgstr "No games for these filters."
+
+msgid "Keine Spiele in diesem Zeitraum."
+msgstr "No games in this period."
+
+msgid "Keine Verlängerungsanfrage."
+msgstr "Not a request for more time."
+
+msgid "Keine gesperrten Aktionen in diesem Zeitraum."
+msgstr "No blocked actions in this period."
+
+msgid "Keine gesperrten Aktionen."
+msgstr "No blocked actions."
+
+msgid "KidCTL: E-Mail-Adresse geändert"
+msgstr "KidCTL: email address changed"
+
+msgid "KidCTL: Passwort zurücksetzen"
+msgstr "KidCTL: reset password"
+
+msgid "Kontingent"
+msgstr "Daily limit"
+
+msgid "Lernen"
+msgstr "Learning"
+
+msgid "Letzte 7 Tage"
+msgstr "Last 7 days"
+
+msgid "Letzte Woche"
+msgstr "Last week"
+
+msgid "Login-Sperre (PAM)"
+msgstr "Sign-in lock (PAM)"
+
+msgid "Meistgenutzte Programme"
+msgstr "Most used apps"
+
+msgid "Meistgespielt"
+msgstr "Most played"
+
+msgid "Microsoft 365 / Teams (Schule)"
+msgstr "Microsoft 365 / Teams (school)"
+
+msgid "Monatlich (am 1.)"
+msgstr "Monthly (on the 1st)"
+
+msgid "Monatsbericht"
+msgstr "Monthly report"
+
+msgid "Musik & Video"
+msgstr "Music & video"
+
+msgid "Nachricht muss 1 bis {max} Zeichen lang sein."
+msgstr "Message must be 1 to {max} characters long."
+
+msgid "Nachricht von {name}"
+msgstr "Message from {name}"
+
+msgid "Namensauflösung über DNS-Filter (nsswitch)"
+msgstr "Name resolution via DNS filter (nsswitch)"
+
+msgid "Neuer Authenticator eingerichtet. Andere Sitzungen wurden abgemeldet."
+msgstr "New authenticator set up. Other sessions were signed out."
+
+msgid "Neuere laden ({n} weitere)"
+msgstr "Load newer ({n} more)"
+
+msgid "Neueste zuerst"
+msgstr "Newest first"
+
+msgid "Nicht gespeicherte Änderungen an der Programmliste gehen dabei verloren."
+msgstr "Unsaved changes to the app list will be lost."
+
+msgid "Nicht mehr installiert"
+msgstr "No longer installed"
+
+msgid "Noch keine Nachrichten."
+msgstr "No messages yet."
+
+msgid "Noch keine Programmliste – sie erscheint, sobald ein Gerät mit zugeordnetem Benutzer verbunden ist."
+msgstr "No app list yet – it appears once a device with an assigned user is connected."
+
+msgid "Noch keine Programmzeit erfasst."
+msgstr "No app time recorded yet."
+
+msgid "Nur diesen Eintrag anzeigen"
+msgstr "Show only this entry"
+
+msgid "Nur dieses Spiel anzeigen"
+msgstr "Show only this game"
+
+msgid "Nur heute"
+msgstr "Today only"
+
+msgid "Nur protokollieren"
+msgstr "Monitor only"
+
+msgid "Nur protokolliert"
+msgstr "Monitored only"
+
+msgid "Nutzung endet, wenn das Kontingent aufgebraucht oder das Zeitfenster geschlossen ist. Tageswechsel 00:00 Uhr."
+msgstr "Use ends when the daily limit is used up or the allowed hours are over. The day changes at 00:00."
+
+msgid "Nutzungsbericht gesendet."
+msgstr "Usage report sent."
+
+msgid "Nutzungsbericht gespeichert."
+msgstr "Usage report saved."
+
+msgid "Passwort darf höchstens 72 Bytes haben."
+msgstr "Password may be at most 72 bytes."
+
+msgid "Passwort geändert"
+msgstr "Password changed"
+
+msgid "Passwort geändert. Andere Sitzungen wurden abgemeldet."
+msgstr "Password changed. Other sessions were signed out."
+
+msgid "Passwort geändert. Bitte mit dem neuen Passwort und dem Authenticator-Code anmelden."
+msgstr "Password changed. Please sign in with the new password and your authenticator code."
+
+msgid "Passwort muss mindestens 12 Zeichen haben."
+msgstr "Password must be at least 12 characters."
+
+msgid "Passwort oder Code falsch."
+msgstr "Password or code is wrong."
+
+msgid "Pfad oder Name eines Programms aus /usr/bin. Den Pfad zeigt auf dem Rechner des Kindes „which git“. Hilfsprogramme aus demselben Paket (bei git /usr/lib/git-core) sind mit erlaubt. Für Kommandozeilenprogramme zusätzlich Terminal und Shell freigeben."
+msgstr "Path or name of a program in /usr/bin. On the child’s computer, “which git” shows the path. Helper programs from the same package (for git: /usr/lib/git-core) are allowed too. For command-line programs, also allow a terminal and shell."
+
+msgid "Profil gespeichert."
+msgstr "Profile saved."
+
+msgid "Programm"
+msgstr "App"
+
+msgid "Programm / Domain"
+msgstr "App / domain"
+
+msgid "Programm / Website"
+msgstr "App / website"
+
+msgid "Programm hinzufügen"
+msgstr "Add app"
+
+msgid "Programm suchen"
+msgstr "Search apps"
+
+msgid "Programm suchen …"
+msgstr "Search apps …"
+
+msgid "Programm, Domain, Pfad …"
+msgstr "App, domain, path …"
+
+msgid "Programm-Einstellungen gespeichert."
+msgstr "App settings saved."
+
+msgid "Programme"
+msgstr "Apps"
+
+msgid "Programmkontrolle"
+msgstr "App control"
+
+msgid "Reihenfolge"
+msgstr "Order"
+
+msgid "SafeSearch erzwingen"
+msgstr "Enforce SafeSearch"
+
+msgid "Seit {hours} Stunden keine Meldung."
+msgstr "No report for {hours} hours."
+
+msgid "Sitzungen"
+msgstr "Sessions"
+
+msgid "Skript ({arg})"
+msgstr "Script ({arg})"
+
+msgid "Sonstiges"
+msgstr "Other"
+
+msgid "Sperre"
+msgstr "Lock"
+
+msgid "Sperren"
+msgstr "Block"
+
+msgid "Sperrliste {arg}"
+msgstr "Block list {arg}"
+
+msgid "Sperrlisten"
+msgstr "Block lists"
+
+msgid "Sperrt alle Rechner von {name}: {name} bekommt eine Benachrichtigung und wird nach der Vorwarnzeit abgemeldet (0 = sofort); neu anmelden ist ab sofort nicht möglich. Läuft eine Dauer ab, wird automatisch freigegeben – auch ohne Internetverbindung."
+msgstr "Locks all of {name}'s computers: {name} gets a notification and is signed out after the warning time (0 = immediately); signing in again is not possible from now on. When a duration runs out, the lock is lifted automatically – even without an internet connection."
+
+msgid "Spiel"
+msgstr "Game"
+
+msgid "Spiel …"
+msgstr "Game …"
+
+msgid "Spiele"
+msgstr "Games"
+
+msgid "Spiele aus Steam und Heroic erscheinen einzeln (die Zeit des Launchers selbst steht separat)."
+msgstr "Games from Steam and Heroic appear individually (the launcher’s own time is listed separately)."
+
+msgid "Spielzeit"
+msgstr "Game time"
+
+msgid "Spielzeit-Anfrage für {day}:"
+msgstr "Request for more game time for {day}:"
+
+msgid "Statistik öffnen"
+msgstr "Open statistics"
+
+msgid "Steam-Bibliothek"
+msgstr "Steam library"
+
+msgid "Steam-Bibliothek (über Steam gestartet nötig)"
+msgstr "Steam library (must be started via Steam)"
+
+msgid "StevenBlack Glücksspiel"
+msgstr "StevenBlack Gambling"
+
+msgid "Suche"
+msgstr "Search"
+
+msgid "Suche „{q}“"
+msgstr "Search “{q}”"
+
+msgid "System & Einstellungen"
+msgstr "System & settings"
+
+msgid "Systemkomponenten (KDE/Plasma, KidCTL) sind immer erlaubt. Terminals, Shells und Interpreter sind gesperrt, solange sie nicht ausdrücklich freigegeben sind – für ein nutzbares Terminal das Terminal-Programm (z. B. Konsole) und die Shell des Kindes freigeben (Gruppe „Terminal & Shells“)."
+msgstr "System components (KDE/Plasma, KidCTL) are always allowed. Terminals, shells and interpreters are blocked unless explicitly allowed – for a usable terminal, allow the terminal app (e.g. Konsole) and the child’s shell (group “Terminal & shells”)."
+
+msgid "Tag"
+msgstr "Day"
+
+msgid "Terminal & Shells"
+msgstr "Terminal & shells"
+
+msgid "Test-Benachrichtigung – Push funktioniert."
+msgstr "Test notification – push works."
+
+msgid "Unbekannte Entscheidung."
+msgstr "Unknown decision."
+
+msgid "Ungültige Dauer"
+msgstr "Invalid duration"
+
+msgid "Ungültige Domain(s):"
+msgstr "Invalid domain(s):"
+
+msgid "Ungültige E-Mail-Adresse."
+msgstr "Invalid email address."
+
+msgid "Ungültiger Zeitraum."
+msgstr "Invalid period."
+
+msgid "Ungültiges Datum."
+msgstr "Invalid date."
+
+msgid "Unterschiedliche Tageswerte in: {groups}. Angezeigt sind die Werte von Montag bzw. Samstag; beim Speichern gelten sie für alle Tage der Gruppe."
+msgstr "Different values per day in: {groups}. Shown are the values of Monday or Saturday; when saved, they apply to all days of the group."
+
+msgid "Verfallen (Tag vorbei)"
+msgstr "Expired (day over)"
+
+msgid "Verlängerungsanfrage für {day}:"
+msgstr "Request for more time for {day}:"
+
+msgid "Verlängerungsanfragen"
+msgstr "Requests for more time"
+
+msgid "Versand fehlgeschlagen (Details im Server-Log)."
+msgstr "Sending failed (details in the server log)."
+
+msgid "Versand nicht möglich: keine E-Mail-Adresse bzw. kein SMTP eingerichtet."
+msgstr "Cannot send: no email address or no SMTP set up."
+
+msgid "Videos laufen über YouTube – ggf. YouTube-Bundle zusätzlich wählen."
+msgstr "Videos are served via YouTube – select the YouTube bundle too if needed."
+
+msgid "Vormonat"
+msgstr "previous month"
+
+msgid "Vorwarnzeit muss eine ganze Zahl sein"
+msgstr "Warning time must be a whole number"
+
+msgid "Vorwarnzeit muss zwischen 0 und {max} Minuten liegen"
+msgstr "Warning time must be between 0 and {max} minutes"
+
+msgid "Vorwoche"
+msgstr "previous week"
+
+msgid "Website"
+msgstr "Website"
+
+msgid "Website-Filter"
+msgstr "Web filter"
+
+msgid "Website-Filter Kind {id}"
+msgstr "Web filter child {id}"
+
+msgid "Websites"
+msgstr "Websites"
+
+msgid "Weitere freigegebene Domains"
+msgstr "More allowed domains"
+
+msgid "Weitere gesperrte Domains (je Zeile)"
+msgstr "More blocked domains (one per line)"
+
+msgid "Werbung, Malware"
+msgstr "Ads, malware"
+
+msgid "Werbung, Tracking, Malware"
+msgstr "Ads, tracking, malware"
+
+msgid "Werktage (Mo–Fr)"
+msgstr "Weekdays (Mon–Fri)"
+
+msgid "Werktage / Wochenende"
+msgstr "Weekdays / weekend"
+
+msgid "Werkzeuge"
+msgstr "Utilities"
+
+msgid "Whitelist (nur Freigegebenes)"
+msgstr "Allow list (only what is allowed)"
+
+msgid "Wochenbericht"
+msgstr "Weekly report"
+
+msgid "Wochenende (Sa–So)"
+msgstr "Weekend (Sat–Sun)"
+
+msgid "Wochenvorlage"
+msgstr "Weekly schedule"
+
+msgid "Wochenvorlage gespeichert."
+msgstr "Weekly schedule saved."
+
+msgid "Wöchentlich (montags)"
+msgstr "Weekly (Mondays)"
+
+msgid "Zeit"
+msgstr "Time"
+
+msgid "Zeit gutschreiben"
+msgstr "Add time"
+
+msgid "Zeit, in der ein Programm während der Bildschirmzeit geöffnet war. Parallel geöffnete Programme zählen jeweils voll."
+msgstr "Time an app was open during screen time. Apps open in parallel each count fully."
+
+msgid "Zeitraum"
+msgstr "Period"
+
+msgid "Zu viele Anfragen. Bitte später erneut versuchen."
+msgstr "Too many requests. Please try again later."
+
+msgid "Zu viele Fehlversuche. Bitte später erneut versuchen."
+msgstr "Too many failed attempts. Please try again later."
+
+msgid "Zuletzt"
+msgstr "Last"
+
+msgid "Zum Anmelden brauchst du danach weiterhin deine Authenticator-App."
+msgstr "You will still need your authenticator app to sign in afterwards."
+
+msgid "Zurücksetzen"
+msgstr "Reset"
+
+msgid "Zusätzlich"
+msgstr "Extra"
+
+msgid "Zusätzliche Minuten"
+msgstr "Extra minutes"
+
+msgid "Zusätzliche Spielzeit"
+msgstr "Extra game time"
+
+msgid "Zusätzliche Zeit (Gutschriften)"
+msgstr "Extra time (bonus time)"
+
+msgid "an {n} von {total} Tagen genutzt"
+msgstr "used on {n} of {total} days"
+
+msgid "bis"
+msgstr "until"
+
+msgid "bis morgen (00:00 Uhr)"
+msgstr "until tomorrow (00:00)"
+
+msgid "bis zur Freigabe"
+msgstr "until unlocked"
+
+msgid "bis {time} Uhr"
+msgstr "until {time}"
+
+msgid "davon Spiele"
+msgstr "of which games"
+
+msgid "dein Passwort wurde im Profil geändert."
+msgstr "your password was changed in your profile."
+
+msgid "dein Passwort wurde über „Passwort vergessen“ neu gesetzt."
+msgstr "your password was reset via “Forgot password”."
+
+msgid "eingeschleuster Code ({arg})"
+msgstr "injected code ({arg})"
+
+msgid "erlaubt"
+msgstr "allowed"
+
+msgid "für Programme ohne Eintrag in der Liste, z. B."
+msgstr "for apps not in the list, e.g."
+
+msgid "für deinen Account wurde ein neuer Authenticator eingerichtet."
+msgstr "a new authenticator was set up for your account."
+
+msgid "für deinen KidCTL-Account „{username}“ wurde ein neues Passwort angefordert."
+msgstr "a new password was requested for your KidCTL account “{username}”."
+
+msgid "genutzt"
+msgstr "used"
+
+msgid "genutzt (alle Geräte)"
+msgstr "used (all devices)"
+
+msgid "gesperrt bis zur Freigabe"
+msgstr "locked until unlocked"
+
+msgid "ggü. {period}"
+msgstr "vs. {period}"
+
+msgid "heute"
+msgstr "today"
+
+msgid "hier ist die Übersicht über die Nutzung der Woche."
+msgstr "here is the overview of this week’s usage."
+
+msgid "hier ist die Übersicht über die Nutzung des Monats."
+msgstr "here is the overview of this month’s usage."
+
+msgid "innerhalb des Limits"
+msgstr "within the limit"
+
+msgid "interaktive Shell"
+msgstr "interactive shell"
+
+msgid "kein Vergleich"
+msgstr "no comparison"
+
+msgid "keine"
+msgstr "none"
+
+msgid "keine Gutschrift"
+msgstr "no bonus time"
+
+msgid "läuft"
+msgstr "running"
+
+msgid "läuft gerade"
+msgstr "running now"
+
+msgid "min"
+msgstr "min"
+
+msgid "nicht freigegeben"
+msgstr "not allowed"
+
+msgid "nicht freigegeben – {arg}"
+msgstr "not allowed – {arg}"
+
+msgid "nicht gesperrt"
+msgstr "not locked"
+
+msgid "nicht mehr installiert"
+msgstr "no longer installed"
+
+msgid "noexec für /tmp, /var/tmp, /dev/shm"
+msgstr "noexec for /tmp, /var/tmp, /dev/shm"
+
+msgid "noexec-Home von {user}"
+msgstr "noexec home of {user}"
+
+msgid "noexec-Spieleordner {path}"
+msgstr "noexec games folder {path}"
+
+msgid "nur protokolliert"
+msgstr "monitored only"
+
+msgid "seit {time}"
+msgstr "since {time}"
+
+msgid "spielt gerade: {games}"
+msgstr "playing now: {games}"
+
+msgid "von Eltern gesperrt"
+msgstr "blocked by parents"
+
+msgid "wie Normal, strenger"
+msgstr "like Normal, stricter"
+
+msgid "{by} hat den Authenticator deines Accounts „{username}“ zurückgesetzt. Den Einrichtungslink bekommst du von dieser Person."
+msgstr "{by} reset the authenticator of your account “{username}”. You will get the setup link from this person."
+
+msgid "{change} ggü. {period}"
+msgstr "{change} vs. {period}"
+
+msgid "{count} Domains, Stand {when}"
+msgstr "{count} domains, as of {when}"
+
+msgid "{day}: {used} von {allowed}"
+msgstr "{day}: {used} of {allowed}"
+
+msgid "{label} (Spiele)"
+msgstr "{label} (games)"
+
+msgid "{label}: Fensterbeginn muss vor dem Fensterende liegen."
+msgstr "{label}: the start of allowed hours must be before the end."
+
+msgid "{label}: Minuten müssen zwischen 0 und {max} liegen."
+msgstr "{label}: minutes must be between 0 and {max}."
+
+msgid "{label}: ungültige Uhrzeit „{raw}“."
+msgstr "{label}: invalid time “{raw}”."
+
+msgid "{library} von {user}"
+msgstr "{library} of {user}"
+
+msgid "{name} bittet um Freigabe: {what}"
+msgstr "{name} asks for access: {what}"
+
+msgid "{name} bittet um Verlängerung ({what})"
+msgstr "{name} asks for more time ({what})"
+
+msgid "{name} bittet um mehr Spielzeit ({what})"
+msgstr "{name} asks for more game time ({what})"
+
+msgid "{name} entfernen"
+msgstr "Remove {name}"
+
+msgid "{n} Eintrag"
+msgid_plural "{n} Einträge"
+msgstr[0] "{n} entry"
+msgstr[1] "{n} entries"
+
+msgid "{n} Geräte"
+msgstr "{n} devices"
+
+msgid "{n} Sitzung"
+msgid_plural "{n} Sitzungen"
+msgstr[0] "{n} session"
+msgstr[1] "{n} sessions"
+
+msgid "{n} Tag"
+msgid_plural "{n} Tage"
+msgstr[0] "{n} day"
+msgstr[1] "{n} days"
+
+msgid "{n} von {total} erlaubt"
+msgstr "{n} of {total} allowed"
+
+msgid "{n}, davon {approved} genehmigt"
+msgstr "{n}, {approved} approved"
+
+msgid "{used} von {allowed}"
+msgstr "{used} of {allowed}"
+
+msgid "Ältere laden ({n} weitere)"
+msgstr "Load older ({n} more)"
+
+msgid "Älteste zuerst"
+msgstr "Oldest first"
+
+msgid "Ø pro Tag"
+msgstr "Avg. per day"
+
+msgid "Ø pro Tag (14 Tage)"
+msgstr "Avg. per day (14 days)"
+
+msgid "Über dem Limit"
+msgstr "Over the limit"
+
+msgid "Über diesen Link kannst du es {minutes} Minuten lang einmal neu setzen:"
+msgstr "You can use this link once within {minutes} minutes to set a new one:"
+
+msgid "über Limit"
+msgstr "over limit"
+
+msgid "über dem Limit"
+msgstr "over the limit"
+
+msgid "– zurücknehmen unter „Programme“ in den Einstellungen"
+msgstr "– revoke under “Apps” in the settings"
+
+msgid "– zurücknehmen unter „Websites“ in den Einstellungen"
+msgstr "– revoke under “Websites” in the settings"
+
+msgid "„Nur protokollieren“ sperrt nichts, meldet aber, was gesperrt würde – zum gefahrlosen Einstieg."
+msgstr "“Monitor only” blocks nothing but reports what would be blocked – a safe way to start."
+
+msgid "„davon Spiele“: höchstens so viel Zeit mit Spielen (Steam, Heroic und Programme der Gruppe „Spiele“) – danach werden Spiele mit Vorwarnung geschlossen, der Rest des Rechners bleibt nutzbar. Leer = kein eigenes Limit."
+msgstr "“Of which games”: at most this much time with games (Steam, Heroic and apps in the “Games” group) – afterwards games are closed after a warning, the rest of the computer stays usable. Empty = no separate limit."
+

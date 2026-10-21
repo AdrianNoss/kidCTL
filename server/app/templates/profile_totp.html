@@ -1,21 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Neuer Authenticator – KidCTL{% endblock %}
+{% block title %}{{ _("Neuer Authenticator") }} – KidCTL{% endblock %}
 {% block content %}
-<div class="page-head"><div><span class="eyebrow">Profil</span><h1>Neuer Authenticator</h1></div></div>
+<div class="page-head"><div><span class="eyebrow">{{ _("Profil") }}</span><h1>{{ _("Neuer Authenticator") }}</h1></div></div>
 <section class="card">
-  <p>QR-Code mit der neuen Authenticator-App scannen, dann Passwort und den Code der <strong>neuen</strong> App eingeben.
-    Diese Seite gilt {{ minutes }} Minuten.</p>
+  <p>{{ _("QR-Code mit der neuen Authenticator-App scannen, dann Passwort und den Code der neuen App eingeben.") }}
+    {{ _("Diese Seite gilt {minutes} Minuten.").format(minutes=minutes) }}</p>
   <div class="qr">{{ qr_svg | safe }}</div>
-  <p class="muted"><small>Ohne Kamera: Schlüssel <code>{{ secret }}</code></small></p>
+  <p class="muted"><small>{{ _("Ohne Kamera: Schlüssel") }} <code>{{ secret }}</code></small></p>
   <form method="post" action="/profile/totp/confirm">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <input type="hidden" name="token" value="{{ token }}">
     <input type="text" name="username" value="{{ parent.username }}" autocomplete="username" hidden>
     <div class="form-grid">
-      <label>Aktuelles Passwort <input type="password" name="current_password" required autocomplete="current-password"></label>
-      <label>Code aus der neuen App <input name="totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
+      <label>{{ _("Aktuelles Passwort") }} <input type="password" name="current_password" required autocomplete="current-password"></label>
+      <label>{{ _("Code aus der neuen App") }} <input name="totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
     </div>
-    <div class="actions"><button type="submit">Bestätigen</button><a href="/profile" class="btn ghost">Abbrechen</a></div>
+    <div class="actions"><button type="submit">{{ _("Bestätigen") }}</button><a href="/profile" class="btn ghost">{{ _("Abbrechen") }}</a></div>
   </form>
 </section>
 {% endblock %}

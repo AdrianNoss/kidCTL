@@ -32,6 +32,8 @@ class Parent(Base):
     email: Mapped[str] = mapped_column(String(255), default="")  # für „Passwort vergessen“ (optional)
     report_interval: Mapped[str] = mapped_column(String(16), default="")  # Nutzungsbericht: "" | weekly | monthly
     report_sent: Mapped[str] = mapped_column(String(16), default="")      # zuletzt gesendeter Zeitraum (Schlüssel)
+    language: Mapped[str] = mapped_column(String(8), default="")           # "" = automatisch (Browser) | de | en
+    detected_language: Mapped[str] = mapped_column(String(8), default="")  # zuletzt erkannt (für Mails/Push)
 
 
 class ParentToken(Base):
@@ -212,6 +214,13 @@ class DeviceApp(Base):
     icon: Mapped[str] = mapped_column(String(255), default="")
     desktop_id: Mapped[str] = mapped_column(String(255), default="")
     categories: Mapped[str] = mapped_column(Text, default="")  # freedesktop-Kategorien, „;“-getrennt
+    name_en: Mapped[str] = mapped_column(String(255), default="")  # englischer Name (Name= ohne Sprachzusatz)
+
+    @property
+    def label(self) -> str:
+        """Name in der Sprache der laufenden Anfrage."""
+        from kidctl_common.i18n import current
+        return self.name_en if current() == "en" and self.name_en else self.name
 
 
 class ChildProgram(Base):
@@ -250,6 +259,8 @@ class BlockedEvent(Base):
     name: Mapped[str] = mapped_column(String(255))
     detail: Mapped[str] = mapped_column(String(255), default="")
     audit: Mapped[bool] = mapped_column(Boolean, default=False)
+    detail_code: Mapped[str] = mapped_column(String(32), default="")   # sprachneutral (Agent ab 0.26)
+    detail_arg: Mapped[str] = mapped_column(String(255), default="")
 
 
 class GameSession(Base):

@@ -7,12 +7,14 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 
+from . import i18n
+from .i18n import N_, _
 from .config import settings
 from .models import Child, DayException, WeekdayRule
 
 WEEKDAY_NAMES = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
 # Gruppen für „Werktage/Wochenende gleich“: Schlüssel -> (Bezeichnung, Wochentage)
-GROUPS = {"wd": ("Werktage (Mo–Fr)", range(0, 5)), "we": ("Wochenende (Sa–So)", range(5, 7))}
+GROUPS = {"wd": (N_("Werktage (Mo–Fr)"), range(0, 5)), "we": (N_("Wochenende (Sa–So)"), range(5, 7))}
 
 MAX_QUOTA = 24 * 60
 MAX_EXTRA = 12 * 60
@@ -31,13 +33,13 @@ def parse_time(raw: str, label: str) -> time:
     try:
         return time.fromisoformat(raw.strip())
     except ValueError:
-        raise ScheduleError(f"{label}: ungültige Uhrzeit „{raw}“.") from None
+        raise ScheduleError(_("{label}: ungültige Uhrzeit „{raw}“.").format(label=label, raw=raw)) from None
 
 
 def parse_minutes(raw: str, label: str, maximum: int) -> int:
     raw = raw.strip()
     if not raw.isdigit() or int(raw) > maximum:
-        raise ScheduleError(f"{label}: Minuten müssen zwischen 0 und {maximum} liegen.")
+        raise ScheduleError(_("{label}: Minuten müssen zwischen 0 und {max} liegen.").format(label=label, max=maximum))
     return int(raw)
 
 
@@ -47,9 +49,9 @@ def parse_rule(form, prefix: str, label: str) -> tuple[int, time, time, int | No
     start = parse_time(str(form.get(f"start_{prefix}", "")), label)
     end = parse_time(str(form.get(f"end_{prefix}", "")), label)
     if start >= end:
-        raise ScheduleError(f"{label}: Fensterbeginn muss vor dem Fensterende liegen.")
+        raise ScheduleError(_("{label}: Fensterbeginn muss vor dem Fensterende liegen.").format(label=label))
     raw_games = str(form.get(f"games_{prefix}", "")).strip()
-    games = parse_minutes(raw_games, f"{label} (Spiele)", MAX_QUOTA) if raw_games else None
+    games = parse_minutes(raw_games, _("{label} (Spiele)").format(label=label), MAX_QUOTA) if raw_games else None
     return quota, start, end, games
 
 
@@ -63,11 +65,11 @@ def apply_schedule(child: Child, form) -> None:
     new: dict[int, tuple[int, time, time, int | None]] = {}
     if child.weekdays_same:
         for key, (label, days) in GROUPS.items():
-            values = parse_rule(form, key, label)
+            values = parse_rule(form, key, _(label))
             new.update({d: values for d in days})
     else:
         for d in range(7):
-            new[d] = parse_rule(form, str(d), WEEKDAY_NAMES[d])
+            new[d] = parse_rule(form, str(d), i18n.weekday_names()[d])
     for d, (quota, start, end, games) in new.items():
         rule = rules.get(d)
         if rule is None:
@@ -89,8 +91,8 @@ def group_differs(child: Child) -> list[str]:
 
 
 def fmt_minutes(minutes: int) -> str:
-    h, m = divmod(minutes, 60)
-    return f"{h}:{m:02d} h"
+    """Dauer in der Sprache der laufenden Anfrage (de „1:20 h“, en „1 h 20 min“)."""
+    return i18n.fmt_minutes(minutes)
 
 
 def parse_credit(child: Child, day: str, extra_minutes: str, window_end: str,
@@ -100,25 +102,25 @@ def parse_credit(child: Child, day: str, extra_minutes: str, window_end: str,
     try:
         the_day = date.fromisoformat(day)
     except ValueError:
-        raise ScheduleError("Ungültiges Datum.") from None
-    extra = parse_minutes(extra_minutes or "0", "Zusätzliche Minuten", MAX_EXTRA)
-    override = parse_time(window_end, "Fensterende") if window_end.strip() else None
-    games = parse_minutes(extra_games or "0", "Zusätzliche Spielzeit", MAX_EXTRA)
+        raise ScheduleError(_("Ungültiges Datum.")) from None
+    extra = parse_minutes(extra_minutes or "0", _("Zusätzliche Minuten"), MAX_EXTRA)
+    override = parse_time(window_end, _("Fensterende")) if window_end.strip() else None
+    games = parse_minutes(extra_games or "0", _("Zusätzliche Spielzeit"), MAX_EXTRA)
     check_credit(child, the_day, extra, override, games)
     return the_day, extra, override, games
 
 
 def check_credit(child: Child, the_day: date, extra: int, override: time | None, games: int = 0) -> None:
     if the_day < today_local():
-        raise ScheduleError("Gutschriften sind nur für heute oder künftige Tage möglich.")
+        raise ScheduleError(_("Gutschriften sind nur für heute oder künftige Tage möglich."))
     if not extra and override is None and not games:
-        raise ScheduleError("Bitte Minuten, Spielzeit und/oder ein späteres Fensterende angeben.")
+        raise ScheduleError(_("Bitte Minuten, Spielzeit und/oder ein späteres Fensterende angeben."))
     rule = rules_by_day(child).get(the_day.weekday())
     if games and (rule is None or rule.game_minutes is None):
-        raise ScheduleError("Für diesen Tag ist kein Spiele-Limit eingestellt – Spielzeit-Gutschrift nicht nötig.")
+        raise ScheduleError(_("Für diesen Tag ist kein Spiele-Limit eingestellt – Spielzeit-Gutschrift nicht nötig."))
     if override is not None and rule is not None and override <= rule.window_end:
         raise ScheduleError(
-            f"Das Fensterende muss nach dem regulären Ende ({rule.window_end:%H:%M}) liegen.")
+            _("Das Fensterende muss nach dem regulären Ende ({time}) liegen.").format(time=f"{rule.window_end:%H:%M}"))
 
 
 def add_credit(db, child: Child, the_day: date, extra: int, override: time | None, games: int = 0) -> None:

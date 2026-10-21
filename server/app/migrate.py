@@ -57,6 +57,12 @@ COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
     ("day_exception", "extra_game_minutes", "INTEGER NOT NULL DEFAULT 0"),
     ("usage_record", "game_seconds", "INTEGER NOT NULL DEFAULT 0"),
     ("message", "request_target", "VARCHAR(8)"),
+    # 2026-10-21: Sprache (WebUI, Mails, Push)
+    ("parent", "language", "VARCHAR(8) NOT NULL DEFAULT ''"),
+    ("parent", "detected_language", "VARCHAR(8) NOT NULL DEFAULT ''"),
+    ("device_app", "name_en", "VARCHAR(255) NOT NULL DEFAULT ''"),
+    ("blocked_event", "detail_code", "VARCHAR(32) NOT NULL DEFAULT ''"),
+    ("blocked_event", "detail_arg", "VARCHAR(255) NOT NULL DEFAULT ''"),
 ]
 
 

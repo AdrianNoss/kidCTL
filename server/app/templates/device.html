@@ -2,31 +2,31 @@
 {% block title %}{{ device.name }} – KidCTL{% endblock %}
 {% block content %}
 <div class="page-head">
-  <div><span class="eyebrow">Gerät</span><h1>{{ device.name }}</h1></div>
-  <div class="actions"><a href="/devices" class="btn secondary">Alle Geräte</a></div>
+  <div><span class="eyebrow">{{ _("Gerät") }}</span><h1>{{ device.name }}</h1></div>
+  <div class="actions"><a href="/devices" class="btn secondary">{{ _("Alle Geräte") }}</a></div>
 </div>
 <section class="card">
   <dl>
-    <dt>Hostname</dt><dd>{{ device.hostname or "–" }}</dd>
-    <dt>Status</dt><dd>{% if device.revoked_at %}Token widerrufen am {{ device.revoked_at | localtime }}{% elif online %}<span class="pill ok">online</span>{% else %}<span class="pill">offline</span>{% endif %}</dd>
-    <dt>Zuletzt gesehen</dt><dd>{{ device.last_seen_at | localtime }}</dd>
-    <dt>Agent</dt><dd>{{ device.agent_version or "–" }} (Protokoll {{ device.protocol_version or "–" }})
-      {% if device.protocol_unsupported %}<br><span class="warn">veraltet – Server unterstützt {{ supported | join(", ") }}. Agent per <code>pacman -Syu</code> aktualisieren; Durchsetzung läuft mit letzter Policy weiter.</span>{% endif %}</dd>
-    <dt>Policy</dt><dd>{% if policy_current %}<span class="pill ok">aktuell</span>{% elif device.policy_version %}<span class="pill warn">veraltet</span> <small class="muted">wird beim nächsten Verbinden übertragen</small>{% else %}noch nicht übertragen{% endif %}</dd>
-    <dt>Gekoppelt am</dt><dd>{{ device.created_at | localtime }}</dd>
+    <dt>{{ _("Hostname") }}</dt><dd>{{ device.hostname or "–" }}</dd>
+    <dt>{{ _("Status") }}</dt><dd>{% if device.revoked_at %}{{ _("Token widerrufen am {when}").format(when=device.revoked_at | localtime) }}{% elif online %}<span class="pill ok">online</span>{% else %}<span class="pill">offline</span>{% endif %}</dd>
+    <dt>{{ _("Zuletzt gesehen") }}</dt><dd>{{ device.last_seen_at | localtime }}</dd>
+    <dt>{{ _("Agent") }}</dt><dd>{{ device.agent_version or "–" }} ({{ _("Protokoll") }} {{ device.protocol_version or "–" }})
+      {% if device.protocol_unsupported %}<br><span class="warn">{{ _("veraltet – Server unterstützt {versions}. Agent per pacman -Syu aktualisieren; Durchsetzung läuft mit letzter Policy weiter.").format(versions=supported | join(", ")) }}</span>{% endif %}</dd>
+    <dt>{{ _("Policy") }}</dt><dd>{% if policy_current %}<span class="pill ok">{{ _("aktuell") }}</span>{% elif device.policy_version %}<span class="pill warn">{{ _("veraltet") }}</span> <small class="muted">{{ _("wird beim nächsten Verbinden übertragen") }}</small>{% else %}{{ _("noch nicht übertragen") }}{% endif %}</dd>
+    <dt>{{ _("Gekoppelt am") }}</dt><dd>{{ device.created_at | localtime }}</dd>
   </dl>
 </section>
 
 {% if device.integrity_at %}
 <section class="card">
-  <div class="card-head"><h2>Integrität</h2>
-    {% if device.integrity_failed %}<span class="pill warn">Fehler</span>{% else %}<span class="pill ok">alle Schutzmaßnahmen intakt</span>{% endif %}</div>
-  <p class="muted"><small>Stand {{ device.integrity_at | localtime }}</small></p>
+  <div class="card-head"><h2>{{ _("Integrität") }}</h2>
+    {% if device.integrity_failed %}<span class="pill warn">{{ _("Fehler") }}</span>{% else %}<span class="pill ok">{{ _("alle Schutzmaßnahmen intakt") }}</span>{% endif %}</div>
+  <p class="muted"><small>{{ _("Stand {when}").format(when=device.integrity_at | localtime) }}</small></p>
   <table>
     {% for c in device.integrity_checks %}
     <tr>
-      <td style="width:2rem">{% if c.ok %}<span class="check-ok" aria-label="ok">✓</span>{% else %}<span class="check-fail" aria-label="Fehler">✕</span>{% endif %}</td>
-      <td>{{ c.label }}{% if c.detail %}<br><small class="{{ 'warn' if not c.ok else 'muted' }}">{{ c.detail }}</small>{% endif %}</td>
+      <td style="width:2rem">{% if c.ok %}<span class="check-ok" aria-label="ok">✓</span>{% else %}<span class="check-fail" aria-label="{{ _('Fehler') }}">✕</span>{% endif %}</td>
+      <td>{{ integrity_label(c) }}{% if c.detail %}<br><small class="{{ 'warn' if not c.ok else 'muted' }}">{{ c.detail }}</small>{% endif %}</td>
     </tr>
     {% endfor %}
   </table>
@@ -34,21 +34,21 @@
 {% endif %}
 
 <section class="card">
-  <h2>Benutzer-Zuordnung</h2>
-  <p class="muted"><small>Nicht zugeordnete Linux-Benutzer werden nie eingeschränkt.</small></p>
+  <h2>{{ _("Benutzer-Zuordnung") }}</h2>
+  <p class="muted"><small>{{ _("Nicht zugeordnete Linux-Benutzer werden nie eingeschränkt.") }}</small></p>
   {% if device.users %}
   <form method="post" action="/devices/{{ device.id }}/mapping">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <div class="scroll">
     <table>
-      <tr><th>Linux-Benutzer</th><th>UID</th><th>Kind</th></tr>
+      <tr><th>{{ _("Linux-Benutzer") }}</th><th>UID</th><th>{{ _("Kind") }}</th></tr>
       {% for u in device.users %}
       <tr{% if not u.present %} class="muted"{% endif %}>
-        <td>{{ u.username }}{% if u.full_name %} ({{ u.full_name }}){% endif %}{% if not u.present %} – nicht mehr vorhanden{% endif %}</td>
+        <td>{{ u.username }}{% if u.full_name %} ({{ u.full_name }}){% endif %}{% if not u.present %} – {{ _("nicht mehr vorhanden") }}{% endif %}</td>
         <td>{{ u.uid }}</td>
         <td>
           <select name="user_{{ u.id }}">
-            <option value="">– nicht eingeschränkt –</option>
+            <option value="">– {{ _("nicht eingeschränkt") }} –</option>
             {% for c in children %}<option value="{{ c.id }}"{% if u.child_id == c.id %} selected{% endif %}>{{ c.name }}</option>{% endfor %}
           </select>
         </td>
@@ -56,24 +56,24 @@
       {% endfor %}
     </table>
     </div>
-    <button type="submit">Zuordnung speichern</button>
+    <button type="submit">{{ _("Zuordnung speichern") }}</button>
   </form>
-  {% else %}<p class="muted">Der Agent hat noch keine Benutzer gemeldet.</p>{% endif %}
+  {% else %}<p class="muted">{{ _("Der Agent hat noch keine Benutzer gemeldet.") }}</p>{% endif %}
 </section>
 
 {% if not device.revoked_at %}
 <section class="card">
-  <h2>Einstellungen</h2>
+  <h2>{{ _("Einstellungen") }}</h2>
   <form method="post" action="/devices/{{ device.id }}/alert" class="row">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-    <label>Alarm, wenn länger als <input type="number" name="hours" min="1" max="720" value="{{ device.alert_after_hours }}" class="short"> Stunden ohne Meldung</label>
-    <button type="submit">Speichern</button>
+    <label>{{ _("Alarm, wenn länger als") }} <input type="number" name="hours" min="1" max="720" value="{{ device.alert_after_hours }}" class="short"> {{ _("Stunden ohne Meldung") }}</label>
+    <button type="submit">{{ _("Speichern") }}</button>
   </form>
   <hr style="border:0;border-top:1px solid var(--line);margin:1rem 0">
   <form method="post" action="/devices/{{ device.id }}/revoke"
-        onsubmit="return confirm('Geräte-Token widerrufen? Das Gerät muss danach neu gekoppelt werden.')">
+        data-confirm="{{ _('Geräte-Token widerrufen? Das Gerät muss danach neu gekoppelt werden.') }}" onsubmit="return confirm(this.dataset.confirm)">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-    <button type="submit" class="danger">Token widerrufen</button>
+    <button type="submit" class="danger">{{ _("Token widerrufen") }}</button>
   </form>
 </section>
 {% endif %}

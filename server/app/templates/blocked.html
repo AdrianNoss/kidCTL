@@ -1,60 +1,60 @@
 {% extends "base.html" %}
-{% block title %}Protokoll {{ child.name }} – KidCTL{% endblock %}
+{% block title %}{{ _("Protokoll") }} {{ child.name }} – KidCTL{% endblock %}
 {% block content %}
 <div class="page-head">
-  <div><span class="eyebrow">{{ "Spiele" if games else "Gesperrte Aktionen" }}</span><h1>{{ child.name }}</h1></div>
+  <div><span class="eyebrow">{{ _("Spiele") if games else _("Gesperrte Aktionen") }}</span><h1>{{ child.name }}</h1></div>
   <div class="actions">
-    <a href="/children/{{ child.id }}" class="btn secondary">Einstellungen</a>
-    <a href="/children/{{ child.id }}/chat" class="btn secondary">Chat</a>
-    <a href="/children/{{ child.id }}/stats" class="btn secondary">Statistik</a>
+    <a href="/children/{{ child.id }}" class="btn secondary">{{ _("Einstellungen") }}</a>
+    <a href="/children/{{ child.id }}/chat" class="btn secondary">{{ _("Chat") }}</a>
+    <a href="/children/{{ child.id }}/stats" class="btn secondary">{{ _("Statistik") }}</a>
   </div>
 </div>
 
 <section class="card log-filter">
-  <div class="segmented" role="group" aria-label="Art">
+  <div class="segmented" role="group" aria-label="{{ _('Art') }}">
     {% for key, label in kinds.items() %}
-    {% if f.kind == key %}<span class="active">{{ label }}</span>{% else %}<a href="{{ f.url(base, kind=key, limit=page) }}">{{ label }}</a>{% endif %}
+    {% if f.kind == key %}<span class="active">{{ _(label) }}</span>{% else %}<a href="{{ f.url(base, kind=key, limit=page) }}">{{ _(label) }}</a>{% endif %}
     {% endfor %}
   </div>
   <form method="get" action="{{ base }}" class="log-form">
     {% if f.kind %}<input type="hidden" name="kind" value="{{ f.kind }}">{% endif %}
-    <label class="log-search">Suche
-      <input type="search" name="q" value="{{ f.q }}" maxlength="100" placeholder="{{ 'Spiel …' if games else 'Programm, Domain, Pfad …' }}">
+    <label class="log-search">{{ _("Suche") }}
+      <input type="search" name="q" value="{{ f.q }}" maxlength="100" placeholder="{{ _('Spiel …') if games else _('Programm, Domain, Pfad …') }}">
     </label>
-    <label>Zeitraum
-      <select name="range">{% for key, label in ranges.items() %}<option value="{{ key }}"{% if f.range == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <label>{{ _("Zeitraum") }}
+      <select name="range">{% for key, label in ranges.items() %}<option value="{{ key }}"{% if f.range == key %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select>
     </label>
     {% if not games %}
-    <label>Status
-      <select name="status">{% for key, label in statuses.items() %}<option value="{{ key }}"{% if f.status == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <label>{{ _("Status") }}
+      <select name="status">{% for key, label in statuses.items() %}<option value="{{ key }}"{% if f.status == key %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select>
     </label>
     {% endif %}
     {% if users | length > 1 or f.user %}
-    <label>Benutzer
-      <select name="user"><option value="">Alle</option>{% for u in users %}<option value="{{ u }}"{% if f.user == u %} selected{% endif %}>{{ u }}</option>{% endfor %}</select>
+    <label>{{ _("Benutzer") }}
+      <select name="user"><option value="">{{ _("Alle") }}</option>{% for u in users %}<option value="{{ u }}"{% if f.user == u %} selected{% endif %}>{{ u }}</option>{% endfor %}</select>
     </label>
     {% endif %}
-    <label>Reihenfolge
-      <select name="order">{% for key, label in orders.items() %}<option value="{{ key }}"{% if f.order == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <label>{{ _("Reihenfolge") }}
+      <select name="order">{% for key, label in orders.items() %}<option value="{{ key }}"{% if f.order == key %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select>
     </label>
     <div class="log-buttons">
-      <button type="submit">Anzeigen</button>
-      {% if f.active or f.range != "7" or f.order != "new" %}<a href="{{ base }}" class="btn ghost">Zurücksetzen</a>{% endif %}
+      <button type="submit">{{ _("Anzeigen") }}</button>
+      {% if f.active or f.range != "7" or f.order != "new" %}<a href="{{ base }}" class="btn ghost">{{ _("Zurücksetzen") }}</a>{% endif %}
     </div>
   </form>
-  <p class="muted log-summary" title="Einträge werden nach {{ retention }} Tagen gelöscht">{{ total }} {% if games %}{{ "Sitzung" if total == 1 else "Sitzungen" }}{% else %}{{ "Eintrag" if total == 1 else "Einträge" }}{% endif %} · {{ ranges[f.range] }}{% if f.kind %} · {{ kinds[f.kind] }}{% endif %}{% if f.q %} · Suche „{{ f.q }}“{% endif %}</p>
+  <p class="muted log-summary" title="{{ _('Einträge werden nach {n} Tagen gelöscht').format(n=retention) }}">{% if games %}{{ ngettext("{n} Sitzung", "{n} Sitzungen", total).format(n=total) }}{% else %}{{ ngettext("{n} Eintrag", "{n} Einträge", total).format(n=total) }}{% endif %} · {{ _(ranges[f.range]) }}{% if f.kind %} · {{ _(kinds[f.kind]) }}{% endif %}{% if f.q %} · {{ _("Suche „{q}“").format(q=f.q) }}{% endif %}</p>
 </section>
 
 {% if games %}
 {% if top %}
 <section class="card">
-  <h2>Meistgespielt</h2>
+  <h2>{{ _("Meistgespielt") }}</h2>
   <div class="scroll">
   <table>
-    <tr><th>Spiel</th><th class="right">Gesamt</th><th class="right">Sitzungen</th><th class="right hide-narrow">Zuletzt</th></tr>
+    <tr><th>{{ _("Spiel") }}</th><th class="right">{{ _("Gesamt") }}</th><th class="right">{{ _("Sitzungen") }}</th><th class="right hide-narrow">{{ _("Zuletzt") }}</th></tr>
     {% for t in top %}
     <tr>
-      <td><a href="{{ f.url(base, q=t.name, limit=page) }}" title="Nur dieses Spiel anzeigen">{{ t.name }}</a>{% if t.launcher %} <small class="muted">{{ t.launcher }}</small>{% endif %}</td>
+      <td><a href="{{ f.url(base, q=t.name, limit=page) }}" title="{{ _('Nur dieses Spiel anzeigen') }}">{{ t.name }}</a>{% if t.launcher %} <small class="muted">{{ t.launcher }}</small>{% endif %}</td>
       <td class="num right">{{ fmt_minutes(t.minutes) }}</td>
       <td class="num right">{{ t.sessions }}</td>
       <td class="num right hide-narrow">{{ t.last | localtime }}</td>
@@ -74,33 +74,33 @@
       <colgroup><col class="c-span"><col>{% if users | length > 1 %}<col class="c-user">{% endif %}<col class="c-status"></colgroup>
       {% for s in sessions %}{% set running = is_running(s) %}
       <tr>
-        <td class="num log-time">{% if running %}seit {{ s.started_at | localtime("%H:%M") }}{% else %}{{ s.started_at | localtime("%H:%M") }}–{{ s.last_seen_at | localtime("%H:%M") }}{% endif %}</td>
+        <td class="num log-time">{% if running %}{{ _("seit {time}").format(time=s.started_at | localtime("%H:%M")) }}{% else %}{{ s.started_at | localtime("%H:%M") }}–{{ s.last_seen_at | localtime("%H:%M") }}{% endif %}</td>
         <td>{{ s.name }}{% if launcher(s.key) %} <small class="muted">{{ launcher(s.key) }}</small>{% endif %}</td>
         {% if users | length > 1 %}<td>{{ s.username }}</td>{% endif %}
-        <td class="right">{% if running %}<span class="pill play" title="läuft gerade">▶<span class="hide-narrow"> läuft ·</span> {{ fmt_minutes(session_minutes(s)) }}</span>{% else %}<span class="num">{{ fmt_minutes(session_minutes(s)) }}</span>{% endif %}</td>
+        <td class="right">{% if running %}<span class="pill play" title="{{ _('läuft gerade') }}">▶<span class="hide-narrow"> {{ _("läuft") }} ·</span> {{ fmt_minutes(session_minutes(s)) }}</span>{% else %}<span class="num">{{ fmt_minutes(session_minutes(s)) }}</span>{% endif %}</td>
       </tr>
       {% endfor %}
     </table>
     </div>
   </div>
   {% else %}
-  <p class="muted">{% if f.q or f.user %}Keine Spiele für diese Filter.{% else %}Keine Spiele in diesem Zeitraum.{% endif %}</p>
+  <p class="muted">{% if f.q or f.user %}{{ _("Keine Spiele für diese Filter.") }}{% else %}{{ _("Keine Spiele in diesem Zeitraum.") }}{% endif %}</p>
   {% endfor %}
   {% if shown < total %}
-  <a href="{{ f.url(base, limit=f.limit + page) }}" class="btn secondary">{{ "Ältere" if f.order == "new" else "Neuere" }} laden ({{ total - shown }} weitere)</a>
+  <a href="{{ f.url(base, limit=f.limit + page) }}" class="btn secondary">{{ (_("Ältere laden ({n} weitere)") if f.order == "new" else _("Neuere laden ({n} weitere)")).format(n=total - shown) }}</a>
   {% endif %}
-  <p class="muted"><small>Erfasst werden Spiele aus Steam und Heroic, etwa minutengenau. Der Spielname stammt vom Rechner des Kindes.</small></p>
+  <p class="muted"><small>{{ _("Erfasst werden Spiele aus Steam und Heroic, etwa minutengenau. Der Spielname stammt vom Rechner des Kindes.") }}</small></p>
 </section>
 {% else %}
 {% if top and total > 1 %}
 <section class="card">
-  <h2>Häufigste Einträge</h2>
+  <h2>{{ _("Häufigste Einträge") }}</h2>
   <div class="scroll">
   <table>
-    <tr><th>Programm / Website</th><th class="right">Anzahl</th><th class="right">Zuletzt</th></tr>
+    <tr><th>{{ _("Programm / Website") }}</th><th class="right">{{ _("Anzahl") }}</th><th class="right">{{ _("Zuletzt") }}</th></tr>
     {% for t in top %}
     <tr>
-      <td>{% if t.kind == "domain" %}<span class="pill">Website</span> {% endif %}<a href="{{ f.url(base, q=t.key.split(':', 1)[-1], limit=page) }}" title="Nur diesen Eintrag anzeigen">{{ t.name }}</a></td>
+      <td>{% if t.kind == "domain" %}<span class="pill">{{ _("Website") }}</span> {% endif %}<a href="{{ f.url(base, q=t.key.split(':', 1)[-1], limit=page) }}" title="{{ _('Nur diesen Eintrag anzeigen') }}">{{ name_of(t.key, t.name) }}</a></td>
       <td class="num right">{{ t.count }}</td>
       <td class="num right">{{ t.last | localtime }}</td>
     </tr>
@@ -120,19 +120,19 @@
       {% for e in events %}
       <tr>
         <td class="num log-time">{{ e.at | localtime("%H:%M") }}</td>
-        <td>{% if e.kind == "domain" %}<span class="pill">Website</span> {% endif %}{{ e.name }}{% if e.detail %} <small class="muted">({{ e.detail }})</small>{% endif %}<br><small class="muted log-key">{{ e.key }}</small></td>
+        <td>{% if e.kind == "domain" %}<span class="pill">{{ _("Website") }}</span> {% endif %}{{ name_of(e.key, e.name) }}{% if blocked_detail(e) %} <small class="muted">({{ blocked_detail(e) }})</small>{% endif %}<br><small class="muted log-key">{{ e.key }}</small></td>
         <td>{{ e.username }}</td>
-        <td class="right">{% if e.audit %}<span class="pill">nur protokolliert</span>{% else %}<span class="pill warn">gesperrt</span>{% endif %}</td>
+        <td class="right">{% if e.audit %}<span class="pill">{{ _("nur protokolliert") }}</span>{% else %}<span class="pill warn">{{ _("gesperrt") }}</span>{% endif %}</td>
       </tr>
       {% endfor %}
     </table>
     </div>
   </div>
   {% else %}
-  <p class="muted">{% if f.active %}Keine Einträge für diese Filter.{% else %}Keine gesperrten Aktionen in diesem Zeitraum.{% endif %}</p>
+  <p class="muted">{% if f.active %}{{ _("Keine Einträge für diese Filter.") }}{% else %}{{ _("Keine gesperrten Aktionen in diesem Zeitraum.") }}{% endif %}</p>
   {% endfor %}
   {% if shown < total %}
-  <a href="{{ f.url(base, limit=f.limit + page) }}" class="btn secondary">{{ "Ältere" if f.order == "new" else "Neuere" }} laden ({{ total - shown }} weitere)</a>
+  <a href="{{ f.url(base, limit=f.limit + page) }}" class="btn secondary">{{ (_("Ältere laden ({n} weitere)") if f.order == "new" else _("Neuere laden ({n} weitere)")).format(n=total - shown) }}</a>
   {% endif %}
 </section>
 {% endif %}

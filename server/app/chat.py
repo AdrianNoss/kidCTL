@@ -12,6 +12,7 @@ from kidctl_common import protocol as p
 
 from . import push
 from . import schedule as sch
+from .i18n import _
 from .models import Child, Device, DeviceUser, Message, Parent, utcnow
 from .ws import manager
 
@@ -22,7 +23,7 @@ def sender_name(db: Session, msg: Message, child: Child | None = None) -> str:
     if msg.from_child:
         return (child or db.get(Child, msg.child_id)).name
     parent = db.get(Parent, msg.sender_parent_id) if msg.sender_parent_id else None
-    return (parent.display_name or parent.username) if parent else "Eltern"
+    return (parent.display_name or parent.username) if parent else _("Eltern")
 
 
 def to_wire(db: Session, msg: Message) -> p.ChatMessage:
@@ -88,20 +89,28 @@ def pending_count(db: Session) -> dict[int, int]:
 def notify_parents_new(db: Session, msg: Message) -> None:
     """Web Push an alle Eltern für eine neue Nachricht/Anfrage des Kindes."""
     name = sender_name(db, msg)
-    if msg.kind == "extension_request":
-        parts = []
-        if msg.requested_minutes:
-            parts.append(f"+{msg.requested_minutes} min")
-        if msg.requested_window_end:
-            parts.append(f"bis {msg.requested_window_end:%H:%M} Uhr")
-        what = "mehr Spielzeit" if msg.request_target == "games" else "Verlängerung"
-        title, body = f"{name} bittet um {what} ({', '.join(parts)})", msg.body
-    elif msg.kind == "access_request":
-        what = "die Website" if msg.access_kind == "domain" else "das Programm"
-        title = f"{name} bittet um Freigabe: {msg.access_name}"
-        body = msg.body or f"Anfrage für {what} {msg.access_name}"
-    else:
-        title, body = f"Nachricht von {name}", msg.body
+    m = msg
+
+    def title() -> str:   # je Elternteil in dessen Sprache
+        if m.kind == "extension_request":
+            parts = []
+            if m.requested_minutes:
+                parts.append(_("+{n} min").format(n=m.requested_minutes))
+            if m.requested_window_end:
+                parts.append(_("bis {time} Uhr").format(time=f"{m.requested_window_end:%H:%M}"))
+            text = (_("{name} bittet um mehr Spielzeit ({what})") if m.request_target == "games"
+                    else _("{name} bittet um Verlängerung ({what})"))
+            return text.format(name=name, what=", ".join(parts))
+        if m.kind == "access_request":
+            return _("{name} bittet um Freigabe: {what}").format(name=name, what=m.access_name)
+        return _("Nachricht von {name}").format(name=name)
+
+    def body() -> str:
+        if m.kind == "access_request" and not m.body:
+            text = (_("Anfrage für die Website {name}") if m.access_kind == "domain"
+                    else _("Anfrage für das Programm {name}"))
+            return text.format(name=m.access_name)
+        return m.body
     push.notify_parents(title, body, url=f"/children/{msg.child_id}/chat#m{msg.id}",
                         tag=f"chat-{msg.child_id}")
 
@@ -161,7 +170,7 @@ def decide(db: Session, msg: Message, parent_id: int, approve: bool,
     aus geändert.
     """
     if msg.kind != "extension_request":
-        raise sch.ScheduleError("Keine Verlängerungsanfrage.")
+        raise sch.ScheduleError(_("Keine Verlängerungsanfrage."))
     child = db.get(Child, msg.child_id)
     games = msg.request_target == "games"
     if games:
@@ -172,7 +181,7 @@ def decide(db: Session, msg: Message, parent_id: int, approve: bool,
         else:
             sch.check_credit(child, msg.request_day, minutes, window_end)
     elif msg.request_day < sch.today_local():
-        raise sch.ScheduleError("Anfrage ist bereits verfallen.")
+        raise sch.ScheduleError(_("Anfrage ist bereits verfallen."))
 
     res = db.execute(update(Message)
                      .where(Message.id == msg.id, Message.status == "pending")
@@ -182,7 +191,7 @@ def decide(db: Session, msg: Message, parent_id: int, approve: bool,
                              approved_window_end=window_end if approve else None))
     if res.rowcount != 1:
         db.rollback()
-        raise sch.ScheduleError("Die Anfrage wurde bereits entschieden.")
+        raise sch.ScheduleError(_("Die Anfrage wurde bereits entschieden."))
     if approve:
         if games:
             sch.add_credit(db, child, msg.request_day, 0, None, minutes)

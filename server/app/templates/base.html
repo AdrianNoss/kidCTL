@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="{{ lang() }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -19,14 +19,14 @@
   <div class="topbar-inner">
     <a href="/" class="brand"><span class="mark" aria-hidden="true"></span>KidCTL</a>
     <nav class="nav">
-      {% for href, label in [("/", "Übersicht"), ("/children", "Kinder"), ("/devices", "Geräte"), ("/parents", "Eltern"), ("/settings", "Benachrichtigungen")] %}
+      {% for href, label in [("/", _("Übersicht")), ("/children", _("Kinder")), ("/devices", _("Geräte")), ("/parents", _("Eltern")), ("/settings", _("Benachrichtigungen"))] %}
       <a href="{{ href }}" class="btn ghost small{% if (href == '/' and path == '/') or (href != '/' and path.startswith(href)) %} active{% endif %}">{{ label }}</a>
       {% endfor %}
     </nav>
     <form method="post" action="/logout" class="who">
       <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-      <a href="/profile" class="who-name{% if path == '/profile' %} active{% endif %}" title="Profil">{{ current_parent.display_name or current_parent.username }}</a>
-      <button type="submit" class="secondary small">Abmelden</button>
+      <a href="/profile" class="who-name{% if path == '/profile' %} active{% endif %}" title="{{ _('Profil') }}">{{ current_parent.display_name or current_parent.username }}</a>
+      <button type="submit" class="secondary small">{{ _("Abmelden") }}</button>
     </form>
   </div>
 </header>

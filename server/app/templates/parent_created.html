@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Account angelegt – KidCTL{% endblock %}
+{% block title %}{{ _("Account angelegt") }} – KidCTL{% endblock %}
 {% block content %}
-<div class="page-head"><h1>Account „{{ parent.username }}“ angelegt</h1></div>
+<div class="page-head"><h1>{{ _("Account „{name}“ angelegt").format(name=parent.username) }}</h1></div>
 <section class="card">
-  <p>TOTP jetzt in der Authenticator-App einrichten. <strong>Dieser QR-Code wird nur einmal angezeigt.</strong></p>
+  <p>{{ _("TOTP jetzt in der Authenticator-App einrichten.") }} <strong>{{ _("Dieser QR-Code wird nur einmal angezeigt.") }}</strong></p>
   <div class="qr">{{ qr_svg | safe }}</div>
   <p>Secret: <code>{{ secret }}</code></p>
-  <a href="/parents" class="btn">Fertig</a>
+  <a href="/parents" class="btn">{{ _("Fertig") }}</a>
 </section>
 {% endblock %}

@@ -1,4 +1,7 @@
-"""Web Push (VAPID) an alle Eltern-Abos."""
+"""Web Push (VAPID) an alle Eltern-Abos.
+
+Titel und Text dürfen Funktionen ohne Argumente sein: Sie werden je Elternteil in dessen Sprache
+ausgewertet (``i18n.parent_language``)."""
 
 from __future__ import annotations
 
@@ -9,9 +12,10 @@ import logging
 from pywebpush import WebPushException, webpush
 from sqlalchemy import delete, select
 
+from . import i18n
 from .config import settings
 from .db import SessionLocal
-from .models import PushSubscription
+from .models import Parent, PushSubscription
 
 log = logging.getLogger("kidctl.push")
 
@@ -41,18 +45,26 @@ def _send_one(sub: PushSubscription, payload: str) -> bool:
         return True
 
 
-def send_to_parents_sync(title: str, body: str, url: str = "/", tag: str | None = None,
+def _text(value) -> str:
+    return value() if callable(value) else value
+
+
+def send_to_parents_sync(title, body, url: str = "/", tag: str | None = None,
                          parent_id: int | None = None) -> int:
     """Sendet an alle Abos (oder nur die eines Elternteils). Gibt die Anzahl Zustellungen zurück."""
     if not settings.push_enabled:
         return 0
-    payload = json.dumps({"title": title, "body": body[:300], "url": url, "tag": tag})
     with SessionLocal() as db:
         q = select(PushSubscription)
         if parent_id is not None:
             q = q.where(PushSubscription.parent_id == parent_id)
         subs = db.scalars(q).all()
-        gone = [s.id for s in subs if not _send_one(s, payload)]
+        payloads: dict[int, str] = {}
+        for pid in {s.parent_id for s in subs}:
+            parent = db.get(Parent, pid)
+            with i18n.use(i18n.parent_language(parent) if parent else "de"):
+                payloads[pid] = json.dumps({"title": _text(title), "body": _text(body)[:300], "url": url, "tag": tag})
+        gone = [s.id for s in subs if not _send_one(s, payloads[s.parent_id])]
         if gone:
             db.execute(delete(PushSubscription).where(PushSubscription.id.in_(gone)))
             db.commit()
@@ -63,7 +75,7 @@ def send_to_parents_sync(title: str, body: str, url: str = "/", tag: str | None 
 _tasks: set[asyncio.Task] = set()
 
 
-def notify_parents(title: str, body: str, url: str = "/", tag: str | None = None) -> None:
+def notify_parents(title, body, url: str = "/", tag: str | None = None) -> None:
     """Nicht blockierend aus async-Code: Versand läuft im Thread-Pool."""
     if not settings.push_enabled:
         return

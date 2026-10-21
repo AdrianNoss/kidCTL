@@ -7,9 +7,10 @@
   const btnOff = document.getElementById("push-off");
   const csrf = box.dataset.csrf;
   const say = (t) => { status.textContent = t; };
+  const t = (k) => box.dataset["t" + k];  // übersetzte Texte aus data-t-* (Sprache des WebUI)
 
   if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
-    say("Dieser Browser unterstützt keine Push-Benachrichtigungen. Auf dem iPhone: Seite erst zum Home-Bildschirm hinzufügen und von dort öffnen.");
+    say(t("Unsupported"));
     return;
   }
 
@@ -37,8 +38,8 @@
     const sub = await current();
     btnOn.hidden = !!sub;
     btnOff.hidden = !sub;
-    if (Notification.permission === "denied") say("Benachrichtigungen sind im Browser blockiert – bitte in den Website-Einstellungen erlauben.");
-    else say(sub ? "Auf diesem Gerät aktiv." : "Auf diesem Gerät nicht aktiv.");
+    if (Notification.permission === "denied") say(t("Denied"));
+    else say(sub ? t("On") : t("Off"));
     if (sub) post("/push/subscribe", sub.toJSON()).catch(() => {}); // Abo serverseitig auffrischen
   }
 
@@ -51,7 +52,7 @@
       });
       await post("/push/subscribe", sub.toJSON());
       location.reload();
-    } catch (e) { say("Aktivieren fehlgeschlagen: " + e.message); }
+    } catch (e) { say(t("EnableFailed") + " " + e.message); }
   });
 
   btnOff.addEventListener("click", async () => {
@@ -62,7 +63,7 @@
         await sub.unsubscribe();
       }
       location.reload();
-    } catch (e) { say("Deaktivieren fehlgeschlagen: " + e.message); }
+    } catch (e) { say(t("DisableFailed") + " " + e.message); }
   });
 
   show();

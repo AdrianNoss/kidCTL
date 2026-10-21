@@ -1,13 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Anmelden – KidCTL{% endblock %}
+{% block title %}{{ _("Anmelden") }} – KidCTL{% endblock %}
 {% block content %}
 <form method="post" action="/login" class="card narrow">
   <div class="login-brand"><span class="mark" aria-hidden="true"></span>KidCTL</div>
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-  <label>Benutzername <input name="username" value="{{ username or '' }}" autocomplete="username" required autofocus></label>
-  <label>Passwort <input type="password" name="password" autocomplete="current-password" required></label>
-  <label>Authenticator-Code <input name="totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
-  <button type="submit" style="width:100%">Anmelden</button>
-  <p class="login-help"><a href="/reset">Passwort vergessen?</a></p>
+  <label>{{ _("Benutzername") }} <input name="username" value="{{ username or '' }}" autocomplete="username" required autofocus></label>
+  <label>{{ _("Passwort") }} <input type="password" name="password" autocomplete="current-password" required></label>
+  <label>{{ _("Authenticator-Code") }} <input name="totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
+  <button type="submit" style="width:100%">{{ _("Anmelden") }}</button>
+  <p class="login-help"><a href="/reset">{{ _("Passwort vergessen?") }}</a></p>
+  {% include "_langswitch.html" %}
 </form>
 {% endblock %}

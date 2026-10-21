@@ -1,70 +1,76 @@
 {% extends "base.html" %}
-{% block title %}Profil – KidCTL{% endblock %}
+{% block title %}{{ _("Profil") }} – KidCTL{% endblock %}
 {% block content %}
-{% set f = form or {"username": parent.username, "display_name": parent.display_name, "email": parent.email} %}
-<div class="page-head"><div><span class="eyebrow">Profil</span><h1>{{ parent.display_name or parent.username }}</h1></div></div>
+{% set f = form or {"username": parent.username, "display_name": parent.display_name, "email": parent.email, "language": parent.language} %}
+<div class="page-head"><div><span class="eyebrow">{{ _("Profil") }}</span><h1>{{ parent.display_name or parent.username }}</h1></div></div>
 
 <form method="post" action="/profile" class="card">
-  <h2>Angaben</h2>
+  <h2>{{ _("Angaben") }}</h2>
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
   <div class="form-grid">
-    <label>Anzeigename <input name="display_name" maxlength="128" value="{{ f.display_name }}"></label>
-    <label>Benutzername (Anmeldung) <input name="username" required maxlength="64" value="{{ f.username }}" autocomplete="username"></label>
-    <label>E-Mail <input type="email" name="email" maxlength="255" value="{{ f.email }}" autocomplete="email" placeholder="für „Passwort vergessen“"></label>
-    <label><span>Aktuelles Passwort <span class="muted">(bei neuem Benutzernamen oder neuer E-Mail)</span></span>
+    <label>{{ _("Anzeigename") }} <input name="display_name" maxlength="128" value="{{ f.display_name }}"></label>
+    <label>{{ _("Benutzername (Anmeldung)") }} <input name="username" required maxlength="64" value="{{ f.username }}" autocomplete="username"></label>
+    <label>{{ _("E-Mail") }} <input type="email" name="email" maxlength="255" value="{{ f.email }}" autocomplete="email" placeholder="{{ _('für „Passwort vergessen“') }}"></label>
+    <label>{{ _("Sprache") }}
+      <select name="language">
+        {% for code, label in LANGUAGE_CHOICES.items() %}<option value="{{ code }}"{% if (f.language or "") == code %} selected{% endif %}{% if code %} lang="{{ code }}"{% endif %}>{{ _(label) if not code else label }}</option>{% endfor %}
+      </select>
+    </label>
+    <label><span>{{ _("Aktuelles Passwort") }} <span class="muted">{{ _("(bei neuem Benutzernamen oder neuer E-Mail)") }}</span></span>
       <input type="password" name="current_password" autocomplete="current-password"></label>
   </div>
-  {% if not mail_enabled %}<p class="muted"><small>Auf diesem Server ist kein E-Mail-Versand eingerichtet (SMTP in <code>.env</code>) – „Passwort vergessen“ ist dann nicht verfügbar.</small></p>{% endif %}
-  <button type="submit">Speichern</button>
+  <p class="muted"><small>{{ _("Die Sprache gilt für das WebUI, E-Mails und Push-Benachrichtigungen. „Automatisch“ folgt der Sprache des Browsers.") }}</small></p>
+  {% if not mail_enabled %}<p class="muted"><small>{{ _("Auf diesem Server ist kein E-Mail-Versand eingerichtet (SMTP in .env) – „Passwort vergessen“ ist dann nicht verfügbar.") }}</small></p>{% endif %}
+  <button type="submit">{{ _("Speichern") }}</button>
 </form>
 
 <section class="card">
-  <h2>Nutzungsbericht per E-Mail</h2>
-  <p>Eine Zusammenfassung je Kind: Bildschirmzeit je Tag, Tage über dem Limit, meistgenutzte Programme und Spiele,
-    gesperrte Aktionen und Verlängerungsanfragen. Versand ab {{ send_hour }} Uhr für die abgelaufene Woche bzw. den abgelaufenen Monat.</p>
-  {% if not parent.email %}<p class="muted"><small>Dafür oben zuerst eine E-Mail-Adresse eintragen.</small></p>
-  {% elif not mail_enabled %}<p class="muted"><small>Auf diesem Server ist kein E-Mail-Versand eingerichtet (SMTP in <code>.env</code>).</small></p>{% endif %}
+  <h2>{{ _("Nutzungsbericht per E-Mail") }}</h2>
+  <p>{{ _("Eine Zusammenfassung je Kind: Bildschirmzeit je Tag, Tage über dem Limit, meistgenutzte Programme und Spiele, gesperrte Aktionen und Verlängerungsanfragen.") }}
+    {{ _("Versand ab {hour} Uhr für die abgelaufene Woche bzw. den abgelaufenen Monat.").format(hour=send_hour) }}</p>
+  {% if not parent.email %}<p class="muted"><small>{{ _("Dafür oben zuerst eine E-Mail-Adresse eintragen.") }}</small></p>
+  {% elif not mail_enabled %}<p class="muted"><small>{{ _("Auf diesem Server ist kein E-Mail-Versand eingerichtet (SMTP in .env).") }}</small></p>{% endif %}
   <form method="post" action="/profile/report" class="report-form">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-    <label>Bericht
+    <label>{{ _("Bericht") }}
       <select name="interval"{% if not parent.email %} disabled{% endif %}>
-        {% for key, label in intervals.items() %}<option value="{{ key }}"{% if parent.report_interval == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        {% for key, label in intervals.items() %}<option value="{{ key }}"{% if parent.report_interval == key %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}
       </select>
     </label>
-    <button type="submit"{% if not parent.email %} disabled{% endif %}>Speichern</button>
+    <button type="submit"{% if not parent.email %} disabled{% endif %}>{{ _("Speichern") }}</button>
   </form>
   {% set iv = parent.report_interval or "weekly" %}
   <div class="actions">
-    <a href="/profile/report/preview?interval={{ iv }}" class="btn ghost" target="_blank" rel="noopener">Vorschau</a>
+    <a href="/profile/report/preview?interval={{ iv }}" class="btn ghost" target="_blank" rel="noopener">{{ _("Vorschau") }}</a>
     {% if parent.email and mail_enabled %}
     <form method="post" action="/profile/report/send" class="inline">
       <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
       <input type="hidden" name="interval" value="{{ iv }}">
-      <button type="submit" class="secondary">Jetzt an {{ parent.email }} senden</button>
+      <button type="submit" class="secondary">{{ _("Jetzt an {email} senden").format(email=parent.email) }}</button>
     </form>
     {% endif %}
   </div>
-  <p class="muted"><small>Vorschau und „Jetzt senden“ zeigen {{ "die letzte Woche" if iv == "weekly" else "den letzten Monat" }}.</small></p>
+  <p class="muted"><small>{{ _("Vorschau und „Jetzt senden“ zeigen die letzte Woche.") if iv == "weekly" else _("Vorschau und „Jetzt senden“ zeigen den letzten Monat.") }}</small></p>
 </section>
 
 <form method="post" action="/profile/password" class="card">
-  <h2>Passwort ändern</h2>
+  <h2>{{ _("Passwort ändern") }}</h2>
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
   <input type="text" name="username" value="{{ parent.username }}" autocomplete="username" hidden>
   <div class="form-grid">
-    <label>Aktuelles Passwort <input type="password" name="current_password" required autocomplete="current-password"></label>
-    <label>Neues Passwort (min. 12 Zeichen) <input type="password" name="password" minlength="12" required autocomplete="new-password"></label>
-    <label>Neues Passwort wiederholen <input type="password" name="repeat" minlength="12" required autocomplete="new-password"></label>
+    <label>{{ _("Aktuelles Passwort") }} <input type="password" name="current_password" required autocomplete="current-password"></label>
+    <label>{{ _("Neues Passwort (min. 12 Zeichen)") }} <input type="password" name="password" minlength="12" required autocomplete="new-password"></label>
+    <label>{{ _("Neues Passwort wiederholen") }} <input type="password" name="repeat" minlength="12" required autocomplete="new-password"></label>
   </div>
-  <p class="muted"><small>Andere angemeldete Geräte werden danach abgemeldet.</small></p>
-  <button type="submit">Passwort ändern</button>
+  <p class="muted"><small>{{ _("Andere angemeldete Geräte werden danach abgemeldet.") }}</small></p>
+  <button type="submit">{{ _("Passwort ändern") }}</button>
 </form>
 
 <form method="post" action="/profile/totp" class="card">
-  <h2>Authenticator</h2>
+  <h2>{{ _("Authenticator") }}</h2>
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-  <p>Für ein neues Handy oder eine andere App: neuen QR-Code erzeugen und mit einem Code bestätigen. Bis zur Bestätigung gilt der bisherige Authenticator.</p>
-  <p class="muted"><small>Authenticator verloren und nicht mehr angemeldet? Ein anderes Elternteil kann ihn unter „Eltern“ zurücksetzen.</small></p>
-  <button type="submit" class="secondary">Neuen Authenticator einrichten</button>
+  <p>{{ _("Für ein neues Handy oder eine andere App: neuen QR-Code erzeugen und mit einem Code bestätigen. Bis zur Bestätigung gilt der bisherige Authenticator.") }}</p>
+  <p class="muted"><small>{{ _("Authenticator verloren und nicht mehr angemeldet? Ein anderes Elternteil kann ihn unter „Eltern“ zurücksetzen.") }}</small></p>
+  <button type="submit" class="secondary">{{ _("Neuen Authenticator einrichten") }}</button>
 </form>
 {% endblock %}

@@ -96,7 +96,7 @@ def apps_between(db: Session, child: Child, start: date, end: date) -> list[AppR
     rows = db.execute(select(AppUsage.key, func.sum(AppUsage.seconds))
                       .where(AppUsage.child_id == child.id, AppUsage.day >= start, AppUsage.day <= end)
                       .group_by(AppUsage.key)).all()
-    names = dict(db.execute(select(DeviceApp.key, DeviceApp.name)).all())
+    names = {a.key: a.label for a in db.scalars(select(DeviceApp))}
     names |= {k: n for k, n in db.execute(
         select(AppUsage.key, func.max(AppUsage.name)).where(
             AppUsage.child_id == child.id, AppUsage.key.startswith(GAME_PREFIX), AppUsage.name != "")

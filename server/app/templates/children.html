@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Kinder – KidCTL{% endblock %}
+{% block title %}{{ _("Kinder") }} – KidCTL{% endblock %}
 {% block content %}
-<div class="page-head"><h1>Kinder</h1></div>
+<div class="page-head"><h1>{{ _("Kinder") }}</h1></div>
 <section class="card">
   {% if children %}
   <table>
@@ -9,25 +9,25 @@
     <tr>
       <td><a href="/children/{{ c.id }}" class="entity">{{ c.name }}</a></td>
       <td class="right"><div class="actions">
-        <a href="/children/{{ c.id }}" class="btn secondary small">Einstellungen</a>
-        <a href="/children/{{ c.id }}/chat" class="btn secondary small">Chat{% if (pending or {}).get(c.id) %} <span class="count" title="offene Anfragen">{{ pending[c.id] }}</span>{% endif %}</a>
+        <a href="/children/{{ c.id }}" class="btn secondary small">{{ _("Einstellungen") }}</a>
+        <a href="/children/{{ c.id }}/chat" class="btn secondary small">{{ _("Chat") }}{% if (pending or {}).get(c.id) %} <span class="count" title="{{ _('offene Anfragen') }}">{{ pending[c.id] }}</span>{% endif %}</a>
         <form method="post" action="/children/{{ c.id }}/delete" class="inline"
-              onsubmit="return confirm('Kind mit allen Regeln löschen?')">
+              data-confirm="{{ _('Kind mit allen Regeln löschen?') }}" onsubmit="return confirm(this.dataset.confirm)">
           <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-          <button type="submit" class="danger small">Löschen</button>
+          <button type="submit" class="danger small">{{ _("Löschen") }}</button>
         </form>
       </div></td>
     </tr>
     {% endfor %}
   </table>
-  {% else %}<p class="muted">Noch keine Kinder angelegt.</p>{% endif %}
+  {% else %}<p class="muted">{{ _("Noch keine Kinder angelegt.") }}</p>{% endif %}
 </section>
 <form method="post" action="/children" class="card">
-  <h2>Kind anlegen</h2>
+  <h2>{{ _("Kind anlegen") }}</h2>
   <div class="row">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-    <input name="name" placeholder="Name" required maxlength="64" aria-label="Name">
-    <button type="submit">Anlegen</button>
+    <input name="name" placeholder="{{ _('Name') }}" required maxlength="64" aria-label="{{ _('Name') }}">
+    <button type="submit">{{ _("Anlegen") }}</button>
   </div>
 </form>
 {% endblock %}

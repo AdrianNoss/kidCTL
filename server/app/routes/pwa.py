@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from ..i18n import _
 from ..config import settings
 from ..db import get_db
 from ..models import ParentSession, PushSubscription
@@ -84,6 +85,6 @@ def push_unsubscribe(sub: UnsubscribeIn, sess: ParentSession = Depends(csrf_prot
 
 @router.post("/push/test")
 def push_test(sess: ParentSession = Depends(csrf_protect)):
-    n = send_to_parents_sync("KidCTL", "Test-Benachrichtigung – Push funktioniert.", "/settings",
+    n = send_to_parents_sync("KidCTL", lambda: _("Test-Benachrichtigung – Push funktioniert."), "/settings",
                              tag="test", parent_id=sess.parent_id)
     return RedirectResponse(f"/settings?sent={n}", status_code=303)

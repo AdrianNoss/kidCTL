@@ -6,7 +6,7 @@
 {%- set sans = "-apple-system,'Segoe UI','Noto Sans','Helvetica Neue',Arial,sans-serif" -%}
 {%- set serif = "Charter,'Iowan Old Style','Noto Serif',Cambria,Georgia,serif" -%}
 <!doctype html>
-<html lang="de">
+<html lang="{{ lang() }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -31,22 +31,22 @@
   <tr><td bgcolor="{{ C.surface }}" style="background:{{ C.surface }};border:1px solid {{ C.line }};border-radius:10px;padding:24px 24px 8px;">
     <div style="font:650 12px/1.4 {{ sans }};letter-spacing:.06em;text-transform:uppercase;color:{{ C.muted }};">{{ period.title }}</div>
     <div style="font:600 28px/1.2 {{ serif }};color:{{ C.ink }};margin:4px 0 12px;">{{ period.label }}</div>
-    <p style="margin:0 0 16px;font:15px/1.55 {{ sans }};color:{{ C.ink2 }};">Hallo {{ parent.display_name or parent.username }},
-      hier ist die Übersicht über die Nutzung {{ "der Woche" if period.interval == "weekly" else "des Monats" }}.</p>
+    <p style="margin:0 0 16px;font:15px/1.55 {{ sans }};color:{{ C.ink2 }};">{{ _("Hallo {name},").format(name=parent.display_name or parent.username) }}
+      {{ _("hier ist die Übersicht über die Nutzung der Woche.") if period.interval == "weekly" else _("hier ist die Übersicht über die Nutzung des Monats.") }}</p>
     {% if reports | length > 1 %}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font:14px/1.4 {{ sans }};margin-bottom:16px;">
       <tr>
-        <td style="padding:6px 0;border-bottom:1px solid {{ C.line }};color:{{ C.muted }};font-size:12px;">Kind</td>
-        <td align="right" style="padding:6px 0;border-bottom:1px solid {{ C.line }};color:{{ C.muted }};font-size:12px;">Gesamt</td>
-        <td align="right" style="padding:6px 0;border-bottom:1px solid {{ C.line }};color:{{ C.muted }};font-size:12px;">Ø pro Tag</td>
-        <td align="right" style="padding:6px 0;border-bottom:1px solid {{ C.line }};color:{{ C.muted }};font-size:12px;">ggü. {{ period.compare_label }}</td>
+        <td style="padding:6px 0;border-bottom:1px solid {{ C.line }};color:{{ C.muted }};font-size:12px;">{{ _("Kind") }}</td>
+        <td align="right" style="padding:6px 0;border-bottom:1px solid {{ C.line }};color:{{ C.muted }};font-size:12px;">{{ _("Gesamt") }}</td>
+        <td align="right" style="padding:6px 0;border-bottom:1px solid {{ C.line }};color:{{ C.muted }};font-size:12px;">{{ _("Ø pro Tag") }}</td>
+        <td align="right" style="padding:6px 0;border-bottom:1px solid {{ C.line }};color:{{ C.muted }};font-size:12px;">{{ _("ggü. {period}").format(period=period.compare_label) }}</td>
       </tr>
       {% for r in reports %}
       <tr>
         <td style="padding:8px 0;border-bottom:1px solid {{ C.line }};"><a href="#kind-{{ r.child.id }}" style="color:{{ C.ink }};text-decoration:none;font-weight:600;">{{ r.child.name }}</a></td>
         <td align="right" style="padding:8px 0;border-bottom:1px solid {{ C.line }};white-space:nowrap;">{{ fmt(r.total) }}</td>
         <td align="right" style="padding:8px 0;border-bottom:1px solid {{ C.line }};white-space:nowrap;">{{ fmt(r.avg) }}</td>
-        <td align="right" style="padding:8px 0;border-bottom:1px solid {{ C.line }};white-space:nowrap;color:{{ C.muted }};">{% if r.change is none %}–{% else %}{{ "+" if r.change > 0 else "" }}{{ r.change }} %{% endif %}</td>
+        <td align="right" style="padding:8px 0;border-bottom:1px solid {{ C.line }};white-space:nowrap;color:{{ C.muted }};">{% if r.change is none %}–{% else %}{{ fmt_percent(r.change, signed=True) }}{% endif %}</td>
       </tr>
       {% endfor %}
     </table>
@@ -61,34 +61,34 @@
     <a name="kind-{{ r.child.id }}" id="kind-{{ r.child.id }}"></a>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
       <td style="font:600 22px/1.2 {{ serif }};color:{{ C.ink }};">{{ r.child.name }}</td>
-      <td align="right" style="font:14px/1.2 {{ sans }};"><a href="{{ base_url }}/children/{{ r.child.id }}/stats" style="color:{{ C.accent }};">Statistik öffnen</a></td>
+      <td align="right" style="font:14px/1.2 {{ sans }};"><a href="{{ base_url }}/children/{{ r.child.id }}/stats" style="color:{{ C.accent }};">{{ _("Statistik öffnen") }}</a></td>
     </tr></table>
 
     {# Kennzahlen #}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 18px;">
       <tr>
         <td width="33%" valign="top" bgcolor="{{ C.surface2 }}" style="background:{{ C.surface2 }};border:1px solid {{ C.line }};border-radius:6px;padding:10px 12px;">
-          <div style="font:12px/1.3 {{ sans }};color:{{ C.muted }};">Bildschirmzeit</div>
+          <div style="font:12px/1.3 {{ sans }};color:{{ C.muted }};">{{ _("Bildschirmzeit") }}</div>
           <div style="font:650 20px/1.3 {{ sans }};color:{{ C.ink }};white-space:nowrap;">{{ fmt(r.total) }}</div>
-          <div style="font:12px/1.3 {{ sans }};color:{{ C.muted }};">{% if r.change is none %}kein Vergleich{% else %}{{ "+" if r.change > 0 else "" }}{{ r.change }} % ggü. {{ period.compare_label }}{% endif %}</div>
+          <div style="font:12px/1.3 {{ sans }};color:{{ C.muted }};">{% if r.change is none %}{{ _("kein Vergleich") }}{% else %}{{ _("{change} ggü. {period}").format(change=fmt_percent(r.change, signed=True), period=period.compare_label) }}{% endif %}</div>
         </td>
         <td width="8" style="font-size:0;">&nbsp;</td>
         <td width="33%" valign="top" bgcolor="{{ C.surface2 }}" style="background:{{ C.surface2 }};border:1px solid {{ C.line }};border-radius:6px;padding:10px 12px;">
-          <div style="font:12px/1.3 {{ sans }};color:{{ C.muted }};">Ø pro Tag</div>
+          <div style="font:12px/1.3 {{ sans }};color:{{ C.muted }};">{{ _("Ø pro Tag") }}</div>
           <div style="font:650 20px/1.3 {{ sans }};color:{{ C.ink }};white-space:nowrap;">{{ fmt(r.avg) }}</div>
-          <div style="font:12px/1.3 {{ sans }};color:{{ C.muted }};">an {{ r.active_days }} von {{ r.days | length }} Tagen genutzt</div>
+          <div style="font:12px/1.3 {{ sans }};color:{{ C.muted }};">{{ _("an {n} von {total} Tagen genutzt").format(n=r.active_days, total=r.days | length) }}</div>
         </td>
         <td width="8" style="font-size:0;">&nbsp;</td>
         <td width="33%" valign="top" bgcolor="{{ C.warnsoft if r.over_days else C.surface2 }}" style="background:{{ C.warnsoft if r.over_days else C.surface2 }};border:1px solid {{ C.line }};border-radius:6px;padding:10px 12px;">
-          <div style="font:12px/1.3 {{ sans }};color:{{ C.muted }};">Über dem Limit</div>
-          <div style="font:650 20px/1.3 {{ sans }};color:{{ C.warn if r.over_days else C.ink }};">{{ r.over_days | length }} {{ "Tag" if r.over_days | length == 1 else "Tage" }}</div>
-          <div style="font:12px/1.3 {{ sans }};color:{{ C.muted }};">{% if r.credits %}+{{ fmt(r.credits) }} Gutschrift{% else %}keine Gutschrift{% endif %}</div>
+          <div style="font:12px/1.3 {{ sans }};color:{{ C.muted }};">{{ _("Über dem Limit") }}</div>
+          <div style="font:650 20px/1.3 {{ sans }};color:{{ C.warn if r.over_days else C.ink }};">{{ ngettext("{n} Tag", "{n} Tage", r.over_days | length).format(n=r.over_days | length) }}</div>
+          <div style="font:12px/1.3 {{ sans }};color:{{ C.muted }};">{% if r.credits %}{{ _("+{time} Gutschrift").format(time=fmt(r.credits)) }}{% else %}{{ _("keine Gutschrift") }}{% endif %}</div>
         </td>
       </tr>
     </table>
 
     {# Tagesdiagramm: Säulen aus Tabellenzellen (funktioniert auch in Outlook) #}
-    <div style="font:650 14px/1.3 {{ sans }};color:{{ C.ink }};margin-bottom:8px;">Bildschirmzeit je Tag</div>
+    <div style="font:650 14px/1.3 {{ sans }};color:{{ C.ink }};margin-bottom:8px;">{{ _("Bildschirmzeit je Tag") }}</div>
     {% if r.total %}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout:fixed;">
       <tr>
@@ -99,7 +99,7 @@
             <tr><td height="{{ bar_height - h }}" style="height:{{ bar_height - h }}px;font-size:0;line-height:0;">&nbsp;</td></tr>
             <tr><td height="{{ [h, 2] | max }}" bgcolor="{{ C.warn if d.over else (C.accent if d.used else C.line) }}"
                     style="height:{{ [h, 2] | max }}px;background:{{ C.warn if d.over else (C.accent if d.used else C.line) }};border-radius:3px 3px 0 0;font-size:0;line-height:0;"
-                    title="{{ weekday(d.day) }} {{ d.day.strftime('%d.%m.') }}: {{ fmt(d.used) }} von {{ fmt(d.allowed) }}">&nbsp;</td></tr>
+                    title="{{ _('{day}: {used} von {allowed}').format(day=fmt_date(d.day, with_weekday=True, year=False), used=fmt(d.used), allowed=fmt(d.allowed)) }}">&nbsp;</td></tr>
           </table>
         </td>
         {% endfor %}
@@ -107,24 +107,24 @@
       <tr>
         {% for d in r.days %}
         <td align="center" style="padding-top:4px;border-top:1px solid {{ C.line }};font:{{ 11 if period.interval == 'weekly' else 9 }}px/1.2 {{ sans }};color:{{ C.muted }};">
-          {% if period.interval == "weekly" %}{{ weekday(d.day) }}<br>{{ d.day.day }}.{% else %}{{ weekday(d.day) }}<br>{{ d.day.day }}{% endif %}</td>
+          {% if period.interval == "weekly" %}{{ weekday(d.day) }}<br>{{ d.day.day }}{{ "." if lang() == "de" else "" }}{% else %}{{ weekday(d.day) }}<br>{{ d.day.day }}{% endif %}</td>
         {% endfor %}
       </tr>
     </table>
     <p style="margin:8px 0 0;font:12px/1.5 {{ sans }};color:{{ C.muted }};">
-      <span style="display:inline-block;width:10px;height:10px;background:{{ C.accent }};border-radius:2px;"></span> innerhalb des Limits
-      &nbsp; <span style="display:inline-block;width:10px;height:10px;background:{{ C.warn }};border-radius:2px;"></span> über dem Limit
-      {%- if r.over_days %}: {% for d in r.over_days %}{{ weekday(d.day) }} {{ d.day.strftime('%d.%m.') }} (+{{ d.used - d.allowed }} min){% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+      <span style="display:inline-block;width:10px;height:10px;background:{{ C.accent }};border-radius:2px;"></span> {{ _("innerhalb des Limits") }}
+      &nbsp; <span style="display:inline-block;width:10px;height:10px;background:{{ C.warn }};border-radius:2px;"></span> {{ _("über dem Limit") }}
+      {%- if r.over_days %}: {% for d in r.over_days %}{{ fmt_date(d.day, with_weekday=True, year=False) }} (+{{ d.used - d.allowed }} min){% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
     </p>
     {% else %}
-    <p style="margin:0;font:14px/1.5 {{ sans }};color:{{ C.muted }};">In diesem Zeitraum wurde keine Bildschirmzeit erfasst.</p>
+    <p style="margin:0;font:14px/1.5 {{ sans }};color:{{ C.muted }};">{{ _("In diesem Zeitraum wurde keine Bildschirmzeit erfasst.") }}</p>
     {% endif %}
 
     {# Programme und Spiele #}
-    {% for title, rows, empty in [("Meistgenutzte Programme", r.apps, "Keine Programmzeit erfasst."), ("Spiele", r.games, "")] %}
+    {% for games, title, rows, empty in [(False, _("Meistgenutzte Programme"), r.apps, _("Keine Programmzeit erfasst.")), (True, _("Spiele"), r.games, "")] %}
     {% if rows or empty %}
     {%- set top = [rows | map(attribute="minutes") | max if rows else 1, 1] | max -%}
-    <div style="font:650 14px/1.3 {{ sans }};color:{{ C.ink }};margin:22px 0 8px;">{{ title }}{% if title == "Spiele" and r.game_sessions %} <span style="font-weight:400;color:{{ C.muted }};">· {{ r.game_sessions }} {{ "Sitzung" if r.game_sessions == 1 else "Sitzungen" }}</span>{% endif %}</div>
+    <div style="font:650 14px/1.3 {{ sans }};color:{{ C.ink }};margin:22px 0 8px;">{{ title }}{% if games and r.game_sessions %} <span style="font-weight:400;color:{{ C.muted }};">· {{ ngettext("{n} Sitzung", "{n} Sitzungen", r.game_sessions).format(n=r.game_sessions) }}</span>{% endif %}</div>
     {% if rows %}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font:14px/1.3 {{ sans }};">
       {% for a in rows %}
@@ -145,30 +145,29 @@
     {% endfor %}
 
     {# Sperren und Anfragen #}
-    <div style="font:650 14px/1.3 {{ sans }};color:{{ C.ink }};margin:22px 0 8px;">Gesperrt und angefragt</div>
+    <div style="font:650 14px/1.3 {{ sans }};color:{{ C.ink }};margin:22px 0 8px;">{{ _("Gesperrt und angefragt") }}</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font:14px/1.45 {{ sans }};color:{{ C.ink2 }};">
-      <tr><td style="padding:2px 0;">Gesperrte Aktionen</td><td align="right" style="padding:2px 0;white-space:nowrap;">
-        {% if r.blocked %}<a href="{{ base_url }}/children/{{ r.child.id }}/protokoll?range=30" style="color:{{ C.accent }};">{{ r.blocked }}</a>{% else %}keine{% endif %}</td></tr>
+      <tr><td style="padding:2px 0;">{{ _("Gesperrte Aktionen") }}</td><td align="right" style="padding:2px 0;white-space:nowrap;">
+        {% if r.blocked %}<a href="{{ base_url }}/children/{{ r.child.id }}/protokoll?range=30" style="color:{{ C.accent }};">{{ r.blocked }}</a>{% else %}{{ _("keine") }}{% endif %}</td></tr>
       {% for kind, name, count in r.blocked_top %}
-      <tr><td style="padding:2px 0 2px 14px;color:{{ C.muted }};font-size:13px;">{{ "Website" if kind == "domain" else "Programm" }}: {{ name }}</td>
+      <tr><td style="padding:2px 0 2px 14px;color:{{ C.muted }};font-size:13px;">{{ _("Website") if kind == "domain" else _("Programm") }}: {{ name }}</td>
           <td align="right" style="padding:2px 0;color:{{ C.muted }};font-size:13px;white-space:nowrap;">{{ count }}×</td></tr>
       {% endfor %}
-      <tr><td style="padding:6px 0 2px;">Verlängerungsanfragen</td><td align="right" style="padding:6px 0 2px;white-space:nowrap;">
-        {% if r.requests %}{{ r.requests }}, davon {{ r.approved }} genehmigt{% else %}keine{% endif %}</td></tr>
-      <tr><td style="padding:2px 0;">Zusätzliche Zeit (Gutschriften)</td><td align="right" style="padding:2px 0;white-space:nowrap;">
-        {% if r.credits %}+{{ fmt(r.credits) }}{% else %}keine{% endif %}</td></tr>
+      <tr><td style="padding:6px 0 2px;">{{ _("Verlängerungsanfragen") }}</td><td align="right" style="padding:6px 0 2px;white-space:nowrap;">
+        {% if r.requests %}{{ _("{n}, davon {approved} genehmigt").format(n=r.requests, approved=r.approved) }}{% else %}{{ _("keine") }}{% endif %}</td></tr>
+      <tr><td style="padding:2px 0;">{{ _("Zusätzliche Zeit (Gutschriften)") }}</td><td align="right" style="padding:2px 0;white-space:nowrap;">
+        {% if r.credits %}+{{ fmt(r.credits) }}{% else %}{{ _("keine") }}{% endif %}</td></tr>
     </table>
   </td></tr>
   {% else %}
-  <tr><td style="padding:16px 4px;font:14px/1.5 {{ sans }};color:{{ C.muted }};">Noch keine Kinder angelegt.</td></tr>
+  <tr><td style="padding:16px 4px;font:14px/1.5 {{ sans }};color:{{ C.muted }};">{{ _("Noch keine Kinder angelegt.") }}</td></tr>
   {% endfor %}
 
   {# ---------- Fuß ---------- #}
   <tr><td style="padding:18px 4px 0;font:12px/1.5 {{ sans }};color:{{ C.muted }};">
-    Bildschirmzeit aller Geräte zusammen; Programme laufen teils parallel und zählen jeweils voll. Das Limit ist das
-    aktuell eingestellte Tageslimit inklusive Gutschriften.<br>
-    Du erhältst diese Mail, weil du im Profil den Nutzungsbericht „{{ intervals[period.interval] }}“ aktiviert hast.
-    <a href="{{ base_url }}/profile" style="color:{{ C.muted }};">Bericht ändern oder abbestellen</a>
+    {{ _("Bildschirmzeit aller Geräte zusammen; Programme laufen teils parallel und zählen jeweils voll. Das Limit ist das aktuell eingestellte Tageslimit inklusive Gutschriften.") }}<br>
+    {{ _("Du erhältst diese Mail, weil du im Profil den Nutzungsbericht „{interval}“ aktiviert hast.").format(interval=_(intervals[period.interval])) }}
+    <a href="{{ base_url }}/profile" style="color:{{ C.muted }};">{{ _("Bericht ändern oder abbestellen") }}</a>
   </td></tr>
 </table>
 </td></tr>

@@ -162,7 +162,7 @@ def test_reconnect_gets_usage_of_other_devices(client, parent):
 def pushes(monkeypatch):
     sent = []
     monkeypatch.setattr(alarms.push, "send_to_parents_sync",
-                        lambda title, body, url="/", tag=None, parent_id=None: sent.append((title, url)))
+                        lambda title, body, url="/", tag=None, parent_id=None: sent.append((title() if callable(title) else title, url)))
     return sent
 
 

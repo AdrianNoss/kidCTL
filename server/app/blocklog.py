@@ -13,21 +13,21 @@ from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from .config import settings
+from .i18n import N_, _, fmt_date, weekday
 from .models import BlockedEvent, GameSession
 
-KINDS = {"": "Alle", "program": "Programme", "domain": "Websites", "game": "Spiele"}
+KINDS = {"": N_("Alle"), "program": N_("Programme"), "domain": N_("Websites"), "game": N_("Spiele")}
 GAME = "game"
 LAUNCHERS = {"steam": "Steam", "heroic": "Heroic"}
 RUNNING_SECONDS = 150  # Sitzung ohne neuere Meldung gilt danach als beendet
-RANGES = {"1": "Heute", "7": "7 Tage", "30": "30 Tage", "all": "Alles (90 Tage)"}
-STATUSES = {"": "Alle", "blocked": "Gesperrt", "audit": "Nur protokolliert"}
-ORDERS = {"new": "Neueste zuerst", "old": "Älteste zuerst"}
+RANGES = {"1": N_("Heute"), "7": N_("7 Tage"), "30": N_("30 Tage"), "all": N_("Alles (90 Tage)")}
+STATUSES = {"": N_("Alle"), "blocked": N_("Gesperrt"), "audit": N_("Nur protokolliert")}
+ORDERS = {"new": N_("Neueste zuerst"), "old": N_("Älteste zuerst")}
 PAGE = 200
 MAX_LIMIT = 5000
 TOP = 10
 RETENTION_DAYS = 90
 PRUNE_INTERVAL = 6 * 3600  # Sekunden
-WEEKDAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
 
 
 @dataclass(frozen=True)
@@ -50,6 +50,31 @@ class LogFilter:
     @property
     def active(self) -> bool:
         return bool(self.kind or self.status or self.user or self.q)
+
+
+# Sprachneutrale Begründungen der Agenten (ab 0.26) -> Text; ``{arg}`` = Parameter. Ältere Einträge: ``detail``.
+DETAILS = {
+    "steam_not_allowed": N_("nicht freigegeben – {arg}"),
+    "container": N_("Container: Datei weicht vom System ab"),
+    "steam_library": N_("Steam-Bibliothek (über Steam gestartet nötig)"),
+    "electron_injected": N_("Electron mit fremdem Code ({arg})"),
+    "electron_app": N_("Electron-App ({arg})"),
+    "electron_no_app": N_("Electron ohne freigegebene App"),
+    "script": N_("Skript ({arg})"),
+    "interactive_shell": N_("interaktive Shell"),
+    "interpreter_no_script": N_("Interpreter ohne freigegebenes Skript"),
+    "injected": N_("eingeschleuster Code ({arg})"),
+    "not_allowed": N_("nicht freigegeben"),
+    "blocklist": N_("Sperrliste {arg}"),
+    "parent_deny": N_("von Eltern gesperrt"),
+    "doh": N_("DNS-over-HTTPS-Anbieter"),
+}
+
+
+def detail(e) -> str:
+    """Begründung eines Protokolleintrags in der Sprache der laufenden Anfrage."""
+    text = DETAILS.get(getattr(e, "detail_code", "") or "")
+    return _(text).format(arg=e.detail_arg) if text else e.detail
 
 
 def parse(params) -> LogFilter:
@@ -210,8 +235,9 @@ def by_day(rows: list, today: date, attr: str = "at") -> list[tuple[str, list]]:
     for e in rows:
         d = getattr(e, attr).replace(tzinfo=timezone.utc).astimezone(tz).date()
         if d != last:
-            label = ("Heute" if d == today else "Gestern" if d == today - timedelta(days=1)
-                     else WEEKDAYS[d.weekday()]) + d.strftime(", %d.%m.%Y")
+            name = (_("Heute") if d == today else _("Gestern") if d == today - timedelta(days=1)
+                    else weekday(d, short=False))
+            label = f"{name}, {fmt_date(d)}"
             out.append((label, []))
             last = d
         out[-1][1].append(e)

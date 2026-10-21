@@ -1,23 +1,24 @@
 {% extends "base.html" %}
-{% block title %}Authenticator einrichten – KidCTL{% endblock %}
+{% block title %}{{ _("Authenticator einrichten") }} – KidCTL{% endblock %}
 {% block content %}
 <div class="card narrow">
   <div class="login-brand"><span class="mark" aria-hidden="true"></span>KidCTL</div>
-  <h2>Authenticator einrichten</h2>
+  <h2>{{ _("Authenticator einrichten") }}</h2>
   {% if invalid %}
-  <p class="error">Dieser Link ist ungültig, abgelaufen oder wurde schon verwendet.</p>
-  <p class="muted"><small>Ein anderes Elternteil kann unter „Eltern“ einen neuen Link erzeugen.</small></p>
-  <a href="/login" class="btn secondary">Zur Anmeldung</a>
+  <p class="error">{{ _("Dieser Link ist ungültig, abgelaufen oder wurde schon verwendet.") }}</p>
+  <p class="muted"><small>{{ _("Ein anderes Elternteil kann unter „Eltern“ einen neuen Link erzeugen.") }}</small></p>
+  <a href="/login" class="btn secondary">{{ _("Zur Anmeldung") }}</a>
   {% else %}
-  <p>Account <strong>{{ username }}</strong>: QR-Code mit der Authenticator-App scannen, dann Passwort und den angezeigten Code eingeben.</p>
+  <p>{{ _("Account {name}: QR-Code mit der Authenticator-App scannen, dann Passwort und den angezeigten Code eingeben.").format(name=username) }}</p>
   <div class="qr">{{ qr_svg | safe }}</div>
-  <p class="muted"><small>Ohne Kamera: Schlüssel <code>{{ secret }}</code></small></p>
+  <p class="muted"><small>{{ _("Ohne Kamera: Schlüssel") }} <code>{{ secret }}</code></small></p>
   <form method="post" action="/totp-setup/{{ token }}">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-    <label>Passwort <input type="password" name="password" required autocomplete="current-password"></label>
-    <label>Code aus der App <input name="totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
-    <button type="submit" style="width:100%">Einrichten</button>
+    <label>{{ _("Passwort") }} <input type="password" name="password" required autocomplete="current-password"></label>
+    <label>{{ _("Code aus der App") }} <input name="totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
+    <button type="submit" style="width:100%">{{ _("Einrichten") }}</button>
   </form>
   {% endif %}
+  {% include "_langswitch.html" %}
 </div>
 {% endblock %}

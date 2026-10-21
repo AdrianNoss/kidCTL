@@ -19,9 +19,10 @@ from ..models import (
     BlocklistState, Child, DayException, Device, Message, PairingCode, Parent, ParentSession, WeekdayRule,
     utcnow,
 )
-from .. import access, accounts, blocklog, chat, nowplaying, policy, programs, report, stats, webfilter
+from .. import access, accounts, blocklog, chat, i18n, nowplaying, policy, programs, report, stats, webfilter
 from .. import lock as lk
 from .. import schedule as sch
+from ..i18n import N_, _
 from ..security import (
     client_ip, csrf_protect, hash_password, is_rate_limited, new_pairing_code, new_totp_secret, record_failure,
     require_session, token_hash, totp_qr_svg, totp_uri, verify_password,
@@ -80,7 +81,7 @@ def child_create(request: Request, name: str = Form(...), db: Session = Depends(
         db.rollback()
         children = db.scalars(select(Child).order_by(Child.name)).all()
         return render(request, "children.html", status_code=400, children=children,
-                      error=f"Ein Kind namens „{name}“ existiert bereits.")
+                      error=_("Ein Kind namens „{name}“ existiert bereits.").format(name=name))
     return _redirect("/children")
 
 
@@ -99,7 +100,7 @@ def _child_page(request: Request, db: Session, child: Child, status_code: int = 
     exceptions = db.scalars(select(DayException).where(
         DayException.child_id == child.id, DayException.day >= today).order_by(DayException.day)).all()
     ctx.setdefault("credit_day", today.isoformat())
-    return render(request, "child.html", status_code=status_code, child=child,
+    return render(request, "child.html", status_code=status_code, child=child, name_of=programs.name_lookup(db),
                   catalog=(catalog := programs.catalog_for_child(db, child.id)),
                   catalog_groups=programs.grouped_catalog(catalog), collapsed_groups=programs.COLLAPSED_GROUPS,
                   program_modes=programs.MODES,
@@ -108,7 +109,7 @@ def _child_page(request: Request, db: Session, child: Child, status_code: int = 
                   default_lists=webfilter.DEFAULT_LISTS,
                   list_states={s.id: s for s in db.scalars(select(BlocklistState))},
                   blocked=programs.blocked_log(db, child.id, limit=10),
-                  rules=sch.rules_by_day(child), groups=sch.GROUPS, weekday_names=sch.WEEKDAY_NAMES,
+                  rules=sch.rules_by_day(child), groups=sch.GROUPS, weekday_names=i18n.weekday_names(),
                   differs=sch.group_differs(child), exceptions=exceptions, today=today,
                   fmt_minutes=sch.fmt_minutes, max_quota=sch.MAX_QUOTA, max_extra=sch.MAX_EXTRA,
                   is_locked=lk.is_locked, lock_durations=lk.DURATIONS, max_grace=lk.MAX_GRACE_MINUTES,
@@ -235,6 +236,7 @@ def child_blocked(child_id: int, request: Request, db: Session = Depends(get_db)
         rows, total = blocklog.events(db, child.id, f, today)
         days, top = blocklog.by_day(rows, today), blocklog.top(db, child.id, f, today)
     return render(request, "blocked.html", child=child, f=f, base=f"/children/{child.id}/protokoll",
+                  name_of=programs.name_lookup(db),
                   days=days, shown=len(rows), total=total, top=top, users=blocklog.users(db, child.id),
                   games=f.kind == blocklog.GAME, session_minutes=blocklog.session_minutes,
                   is_running=blocklog.is_running, launcher=blocklog.launcher, fmt_minutes=sch.fmt_minutes,
@@ -251,7 +253,7 @@ def child_stats(child_id: int, request: Request, range: int = 7, db: Session = D
     app_rows = stats.apps(db, child, app_days)
     return render(request, "stats.html", child=child, playing=nowplaying.for_children(db).get(child.id, []), bars=bars, scale=scale, sums=stats.week_sums(bars),
                   apps=app_rows, app_days=app_days, app_scale=max([r.minutes for r in app_rows] + [1]),
-                  fmt_minutes=sch.fmt_minutes, weekday_names=sch.WEEKDAY_NAMES)
+                  fmt_minutes=sch.fmt_minutes, weekday_names=i18n.weekday_names())
 
 
 @router.post("/children/{child_id}/web", dependencies=[Depends(csrf_protect)])
@@ -265,7 +267,7 @@ async def child_web(child_id: int, request: Request, db: Session = Depends(get_d
     deny, bad_deny = webfilter.parse_domain_input(str(form.get("deny", "")))
     if bad_allow or bad_deny:
         return _child_page(request, db, child, status_code=400,
-                           error="Ungültige Domain(s): " + ", ".join((bad_allow + bad_deny)[:10]))
+                           error=_("Ungültige Domain(s):") + " " + ", ".join((bad_allow + bad_deny)[:10]))
     lists = {str(x) for x in form.getlist("list")}
     webfilter.save_child_settings(db, child, mode, form.get("safesearch") == "1",
                                   {str(x) for x in form.getlist("bundle")}, allow, deny, lists)
@@ -316,7 +318,7 @@ def _chat_messages(db: Session, child: Child) -> list[Message]:
 def _chat_ctx(db: Session, child: Child) -> dict:
     return dict(child=child, messages=_chat_messages(db, child),
                 sender_name=lambda m: chat.sender_name(db, m, child),
-                weekday_names=sch.WEEKDAY_NAMES, fmt_minutes=sch.fmt_minutes,
+                weekday_names=i18n.weekday_names(), fmt_minutes=sch.fmt_minutes,
                 max_extra=sch.MAX_EXTRA, has_device=bool(chat.device_ids_for_child(db, child.id)))
 
 
@@ -338,7 +340,7 @@ async def child_chat_send(child_id: int, request: Request, body: str = Form(...)
     body = body.strip()
     if not body or len(body) > MAX_BODY:
         return render(request, "chat.html", status_code=400, **_chat_ctx(db, child),
-                      error=f"Nachricht muss 1 bis {MAX_BODY} Zeichen lang sein.")
+                      error=_("Nachricht muss 1 bis {max} Zeichen lang sein.").format(max=MAX_BODY))
     msg = Message(child_id=child.id, from_child=False, sender_parent_id=sess.parent_id, body=body)
     db.add(msg)
     db.commit()
@@ -493,9 +495,9 @@ def parent_totp_reset(parent_id: int, request: Request, sess: ParentSession = De
     accounts.end_sessions(db, parent.id)
     db.commit()
     by = sess.parent.display_name or sess.parent.username
-    accounts.notify(parent, "Authenticator zurückgesetzt",
-                    f"{by} hat den Authenticator deines Accounts „{parent.username}“ zurückgesetzt. "
-                    "Den Einrichtungslink bekommst du von dieser Person.")
+    accounts.notify(parent, N_("Authenticator zurückgesetzt"),
+                    N_("{by} hat den Authenticator deines Accounts „{username}“ zurückgesetzt. "
+                       "Den Einrichtungslink bekommst du von dieser Person."), by=by, username=parent.username)
     return render(request, "totp_reset_link.html", parent=parent, link=f"{settings.base_url}/totp-setup/{raw}",
                   hours=accounts.TOTP_SETUP_HOURS)
 
@@ -523,44 +525,48 @@ def _check_password(db: Session, request: Request, parent: Parent, password: str
     """Aktuelles Passwort prüfen (mit Rate-Limiting wie beim Login)."""
     ip = client_ip(request)
     if is_rate_limited(db, "login", ip, parent.username):
-        return "Zu viele Fehlversuche. Bitte später erneut versuchen."
+        return _("Zu viele Fehlversuche. Bitte später erneut versuchen.")
     if not verify_password(password, parent.password_hash):
         record_failure(db, "login", ip, parent.username)
-        return "Aktuelles Passwort ist falsch."
+        return _("Aktuelles Passwort ist falsch.")
     return None
 
 
-PROFILE_NOTICES = {"saved": "Profil gespeichert.", "password": "Passwort geändert. Andere Sitzungen wurden abgemeldet.",
-                   "totp": "Neuer Authenticator eingerichtet. Andere Sitzungen wurden abgemeldet.",
-                   "report": "Nutzungsbericht gespeichert.", "report_sent": "Nutzungsbericht gesendet."}
+PROFILE_NOTICES = {"saved": N_("Profil gespeichert."), "password": N_("Passwort geändert. Andere Sitzungen wurden abgemeldet."),
+                   "totp": N_("Neuer Authenticator eingerichtet. Andere Sitzungen wurden abgemeldet."),
+                   "report": N_("Nutzungsbericht gespeichert."), "report_sent": N_("Nutzungsbericht gesendet.")}
 
 
 @router.get("/profile")
 def profile(request: Request):
-    return _profile(request, request.state.session.parent,
-                    notice=PROFILE_NOTICES.get(request.query_params.get("msg", "")))
+    notice = PROFILE_NOTICES.get(request.query_params.get("msg", ""))
+    return _profile(request, request.state.session.parent, notice=_(notice) if notice else None)
 
 
 @router.post("/profile")
 def profile_save(request: Request, username: str = Form(""), display_name: str = Form(""), email: str = Form(""),
-                 current_password: str = Form(""), sess: ParentSession = Depends(csrf_protect),
-                 db: Session = Depends(get_db)):
+                 language: str = Form(""), current_password: str = Form(""),
+                 sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
     parent = db.get(Parent, sess.parent_id)
     username, email = username.strip(), email.strip()
+    language = language if language in i18n.LANGS else ""
     error = accounts.username_error(db, username, parent.id) or accounts.email_error(email)
     sensitive = username != parent.username or email != parent.email
     if not error and sensitive:
         error = _check_password(db, request, parent, current_password)
     if error:
         return _profile(request, parent, 400, error=error, form={"username": username, "display_name": display_name,
-                                                                   "email": email})
+                                                                   "email": email, "language": language})
     old_email = parent.email
     parent.username, parent.display_name, parent.email = username, display_name.strip()[:128], email[:255]
+    parent.language = language
     db.commit()
     if old_email and old_email != email:
-        accounts.mail.send(old_email, "KidCTL: E-Mail-Adresse geändert",
-                           f"Die E-Mail-Adresse des KidCTL-Accounts „{username}“ wurde von dieser Adresse auf "
-                           f"„{email or '(keine)'}“ geändert.\nFalls du das nicht warst, melde dich sofort an.\n")
+        with i18n.use(i18n.parent_language(parent)):
+            accounts.mail.send(old_email, _("KidCTL: E-Mail-Adresse geändert"),
+                               _("Die E-Mail-Adresse des KidCTL-Accounts „{username}“ wurde von dieser Adresse auf "
+                                 "„{email}“ geändert.").format(username=username, email=email or _("(keine)"))
+                               + "\n" + _("Falls du das nicht warst, melde dich sofort an.") + "\n")
     return _redirect("/profile?msg=saved")
 
 
@@ -569,9 +575,9 @@ def profile_report(request: Request, interval: str = Form(""), sess: ParentSessi
                    db: Session = Depends(get_db)):
     parent = db.get(Parent, sess.parent_id)
     if interval not in report.INTERVALS:
-        return _profile(request, parent, 400, error="Ungültiger Zeitraum.")
+        return _profile(request, parent, 400, error=_("Ungültiger Zeitraum."))
     if interval and not parent.email:
-        return _profile(request, parent, 400, error="Für den Nutzungsbericht zuerst eine E-Mail-Adresse eintragen.")
+        return _profile(request, parent, 400, error=_("Für den Nutzungsbericht zuerst eine E-Mail-Adresse eintragen."))
     if interval != parent.report_interval:
         report.activate(parent, interval, sch.today_local())
         db.commit()
@@ -589,9 +595,9 @@ def profile_report_send(request: Request, interval: str = Form(""), sess: Parent
     """Bericht für den letzten abgeschlossenen Zeitraum sofort senden (zum Ausprobieren)."""
     parent = db.get(Parent, sess.parent_id)
     if not parent.email or not settings.mail_enabled:
-        return _profile(request, parent, 400, error="Versand nicht möglich: keine E-Mail-Adresse bzw. kein SMTP eingerichtet.")
+        return _profile(request, parent, 400, error=_("Versand nicht möglich: keine E-Mail-Adresse bzw. kein SMTP eingerichtet."))
     if not report.send(db, parent, _report_period(parent, interval)):
-        return _profile(request, parent, 502, error="Versand fehlgeschlagen (Details im Server-Log).")
+        return _profile(request, parent, 502, error=_("Versand fehlgeschlagen (Details im Server-Log)."))
     return _redirect("/profile?msg=report_sent")
 
 
@@ -611,7 +617,7 @@ def profile_password(request: Request, current_password: str = Form(""), passwor
     parent.password_hash = hash_password(password)
     accounts.end_sessions(db, parent.id, keep_session_id=sess.id)
     db.commit()
-    accounts.notify(parent, "Passwort geändert", "dein Passwort wurde im Profil geändert.")
+    accounts.notify(parent, N_("Passwort geändert"), N_("dein Passwort wurde im Profil geändert."))
     return _redirect("/profile?msg=password")
 
 
@@ -638,16 +644,16 @@ def profile_totp_confirm(request: Request, token: str = Form(""), current_passwo
     parent = db.get(Parent, sess.parent_id)
     t = accounts.get_token(db, token, "totp_change")
     if t is None or t.parent_id != parent.id:
-        return _profile(request, parent, 400, error="Die Einrichtung ist abgelaufen. Bitte neu starten.")
+        return _profile(request, parent, 400, error=_("Die Einrichtung ist abgelaufen. Bitte neu starten."))
     error = _check_password(db, request, parent, current_password)
     step = accounts.totp_step(t.secret, totp)
     if not error and step is None:
-        error = "Der Code passt nicht zum neuen QR-Code."
+        error = _("Der Code passt nicht zum neuen QR-Code.")
     if error:
         return _totp_change_page(request, parent, token, t.secret, 400, error)
     parent.totp_secret, parent.totp_last_step = t.secret, step
     t.used_at = utcnow()
     accounts.end_sessions(db, parent.id, keep_session_id=sess.id)
     db.commit()
-    accounts.notify(parent, "Authenticator geändert", "für deinen Account wurde ein neuer Authenticator eingerichtet.")
+    accounts.notify(parent, N_("Authenticator geändert"), N_("für deinen Account wurde ein neuer Authenticator eingerichtet."))
     return _redirect("/profile?msg=totp")

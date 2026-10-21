@@ -1,24 +1,25 @@
 {% extends "base.html" %}
-{% block title %}Passwort vergessen – KidCTL{% endblock %}
+{% block title %}{{ _("Passwort vergessen") }} – KidCTL{% endblock %}
 {% block content %}
 <div class="card narrow">
   <div class="login-brand"><span class="mark" aria-hidden="true"></span>KidCTL</div>
-  <h2>Passwort vergessen</h2>
+  <h2>{{ _("Passwort vergessen") }}</h2>
   {% if sent %}
-  <p class="success">Falls ein Account mit hinterlegter E-Mail-Adresse existiert, ist ein Link unterwegs. Er ist 30 Minuten gültig.</p>
-  <a href="/login" class="btn secondary">Zur Anmeldung</a>
+  <p class="success">{{ _("Falls ein Account mit hinterlegter E-Mail-Adresse existiert, ist ein Link unterwegs. Er ist 30 Minuten gültig.") }}</p>
+  <a href="/login" class="btn secondary">{{ _("Zur Anmeldung") }}</a>
   {% elif not mail_enabled %}
-  <p>Auf diesem Server ist kein E-Mail-Versand eingerichtet.</p>
-  <p class="muted"><small>Ein anderes Elternteil kann dir unter „Eltern“ helfen, oder der Server-Admin setzt das Passwort per
-    Kommandozeile zurück (<code>python -m app.cli reset-password</code>).</small></p>
-  <a href="/login" class="btn secondary">Zur Anmeldung</a>
+  <p>{{ _("Auf diesem Server ist kein E-Mail-Versand eingerichtet.") }}</p>
+  <p class="muted"><small>{{ _("Ein anderes Elternteil kann dir unter „Eltern“ helfen, oder der Server-Admin setzt das Passwort per Kommandozeile zurück") }}
+    (<code>python -m app.cli reset-password</code>).</small></p>
+  <a href="/login" class="btn secondary">{{ _("Zur Anmeldung") }}</a>
   {% else %}
   <form method="post" action="/reset">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-    <label>Benutzername oder E-Mail <input name="ident" required maxlength="255" autocomplete="username" autofocus></label>
-    <p class="muted"><small>Du bekommst einen Link, mit dem du ein neues Passwort setzt. Zum Anmelden brauchst du danach weiterhin deine Authenticator-App.</small></p>
-    <div class="actions"><button type="submit">Link senden</button><a href="/login" class="btn ghost">Abbrechen</a></div>
+    <label>{{ _("Benutzername oder E-Mail") }} <input name="ident" required maxlength="255" autocomplete="username" autofocus></label>
+    <p class="muted"><small>{{ _("Du bekommst einen Link, mit dem du ein neues Passwort setzt. Zum Anmelden brauchst du danach weiterhin deine Authenticator-App.") }}</small></p>
+    <div class="actions"><button type="submit">{{ _("Link senden") }}</button><a href="/login" class="btn ghost">{{ _("Abbrechen") }}</a></div>
   </form>
   {% endif %}
+  {% include "_langswitch.html" %}
 </div>
 {% endblock %}

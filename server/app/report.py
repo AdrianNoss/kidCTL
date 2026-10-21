@@ -20,8 +20,9 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import mail, policy, stats
+from . import i18n, mail, policy, stats
 from . import schedule as sch
+from .i18n import N_, _
 from .config import settings
 from .db import SessionLocal
 from .models import BlockedEvent, Child, DayException, GameSession, Message, Parent
@@ -29,13 +30,11 @@ from .web import templates
 
 log = logging.getLogger("kidctl.report")
 
-INTERVALS = {"": "Aus", "weekly": "Wöchentlich (montags)", "monthly": "Monatlich (am 1.)"}
+INTERVALS = {"": N_("Aus"), "weekly": N_("Wöchentlich (montags)"), "monthly": N_("Monatlich (am 1.)")}
 SEND_HOUR = 7
 CHECK_SECONDS = 600
 RETRY_SECONDS = 3600          # nach fehlgeschlagenem Versand frühestens wieder
 TOP = 5
-MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober",
-          "November", "Dezember"]
 BAR_HEIGHT = 72               # px, höchster Balken im Tagesdiagramm
 
 
@@ -48,7 +47,7 @@ class Period:
     @property
     def key(self) -> str:
         if self.interval == "weekly":
-            y, w, _ = self.start.isocalendar()
+            y, w, _wd = self.start.isocalendar()
             return f"{y}-W{w:02d}"
         return f"{self.start:%Y-%m}"
 
@@ -56,21 +55,20 @@ class Period:
     def days(self) -> int:
         return (self.end - self.start).days + 1
 
+    # Texte in der aktuellen Sprache (beim Versand: Sprache des Empfängers)
     @property
     def title(self) -> str:
-        if self.interval == "weekly":
-            return "Wochenbericht"
-        return "Monatsbericht"
+        return _("Wochenbericht") if self.interval == "weekly" else _("Monatsbericht")
 
     @property
     def label(self) -> str:
         if self.interval == "weekly":
-            return f"{self.start:%d.%m.}–{self.end:%d.%m.%Y}"
-        return f"{MONTHS[self.start.month - 1]} {self.start.year}"
+            return f"{i18n.fmt_date(self.start, year=False)}–{i18n.fmt_date(self.end)}"
+        return f"{i18n.month_name(self.start.month)} {self.start.year}"
 
     @property
     def compare_label(self) -> str:
-        return "Vorwoche" if self.interval == "weekly" else "Vormonat"
+        return _("Vorwoche") if self.interval == "weekly" else _("Vormonat")
 
     def previous(self) -> Period:
         if self.interval == "weekly":
@@ -202,14 +200,14 @@ def _short(minutes: int) -> str:
 
 
 def render(db: Session, parent: Parent, p: Period) -> tuple[str, str, str]:
-    """(Betreff, Text, HTML)."""
-    reports = build(db, p)
-    subject = f"KidCTL: {p.title} {p.label}"
-    ctx = dict(parent=parent, period=p, reports=reports, base_url=settings.base_url, fmt=sch.fmt_minutes,
-               short=_short, weekday=lambda d: sch.WEEKDAY_NAMES[d.weekday()][:2], bar_height=BAR_HEIGHT,
-               intervals=INTERVALS)
-    html = templates.env.get_template("mail/report.html").render(**ctx)
-    text = templates.env.get_template("mail/report.txt").render(**ctx)
+    """(Betreff, Text, HTML) in der Sprache des Empfängers."""
+    with i18n.use(i18n.parent_language(parent)):
+        reports = build(db, p)
+        subject = f"KidCTL: {p.title} {p.label}"
+        ctx = dict(parent=parent, period=p, reports=reports, base_url=settings.base_url, fmt=sch.fmt_minutes,
+                   short=_short, bar_height=BAR_HEIGHT, intervals=INTERVALS)
+        html = templates.env.get_template("mail/report.html").render(**ctx)
+        text = templates.env.get_template("mail/report.txt").render(**ctx)
     return subject, text, html
 
 

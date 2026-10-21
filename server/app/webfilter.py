@@ -18,11 +18,12 @@ from kidctl_common import protocol as p
 
 from .config import settings
 from .db import SessionLocal
+from .i18n import N_
 from .models import BlocklistState, Child, ChildBlocklist, ChildDomain, ChildWebBundle, utcnow
 
 log = logging.getLogger("kidctl.webfilter")
 
-MODES = {"off": "Aus", "whitelist": "Whitelist (nur Freigegebenes)", "blacklist": "Blacklist (alles außer Gesperrtem)"}
+MODES = {"off": N_("Aus"), "whitelist": N_("Whitelist (nur Freigegebenes)"), "blacklist": N_("Blacklist (alles außer Gesperrtem)")}
 
 
 # ---------- Dienst-Bundles (Whitelist) ----------
@@ -45,11 +46,11 @@ BUNDLES = {b.id: b for b in [
         "wikipedia.org", "wikimedia.org", "wikidata.org", "wikibooks.org", "wiktionary.org",
         "wikiversity.org", "wikisource.org", "wikiquote.org", "wikinews.org", "mediawiki.org",
         "wmfusercontent.org")),
-    Bundle("anton", "ANTON (Lern-App)", ("anton.app",)),
+    Bundle("anton", N_("ANTON (Lern-App)"), ("anton.app",)),
     Bundle("scratch", "Scratch", ("scratch.mit.edu", "scratchfoundation.org")),
     Bundle("khanacademy", "Khan Academy", ("khanacademy.org", "kastatic.org", "kasandbox.org"),
-           note="Videos laufen über YouTube – ggf. YouTube-Bundle zusätzlich wählen."),
-    Bundle("microsoft365", "Microsoft 365 / Teams (Schule)", (
+           note=N_("Videos laufen über YouTube – ggf. YouTube-Bundle zusätzlich wählen.")),
+    Bundle("microsoft365", N_("Microsoft 365 / Teams (Schule)"), (
         "office.com", "office.net", "office365.com", "microsoft365.com", "microsoftonline.com",
         "login.microsoft.com", "teams.microsoft.com", "teams.cdn.office.net", "live.com", "sharepoint.com",
         "onedrive.com", "msauth.net", "msftauth.net", "msauthimages.net", "msocdn.com", "lync.com",
@@ -71,28 +72,28 @@ class Blocklist:
 BLOCKLISTS = {b.id: b for b in [
     Blocklist("hagezi-multi", "HaGeZi Multi Normal",
               "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/multi-onlydomains.txt",
-              "Werbung, Tracking, Malware", report=False),
+              N_("Werbung, Tracking, Malware"), report=False),
     Blocklist("hagezi-pro", "HaGeZi Multi Pro",
               "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro-onlydomains.txt",
-              "wie Normal, strenger", report=False),
+              N_("wie Normal, strenger"), report=False),
     Blocklist("hagezi-nsfw", "HaGeZi NSFW",
               "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt",
-              "Erwachseneninhalte"),
-    Blocklist("hagezi-gambling", "HaGeZi Glücksspiel",
+              N_("Erwachseneninhalte")),
+    Blocklist("hagezi-gambling", N_("HaGeZi Glücksspiel"),
               "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/gambling-onlydomains.txt",
-              "Glücksspiel"),
-    Blocklist("oisd-big", "OISD big", "https://big.oisd.nl/domainswild2", "Werbung, Tracking, Malware",
+              N_("Glücksspiel")),
+    Blocklist("oisd-big", "OISD big", "https://big.oisd.nl/domainswild2", N_("Werbung, Tracking, Malware"),
               report=False),
-    Blocklist("oisd-nsfw", "OISD NSFW", "https://nsfw.oisd.nl/domainswild2", "Erwachseneninhalte"),
+    Blocklist("oisd-nsfw", "OISD NSFW", "https://nsfw.oisd.nl/domainswild2", N_("Erwachseneninhalte")),
     Blocklist("stevenblack", "StevenBlack Unified",
-              "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", "Werbung, Malware",
+              "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", N_("Werbung, Malware"),
               report=False),
     Blocklist("stevenblack-porn", "StevenBlack Porn",
               "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/porn-only/hosts",
-              "Erwachseneninhalte"),
-    Blocklist("stevenblack-gambling", "StevenBlack Glücksspiel",
+              N_("Erwachseneninhalte")),
+    Blocklist("stevenblack-gambling", N_("StevenBlack Glücksspiel"),
               "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/gambling-only/hosts",
-              "Glücksspiel"),
+              N_("Glücksspiel")),
 ]}
 DEFAULT_LISTS = ("hagezi-multi", "hagezi-nsfw")  # Vorauswahl im Blacklist-Modus
 REFRESH_SECONDS = 24 * 3600

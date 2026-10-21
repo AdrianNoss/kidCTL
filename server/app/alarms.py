@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from . import push
+from .i18n import _
 from .db import SessionLocal
 from .models import Device, utcnow
 from .ws import manager
@@ -45,8 +46,8 @@ def check_once() -> int:
         due = due_offline_alarms(db)
         for dev, hours in due:
             log.warning("Offline-Alarm: Gerät %s (%s) seit %d h ohne Meldung", dev.id, dev.name, hours)
-            push.send_to_parents_sync(f"Gerät „{dev.name}“ offline",
-                                      f"Seit {hours} Stunden keine Meldung.",
+            push.send_to_parents_sync(lambda name=dev.name: _("Gerät „{name}“ offline").format(name=name),
+                                      lambda h=hours: _("Seit {hours} Stunden keine Meldung.").format(hours=h),
                                       url=f"/devices/{dev.id}", tag=f"offline-{dev.id}")
     return len(due)
 

@@ -21,10 +21,11 @@ from kidctl_common import protocol as p
 from . import programs
 from . import schedule as sch
 from .chat import _existing, child_for_user
+from .i18n import N_, _
 from .models import ChildDomain, ChildTempGrant, DeviceApp, Message, utcnow
 from .webfilter import normalize_domain
 
-SCOPES = {"permanent": "Dauerhaft erlaubt", "today": "Heute erlaubt"}
+SCOPES = {"permanent": N_("Dauerhaft erlaubt"), "today": N_("Heute erlaubt")}
 _FLATPAK = re.compile(r"^flatpak:[A-Za-z0-9_.-]{3,255}$")
 
 
@@ -71,15 +72,15 @@ def receive(db: Session, device_id: int, msg: p.AccessRequest) -> tuple[p.Ack, M
 def decide(db: Session, msg: Message, parent_id: int, scope: str | None) -> None:
     """``scope`` = permanent | today, ``None`` = ablehnen. Atomar gegen gleichzeitige Entscheidungen."""
     if msg.kind != "access_request":
-        raise AccessError("Keine Freigabe-Anfrage.")
+        raise AccessError(_("Keine Freigabe-Anfrage."))
     if scope is not None and scope not in SCOPES:
-        raise AccessError("Unbekannte Entscheidung.")
+        raise AccessError(_("Unbekannte Entscheidung."))
     res = db.execute(update(Message).where(Message.id == msg.id, Message.status == "pending")
                      .values(status="approved" if scope else "rejected", access_scope=scope,
                              decided_by=parent_id, decided_at=utcnow()))
     if res.rowcount != 1:
         db.rollback()
-        raise AccessError("Die Anfrage wurde bereits entschieden.")
+        raise AccessError(_("Die Anfrage wurde bereits entschieden."))
     if scope == "permanent":
         _allow_permanently(db, msg)
     elif scope == "today":

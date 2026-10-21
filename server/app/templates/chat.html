@@ -1,21 +1,22 @@
 {% extends "base.html" %}
-{% block title %}Chat {{ child.name }} – KidCTL{% endblock %}
+{% block title %}{{ _("Chat") }} {{ child.name }} – KidCTL{% endblock %}
 {% block content %}
 <div class="page-head">
-  <div><span class="eyebrow">Chat</span><h1>{{ child.name }}</h1></div>
+  <div><span class="eyebrow">{{ _("Chat") }}</span><h1>{{ child.name }}</h1></div>
   <div class="actions">
-    <a href="/children/{{ child.id }}" class="btn secondary">Einstellungen</a>
-    <a href="/children/{{ child.id }}/stats" class="btn secondary">Statistik</a>
+    <a href="/children/{{ child.id }}" class="btn secondary">{{ _("Einstellungen") }}</a>
+    <a href="/children/{{ child.id }}/stats" class="btn secondary">{{ _("Statistik") }}</a>
+    <a href="/children/{{ child.id }}/protokoll" class="btn secondary">{{ _("Protokoll") }}</a>
   </div>
 </div>
-{% if not has_device %}<p class="warn">{{ child.name }} ist noch keinem Linux-Benutzer zugeordnet – Nachrichten werden erst nach der Zuordnung zugestellt.</p>{% endif %}
+{% if not has_device %}<p class="warn">{{ _("{name} ist noch keinem Linux-Benutzer zugeordnet – Nachrichten werden erst nach der Zuordnung zugestellt.").format(name=child.name) }}</p>{% endif %}
 <section class="card chat" id="chat" data-src="/children/{{ child.id }}/chat/messages">
 {% include "_messages.html" %}
 </section>
 <form method="post" action="/children/{{ child.id }}/chat" class="card composer" id="ende">
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-  <textarea name="body" rows="2" maxlength="2000" required placeholder="Nachricht an {{ child.name }}"></textarea>
-  <button type="submit">Senden</button>
+  <textarea name="body" rows="2" maxlength="2000" required placeholder="{{ _('Nachricht an {name}').format(name=child.name) }}"></textarea>
+  <button type="submit">{{ _("Senden") }}</button>
 </form>
 <script src="/static/chat.js" defer></script>
 {% endblock %}

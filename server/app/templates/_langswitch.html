@@ -1,0 +1,1 @@
+<p class="lang-switch">{% for code, label in [("de", "Deutsch"), ("en", "English")] %}{% if not loop.first %} · {% endif %}{% if lang() == code %}<strong>{{ label }}</strong>{% else %}<a href="/lang/{{ code }}?next={{ request.url.path | urlencode }}" hreflang="{{ code }}" lang="{{ code }}">{{ label }}</a>{% endif %}{% endfor %}</p>

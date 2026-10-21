@@ -5,23 +5,24 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
+from .i18n import N_, _
 from .config import settings
 from .models import Child, utcnow
 
 # Formularwert -> Anzeige
 DURATIONS = {
-    "": "bis zur Freigabe",
-    "30": "30 Minuten",
-    "60": "1 Stunde",
-    "120": "2 Stunden",
-    "tomorrow": "bis morgen (00:00 Uhr)",
+    "": N_("bis zur Freigabe"),
+    "30": N_("30 Minuten"),
+    "60": N_("1 Stunde"),
+    "120": N_("2 Stunden"),
+    "tomorrow": N_("bis morgen (00:00 Uhr)"),
 }
 
 
 def until_for(choice: str, now: datetime | None = None) -> datetime | None:
     """Ende der Sperre (naiv, UTC wie alle Zeitstempel der DB); None = bis zur Freigabe."""
     if choice not in DURATIONS:
-        raise ValueError("Ungültige Dauer")
+        raise ValueError(_("Ungültige Dauer"))
     now = now or utcnow()
     if choice == "":
         return None
@@ -47,9 +48,9 @@ def parse_grace(raw: str) -> int:
     try:
         minutes = int(raw.strip() or "1")
     except ValueError:
-        raise ValueError("Vorwarnzeit muss eine ganze Zahl sein") from None
+        raise ValueError(_("Vorwarnzeit muss eine ganze Zahl sein")) from None
     if not 0 <= minutes <= MAX_GRACE_MINUTES:
-        raise ValueError(f"Vorwarnzeit muss zwischen 0 und {MAX_GRACE_MINUTES} Minuten liegen")
+        raise ValueError(_("Vorwarnzeit muss zwischen 0 und {max} Minuten liegen").format(max=MAX_GRACE_MINUTES))
     return minutes
 
 

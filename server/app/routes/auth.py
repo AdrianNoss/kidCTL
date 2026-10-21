@@ -6,6 +6,8 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from .. import accounts
+from .. import i18n
+from ..i18n import N_, _
 from ..config import settings
 from ..db import get_db
 from ..models import Parent, ParentSession, utcnow
@@ -23,13 +25,25 @@ router = APIRouter()
 def login_form(request: Request, db: Session = Depends(get_db)):
     if get_session(db, request):
         return RedirectResponse("/", status_code=303)
-    return render_anon(request, "login.html", notice=LOGIN_NOTICES.get(request.query_params.get("msg", "")))
+    notice = LOGIN_NOTICES.get(request.query_params.get("msg", ""))
+    return render_anon(request, "login.html", notice=_(notice) if notice else None)
 
 
 LOGIN_NOTICES = {
-    "reset": "Passwort geändert. Bitte mit dem neuen Passwort und dem Authenticator-Code anmelden.",
-    "totp": "Authenticator eingerichtet. Bitte mit Passwort und dem neuen Code anmelden.",
+    "reset": N_("Passwort geändert. Bitte mit dem neuen Passwort und dem Authenticator-Code anmelden."),
+    "totp": N_("Authenticator eingerichtet. Bitte mit Passwort und dem neuen Code anmelden."),
 }
+
+
+@router.get("/lang/{code}")
+def set_language(code: str, request: Request, next: str = "/login"):
+    """Umschalter „Deutsch · English“ auf Seiten ohne Anmeldung (Cookie, 1 Jahr)."""
+    if not next.startswith("/") or next.startswith("//"):
+        next = "/login"
+    resp = RedirectResponse(next, status_code=303)
+    if code in i18n.LANGS:
+        set_cookie(resp, i18n.LANG_COOKIE, code, max_age=365 * 86400)
+    return resp
 
 
 @router.post("/login", dependencies=[Depends(csrf_protect_anon)])
@@ -44,7 +58,7 @@ def login(
     username = username.strip()
     if is_rate_limited(db, "login", ip, username):
         return render_anon(request, "login.html", status_code=429, username=username,
-                           error="Zu viele Fehlversuche. Bitte später erneut versuchen.")
+                           error=_("Zu viele Fehlversuche. Bitte später erneut versuchen."))
 
     parent = db.scalar(select(Parent).where(Parent.username == username))
     ok = False
@@ -56,8 +70,9 @@ def login(
     if not ok:
         record_failure(db, "login", ip, username)
         return render_anon(request, "login.html", status_code=401, username=username,
-                           error="Anmeldung fehlgeschlagen.")
+                           error=_("Anmeldung fehlgeschlagen."))
 
+    parent.detected_language = i18n.browser_language(request)   # für Mails/Push bei „Automatisch“
     db.commit()  # totp_last_step
     token = create_session(db, parent, request.headers.get("user-agent", ""))
     resp = RedirectResponse("/", status_code=303)
@@ -86,7 +101,7 @@ def reset_request(request: Request, ident: str = Form(""), db: Session = Depends
     ip = client_ip(request)
     if is_rate_limited(db, "reset", ip):
         return render_anon(request, "reset_request.html", status_code=429, mail_enabled=settings.mail_enabled,
-                           error="Zu viele Anfragen. Bitte später erneut versuchen.")
+                           error=_("Zu viele Anfragen. Bitte später erneut versuchen."))
     record_failure(db, "reset", ip)  # jede Anfrage zählt (Schutz vor Mail-Flut)
     if settings.mail_enabled:
         accounts.start_password_reset(db, ident[:255])
@@ -114,7 +129,7 @@ def reset_password(token: str, request: Request, password: str = Form(""), repea
     t.used_at = utcnow()
     accounts.end_sessions(db, parent.id)
     db.commit()
-    accounts.notify(parent, "Passwort geändert", "dein Passwort wurde über „Passwort vergessen“ neu gesetzt.")
+    accounts.notify(parent, N_("Passwort geändert"), N_("dein Passwort wurde über „Passwort vergessen“ neu gesetzt."))
     return RedirectResponse("/login?msg=reset", status_code=303)
 
 
@@ -144,14 +159,14 @@ def totp_setup(token: str, request: Request, password: str = Form(""), totp: str
     parent = db.get(Parent, t.parent_id)
     ip = client_ip(request)
     if is_rate_limited(db, "login", ip, parent.username):
-        return _totp_setup_page(request, db, t, token, 429, "Zu viele Fehlversuche. Bitte später erneut versuchen.")
+        return _totp_setup_page(request, db, t, token, 429, _("Zu viele Fehlversuche. Bitte später erneut versuchen."))
     step = accounts.totp_step(t.secret, totp)
     if not verify_password(password, parent.password_hash) or step is None:
         record_failure(db, "login", ip, parent.username)
-        return _totp_setup_page(request, db, t, token, 400, "Passwort oder Code falsch.")
+        return _totp_setup_page(request, db, t, token, 400, _("Passwort oder Code falsch."))
     parent.totp_secret, parent.totp_last_step = t.secret, step
     t.used_at = utcnow()
     accounts.end_sessions(db, parent.id)
     db.commit()
-    accounts.notify(parent, "Authenticator eingerichtet", "für deinen Account wurde ein neuer Authenticator eingerichtet.")
+    accounts.notify(parent, N_("Authenticator eingerichtet"), N_("für deinen Account wurde ein neuer Authenticator eingerichtet."))
     return RedirectResponse("/login?msg=totp", status_code=303)

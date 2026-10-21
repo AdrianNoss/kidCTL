@@ -1,30 +1,34 @@
 {% extends "base.html" %}
-{% block title %}Benachrichtigungen – KidCTL{% endblock %}
+{% block title %}{{ _("Benachrichtigungen") }} – KidCTL{% endblock %}
 {% block content %}
-<div class="page-head"><h1>Benachrichtigungen</h1></div>
+<div class="page-head"><h1>{{ _("Benachrichtigungen") }}</h1></div>
 {% if not push_enabled %}
 <section class="card">
-  <p class="warn">Web Push ist auf dem Server nicht konfiguriert.</p>
-  <p>VAPID-Schlüssel erzeugen und in <code>.env</code> eintragen, dann Container neu starten:</p>
+  <p class="warn">{{ _("Web Push ist auf dem Server nicht konfiguriert.") }}</p>
+  <p>{{ _("VAPID-Schlüssel erzeugen und in .env eintragen, dann Container neu starten:") }}</p>
   <pre>docker compose run --rm kidctl python -m app.cli vapid-keys</pre>
 </section>
 {% else %}
-<section class="card" id="push" data-key="{{ vapid_public_key }}" data-csrf="{{ csrf_token }}">
-  <p>Push-Benachrichtigungen bei neuen Nachrichten und Verlängerungsanfragen – pro Gerät/Browser einzeln aktivieren.</p>
-  <p id="push-status" class="muted">Prüfe …</p>
+<section class="card" id="push" data-key="{{ vapid_public_key }}" data-csrf="{{ csrf_token }}"
+  data-t-unsupported="{{ _('Dieser Browser unterstützt keine Push-Benachrichtigungen. Auf dem iPhone: Seite erst zum Home-Bildschirm hinzufügen und von dort öffnen.') }}"
+  data-t-denied="{{ _('Benachrichtigungen sind im Browser blockiert – bitte in den Website-Einstellungen erlauben.') }}"
+  data-t-on="{{ _('Auf diesem Gerät aktiv.') }}" data-t-off="{{ _('Auf diesem Gerät nicht aktiv.') }}"
+  data-t-enable-failed="{{ _('Aktivieren fehlgeschlagen:') }}" data-t-disable-failed="{{ _('Deaktivieren fehlgeschlagen:') }}">
+  <p>{{ _("Push-Benachrichtigungen bei neuen Nachrichten und Anfragen – pro Gerät/Browser einzeln aktivieren.") }}</p>
+  <p id="push-status" class="muted">{{ _("Prüfe …") }}</p>
   <p class="row">
-    <button type="button" id="push-on" hidden>Auf diesem Gerät aktivieren</button>
-    <button type="button" id="push-off" class="danger" hidden>Auf diesem Gerät deaktivieren</button>
+    <button type="button" id="push-on" hidden>{{ _("Auf diesem Gerät aktivieren") }}</button>
+    <button type="button" id="push-off" class="danger" hidden>{{ _("Auf diesem Gerät deaktivieren") }}</button>
   </p>
-  <p class="muted"><small>iPhone/iPad: Seite zuerst über „Teilen → Zum Home-Bildschirm“ als App installieren und von dort öffnen.</small></p>
+  <p class="muted"><small>{{ _("iPhone/iPad: Seite zuerst über „Teilen → Zum Home-Bildschirm“ als App installieren und von dort öffnen.") }}</small></p>
 </section>
 <form method="post" action="/push/test" class="card">
-  <h2>Test</h2>
+  <h2>{{ _("Test") }}</h2>
   <div class="row">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-    <span>Aktive Geräte für deinen Account: <strong>{{ subscription_count }}</strong></span>
-    <button type="submit" class="secondary small">Test-Benachrichtigung senden</button>
-    {% if sent is not none %}<span class="pill {{ 'ok' if sent != '0' else 'warn' }}">{{ sent }} zugestellt</span>{% endif %}
+    <span>{{ _("Aktive Geräte für deinen Account:") }} <strong>{{ subscription_count }}</strong></span>
+    <button type="submit" class="secondary small">{{ _("Test-Benachrichtigung senden") }}</button>
+    {% if sent is not none %}<span class="pill {{ 'ok' if sent != '0' else 'warn' }}">{{ _("{n} zugestellt").format(n=sent) }}</span>{% endif %}
   </div>
 </form>
 <script src="/static/push.js" defer></script>

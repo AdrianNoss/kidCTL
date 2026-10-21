@@ -3,104 +3,104 @@
 {% macro rule_row(key, label, rule) %}
 <tr>
   <td>{{ label }}</td>
-  <td><input type="number" name="quota_{{ key }}" min="0" max="{{ max_quota }}" step="5" value="{{ rule.quota_minutes }}" class="short" required> min</td>
+  <td><input type="number" name="quota_{{ key }}" min="0" max="{{ max_quota }}" step="5" value="{{ rule.quota_minutes }}" class="short" required> {{ _("min") }}</td>
   <td><input type="time" name="start_{{ key }}" value="{{ rule.window_start.strftime('%H:%M') }}" required></td>
   <td><input type="time" name="end_{{ key }}" value="{{ rule.window_end.strftime('%H:%M') }}" required></td>
-  <td><input type="number" name="games_{{ key }}" min="0" max="{{ max_quota }}" step="5" value="{{ rule.game_minutes if rule.game_minutes is not none else '' }}" class="short" placeholder="–"> min</td>
+  <td><input type="number" name="games_{{ key }}" min="0" max="{{ max_quota }}" step="5" value="{{ rule.game_minutes if rule.game_minutes is not none else '' }}" class="short" placeholder="–"> {{ _("min") }}</td>
 </tr>
 {% endmacro %}
 {% block content %}
 <div class="page-head">
   <div><span class="eyebrow">Kind</span><h1>{{ child.name }}</h1>
-    {% if playing %}<span class="pill play" title="Spielt gerade">▶ spielt gerade: {{ playing | join(", ") }}</span>{% endif %}</div>
+    {% if playing %}<span class="pill play" title="{{ _('Spielt gerade') }}">▶ {{ _("spielt gerade: {games}").format(games=playing | join(", ")) }}</span>{% endif %}</div>
   <div class="actions">
-    <a href="/children/{{ child.id }}/chat" class="btn secondary">Chat</a>
-    <a href="/children/{{ child.id }}/stats" class="btn secondary">Statistik</a>
-    <a href="/children/{{ child.id }}/protokoll" class="btn secondary">Protokoll</a>
+    <a href="/children/{{ child.id }}/chat" class="btn secondary">{{ _("Chat") }}</a>
+    <a href="/children/{{ child.id }}/stats" class="btn secondary">{{ _("Statistik") }}</a>
+    <a href="/children/{{ child.id }}/protokoll" class="btn secondary">{{ _("Protokoll") }}</a>
   </div>
 </div>
 <section class="card{% if is_locked(child) %} locked-card{% endif %}" id="sperre">
   <div class="card-head">
-    <h2>Sperre</h2>
-    {% if is_locked(child) %}<span class="pill danger">gesperrt {% if child.locked_until %}bis {{ child.locked_until | localtime }}{% else %}bis zur Freigabe{% endif %}</span>
-    {% else %}<span class="pill ok">nicht gesperrt</span>{% endif %}
+    <h2>{{ _("Sperre") }}</h2>
+    {% if is_locked(child) %}<span class="pill danger">{% if child.locked_until %}{{ _("gesperrt bis {time}").format(time=child.locked_until | localtime) }}{% else %}{{ _("gesperrt bis zur Freigabe") }}{% endif %}</span>
+    {% else %}<span class="pill ok">{{ _("nicht gesperrt") }}</span>{% endif %}
   </div>
   {% if is_locked(child) %}
   <form method="post" action="/children/{{ child.id }}/unlock" class="row">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-    <button type="submit">Jetzt freigeben</button>
-    <span class="muted"><small>Danach gelten wieder Kontingent und Zeitfenster.</small></span>
+    <button type="submit">{{ _("Jetzt freigeben") }}</button>
+    <span class="muted"><small>{{ _("Danach gelten wieder Kontingent und Zeitfenster.") }}</small></span>
   </form>
   {% else %}
   <form method="post" action="/children/{{ child.id }}/lock" class="row">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-    <label>Dauer <select name="duration">
-      {% for key, label in lock_durations.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+    <label>{{ _("Dauer") }} <select name="duration">
+      {% for key, label in lock_durations.items() %}<option value="{{ key }}">{{ _(label) }}</option>{% endfor %}
     </select></label>
-    <label>Abmeldung in <input type="number" name="grace" min="0" max="{{ max_grace }}" value="1" class="short" required> min</label>
-    <button type="submit" class="danger">Jetzt sperren</button>
+    <label>{{ _("Abmeldung in") }} <input type="number" name="grace" min="0" max="{{ max_grace }}" value="1" class="short" required> {{ _("min") }}</label>
+    <button type="submit" class="danger">{{ _("Jetzt sperren") }}</button>
   </form>
-  <p class="muted"><small>Sperrt alle Rechner von {{ child.name }}: {{ child.name }} bekommt eine Benachrichtigung und wird nach der Vorwarnzeit abgemeldet (0 = sofort); neu anmelden ist ab sofort nicht möglich. Läuft eine Dauer ab, wird automatisch freigegeben – auch ohne Internetverbindung.</small></p>
+  <p class="muted"><small>{{ _("Sperrt alle Rechner von {name}: {name} bekommt eine Benachrichtigung und wird nach der Vorwarnzeit abgemeldet (0 = sofort); neu anmelden ist ab sofort nicht möglich. Läuft eine Dauer ab, wird automatisch freigegeben – auch ohne Internetverbindung.").format(name=child.name) }}</small></p>
   {% endif %}
 </section>
 
-{% if request.query_params.get("saved") %}<p class="success">Wochenvorlage gespeichert.</p>{% endif %}
+{% if request.query_params.get("saved") %}<p class="success">{{ _("Wochenvorlage gespeichert.") }}</p>{% endif %}
 
 <section class="card">
   <div class="card-head">
-    <h2>Wochenvorlage</h2>
+    <h2>{{ _("Wochenvorlage") }}</h2>
     <form method="post" action="/children/{{ child.id }}/mode" class="segmented" style="margin:0">
       <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
       <input type="hidden" name="weekdays_same" value="{{ '' if child.weekdays_same else '1' }}">
-      {% if child.weekdays_same %}<span class="active">Werktage / Wochenende</span><button type="submit" class="ghost small">Jeder Tag einzeln</button>
-      {% else %}<button type="submit" class="ghost small">Werktage / Wochenende</button><span class="active">Jeder Tag einzeln</span>{% endif %}
+      {% if child.weekdays_same %}<span class="active">{{ _("Werktage / Wochenende") }}</span><button type="submit" class="ghost small">{{ _("Jeder Tag einzeln") }}</button>
+      {% else %}<button type="submit" class="ghost small">{{ _("Werktage / Wochenende") }}</button><span class="active">{{ _("Jeder Tag einzeln") }}</span>{% endif %}
     </form>
   </div>
   {% if child.weekdays_same and differs %}
-  <p class="warn">Unterschiedliche Tageswerte in: {{ differs | join(", ") }}. Angezeigt sind die Werte von Montag bzw. Samstag; beim Speichern gelten sie für alle Tage der Gruppe.</p>
+  <p class="warn">{% set ns = namespace(groups=[]) %}{% for g in differs %}{% set ns.groups = ns.groups + [_(g)] %}{% endfor %}{{ _("Unterschiedliche Tageswerte in: {groups}. Angezeigt sind die Werte von Montag bzw. Samstag; beim Speichern gelten sie für alle Tage der Gruppe.").format(groups=ns.groups | join(", ")) }}</p>
   {% endif %}
   <form method="post" action="/children/{{ child.id }}/schedule">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <div class="scroll">
     <table>
-      <tr><th></th><th>Kontingent</th><th>Fenster von</th><th>bis</th><th>davon Spiele</th></tr>
+      <tr><th></th><th>{{ _("Kontingent") }}</th><th>{{ _("Fenster von") }}</th><th>{{ _("bis") }}</th><th>{{ _("davon Spiele") }}</th></tr>
       {% if child.weekdays_same %}
-        {% for key, (label, days) in groups.items() %}{{ rule_row(key, label, rules[days[0]]) }}{% endfor %}
+        {% for key, (label, days) in groups.items() %}{{ rule_row(key, _(label), rules[days[0]]) }}{% endfor %}
       {% else %}
         {% for d in range(7) %}{{ rule_row(d, weekday_names[d], rules[d]) }}{% endfor %}
       {% endif %}
     </table>
     </div>
-    <p class="muted"><small>Nutzung endet, wenn das Kontingent aufgebraucht oder das Zeitfenster geschlossen ist. Tageswechsel 00:00 Uhr.
-      „davon Spiele“: höchstens so viel Zeit mit Spielen (Steam, Heroic und Programme der Gruppe „Spiele“) – danach werden Spiele mit Vorwarnung geschlossen, der Rest des Rechners bleibt nutzbar. Leer = kein eigenes Limit.</small></p>
-    <button type="submit">Speichern</button>
+    <p class="muted"><small>{{ _("Nutzung endet, wenn das Kontingent aufgebraucht oder das Zeitfenster geschlossen ist. Tageswechsel 00:00 Uhr.") }}
+      {{ _("„davon Spiele“: höchstens so viel Zeit mit Spielen (Steam, Heroic und Programme der Gruppe „Spiele“) – danach werden Spiele mit Vorwarnung geschlossen, der Rest des Rechners bleibt nutzbar. Leer = kein eigenes Limit.") }}</small></p>
+    <button type="submit">{{ _("Speichern") }}</button>
   </form>
 </section>
 
 <section class="card">
-  <h2>Zeit gutschreiben</h2>
+  <h2>{{ _("Zeit gutschreiben") }}</h2>
   <form method="post" action="/children/{{ child.id }}/credit" class="row">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-    <label>Datum <input type="date" name="day" value="{{ credit_day }}" min="{{ today.isoformat() }}" required></label>
-    <label>Zusätzlich <input type="number" name="extra_minutes" min="0" max="{{ max_extra }}" step="5" value="0" class="short"> min</label>
-    <label>Fenster bis <input type="time" name="window_end"></label>
-    <label>Spielzeit <input type="number" name="extra_games" min="0" max="{{ max_extra }}" step="5" value="0" class="short"> min</label>
-    <button type="submit">Gutschreiben</button>
+    <label>{{ _("Datum") }} <input type="date" name="day" value="{{ credit_day }}" min="{{ today.isoformat() }}" required></label>
+    <label>{{ _("Zusätzlich") }} <input type="number" name="extra_minutes" min="0" max="{{ max_extra }}" step="5" value="0" class="short"> {{ _("min") }}</label>
+    <label>{{ _("Fenster bis") }} <input type="time" name="window_end"></label>
+    <label>{{ _("Spielzeit") }} <input type="number" name="extra_games" min="0" max="{{ max_extra }}" step="5" value="0" class="short"> {{ _("min") }}</label>
+    <button type="submit">{{ _("Gutschreiben") }}</button>
   </form>
-  <p class="muted"><small>Gilt nur für das gewählte Datum. Minuten werden zu einer bestehenden Gutschrift addiert.</small></p>
+  <p class="muted"><small>{{ _("Gilt nur für das gewählte Datum. Minuten werden zu einer bestehenden Gutschrift addiert.") }}</small></p>
   {% if exceptions %}
   <table>
-    <tr><th>Datum</th><th>Zusätzlich</th><th>Fenster bis</th><th>Spielzeit</th><th></th></tr>
+    <tr><th>{{ _("Datum") }}</th><th>{{ _("Zusätzlich") }}</th><th>{{ _("Fenster bis") }}</th><th>{{ _("Spielzeit") }}</th><th></th></tr>
     {% for e in exceptions %}
     <tr>
-      <td>{{ weekday_names[e.day.weekday()][:2] }} {{ e.day.strftime("%d.%m.%Y") }}{% if e.day == today %} (heute){% endif %}</td>
+      <td>{{ fmt_date(e.day, with_weekday=True) }}{% if e.day == today %} ({{ _("heute") }}){% endif %}</td>
       <td>{{ fmt_minutes(e.extra_minutes) if e.extra_minutes else "–" }}</td>
       <td>{{ e.window_end_override.strftime("%H:%M") if e.window_end_override else "–" }}</td>
       <td>{{ "+" ~ fmt_minutes(e.extra_game_minutes) if e.extra_game_minutes else "–" }}</td>
       <td class="right">
         <form method="post" action="/children/{{ child.id }}/exceptions/{{ e.id }}/delete" class="inline">
           <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-          <button type="submit" class="danger small">Entfernen</button>
+          <button type="submit" class="danger small">{{ _("Entfernen") }}</button>
         </form>
       </td>
     </tr>
@@ -110,80 +110,78 @@
 </section>
 
 <section class="card" id="internet">
-  <h2>Internet</h2>
-  {% if request.query_params.get("web") %}<p class="success">Internet-Einstellungen gespeichert.</p>{% endif %}
+  <h2>{{ _("Internet") }}</h2>
+  {% if request.query_params.get("web") %}<p class="success">{{ _("Internet-Einstellungen gespeichert.") }}</p>{% endif %}
   <form method="post" action="/children/{{ child.id }}/web" class="web-form">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-    <label>Website-Filter
+    <label>{{ _("Website-Filter") }}
       <select name="web_mode">
-        {% for key, label in web_modes.items() %}<option value="{{ key }}"{% if child.web_mode == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        {% for key, label in web_modes.items() %}<option value="{{ key }}"{% if child.web_mode == key %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}
       </select>
     </label>
     <div class="mode-on">
     <label class="option" style="margin-bottom:1rem"><input type="checkbox" name="safesearch" value="1"{% if child.safesearch %} checked{% endif %}>
-      <span>SafeSearch erzwingen<small>Google, Bing, DuckDuckGo; YouTube im eingeschränkten Modus</small></span></label>
+      <span>{{ _("SafeSearch erzwingen") }}<small>{{ _("Google, Bing, DuckDuckGo; YouTube im eingeschränkten Modus") }}</small></span></label>
 
     <div class="mode-whitelist">
-    <h3>Freigegebene Dienste</h3>
+    <h3>{{ _("Freigegebene Dienste") }}</h3>
     <div class="options">
     {% for b in bundles.values() %}
     <label class="option"><input type="checkbox" name="bundle" value="{{ b.id }}"{% if b.id in web.bundles %} checked{% endif %}>
-      <span>{{ b.name }}{% if b.note %}<small>{{ b.note }}</small>{% endif %}</span></label>
+      <span>{{ _(b.name) }}{% if b.note %}<small>{{ _(b.note) }}</small>{% endif %}</span></label>
     {% endfor %}
     </div>
     </div>
-    <label><span class="mode-whitelist">Weitere freigegebene Domains</span><span class="mode-blacklist">Ausnahmen (trotz Sperrliste erlaubt)</span>
-      <span class="field-note">Je Zeile eine Domain, gilt inkl. Subdomains</span>
+    <label><span class="mode-whitelist">{{ _("Weitere freigegebene Domains") }}</span><span class="mode-blacklist">{{ _("Ausnahmen (trotz Sperrliste erlaubt)") }}</span>
+      <span class="field-note">{{ _("Je Zeile eine Domain, gilt inkl. Subdomains") }}</span>
       <textarea name="allow" rows="3" placeholder="schule.de">{{ web.allow | join("\n") }}</textarea></label>
 
     <div class="mode-blacklist">
-    <h3>Sperrlisten</h3>
+    <h3>{{ _("Sperrlisten") }}</h3>
     <div class="options">
     {% for b in blocklists.values() %}{% set st = list_states.get(b.id) %}
     <label class="option"><input type="checkbox" name="list" value="{{ b.id }}"
       {% if b.id in web.lists or (not web.lists and b.id in default_lists) %} checked{% endif %}>
-      <span>{{ b.name }}<small>{{ b.description }}{% if st and st.count %} · {{ "{:,}".format(st.count).replace(",", ".") }} Domains, Stand {{ st.fetched_at | localtime }}{% elif st and st.error %} · Fehler: {{ st.error }}{% endif %}</small></span></label>
+      <span>{{ _(b.name) }}<small>{{ _(b.description) }}{% if st and st.count %} · {{ _("{count} Domains, Stand {when}").format(count=("{:,}".format(st.count).replace(",", ".") if lang() == "de" else "{:,}".format(st.count)), when=st.fetched_at | localtime) }}{% elif st and st.error %} · {{ _("Fehler:") }} {{ st.error }}{% endif %}</small></span></label>
     {% endfor %}
     </div>
-    <label>Weitere gesperrte Domains (je Zeile)
+    <label>{{ _("Weitere gesperrte Domains (je Zeile)") }}
       <textarea name="deny" rows="3">{{ web.deny | join("\n") }}</textarea></label>
     </div>
-    <p class="muted"><small>Bekannte DNS-over-HTTPS-Anbieter sind immer gesperrt; verschlüsseltes DNS (Port 853) ebenso.</small></p>
+    <p class="muted"><small>{{ _("Bekannte DNS-over-HTTPS-Anbieter sind immer gesperrt; verschlüsseltes DNS (Port 853) ebenso.") }}</small></p>
     </div>
-    <button type="submit">Speichern</button>
+    <button type="submit">{{ _("Speichern") }}</button>
   </form>
 </section>
 
 <section class="card" id="programme">
-  <h2>Programme</h2>
-  {% if request.query_params.get("programs") %}<p class="success">Programm-Einstellungen gespeichert.</p>{% endif %}
+  <h2>{{ _("Programme") }}</h2>
+  {% if request.query_params.get("programs") %}<p class="success">{{ _("Programm-Einstellungen gespeichert.") }}</p>{% endif %}
   <form method="post" action="/children/{{ child.id }}/programs">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-    <label>Programmkontrolle
+    <label>{{ _("Programmkontrolle") }}
       <select name="program_mode">
-        {% for key, label in program_modes.items() %}<option value="{{ key }}"{% if child.program_mode == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        {% for key, label in program_modes.items() %}<option value="{{ key }}"{% if child.program_mode == key %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}
       </select>
     </label>
-    <p class="muted"><small>„Nur protokollieren“ sperrt nichts, meldet aber, was gesperrt würde – zum gefahrlosen Einstieg.
-      Systemkomponenten (KDE/Plasma, KidCTL) sind immer erlaubt. Terminals, Shells und Interpreter sind gesperrt,
-      solange sie nicht ausdrücklich freigegeben sind – für ein nutzbares Terminal das Terminal-Programm
-      (z. B. Konsole) <em>und</em> die Shell des Kindes freigeben (Gruppe „Terminal &amp; Shells“).</small></p>
+    <p class="muted"><small>{{ _("„Nur protokollieren“ sperrt nichts, meldet aber, was gesperrt würde – zum gefahrlosen Einstieg.") }}
+      {{ _("Systemkomponenten (KDE/Plasma, KidCTL) sind immer erlaubt. Terminals, Shells und Interpreter sind gesperrt, solange sie nicht ausdrücklich freigegeben sind – für ein nutzbares Terminal das Terminal-Programm (z. B. Konsole) und die Shell des Kindes freigeben (Gruppe „Terminal & Shells“).") }}</small></p>
     <div class="app-toolbar">
-      <a href="/children/{{ child.id }}?add_program=1#add-program" class="btn secondary small" data-dialog="add-program">Programm hinzufügen</a>
-      <small class="muted">für Programme ohne Eintrag in der Liste, z. B. <code>git</code></small>
+      <a href="/children/{{ child.id }}?add_program=1#add-program" class="btn secondary small" data-dialog="add-program">{{ _("Programm hinzufügen") }}</a>
+      <small class="muted">{{ _("für Programme ohne Eintrag in der Liste, z. B.") }} <code>git</code></small>
     </div>
     {% if catalog %}
-    <div class="app-catalog">
-      <input type="search" class="app-search" placeholder="Programm suchen …" aria-label="Programm suchen" hidden>
-      <p class="app-nomatch muted" hidden>Kein Programm gefunden.</p>
+    <div class="app-catalog" data-count-text="{{ _('{n} von {total} erlaubt') }}">
+      <input type="search" class="app-search" placeholder="{{ _('Programm suchen …') }}" aria-label="{{ _('Programm suchen') }}" hidden>
+      <p class="app-nomatch muted" hidden>{{ _("Kein Programm gefunden.") }}</p>
       {% for gid, label, apps in catalog_groups %}{% set n_allowed = apps | selectattr("allowed") | list | length %}
       <details class="app-group" data-group="{{ gid }}"{% if gid not in collapsed_groups %} open{% endif %}>
         <summary>
-          <span class="app-group-title">{{ label }}</span>
-          <span class="pill{% if n_allowed %} ok{% endif %} app-count">{{ n_allowed }} von {{ apps | length }} erlaubt</span>
+          <span class="app-group-title">{{ _(label) }}</span>
+          <span class="pill{% if n_allowed %} ok{% endif %} app-count">{{ _("{n} von {total} erlaubt").format(n=n_allowed, total=apps | length) }}</span>
           <span class="app-bulk" hidden>
-            <button type="button" class="ghost small" data-bulk="all">Alle</button>
-            <button type="button" class="ghost small" data-bulk="none">Keine</button>
+            <button type="button" class="ghost small" data-bulk="all">{{ _("Alle") }}</button>
+            <button type="button" class="ghost small" data-bulk="none">{{ _("Keine") }}</button>
           </span>
         </summary>
         <div class="options app-options">
@@ -195,13 +193,14 @@
               <span>{{ app.name }}<small>{{ app.key[4:] if app.key.startswith("exe:") else app.key }}</small></span>
             </label>
             <button type="submit" class="ghost small" formaction="/children/{{ child.id }}/programs/custom/{{ app.custom_id }}/delete"
-                    formnovalidate title="Eintrag entfernen" aria-label="{{ app.name }} entfernen"
-                    onclick="return confirm('Eigenes Programm „{{ app.name }}“ entfernen? Die Freigabe wird entzogen.')">Entfernen</button>
+                    formnovalidate title="{{ _('Eintrag entfernen') }}" aria-label="{{ _('{name} entfernen').format(name=app.name) }}"
+                    data-confirm="{{ _('Eigenes Programm „{name}“ entfernen? Die Freigabe wird entzogen.').format(name=app.name) }}"
+                    onclick="return confirm(this.dataset.confirm)">{{ _("Entfernen") }}</button>
           </div>
           {% else %}
           <label class="option app-item" data-name="{{ app.name | lower }}" title="{{ app.key }}">
             <input type="checkbox" name="app" value="{{ app.key }}"{% if app.allowed %} checked{% endif %}>
-            <span>{{ app.name }}{% if app.missing %}<small>nicht mehr installiert</small>{% elif app.devices > 1 %}<small>{{ app.devices }} Geräte</small>{% endif %}</span>
+            <span>{{ app.name }}{% if app.missing %}<small>{{ _("nicht mehr installiert") }}</small>{% elif app.devices > 1 %}<small>{{ _("{n} Geräte").format(n=app.devices) }}</small>{% endif %}</span>
           </label>
           {% endif %}
           {% endfor %}
@@ -209,28 +208,26 @@
       </details>
       {% endfor %}
     </div>
-    {% else %}<p class="muted">Noch keine Programmliste – sie erscheint, sobald ein Gerät mit zugeordnetem Benutzer verbunden ist.</p>{% endif %}
-    <button type="submit">Speichern</button>
+    {% else %}<p class="muted">{{ _("Noch keine Programmliste – sie erscheint, sobald ein Gerät mit zugeordnetem Benutzer verbunden ist.") }}</p>{% endif %}
+    <button type="submit">{{ _("Speichern") }}</button>
   </form>
   <dialog id="add-program" class="dialog"{% if custom_error or request.query_params.get("add_program") %} open{% endif %}>
     <form method="post" action="/children/{{ child.id }}/programs/custom">
-      <h2>Eigenes Programm hinzufügen</h2>
+      <h2>{{ _("Eigenes Programm hinzufügen") }}</h2>
       {% if custom_error %}<p class="error">{{ custom_error }}</p>{% endif %}
       <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-      <label>Programm
+      <label>{{ _("Programm") }}
         <input name="path" required maxlength="500" placeholder="/usr/bin/git" value="{{ custom_path or '' }}" autocomplete="off" spellcheck="false">
       </label>
-      <p class="muted"><small>Pfad oder Name eines Programms aus <code>/usr/bin</code>. Den Pfad zeigt auf dem Rechner
-        des Kindes <code>which git</code>. Hilfsprogramme aus demselben Paket (bei git <code>/usr/lib/git-core</code>) sind mit
-        erlaubt. Für Kommandozeilenprogramme zusätzlich Terminal und Shell freigeben.</small></p>
-      <label><span>Anzeigename <span class="muted">(optional)</span></span>
+      <p class="muted"><small>{{ _("Pfad oder Name eines Programms aus /usr/bin. Den Pfad zeigt auf dem Rechner des Kindes „which git“. Hilfsprogramme aus demselben Paket (bei git /usr/lib/git-core) sind mit erlaubt. Für Kommandozeilenprogramme zusätzlich Terminal und Shell freigeben.") }}</small></p>
+      <label><span>{{ _("Anzeigename") }} <span class="muted">{{ _("(optional)") }}</span></span>
         <input name="name" maxlength="64" placeholder="Git" value="{{ custom_name or '' }}">
       </label>
       <div class="actions">
-        <button type="submit">Hinzufügen und erlauben</button>
-        <a href="/children/{{ child.id }}#programme" class="btn secondary" data-close>Abbrechen</a>
+        <button type="submit">{{ _("Hinzufügen und erlauben") }}</button>
+        <a href="/children/{{ child.id }}#programme" class="btn secondary" data-close>{{ _("Abbrechen") }}</a>
       </div>
-      <p class="muted"><small>Nicht gespeicherte Änderungen an der Programmliste gehen dabei verloren.</small></p>
+      <p class="muted"><small>{{ _("Nicht gespeicherte Änderungen an der Programmliste gehen dabei verloren.") }}</small></p>
     </form>
   </dialog>
   <script src="/static/programs.js" defer></script>
@@ -238,28 +235,28 @@
 
 <section class="card">
   <div class="card-head">
-    <h2>Gesperrte Aktionen</h2>
+    <h2>{{ _("Gesperrte Aktionen") }}</h2>
     <div class="actions">
-      <a href="/children/{{ child.id }}/protokoll?kind=program" class="btn ghost small">Programme</a>
-      <a href="/children/{{ child.id }}/protokoll?kind=domain" class="btn ghost small">Websites</a>
-      <a href="/children/{{ child.id }}/protokoll" class="btn secondary small">Ganzes Protokoll</a>
+      <a href="/children/{{ child.id }}/protokoll?kind=program" class="btn ghost small">{{ _("Programme") }}</a>
+      <a href="/children/{{ child.id }}/protokoll?kind=domain" class="btn ghost small">{{ _("Websites") }}</a>
+      <a href="/children/{{ child.id }}/protokoll" class="btn secondary small">{{ _("Ganzes Protokoll") }}</a>
     </div>
   </div>
-  {% if blocked %}<p class="muted"><small>Die letzten {{ blocked | length }} Einträge.</small></p>{% endif %}
+  {% if blocked %}<p class="muted"><small>{{ _("Die letzten {n} Einträge.").format(n=blocked | length) }}</small></p>{% endif %}
   {% if blocked %}
   <div class="scroll">
   <table>
-    <tr><th>Zeit</th><th>Programm / Domain</th><th>Benutzer</th><th></th></tr>
+    <tr><th>{{ _("Zeit") }}</th><th>{{ _("Programm / Domain") }}</th><th>{{ _("Benutzer") }}</th><th></th></tr>
     {% for e in blocked %}
     <tr>
       <td>{{ e.at | localtime }}</td>
-      <td>{% if e.kind == "domain" %}<span class="pill">Website</span> {% endif %}{{ e.name }}{% if e.detail %} <small class="muted">({{ e.detail }})</small>{% endif %}<br><small class="muted">{{ e.key }}</small></td>
+      <td>{% if e.kind == "domain" %}<span class="pill">{{ _("Website") }}</span> {% endif %}{{ name_of(e.key, e.name) }}{% if blocked_detail(e) %} <small class="muted">({{ blocked_detail(e) }})</small>{% endif %}<br><small class="muted">{{ e.key }}</small></td>
       <td>{{ e.username }}</td>
-      <td class="right">{% if e.audit %}<span class="pill">nur protokolliert</span>{% else %}<span class="pill warn">gesperrt</span>{% endif %}</td>
+      <td class="right">{% if e.audit %}<span class="pill">{{ _("nur protokolliert") }}</span>{% else %}<span class="pill warn">{{ _("gesperrt") }}</span>{% endif %}</td>
     </tr>
     {% endfor %}
   </table>
   </div>
-  {% else %}<p class="muted">Keine gesperrten Aktionen.</p>{% endif %}
+  {% else %}<p class="muted">{{ _("Keine gesperrten Aktionen.") }}</p>{% endif %}
 </section>
 {% endblock %}

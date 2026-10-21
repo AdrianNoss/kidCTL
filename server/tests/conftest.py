@@ -48,7 +48,7 @@ PASSWORD = "correct horse battery"
 @pytest.fixture
 def client():
     Base.metadata.drop_all(engine)
-    with TestClient(app) as c:
+    with TestClient(app, headers={"Accept-Language": "de-DE,de;q=0.9"}) as c:
         yield c
 
 

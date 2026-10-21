@@ -324,6 +324,8 @@ class AppEntry(BaseModel):
     desktop_id: str = Field(default="", max_length=255)
     # freedesktop-Kategorien (z. B. Game, Education, Settings) – für die Gruppierung im WebUI
     categories: list[Annotated[str, Field(max_length=64)]] = Field(default=[], max_length=20)
+    # Ergänzt 2026-10-21: ``name`` bevorzugt deutsch (Name[de]), ``name_en`` = Name ohne Sprachzusatz
+    name_en: str = Field(default="", max_length=255)
 
 
 class ReportApps(BaseModel):
@@ -338,8 +340,11 @@ class BlockedEvent(BaseModel):
     kind: Literal["program", "domain"] = "program"
     key: str = Field(max_length=512)    # App-Schlüssel, "exe:<pfad>" bzw. "domain:<name>"
     name: str = Field(max_length=255)   # Anzeigename (aus .desktop oder Dateiname)
-    detail: str = Field(default="", max_length=255)  # z. B. „interaktive Shell“
+    detail: str = Field(default="", max_length=255)  # z. B. „interaktive Shell“ (deutsch, Rückfall)
     audit: bool = False                 # nur protokolliert, nicht gesperrt
+    # Ergänzt 2026-10-21: sprachneutrale Begründung, vom Server je Elternteil übersetzt
+    detail_code: str = Field(default="", max_length=32)   # z. B. "script", "blocklist"
+    detail_arg: str = Field(default="", max_length=255)   # Parameter, z. B. "bash", Name der Sperrliste
 
 
 class BlockedReport(BaseModel):

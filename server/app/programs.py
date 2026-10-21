@@ -13,9 +13,10 @@ from sqlalchemy.orm import Session
 from kidctl_common import protocol as p
 
 from .chat import device_ids_for_child
+from .i18n import N_, _
 from .models import BlockedEvent, ChildCustomProgram, ChildProgram, Device, DeviceApp, DeviceUser
 
-MODES = {"off": "Aus", "audit": "Nur protokollieren", "enforce": "Sperren"}
+MODES = {"off": N_("Aus"), "audit": N_("Nur protokollieren"), "enforce": N_("Sperren")}
 MAX_EVENTS_PER_REPORT = 500
 LOG_LIMIT = 50
 
@@ -29,7 +30,7 @@ def apply_app_report(db: Session, dev: Device, msg: p.ReportApps) -> None:
             continue
         seen.add(a.key)
         db.add(DeviceApp(device_id=dev.id, key=a.key, name=a.name, icon=a.icon, desktop_id=a.desktop_id,
-                         categories=";".join(a.categories)))
+                         categories=";".join(a.categories), name_en=a.name_en))
 
 
 def apply_blocked_report(db: Session, dev: Device, msg: p.BlockedReport) -> int:
@@ -41,7 +42,8 @@ def apply_blocked_report(db: Session, dev: Device, msg: p.BlockedReport) -> int:
         if child_id is None:
             continue  # nicht zugeordnete User werden nicht protokolliert
         db.add(BlockedEvent(child_id=child_id, device_id=dev.id, username=e.username, at=_utc_naive(e.at),
-                            kind=e.kind, key=e.key, name=e.name, detail=e.detail, audit=e.audit))
+                            kind=e.kind, key=e.key, name=e.name, detail=e.detail, audit=e.audit,
+                            detail_code=e.detail_code, detail_arg=e.detail_arg))
         n += 1
     return n
 
@@ -64,19 +66,19 @@ class CatalogEntry:
 # Gruppen der Programmliste: (ID, Anzeige, freedesktop-Kategorien) – erste passende Gruppe gewinnt
 # (Spiele vor Lernen usw., weil viele Apps mehrere Kategorien tragen).
 GROUPS = [
-    ("game", "Spiele", {"Game"}),
-    ("education", "Lernen", {"Education", "Science"}),
-    ("internet", "Internet & Kommunikation", {"Network", "WebBrowser", "Email", "Chat", "InstantMessaging"}),
-    ("office", "Büro", {"Office"}),
-    ("graphics", "Grafik", {"Graphics"}),
-    ("media", "Musik & Video", {"AudioVideo", "Audio", "Video"}),
-    ("development", "Entwicklung", {"Development"}),
-    ("terminal", "Terminal & Shells", {"TerminalEmulator", "Shell"}),
-    ("utility", "Werkzeuge", {"Utility"}),
-    ("system", "System & Einstellungen", {"System", "Settings", "Monitor", "PackageManager"}),
+    ("game", N_("Spiele"), {"Game"}),
+    ("education", N_("Lernen"), {"Education", "Science"}),
+    ("internet", N_("Internet & Kommunikation"), {"Network", "WebBrowser", "Email", "Chat", "InstantMessaging"}),
+    ("office", N_("Büro"), {"Office"}),
+    ("graphics", N_("Grafik"), {"Graphics"}),
+    ("media", N_("Musik & Video"), {"AudioVideo", "Audio", "Video"}),
+    ("development", N_("Entwicklung"), {"Development"}),
+    ("terminal", N_("Terminal & Shells"), {"TerminalEmulator", "Shell"}),
+    ("utility", N_("Werkzeuge"), {"Utility"}),
+    ("system", N_("System & Einstellungen"), {"System", "Settings", "Monitor", "PackageManager"}),
 ]
-GROUP_LABELS = {gid: label for gid, label, _ in GROUPS} | {
-    "custom": "Eigene Programme", "other": "Sonstiges", "missing": "Nicht mehr installiert"}
+GROUP_LABELS = {gid: label for gid, label, _cats in GROUPS} | {
+    "custom": N_("Eigene Programme"), "other": N_("Sonstiges"), "missing": N_("Nicht mehr installiert")}
 COLLAPSED_GROUPS = {"system"}  # standardmäßig eingeklappt
 
 
@@ -103,7 +105,7 @@ def catalog_for_child(db: Session, child_id: int) -> list[CatalogEntry]:
         for app in db.scalars(select(DeviceApp).where(DeviceApp.device_id.in_(devices))):
             e = entries.get(app.key)
             if e is None:
-                entries[app.key] = CatalogEntry(app.key, app.name, 1, app.key in allowed,
+                entries[app.key] = CatalogEntry(app.key, app.label, 1, app.key in allowed,
                                                 group=group_for(app.categories or ""))
             else:
                 e.devices += 1
@@ -113,6 +115,15 @@ def catalog_for_child(db: Session, child_id: int) -> list[CatalogEntry]:
     for key in allowed - entries.keys():
         entries[key] = CatalogEntry(key, key.split(":", 1)[-1].rsplit("/", 1)[-1], 0, True, missing=True)
     return sorted(entries.values(), key=lambda e: (not e.allowed, e.name.lower()))
+
+
+def name_lookup(db: Session):
+    """``name_of(key, fallback)``: Programmname aus dem Katalog in der aktuellen Sprache (für Protokolle)."""
+    names = {a.key: a.label for a in db.scalars(select(DeviceApp))}
+
+    def name_of(key: str, fallback: str) -> str:
+        return names.get(key, fallback)
+    return name_of
 
 
 def allowed_keys(db: Session, child_id: int) -> list[str]:
@@ -140,7 +151,7 @@ def custom_key(path: str) -> str:
     if path and "/" not in path:
         path = "/usr/bin/" + path
     if not _PATH_RE.match(path) or posixpath.normpath(path) != path or path.endswith("/"):
-        raise ValueError("Bitte einen absoluten Programmpfad angeben, z. B. /usr/bin/git")
+        raise ValueError(_("Bitte einen absoluten Programmpfad angeben, z. B. /usr/bin/git"))
     return "exe:" + path
 
 

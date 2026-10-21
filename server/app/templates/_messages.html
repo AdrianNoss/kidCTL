@@ -1,14 +1,15 @@
-{% if not messages %}<p class="muted">Noch keine Nachrichten.</p>{% endif %}
+{% if not messages %}<p class="muted">{{ _("Noch keine Nachrichten.") }}</p>{% endif %}
 {% for m in messages %}
 <div class="msg {{ 'from-child' if m.from_child else 'from-parent' }}{% if m.kind in ('extension_request', 'access_request') %} request{% endif %}" id="m{{ m.id }}">
   <div class="meta">{{ sender_name(m) }} · {{ m.created_at | localtime }}</div>
   {% if m.kind == "extension_request" %}
-    {% set day = weekday_names[m.request_day.weekday()][:2] ~ " " ~ m.request_day.strftime("%d.%m.") %}
+    {% set day = fmt_date(m.request_day, with_weekday=True, year=False) %}
     {% set games = m.request_target == "games" %}
-    <div><strong>{{ "Spielzeit-Anfrage" if games else "Verlängerungsanfrage" }} für {{ day }}:</strong>
-      {% if m.requested_minutes %}+{{ m.requested_minutes }} min{% endif %}
-      {% if m.requested_minutes and m.requested_window_end %} und {% endif %}
-      {% if m.requested_window_end %}bis {{ m.requested_window_end.strftime("%H:%M") }} Uhr{% endif %}
+    {% set ns = namespace(parts=[]) %}
+    {% if m.requested_minutes %}{% set ns.parts = ns.parts + [_("+{n} min").format(n=m.requested_minutes)] %}{% endif %}
+    {% if m.requested_window_end %}{% set ns.parts = ns.parts + [_("bis {time} Uhr").format(time=m.requested_window_end.strftime("%H:%M"))] %}{% endif %}
+    <div><strong>{{ (_("Spielzeit-Anfrage für {day}:") if games else _("Verlängerungsanfrage für {day}:")).format(day=day) }}</strong>
+      {{ ns.parts | join(_(" und ")) }}
     </div>
     <div class="body">„{{ m.body }}“</div>
     {% if m.status == "pending" %}
@@ -18,38 +19,41 @@
         <input type="hidden" name="action" value="approve">
         <input type="hidden" name="minutes" value="{{ m.requested_minutes or 0 }}">
         <input type="hidden" name="window_end" value="{{ m.requested_window_end.strftime('%H:%M') if m.requested_window_end else '' }}">
-        <button type="submit" class="small">Genehmigen</button>
+        <button type="submit" class="small">{{ _("Genehmigen") }}</button>
       </form>
       <form method="post" action="/children/{{ child.id }}/requests/{{ m.id }}" class="inline">
         <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
         <input type="hidden" name="action" value="reject">
-        <button type="submit" class="small danger">Ablehnen</button>
+        <button type="submit" class="small danger">{{ _("Ablehnen") }}</button>
       </form>
       <details>
-        <summary>Anpassen …</summary>
+        <summary>{{ _("Anpassen …") }}</summary>
         <form method="post" action="/children/{{ child.id }}/requests/{{ m.id }}" class="row">
           <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
           <input type="hidden" name="action" value="approve">
-          <label>+ <input type="number" name="minutes" min="0" max="{{ max_extra }}" step="5" value="{{ m.requested_minutes or 0 }}" class="short"> min</label>
-          {% if not games %}<label>bis <input type="time" name="window_end" value="{{ m.requested_window_end.strftime('%H:%M') if m.requested_window_end else '' }}"></label>{% endif %}
-          <button type="submit" class="small secondary">Angepasst genehmigen</button>
+          <label>+ <input type="number" name="minutes" min="0" max="{{ max_extra }}" step="5" value="{{ m.requested_minutes or 0 }}" class="short"> {{ _("min") }}</label>
+          {% if not games %}<label>{{ _("bis") }} <input type="time" name="window_end" value="{{ m.requested_window_end.strftime('%H:%M') if m.requested_window_end else '' }}"></label>{% endif %}
+          <button type="submit" class="small secondary">{{ _("Angepasst genehmigen") }}</button>
         </form>
       </details>
     </div>
     {% elif m.status == "approved" %}
-    <div><span class="pill ok">Genehmigt</span> <span class="muted">{% if m.approved_minutes %}: +{{ m.approved_minutes }} min{% if games %} Spielzeit{% endif %}{% endif %}{% if m.approved_window_end %}{{ "," if m.approved_minutes else ":" }} bis {{ m.approved_window_end.strftime("%H:%M") }} Uhr{% endif %}</span></div>
+    {% set ns2 = namespace(parts=[]) %}
+    {% if m.approved_minutes %}{% set ns2.parts = ns2.parts + [(_("+{n} min Spielzeit") if games else _("+{n} min")).format(n=m.approved_minutes)] %}{% endif %}
+    {% if m.approved_window_end %}{% set ns2.parts = ns2.parts + [_("bis {time} Uhr").format(time=m.approved_window_end.strftime("%H:%M"))] %}{% endif %}
+    <div><span class="pill ok">{{ _("Genehmigt") }}</span> <span class="muted">{% if ns2.parts %}: {{ ns2.parts | join(", ") }}{% endif %}</span></div>
     {% elif m.status == "rejected" %}
-    <div><span class="pill warn">Abgelehnt</span></div>
+    <div><span class="pill warn">{{ _("Abgelehnt") }}</span></div>
     {% elif m.status == "expired" %}
-    <div><span class="pill">Verfallen (Tag vorbei)</span></div>
+    <div><span class="pill">{{ _("Verfallen (Tag vorbei)") }}</span></div>
     {% endif %}
   {% elif m.kind == "access_request" %}
-    <div><strong>Freigabe-Anfrage:</strong> {% if m.access_kind == "domain" %}<span class="pill">Website</span>{% else %}<span class="pill">Programm</span>{% endif %}
+    <div><strong>{{ _("Freigabe-Anfrage:") }}</strong> <span class="pill">{{ _("Website") if m.access_kind == "domain" else _("Programm") }}</span>
       {{ m.access_name }}{% if m.access_kind != "domain" %} <small class="muted log-key">{{ m.access_key }}</small>{% endif %}</div>
     {% if m.body %}<div class="body">„{{ m.body }}“</div>{% endif %}
     {% if m.status == "pending" %}
     <div class="actions">
-      {% for action, label, cls in [("permanent", "Dauerhaft erlauben", "small"), ("today", "Nur heute", "small secondary"), ("reject", "Ablehnen", "small danger")] %}
+      {% for action, label, cls in [("permanent", _("Dauerhaft erlauben"), "small"), ("today", _("Nur heute"), "small secondary"), ("reject", _("Ablehnen"), "small danger")] %}
       <form method="post" action="/children/{{ child.id }}/access/{{ m.id }}" class="inline">
         <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
         <input type="hidden" name="action" value="{{ action }}">
@@ -58,9 +62,9 @@
       {% endfor %}
     </div>
     {% elif m.status == "approved" %}
-    <div><span class="pill ok">{{ "Heute erlaubt" if m.access_scope == "today" else "Dauerhaft erlaubt" }}</span>{% if m.access_scope == "permanent" %} <span class="muted">– zurücknehmen unter {{ "Websites" if m.access_kind == "domain" else "Programme" }} in den Einstellungen</span>{% endif %}</div>
+    <div><span class="pill ok">{{ _("Heute erlaubt") if m.access_scope == "today" else _("Dauerhaft erlaubt") }}</span>{% if m.access_scope == "permanent" %} <span class="muted">{{ _("– zurücknehmen unter „Websites“ in den Einstellungen") if m.access_kind == "domain" else _("– zurücknehmen unter „Programme“ in den Einstellungen") }}</span>{% endif %}</div>
     {% elif m.status == "rejected" %}
-    <div><span class="pill warn">Abgelehnt</span></div>
+    <div><span class="pill warn">{{ _("Abgelehnt") }}</span></div>
     {% endif %}
   {% else %}
     <div class="body">{{ m.body }}</div>
