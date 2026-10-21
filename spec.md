@@ -1119,3 +1119,4 @@ Verlängerungsanfragen.
   über `Accept-Language`. Sichtprüfung Englisch: Kind-Seite, Statistik, Protokoll, Profil, Anmeldung,
   Nutzungsbericht (Firefox headless) sowie Sperrliste, Anfrage-Dialog und Chat der Tray-App (offscreen).
   Migration gegen Entwicklungs-DB (Server-Start). Auf echtem Kinderrechner nicht getestet.
+- 2026-10-21: Nutzer-Test Spiele-Limit (0.25.0) auf dem Kinderrechner: Vorwarnung erscheint, danach wird das Spiel geschlossen.
