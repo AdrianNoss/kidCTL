@@ -132,3 +132,12 @@ def test_download_requires_password(client, parent):
     from conftest import PASSWORD
     r = client.post("/settings/backup/download", data={"csrf_token": tok, "name": info.path.name, "current_password": PASSWORD})
     assert r.status_code == 200 and gzip.decompress(r.content)[:15] == b"SQLite format 3"
+
+
+def test_latest_version_from_apt_pool(tmp_path):
+    repo = _repo(tmp_path, "kidctl-0.27.0-1-any.pkg.tar.zst", "kidctl-plasma-0.29.0-1-any.pkg.tar.zst")
+    pool = repo / "deb" / "pool" / "main"
+    pool.mkdir(parents=True)
+    for n in ("kidctl_0.28.0-1_amd64.deb", "kidctl-gnome_0.30.0-1_all.deb"):
+        (pool / n).write_text("")
+    assert versions.latest(repo).version == "0.28.0"   # Desktop-Pakete zählen nicht

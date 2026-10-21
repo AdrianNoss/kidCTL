@@ -2,7 +2,7 @@
 
 [English](README.md) · **Deutsch**
 
-Selbst gehostete Kindersicherung für **Arch Linux mit KDE Plasma oder GNOME (Wayland)**. Ein zentraler Server
+Selbst gehostete Kindersicherung für **Arch Linux, Debian und Ubuntu** (auch Mint, Pop!_OS) **mit KDE Plasma oder GNOME (Wayland)**. Ein zentraler Server
 mit Eltern-WebUI (auch als App aufs Handy) steuert einen Root-Agenten auf jedem Kinderrechner. Alle
 Daten bleiben auf dem eigenen Server, es gibt keine Cloud und kein Konto bei Dritten.
 
@@ -30,12 +30,12 @@ Daten bleiben auf dem eigenen Server, es gibt keine Cloud und kein Konto bei Dri
   - Schutzmaßnahme manipuliert, z. B. PAM, nftables oder noexec.
 - **Sicherheit**:
   - Eltern-Login nur mit TOTP, Rate-Limiting, CSRF-Schutz.
-  - Signiertes Pacman-Repository für Updates.
+  - Signiertes Paket-Repository für Updates (Pacman und APT).
 
 ## Architektur
 
 ```
- Eltern (Browser / PWA)              Kinderrechner (Arch + Plasma/GNOME)
+ Eltern (Browser / PWA)        Kinderrechner (Arch/Debian, Plasma/GNOME)
           │ HTTPS                          ┌──────────────────────────────┐
           ▼                                │ kidctl-agent (root, systemd) │
  ┌──────────────────────┐   WebSocket      │  Zeit · PAM · Prozesse ·     │
@@ -62,7 +62,7 @@ Grundregel: root und Accounts in `wheel`/`sudo`/`admin` werden **nie** eingeschr
 
 Quellcode: <https://github.com/AdrianNoss/kidCTL>
 
-Schritt für Schritt in **[docs/installation.md](docs/installation.md)**: Server, Pacman-Repository,
+Schritt für Schritt in **[docs/installation.md](docs/installation.md)**: Server, Paket-Repository,
 Kinderrechner und WebUI. Kurzfassung:
 
 ```bash
@@ -73,6 +73,7 @@ docker compose exec kidctl python -m app.cli create-parent
 
 # Kinderrechner (nach Einrichtung des Repos)
 sudo pacman -S kidctl kidctl-plasma   # bzw. kidctl-gnome (bei beiden Desktops beide)
+sudo apt install kidctl kidctl-gnome  # Debian/Ubuntu (bzw. kidctl-plasma)
 sudo kidctl enroll https://kids.example.org <KOPPLUNGSCODE>
 sudo systemctl enable --now kidctl-agent.service
 ```
@@ -99,7 +100,7 @@ Die vollständige Liste steht in [`spec.md`](spec.md) unter „Bewusst nicht umg
 | `common/` | Gemeinsames, versioniertes Protokoll (`kidctl_common`) |
 | `packaging/arch/` | PKGBUILD, systemd-Units, Install-Skript |
 | `packaging/pam`, `dns`, `mounts`, `sddm`, `gnome` | Login-Sperre, DNS-Filter und Browser-Policies, noexec, Anmeldebildschirm, GNOME-Anpassungen |
-| `packaging/repo/` | Skripte für das signierte Pacman-Repository |
+| `packaging/repo/`, `debian` | Skripte für das signierte Paket-Repository, `.deb`-Bau für Debian/Ubuntu |
 | `dev/` | Entwicklungsserver, WebUI-Testskript, Test-VM (QEMU/KVM) |
 | `docs/` | Installations- und Härtungsanleitung |
 | `spec.md` | Lebende Spezifikation mit Changelog |

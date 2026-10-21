@@ -38,6 +38,7 @@ pkg:task-kde-desktop
 pkg:kde-plasma-desktop
 pkg:plasma-desktop
 pkg:plasma-workspace
+pkg:plasma-workspace-wayland
 pkg:kwin-wayland
 pkg:sddm
 pkg:plasma-nm
@@ -59,6 +60,12 @@ pkg:snapd
 
 # --- harmlose Hilfsprogramme, die Skripte aufrufen ---
 /usr/bin/which
+
+# --- KDE: Migrationsskripte der Einstellungen (Perl/Python, nicht ausführbar) ---
+/usr/share/kconf_update/*
+
+# --- utmp-Helfer (von kded/KPty gestartet), hängt an keinem Desktop-Metapaket ---
+/usr/lib/x86_64-linux-gnu/utempter/utempter
 
 # --- vom Agenten im Namen des Kindes gestartet (Benachrichtigung, Abmeldung, GNOME-Suche) ---
 /usr/bin/notify-send

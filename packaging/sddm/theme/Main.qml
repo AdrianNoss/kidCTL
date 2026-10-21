@@ -4,7 +4,7 @@
     Breeze wertet SDDM-Informationsmeldungen (informationMessage) selbst nicht aus.
 */
 
-import QtQuick
+import QtQuick 2.15   // mit Version: SDDM mit Qt 5 (Ubuntu 24.04) braucht sie, Qt 6 akzeptiert sie
 
 Item {
     id: wrapper

@@ -336,7 +336,8 @@ class Agent:
         out = set()
         for user, _mode, allowed in self.programs.targets().values():
             for lib in kidmounts.libraries():
-                enabled = allowed.steam_enabled if lib.key == "steam" else lib.exe in allowed.exes
+                enabled = (allowed.steam_enabled if lib.key == "steam"
+                           else lib.exe in allowed.exes or os.path.realpath(lib.exe) in allowed.exes)
                 if lib.installed.exists() and not enabled and safe_home(user) is not None:
                     out.add(str(lib.root / user))
         return out

@@ -81,12 +81,15 @@ STEAM_SYSTEM = "/usr/lib/steam/"
 STEAM_CLIENT = "ubuntu12_32/steam"
 # Protokoll-Eintrag, wenn Steam nicht freigegeben ist: Schlüssel des Steam-Starters aus dem Katalog,
 # damit Eltern sehen (und freigeben), worum es geht – statt einzelner Hilfsprogramme wie cmp
-STEAM_KEY = "exe:/usr/bin/steam"
+# Steam-Starter: Arch und Valves .deb /usr/bin/steam, Debian/Ubuntu (steam-installer) /usr/games/steam
+STEAM_LAUNCHERS = ("/usr/bin/steam", "/usr/games/steam")
+STEAM_KEY = "exe:" + next((p for p in STEAM_LAUNCHERS if os.path.exists(p)), STEAM_LAUNCHERS[0])
 STEAM_SCRIPT = "steam.sh"
 MAX_ANCESTORS = 64
 
 # Spiele-Launcher: was sie starten (Wine, Spiele), ist erlaubt, wenn der Launcher freigegeben ist
-LAUNCHERS = {"/usr/bin/heroic": "Heroic", "/usr/bin/lutris": "Lutris"}
+# Offizielles Heroic-.deb (Debian/Ubuntu): /opt/Heroic/heroic, /usr/bin/heroic ist nur ein Verweis darauf
+LAUNCHERS = {"/usr/bin/heroic": "Heroic", "/opt/Heroic/heroic": "Heroic", "/usr/bin/lutris": "Lutris"}
 
 # Electron-Laufzeit aus den Arch-Paketen electron, electron37, …
 ELECTRON_DIR = re.compile(r"^/usr/lib/electron[0-9]*/")
@@ -248,7 +251,8 @@ def loader_inspect_only(info: ProcInfo, env: dict[str, str]) -> bool:
     return (len(info.argv) > 1 and info.argv[1] in ("--verify", "--list")) or "LD_TRACE_LOADED_OBJECTS" in env
 
 
-KWALLET_INIT = "/usr/lib/pam_kwallet_init"   # kwallet-pam: übergibt beim Login das Passwort an KWallet
+# kwallet-pam: übergibt beim Login das Passwort an KWallet (Arch: Programm, Ubuntu: Shellskript)
+KWALLET_INIT = ("/usr/lib/pam_kwallet_init", "/usr/share/libpam-kwallet-common/pam_kwallet_init")
 
 
 def kwallet_unlock(info: ProcInfo, ancestors: Iterable[ProcInfo]) -> bool:
@@ -259,7 +263,7 @@ def kwallet_unlock(info: ProcInfo, ancestors: Iterable[ProcInfo]) -> bool:
     sockets = {f"UNIX-CONNECT:/run/user/{info.uid}/kwallet{v}.socket" for v in (5, 6)}
     if len(info.argv) != 3 or info.argv[1] != "STDIN" or info.argv[2] not in sockets:
         return False
-    return any(_program_path(a) == KWALLET_INIT for a in ancestors)
+    return any(_program_path(a) in KWALLET_INIT for a in ancestors)
 
 
 def is_shell_or_interpreter(path: str) -> bool:
@@ -324,7 +328,7 @@ class Allowed:
     def __post_init__(self) -> None:
         self.exes = {k[4:] for k in self.keys if k.startswith("exe:")}
         # Steam gilt als freigegeben, wenn der Steam-Starter freigegeben ist
-        self.steam_enabled = any(e.startswith(STEAM_SYSTEM) or e == "/usr/bin/steam" for e in self.exes)
+        self.steam_enabled = any(e.startswith(STEAM_SYSTEM) or e in STEAM_LAUNCHERS for e in self.exes)
         self.flatpaks = {k[8:] for k in self.keys if k.startswith("flatpak:")}
         self.snaps = {k[5:] for k in self.keys if k.startswith("snap:")}
         self.app_dirs = {d for d in (os.path.dirname(e) for e in self.exes) if d not in GENERIC_DIRS}
@@ -459,7 +463,7 @@ def _program_path(info: ProcInfo) -> str:
 
 def is_steam_process(info: ProcInfo, steam_root: str) -> bool:
     path = _program_path(info)
-    return (path.startswith(STEAM_SYSTEM) or path == "/usr/bin/steam"
+    return (path.startswith(STEAM_SYSTEM) or path in STEAM_LAUNCHERS
             or (bool(steam_root) and path in (steam_root + STEAM_CLIENT, steam_root + STEAM_SCRIPT)))
 
 

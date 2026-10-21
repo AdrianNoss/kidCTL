@@ -11,8 +11,8 @@
     <dt>{{ _("Status") }}</dt><dd>{% if device.revoked_at %}{{ _("Token widerrufen am {when}").format(when=device.revoked_at | localtime) }}{% elif online %}<span class="pill ok">online</span>{% else %}<span class="pill">offline</span>{% endif %}</dd>
     <dt>{{ _("Zuletzt gesehen") }}</dt><dd>{{ device.last_seen_at | localtime }}</dd>
     <dt>{{ _("Agent") }}</dt><dd>{{ device.agent_version or "–" }} ({{ _("Protokoll") }} {{ device.protocol_version or "–" }})
-      {% if update_for(device.agent_version) %}<br><span class="warn">{{ _("Update verfügbar: {new}. Auf dem Rechner „pacman -Syu“ ausführen.").format(new=update_for(device.agent_version)) }}</span>{% endif %}
-      {% if device.protocol_unsupported %}<br><span class="warn">{{ _("veraltet – Server unterstützt {versions}. Agent per pacman -Syu aktualisieren; Durchsetzung läuft mit letzter Policy weiter.").format(versions=supported | join(", ")) }}</span>{% endif %}</dd>
+      {% if update_for(device.agent_version) %}<br><span class="warn">{{ _("Update verfügbar: {new}. Auf dem Rechner das Systemupdate ausführen (pacman -Syu bzw. apt upgrade).").format(new=update_for(device.agent_version)) }}</span>{% endif %}
+      {% if device.protocol_unsupported %}<br><span class="warn">{{ _("veraltet – Server unterstützt {versions}. Agent per Systemupdate (pacman -Syu bzw. apt upgrade) aktualisieren; Durchsetzung läuft mit letzter Policy weiter.").format(versions=supported | join(", ")) }}</span>{% endif %}</dd>
     <dt>{{ _("Policy") }}</dt><dd>{% if policy_current %}<span class="pill ok">{{ _("aktuell") }}</span>{% elif device.policy_version %}<span class="pill warn">{{ _("veraltet") }}</span> <small class="muted">{{ _("wird beim nächsten Verbinden übertragen") }}</small>{% else %}{{ _("noch nicht übertragen") }}{% endif %}</dd>
     <dt>{{ _("Gekoppelt am") }}</dt><dd>{{ device.created_at | localtime }}</dd>
   </dl>

@@ -245,3 +245,21 @@ def test_steam_problems_in_integrity():
                                        ("heroic", "mika"): "~/Games/Heroic liegt im Home"})
     assert [(c.id, c.label, c.ok) for c in checks] == [("heroic:mika", "Heroic-Spieleordner von mika", False),
                                                       ("steam:mika", "Steam-Bibliothek von mika", False)]
+
+
+def test_debian_steam_installer(monkeypatch, tmp_path):
+    """Ubuntu/Debian (steam-installer): Starter /usr/games/steam, Bibliothek ~/.steam/debian-installation."""
+    from kidctl_agent import programs
+    deb = tmp_path / "games-steam"
+    deb.write_text("#!/bin/sh\n")
+    monkeypatch.setattr(kidmounts, "STEAM_INSTALLED_DEBIAN", deb)
+    lib = kidmounts.steam_library()
+    assert (lib.exe, lib.links) == (str(deb), ((".steam/debian-installation", ""),))
+    monkeypatch.setattr(kidmounts, "STEAM_INSTALLED", tmp_path)          # Valves .deb/Arch hat Vorrang
+    assert kidmounts.steam_library().links == ((".local/share/Steam", ""),)
+    # Freigabe des Debian-Starters gibt Steam frei; Client in der Bibliothek darf dann laufen
+    a = programs.Allowed([], {"exe:/usr/games/steam"}, steam_root="/srv/steam/kind/")
+    assert a.steam_enabled
+    client = programs.ProcInfo(pid=5, uid=1001, ppid=1, start=1, exe="/srv/steam/kind/ubuntu12_32/steam",
+                               argv=("steam",), tty=False, flatpak_id=None)
+    assert programs.classify(client, a) is None

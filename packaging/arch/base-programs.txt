@@ -53,6 +53,9 @@ pkg:flatpak
 # --- harmlose Hilfsprogramme, die Skripte (z. B. steam.sh) aufrufen ---
 /usr/bin/which
 
+# --- KDE: Migrationsskripte der Einstellungen (Perl/Python, nicht ausführbar) ---
+/usr/share/kconf_update/*
+
 # --- vom Agenten im Namen des Kindes gestartet (Benachrichtigung, Abmeldung über Plasma/GNOME) ---
 /usr/bin/notify-send
 /usr/bin/busctl

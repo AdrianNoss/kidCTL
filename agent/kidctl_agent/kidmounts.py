@@ -34,10 +34,13 @@ LIB_DESCRIPTION = "kidctl: noexec-Spieleordner"
 HOME_PARENT = "/home"
 STEAM_ROOT = Path(os.environ.get("KIDCTL_STEAM_ROOT", "/srv/steam"))
 STEAM_INSTALLED = Path("/usr/lib/steam")
+STEAM_INSTALLED_DEBIAN = Path("/usr/games/steam")
 STEAM_ROOT_OWNER = 0   # /srv/steam, /srv/heroic gehören root (Tests: eigener User)
 HEROIC_ROOT = Path(os.environ.get("KIDCTL_HEROIC_ROOT", "/srv/heroic"))
 HEROIC_INSTALLED = Path("/usr/bin/heroic")
-MOUNTINFO = "/proc/self/mountinfo"
+# Sicht des Systems (PID 1): Der Agent läuft in einem eigenen Mount-Namespace, in dem geänderte Optionen eines
+# Bind-Mounts (noexec) nicht immer ankommen (Ubuntu: /srv/steam/<kind> dort ohne noexec)
+MOUNTINFO = "/proc/1/mountinfo"
 
 
 def _run(*cmd: str) -> subprocess.CompletedProcess:
@@ -83,8 +86,17 @@ class Library:
     caches: frozenset[str] = frozenset()
 
 
+def steam_library() -> Library:
+    """Arch und Valves .deb: Bootstrap unter /usr/lib/steam, Bibliothek ~/.local/share/Steam. Debian/Ubuntu
+    (steam-installer): Starter /usr/games/steam lädt Steam nach ~/.steam/debian-installation."""
+    if not STEAM_INSTALLED.exists() and STEAM_INSTALLED_DEBIAN.exists():
+        return Library("steam", "Steam", str(STEAM_INSTALLED_DEBIAN), STEAM_INSTALLED_DEBIAN, STEAM_ROOT,
+                       ((".steam/debian-installation", ""),))
+    return Library("steam", "Steam", "/usr/bin/steam", STEAM_INSTALLED, STEAM_ROOT, ((".local/share/Steam", ""),))
+
+
 def libraries() -> list[Library]:
-    return [Library("steam", "Steam", "/usr/bin/steam", STEAM_INSTALLED, STEAM_ROOT, ((".local/share/Steam", ""),)),
+    return [steam_library(),
             Library("heroic", "Heroic", "/usr/bin/heroic", HEROIC_INSTALLED, HEROIC_ROOT,
                     (("Games/Heroic", "Games"), (".config/heroic/tools", "tools"),
                      (".local/share/umu", "umu"),
@@ -135,7 +147,7 @@ def move_dir(home: str, uid: int, rel: str, lib: Path, sub: str) -> bool:
 
 
 def noexec_mounts() -> set[str]:
-    """Mountpunkte mit noexec (aus /proc/self/mountinfo)."""
+    """Mountpunkte mit noexec (Sicht des Systems, siehe MOUNTINFO)."""
     out = set()
     try:
         lines = Path(MOUNTINFO).read_text().splitlines()

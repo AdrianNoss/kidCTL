@@ -2,7 +2,7 @@
 
 **English** · [Deutsch](README.de.md)
 
-Self-hosted parental control for **Arch Linux with KDE Plasma or GNOME (Wayland)**. A central server with a
+Self-hosted parental control for **Arch Linux, Debian and Ubuntu** (also Mint, Pop!_OS) **with KDE Plasma or GNOME (Wayland)**. A central server with a
 parents' web interface (installable as an app on your phone) controls a root agent on each child's
 computer. All data stays on your own server – no cloud, no third-party account.
 
@@ -28,13 +28,13 @@ app) are available in **English and German**. Parents choose their language in t
 - **Reports**: statistics per day, app and game, an activity log of blocked actions and an optional
   weekly or monthly usage report by email. No history of allowed websites is stored.
 - **Alerts**: device offline for too long, protection tampered with (PAM, nftables, noexec).
-- **Security**: TOTP-only parent sign-in, rate limiting, CSRF protection, signed pacman repository
+- **Security**: TOTP-only parent sign-in, rate limiting, CSRF protection, signed package repository (pacman and APT)
   for updates. Root and accounts in `wheel`/`sudo`/`admin` are **never** restricted.
 
 ## Installation
 
 The step-by-step guide is currently available in German only:
-**[docs/installation.md](docs/installation.md)** (server, pacman repository, child computers, web
+**[docs/installation.md](docs/installation.md)** (server, package repository, child computers, web
 interface) and **[docs/haertung.md](docs/haertung.md)** (hardening against physical access).
 
 Short version:
@@ -47,6 +47,7 @@ docker compose exec kidctl python -m app.cli create-parent
 
 # Child's computer (after setting up the repository)
 sudo pacman -S kidctl kidctl-plasma   # or kidctl-gnome (both if both desktops are installed)
+sudo apt install kidctl kidctl-gnome  # Debian/Ubuntu (or kidctl-plasma)
 sudo kidctl enroll https://kids.example.org <PAIRING-CODE>
 sudo systemctl enable --now kidctl-agent.service
 ```

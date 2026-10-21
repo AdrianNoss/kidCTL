@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Pakete bauen (kidctl, kidctl-plasma, kidctl-gnome), signieren und ins lokale Repo aufnehmen (Datenbank
-# ebenfalls signiert).
+# ebenfalls signiert). Zusätzlich .deb-Pakete für Debian/Ubuntu und ein signiertes APT-Repo unter repo/deb.
 #
 #   kidctl-repo-build.sh [--apply]
 #
@@ -29,6 +29,9 @@ run mkdir -p "$REPO_DIR"
    makepkg --force --cleanbuild --nodeps --sign --key "$fpr")
 run repo-add --remove --sign --key "$fpr" "$REPO_DIR/$REPO_NAME.db.tar.zst" "${pkgs[@]}"
 run cp "$REPO_HOME/$PUBKEY_NAME" "$REPO_DIR/$PUBKEY_NAME"
+# Debian/Ubuntu: .deb (ohne dpkg gebaut) und APT-Repo, signiert mit demselben Schlüssel
+run python3 "$HERE/../debian/build-deb.py" "$build/deb"
+run python3 "$HERE/../debian/apt-repo.py" "$build/deb" "$REPO_DIR/deb" --key "$fpr"
 # Einrichtungsskript für Kinderrechner mit ausliefern (…/repo/kidctl-repo-client.sh)
 run install -m644 "$HERE/kidctl-repo-client.sh" "$REPO_DIR/kidctl-repo-client.sh"
 (( APPLY )) && { echo "Repo:"; ls -1 "$REPO_DIR"; }

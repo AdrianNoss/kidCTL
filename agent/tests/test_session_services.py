@@ -150,6 +150,8 @@ def test_kwallet_unlock_socat_only_from_pam_kwallet_init():
     socat = proc("/usr/bin/socat1", ["socat", "STDIN", sock], pid=44, ppid=41)
     assert classify(socat, a, ancestors=lambda: [init]) is None
     assert classify(socat, a, ancestors=lambda: []) is not None                       # nicht von pam_kwallet_init
+    ubuntu = proc("/usr/bin/dash", ["/bin/sh", "/usr/share/libpam-kwallet-common/pam_kwallet_init"], pid=42)
+    assert classify(socat, a, ancestors=lambda: [ubuntu]) is None                     # Ubuntu (libpam-kwallet-common)
     other = proc("/usr/bin/socat1", ["socat", "STDIN", "TCP:example.org:80"], pid=45, ppid=41)
     assert classify(other, a, ancestors=lambda: [init]) is not None                   # anderes Ziel
     foreign = proc("/usr/bin/socat1", ["socat", "STDIN", "UNIX-CONNECT:/run/user/1002/kwallet5.socket"], pid=46)

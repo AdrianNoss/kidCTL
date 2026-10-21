@@ -6,6 +6,7 @@
 #   vm.sh stop                 ACPI-Shutdown
 #   vm.sh status
 #   vm.sh ssh      [befehl …]  als admin (sudo ohne Passwort)
+#   (KIDCTL_VM_DISTRO=debian bzw. ubuntu26: Debian 13 / Ubuntu 26.04 ohne Oberfläche, nur Paket-Kurztest)
 #   vm.sh wait                 warten, bis die Erstinstallation fertig ist
 #   vm.sh snapshot NAME [--apply]   (VM muss aus sein)
 #   vm.sh restore  NAME [--apply]   legt vorher automatisch einen Sicherungs-Snapshot an
@@ -35,6 +36,21 @@ case "$DISTRO" in
     IMG_URL="https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
     SUM_URL="https://cloud-images.ubuntu.com/noble/current/SHA256SUMS"
     PROVISION="provision-ubuntu.sh"
+    ADMIN_GROUP="sudo" ;;
+  # Ohne Oberfläche – nur Paketinstallation und Agent-Start prüfen
+  debian)
+    VM_DIR="${KIDCTL_VM_DIR:-$HOME/.local/share/kidctl-vm-debian}"
+    SSH_PORT="${KIDCTL_VM_SSH_PORT:-2224}"
+    IMG_URL="https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2"
+    SUM_URL="https://cloud.debian.org/images/cloud/trixie/latest/SHA512SUMS"
+    PROVISION="provision-minimal.sh"
+    ADMIN_GROUP="sudo" ;;
+  ubuntu26)
+    VM_DIR="${KIDCTL_VM_DIR:-$HOME/.local/share/kidctl-vm-ubuntu26}"
+    SSH_PORT="${KIDCTL_VM_SSH_PORT:-2225}"
+    IMG_URL="https://cloud-images.ubuntu.com/resolute/current/resolute-server-cloudimg-amd64.img"
+    SUM_URL="https://cloud-images.ubuntu.com/resolute/current/SHA256SUMS"
+    PROVISION="provision-minimal.sh"
     ADMIN_GROUP="sudo" ;;
   *) echo "Unbekannte Distribution: $DISTRO" >&2; exit 1 ;;
 esac
@@ -110,14 +126,16 @@ cmd_create() {
   run mkdir -p "$VM_DIR"
 
   if [[ ! -f "$BASE" ]]; then
-    info "Arch-Cloud-Image laden (~550 MB) und Prüfsumme verifizieren"
+    info "Cloud-Image ($DISTRO) laden und Prüfsumme verifizieren"
     run curl -fL --progress-bar -o "$BASE.part" "$IMG_URL"
     run curl -fsSL -o "$BASE.SHA256" "$SUM_URL"
     if (( APPLY )); then
       local want got
-      # Arch: „<hash>  <datei>“ (eine Zeile), Ubuntu: SHA256SUMS mit „<hash> *<datei>“ je Image
-      want="$(awk -v f="$(basename "$IMG_URL")" 'NR==1 && NF==2 && $2 !~ /^\*/ {print $1; exit} $2=="*"f {print $1}' "$BASE.SHA256")"
-      got="$(sha256sum "$BASE.part" | awk '{print $1}')"
+      # Zeile zum Image (Arch: eine Zeile, Ubuntu: „<hash> *<datei>“, Debian: SHA512SUMS)
+      want="$(awk -v f="$(basename "$IMG_URL")" '{n=$2; sub(/^\*/, "", n)} n==f {print $1; exit}' "$BASE.SHA256")"
+      [[ -n "$want" ]] || want="$(awk 'NR==1 {print $1}' "$BASE.SHA256")"
+      if (( ${#want} == 128 )); then got="$(sha512sum "$BASE.part" | awk '{print $1}')"   # Debian: SHA512SUMS
+      else got="$(sha256sum "$BASE.part" | awk '{print $1}')"; fi
       [[ "$want" == "$got" ]] || die "Prüfsumme stimmt nicht ($got != $want)"
       mv "$BASE.part" "$BASE"
       chmod a-w "$BASE"
@@ -260,5 +278,5 @@ case "${1:-}" in
   snapshot) shift; cmd_snapshot "$@" ;;
   restore) shift; cmd_restore "$@" ;;
   snapshots) cmd_snapshots ;;
-  *) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+  *) sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
 esac

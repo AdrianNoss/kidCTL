@@ -53,7 +53,9 @@ Verlängerungsanfragen.
   - Rein kosmetisch: Beenden der Tray-App hat keinen Einfluss auf Zählung/Durchsetzung.
   - Gehört zur festen Basis-Whitelist.
 - Unterstützte Umgebung: **KDE Plasma und GNOME, jeweils auf Wayland** (GNOME ergänzt 2026-10-21,
-  siehe „Desktop-Umgebungen“). X11 und andere Desktops werden nicht unterstützt.
+  siehe „Desktop-Umgebungen“). X11 und andere Desktops werden nicht unterstützt (Cinnamon und COSMIC
+  folgen als eigene Schritte, siehe „Debian/Ubuntu“).
+- Distributionen: Arch Linux sowie Debian 13, Ubuntu 24.04/26.04 und darauf aufbauend (siehe „Debian/Ubuntu“).
 
 ### Desktop-Umgebungen (entschieden 2026-10-21)
 - Plasma (SDDM) und GNOME (GDM) auf Wayland; beide dürfen auf demselben Rechner installiert sein. Der Agent
@@ -105,6 +107,58 @@ Verlängerungsanfragen.
   `DesktopId`) per `gsettings` als Kind in `org.gnome.desktop.search-providers disabled` ein und nimmt sie
   nach einer Freigabe bzw. ohne Programmkontrolle wieder heraus; Einträge des Kindes bleiben
   (`gnome-search.json`). Nur bei laufender GNOME-Sitzung, nur bei Änderung.
+
+### Debian/Ubuntu (entschieden 2026-10-21)
+- Unterstützt: Ubuntu 24.04 LTS und Systeme darauf (Kubuntu, Mint 22, Pop!_OS 22.04/24.04), Debian 13,
+  Ubuntu 26.04; amd64. Ein Paket für alle.
+- Desktops: GNOME und Plasma (Wayland) – umgesetzt; Cinnamon mit LightDM (auch X11, nur Cinnamon) für Mint
+  und COSMIC für Pop!_OS 24.04 folgen als eigene Schritte. Desktop-Pakete wie unter Arch einzeln
+  (`kidctl-gnome`, `kidctl-plasma`, später `kidctl-cinnamon`, `kidctl-cosmic`).
+- Bibliotheken: Fehlt pydantic 2 (Python 3.12: Ubuntu 24.04 & Co.), bringt das Paket pydantic 2.14 (mit
+  pydantic-core für cp312), typing-extensions, annotated-types, typing-inspection und websockets 17 unter
+  `/usr/lib/kidctl/vendor/py3.12` mit (Liste mit SHA256 in `packaging/debian/vendor.txt`; die Startskripte
+  nehmen den Ordner nur für die passende Python-Version in den Suchpfad). Neuere Systeme nutzen ihre Pakete
+  (`Depends: python3-pydantic (>= 2) | python3 (<< 3.13)` usw.). Tray: PySide6, sonst PyQt6 aus den
+  Systempaketen (`kidctl_tray/qt.py`).
+- Verteilung: signiertes APT-Repository unter `<BASE_URL>/repo/deb` (Suite `stable`, Komponente `main`),
+  gebaut auf dem Arch-Rechner ohne dpkg (`build-deb.py`, `apt-repo.py`), signiert mit dem Schlüssel des
+  Pacman-Repos (Ed25519; apt prüft InRelease). `kidctl-repo-client.sh` erkennt Debian/Ubuntu: Schlüssel nach
+  `/etc/apt/keyrings/kidctl.asc` (nach Fingerabdruck-Prüfung), `kidctl.sources` mit `Signed-By`. Der Hinweis
+  „Agent veraltet“ liest auch `repo/deb/pool/main/kidctl_<ver>_*.deb`; Texte nennen „pacman -Syu bzw. apt
+  upgrade“.
+- Paketdatenbank im Agenten (`pkgdb.py`): pacman oder dpkg. dpkg: Abhängigkeiten aus Pre-Depends, Depends und
+  Recommends (Metapakete ziehen den Desktop über Empfehlungen), bei Alternativen alle installierten,
+  Pseudogruppe `essential` (grep, sed, coreutils … hängen von nichts ab), installiert = Status i/h mit i, t
+  oder W (ausstehende Trigger während eines apt-Laufs, in dem der Agent neu startet – sonst fehlten z. B.
+  die GLib-Programme bis zur nächsten Berechnung), Pfade unter `/bin` usw. auf `/usr/…` (usrmerge).
+  Programmverzeichnisse zusätzlich `/usr/libexec`, `/usr/sbin`, `/usr/games`; ausführbare Dateien der Pakete
+  auch unter `/usr/share` (apport, Ubuntus Migrationsskripte). Hilfsprogramme mit `PATH=/usr/bin:/usr/sbin`
+  (`nft`, `unbound` liegen unter Debian in `/usr/sbin`).
+- Login-Sperre: `pam-auth-update`-Profil `/usr/share/pam-configs/kidctl` (gleicher Block wie unter Arch,
+  „Additional“ in `common-account`), Priorität 200 – vor `sss` (128), dessen `sufficient pam_localuser`
+  die Prüfung für lokale User sonst vorher erfolgreich beendet (Ubuntu 24.04, im Test gefunden).
+  Integrität prüft `common-account`. Entfernen per `pam-auth-update --remove` im prerm.
+- DNS-Filter: Unit startet `/usr/sbin/unbound`; `AppArmorProfile=-unconfined`, weil Ubuntus unbound-Profil
+  `/run/kidctl/dns` nicht lesen lässt (ohne AppArmor wirkungslos). Ubuntus Stub-Resolver (127.0.0.53) wird
+  per nftables-Umleitung genauso umgangen wie unter Arch.
+- noexec-Prüfung liest die Mounts aus Sicht des Systems (`/proc/1/mountinfo`): Im Namespace des Agenten kam
+  unter Ubuntu das `noexec` eines Bind-Mounts (Spieleordner) nicht an.
+- Snap wie Flatpak: Prozess in Cgroup `snap.<name>.…` **und** eigener Mount-Namespace **und** Programmdatei
+  von einem Snap-Image (squashfs unter `/snap`, Geräte aus `/proc/1/mountinfo`) -> Schlüssel `snap:<name>`;
+  eine selbst angelegte Unit gleichen Namens genügt nicht. Katalog aus `/var/lib/snapd/desktop/applications`
+  (`X-SnapInstanceName`), Server akzeptiert `snap:`-Schlüssel. Firefox als Snap liest `/etc/firefox/policies`
+  (DoH gesperrt, getestet). Das Paket legt Chromium- und Chrome-Policies an (`/etc/chromium`, `/etc/opt/chrome`).
+- Basisliste Debian/Ubuntu (`packaging/debian/base-programs.txt`): Metapakete der Desktops (ubuntu-desktop,
+  kubuntu-desktop, task-gnome-desktop …), `group:essential`, snapd, Flatpak, ibus-Engines. **Dateien
+  (Nautilus) unter Ubuntu immer erlaubt**: Ubuntus Desktop-Symbole (Erweiterung „Desktop Icons NG“) starten
+  es alle paar Sekunden per D-Bus – ohne Freigabe endlose Neustarts (die Erweiterung stürzt ab) und
+  Sperrmeldungen.
+- Dienste beim Login ohne Popup: Ubuntu aktiviert D-Bus-Dienste über `dbus-daemon` – dessen Prozesse
+  zwischen Dienst und systemd-Benutzerdienst werden übersprungen.
+- Steam aus Ubuntus `steam-installer` (`/usr/games/steam`): Bibliothek `~/.steam/debian-installation` ->
+  `/srv/steam/<kind>` (sonst wie unter Arch); Freigabe-Schlüssel `exe:/usr/games/steam`. Heroic aus dem
+  offiziellen .deb: `/opt/Heroic/heroic` gilt als Launcher.
+- Logind trägt unter GDM keinen Desktop ein (auch Ubuntu) – Abmeldung über die laufende Shell (wie GNOME).
 
 ### Offline-Verhalten
 - Letzte bekannte Policy wird weiter durchgesetzt.
@@ -638,7 +692,9 @@ Verlängerungsanfragen.
 
 - Kein Schutz gegen physischen Zugriff (nur Härtungs-Anleitung `docs/haertung.md`).
 - Keine Leerlauferkennung.
-- Keine Unterstützung anderer Desktops als KDE Plasma und GNOME (Wayland), kein X11.
+- Keine Unterstützung anderer Desktops als KDE Plasma und GNOME (Wayland), kein X11 (Cinnamon/COSMIC folgen).
+- Debian/Ubuntu: nur amd64. Unter Ubuntu ist „Dateien“ immer erlaubt (Desktop-Symbole). Wer eine Snap- oder
+  Flatpak-App freigibt, gibt alles in deren Sandbox frei (auch `snap run --shell`/`flatpak run --command`).
 - Kein GDM-Autologin für Kinder (GDM bliebe bei Login-Sperre schwarz, Integritätsprüfung meldet es).
 - Plasma-Widgets und GNOME-Erweiterungen, die das Kind selbst installiert, laufen als QML/JavaScript in der
   Shell und sind keine Programmstarts; Zeitlimit, Webfilter und Abmeldung umgehen sie nicht.
@@ -1237,3 +1293,26 @@ Verlängerungsanfragen.
   aus der Liste. Plasma auf demselben Rechner: Login ohne Sperrmeldungen, Abmeldung über Plasma
   (`Desktop KDE`) ohne hartes Beenden. Nicht getestet: echter Rechner, Tray-Menü per Maus unter GNOME,
   „Freigabe anfragen“-Knopf in GNOME-Benachrichtigungen.
+- 2026-10-21: Debian/Ubuntu, Schritt 1 (Paket 0.28.0, per Rückfragen abgestimmt: Ubuntu 24.04 & Co., Debian 13,
+  Ubuntu 26.04; Desktops GNOME/Plasma jetzt, Cinnamon und COSMIC als eigene Schritte; Bibliotheken mitbringen
+  nur wo nötig, Tray mit PyQt6-Rückfall; signiertes APT-Repo; Snap wie Flatpak). Details unter
+  „Debian/Ubuntu“. Bei der Umsetzung ergänzt bzw. gefunden: PAM-Priorität vor sss, AppArmor beim Resolver,
+  `/usr/sbin` im PATH, ausstehende dpkg-Trigger, Essential-Pakete, dbus-daemon in der Login-Regel,
+  noexec-Sicht des Systems, Nautilus unter Ubuntu immer erlaubt, `plasma-workspace-wayland`,
+  KWallet-Skript und kconf_update unter Ubuntu, SDDM-Theme mit `import QtQuick 2.15` (Qt 5), neutrale
+  Update-Texte im WebUI. Getestet: Agent 217, Server 117, Tray 13 Tests grün (Tray zusätzlich komplett mit
+  PyQt6). VM Ubuntu 24.04: Pakete mit echtem dpkg installiert, PyQt6 als Ersatz für PySide6 gezogen,
+  mitgebrachtes pydantic 2.14/websockets 17 geladen; PAM-Test (`pamtest.py`): login/sshd Infotext,
+  gdm-password/-autologin Fehlermeldung, admin erlaubt; Webfilter über Ubuntus Stub-Resolver
+  (example.com ja, pornhub.com nein – auch im Snap-Firefox, dort DoH per Policy gesperrt); GNOME-Login ohne
+  Popup (Audit zuvor: grep, Migrationsskripte, gio-launch-desktop, ibus, apport, Nautilus); Snap-Firefox
+  gesperrt bzw. nach Freigabe `snap:firefox` lauffähig; Zeitende: Abmeldung über GNOME, GDM zeigt den
+  Sperrhinweis; Integrität im WebUI vollständig grün; Steam aus `steam-installer`: `/srv/steam/kind`,
+  Verweis `~/.steam/debian-installation`, noexec ohne Freigabe; APT-Repo mit Testschlüssel: Einrichtung per
+  `kidctl-repo-client.sh`, `apt` prüft die Signatur und installiert daraus. Plasma (Wayland) zusätzlich in
+  derselben VM: SDDM-Theme unter Qt 5, Login ohne Sperren, Tray, Abmeldung über Plasma, Sperrhinweis in
+  SDDM. Debian 13 und Ubuntu 26.04 (je VM ohne Oberfläche): Installation mit Systempaketen (pydantic
+  2.10/2.12, PySide6), Agent startet, Kopplung und Policy; `apt remove`/`purge` nimmt PAM, Dienst und
+  Zustand zurück. Arch-VM: Agent mit neuer Paketdatenbank-Schicht, SDDM-Theme unter Qt 6 unverändert.
+  Nicht getestet: echte Rechner, Steam-Spiel unter Ubuntu, Heroic-.deb, Kubuntu mit X11 (Standard von
+  Kubuntu 24.04).

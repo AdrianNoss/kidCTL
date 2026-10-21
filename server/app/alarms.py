@@ -42,7 +42,7 @@ def due_offline_alarms(db: Session) -> list[tuple[Device, int]]:
     return due
 
 
-UPDATE_GRACE = timedelta(days=1)   # so lange nach Veröffentlichung Zeit für pacman -Syu
+UPDATE_GRACE = timedelta(days=1)   # so lange nach Veröffentlichung Zeit für das Systemupdate
 
 
 def due_update_alarms(db: Session, release: versions.Release | None = None) -> list[tuple[Device, str]]:
@@ -66,7 +66,7 @@ def check_once() -> int:
             push.send_to_parents_sync(
                 lambda name=dev.name: _("Update für „{name}“ verfügbar").format(name=name),
                 lambda old=dev.agent_version, new=version: _(
-                    "Agent {old} ist veraltet, verfügbar ist {new}. Auf dem Rechner „pacman -Syu“ ausführen.").format(
+                    "Agent {old} ist veraltet, verfügbar ist {new}. Auf dem Rechner das Systemupdate ausführen (pacman -Syu bzw. apt upgrade).").format(
                     old=old, new=new),
                 url=f"/devices/{dev.id}", tag=f"update-{dev.id}")
         db.commit()

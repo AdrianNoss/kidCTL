@@ -59,6 +59,26 @@ Pakete aus dem Repo bauen und installieren: `kidctl`, `kidctl-plasma` und `kidct
 `packaging/arch/README.md`). Keine automatische Anmeldung für `kind` unter GDM lassen – bei
 Login-Sperre bleibt GDM sonst schwarz.
 
+## Debian/Ubuntu-VMs
+
+`KIDCTL_VM_DISTRO` wählt die VM (eigener Ordner, eigener SSH-Port):
+
+| Wert | System | SSH | Zweck |
+|---|---|---|---|
+| `arch` (Standard) | Arch + Plasma/GNOME | 2222 | Arch-Paket |
+| `ubuntu` | Ubuntu 24.04 + GNOME (Snapshot `basis`), zusätzlich Plasma/SDDM | 2223 | `.deb`, vollständige Tests |
+| `debian` | Debian 13 ohne Oberfläche | 2224 | Kurztest Installation/Agent |
+| `ubuntu26` | Ubuntu 26.04 ohne Oberfläche | 2225 | Kurztest Installation/Agent |
+
+```bash
+KIDCTL_VM_DISTRO=ubuntu dev/vm/vm.sh create --apply   # Provisionierung: provision-ubuntu.sh
+KIDCTL_VM_DISTRO=ubuntu dev/vm/vm.sh start --headless
+KIDCTL_VM_DISTRO=debian KIDCTL_VM_RAM=2G dev/vm/vm.sh start --headless   # provision-minimal.sh
+```
+
+Die Debian-Cloud-Images haben kein 9p – `.deb`-Dateien per `vm.sh ssh 'cat > /tmp/x.deb' < x.deb` kopieren.
+Die serielle Konsole landet in `<VM-Ordner>/serial.log` (cloud-init-Meldungen).
+
 ## Snapshots (Rettung bei Aussperrung)
 
 ```bash

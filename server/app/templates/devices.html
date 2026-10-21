@@ -14,7 +14,7 @@
       <td>{% if d.revoked_at %}<span class="pill danger">{{ _("widerrufen") }}</span>{% elif online(d.id) %}<span class="pill ok">online</span>{% else %}<span class="pill">offline</span>{% endif %}
           {% if d.integrity_failed %}<span class="pill warn">{{ _("Integritätsfehler") }}</span>{% endif %}
           {% if d.protocol_unsupported and not d.revoked_at %}<span class="pill warn">{{ _("Agent veraltet") }}</span>
-          {% elif not d.revoked_at and update_for(d.agent_version) %}<span class="pill warn" title="{{ _('Auf dem Rechner „pacman -Syu“ ausführen') }}">{{ _("Update: {old} → {new}").format(old=d.agent_version, new=update_for(d.agent_version)) }}</span>{% endif %}</td>
+          {% elif not d.revoked_at and update_for(d.agent_version) %}<span class="pill warn" title="{{ _('Auf dem Rechner das Systemupdate ausführen (pacman -Syu bzw. apt upgrade)') }}">{{ _("Update: {old} → {new}").format(old=d.agent_version, new=update_for(d.agent_version)) }}</span>{% endif %}</td>
       <td class="num">{{ d.last_seen_at | localtime }}</td>
     </tr>
     {% endfor %}

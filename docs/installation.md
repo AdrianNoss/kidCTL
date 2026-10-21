@@ -4,7 +4,7 @@ Vollständige Einrichtung von KidCTL. Die Reihenfolge ist wichtig, weil jeder Te
 aufbaut:
 
 1. **Server**: Eltern-WebUI und Agent-API (Docker hinter Traefik)
-2. **Pacman-Repository**: signierte Pakete für die Kinderrechner (auf dem eigenen Rechner gebaut)
+2. **Paket-Repository**: signierte Pakete für die Kinderrechner, Pacman und APT (auf dem eigenen Rechner gebaut)
 3. **Kinderrechner**: Paket installieren, koppeln, Benutzer zuordnen
 4. **Einstellungen** im WebUI
 5. **Härtung** gegen physischen Zugriff
@@ -17,7 +17,7 @@ In den Beispielen steht `kids.example.org` für die eigene Subdomain.
 |---|---|
 | Server | Linux mit Docker + Docker Compose, laufender **Traefik** mit certresolver `letsencrypt` und Middleware `secHeaders@file`, DNS-Eintrag für die Subdomain |
 | Bau-Rechner | Arch Linux mit `base-devel`, `git`, `gnupg`, `rsync`, SSH-Zugang zum Server |
-| Kinderrechner | Arch Linux mit **KDE Plasma** (SDDM) und/oder **GNOME** (GDM), jeweils unter Wayland, Internetzugang, ein Admin-Account mit `sudo` |
+| Kinderrechner | **Arch Linux** mit KDE Plasma (SDDM) und/oder GNOME (GDM), jeweils unter Wayland, oder **Debian 13, Ubuntu 24.04/26.04 und darauf aufbauend** (Kubuntu, Linux Mint, Pop!_OS) mit GNOME oder Plasma auf 64-Bit-PCs (amd64); Internetzugang, ein Admin-Account mit `sudo` |
 | Eltern | Smartphone mit Authenticator-App (TOTP, z. B. Aegis, Google Authenticator) |
 
 ## 1. Server
@@ -31,7 +31,7 @@ mkdir -p data
 sudo chown 10001:10001 data     # der Container läuft als Benutzer 10001
 ```
 
-`./data` enthält die SQLite-Datenbank, Sperrlisten und das Pacman-Repository. **Den Ordner extern
+`./data` enthält die SQLite-Datenbank, Sperrlisten und das Paket-Repository (Pacman und APT). **Den Ordner extern
 sichern.**
 
 ### 1.2 Konfiguration (`.env`)
@@ -120,9 +120,10 @@ seine anderen Sitzungen werden beendet.
 wöchentlicher (montags) oder monatlicher (am 1.) Bericht aktivieren, jeweils ab 7 Uhr. „Vorschau“ zeigt
 ihn im Browser, „Jetzt senden“ verschickt ihn sofort zum Ausprobieren.
 
-## 2. Pacman-Repository
+## 2. Paket-Repository (Pacman und APT)
 
-Die Pakete werden **auf dem eigenen Rechner** gebaut und signiert, der private Schlüssel kommt nie
+Die Pakete werden **auf dem eigenen Rechner** (Arch) gebaut und signiert – die Arch-Pakete und, ohne
+`dpkg`, auch die `.deb`-Pakete samt APT-Repository unter `repo/deb`, der private Schlüssel kommt nie
 auf den Server. Alle Skripte laufen ohne `--apply` nur als Probelauf. Details:
 [`packaging/repo/README.md`](../packaging/repo/README.md).
 
@@ -151,7 +152,12 @@ KIDCTL_REPO_TARGET=user@server:/srv/kidctl/data/repo/ packaging/repo/kidctl-repo
 
 Der SSH-Benutzer braucht Schreibrechte auf `data/repo`, und die Dateien müssen für den Container
 lesbar sein (z. B. `chown <user> data/repo`, Rechte `755`/`644`). Test:
-`https://kids.example.org/repo/kidctl.db` lässt sich herunterladen.
+`https://kids.example.org/repo/kidctl.db` und
+`https://kids.example.org/repo/deb/dists/stable/InRelease` lassen sich herunterladen.
+
+Für die `.deb`-Pakete lädt der Bau beim ersten Mal die mitgebrachten Python-Bibliotheken für Ubuntu
+24.04 (`pydantic`, `websockets`, Liste mit Prüfsummen in `packaging/debian/vendor.txt`) nach
+`~/.cache/kidctl-vendor`.
 
 ## 3. Kinderrechner
 
@@ -175,9 +181,31 @@ So kann man sich als Admin nicht selbst aussperren.
 curl -O https://kids.example.org/repo/kidctl-repo-client.sh
 sudo bash kidctl-repo-client.sh https://kids.example.org/repo <FINGERABDRUCK>           # Probelauf
 sudo bash kidctl-repo-client.sh https://kids.example.org/repo <FINGERABDRUCK> --apply
+# Arch
 sudo pacman -S kidctl kidctl-plasma   # KDE Plasma
 sudo pacman -S kidctl kidctl-gnome    # GNOME
+# Debian, Ubuntu, Mint, Pop!_OS
+sudo apt install kidctl kidctl-gnome  # GNOME (Ubuntu, Debian, Pop!_OS 22.04)
+sudo apt install kidctl kidctl-plasma # KDE Plasma (Kubuntu)
 ```
+
+Das Skript erkennt die Distribution: Unter Arch trägt es `[kidctl]` in `/etc/pacman.conf` ein, unter
+Debian/Ubuntu legt es den Schlüssel nach `/etc/apt/keyrings/kidctl.asc` und das Repository nach
+`/etc/apt/sources.list.d/kidctl.sources`. Updates kommen danach mit dem normalen Systemupdate
+(auch über die automatischen Updates von Ubuntu).
+
+**Debian/Ubuntu – Besonderheiten:**
+
+- Die Login-Sperre trägt sich per `pam-auth-update` ein (Profil „kidctl“ in `/etc/pam.d/common-account`).
+- Ubuntu 24.04 und Systeme darauf (Mint 22, Pop!_OS) haben kein PySide6 und nur `pydantic` 1: Die
+  Tray-App nutzt dann PyQt6 aus den Systempaketen, der Agent bringt `pydantic` 2 und `websockets` in
+  `/usr/lib/kidctl/vendor` mit. Neuere Systeme (Debian 13, Ubuntu 26.04) nutzen ihre eigenen Pakete.
+- **Snap-Apps** (unter Ubuntu z. B. Firefox) erscheinen im App-Katalog und werden je Snap-Name
+  freigegeben, wie Flatpak-Apps je App-ID.
+- **Dateien** (Nautilus) ist unter Ubuntu immer erlaubt: Die Desktop-Symbole von Ubuntu brauchen es
+  laufend im Hintergrund.
+- **Steam** aus Ubuntus Paket `steam-installer` (`/usr/games/steam`) legt seine Bibliothek wie unter Arch
+  unter `/srv/steam/<kind>` ab (`~/.steam/debian-installation` ist ein Verweis dorthin).
 
 Sind beide Desktops installiert, beide Pakete installieren. Das Skript bricht ab, wenn der Schlüssel
 nicht zum Fingerabdruck passt. Bei der Installation trägt `kidctl` die Login-Sperre in
@@ -321,7 +349,7 @@ root sperren und Firmware- sowie Bootloader-Passwort setzen: [`docs/haertung.md`
 | Was | Wie |
 |---|---|
 | Server | `git pull && docker compose up -d --build`. Datenbank-Migrationen laufen beim Start automatisch. |
-| Client-Paket | `pkgver` in `packaging/arch/PKGBUILD` und `agent/kidctl_agent/__init__.py` erhöhen, dann 2.2 ausführen. Die Kinderrechner bekommen das Update mit `sudo pacman -Syu`. |
+| Client-Paket | `pkgver` in `packaging/arch/PKGBUILD` und `agent/kidctl_agent/__init__.py` erhöhen, dann 2.2 ausführen (baut Arch- und `.deb`-Pakete aus derselben Version). Die Kinderrechner bekommen das Update mit `sudo pacman -Syu` bzw. `sudo apt upgrade`. |
 | Ab 0.27.0 | Das SDDM-Theme steckt jetzt im Paket `kidctl-plasma`. Auf bestehenden Plasma-Rechnern einmalig `sudo pacman -Syu kidctl-plasma`, sonst fehlt der Hinweis im Anmeldebildschirm. |
 
 Ein Server-Update vor den Agenten ist unproblematisch, weil der Server auch die vorherige
@@ -354,12 +382,16 @@ docker compose start kidctl
 ## Deinstallation (Kinderrechner)
 
 ```bash
+# Arch
 sudo pacman -R kidctl-plasma kidctl-gnome kidctl   # nur installierte nennen; nimmt PAM-, nsswitch-, nftables- und Mount-Änderungen zurück
 sudo rm -rf /var/lib/kidctl    # Geräte-Token und Zustand (bleiben sonst erhalten)
+# Debian/Ubuntu
+sudo apt purge kidctl kidctl-gnome kidctl-plasma   # purge löscht auch /var/lib/kidctl
 ```
 
-Danach im WebUI beim Gerät „Token widerrufen“. Den Repository-Eintrag `[kidctl]` bei Bedarf
-aus `/etc/pacman.conf` entfernen.
+Danach im WebUI beim Gerät „Token widerrufen“. Den Repository-Eintrag bei Bedarf entfernen:
+`[kidctl]` aus `/etc/pacman.conf` bzw. `/etc/apt/sources.list.d/kidctl.sources` und
+`/etc/apt/keyrings/kidctl.asc`.
 
 ## Sprache
 

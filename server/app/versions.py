@@ -1,5 +1,6 @@
-"""Neueste Agent-Version im Pacman-Repository (``<data>/repo/kidctl-<ver>-<rel>-any.pkg.tar.zst``) und
-Vergleich mit der Version, die ein Gerät beim Verbinden meldet."""
+"""Neueste Agent-Version im Pacman-Repository (``<data>/repo/kidctl-<ver>-<rel>-any.pkg.tar.zst``) bzw. im
+APT-Repository (``<data>/repo/deb/pool/main/kidctl_<ver>-<rel>_amd64.deb``) und Vergleich mit der Version, die
+ein Gerät beim Verbinden meldet. Beide werden aus demselben Stand gebaut (gleiche Versionsnummer)."""
 
 from __future__ import annotations
 
@@ -11,7 +12,9 @@ from pathlib import Path
 from .config import settings
 
 PKG = re.compile(r"^kidctl-(\d+(?:\.\d+)*)-(\d+)-any\.pkg\.tar\.(?:zst|xz)$")
-_cache: tuple[float, "Release | None"] | None = None
+DEB = re.compile(r"^kidctl_(\d+(?:\.\d+)*)-(\d+)_(?:amd64|all)\.deb$")
+DEB_POOL = Path("deb") / "pool" / "main"
+_cache: tuple[tuple[float, float], "Release | None"] | None = None
 
 
 @dataclass(frozen=True)
@@ -29,14 +32,17 @@ def latest(repo: Path | None = None) -> Release | None:
     global _cache
     repo = repo or Path(settings.data_dir) / "repo"
     try:
-        mtime = repo.stat().st_mtime
+        mtime = (repo.stat().st_mtime, (repo / DEB_POOL).stat().st_mtime if (repo / DEB_POOL).is_dir() else 0)
     except OSError:
         return None
     if _cache is not None and _cache[0] == mtime:
         return _cache[1]
     best = None
-    for f in repo.iterdir():
-        m = PKG.match(f.name)
+    candidates = [(f, PKG) for f in repo.iterdir()]
+    if (repo / DEB_POOL).is_dir():
+        candidates += [(f, DEB) for f in (repo / DEB_POOL).iterdir()]
+    for f, pattern in candidates:
+        m = pattern.match(f.name)
         if m and (best is None or _key(m.group(1)) > _key(best[0])):
             best = (m.group(1), f.stat().st_mtime)
     release = Release(best[0], datetime.fromtimestamp(best[1], timezone.utc).replace(tzinfo=None)) if best else None

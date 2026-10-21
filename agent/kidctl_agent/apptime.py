@@ -11,7 +11,7 @@ from datetime import date, timedelta
 
 from . import store
 from .procs import ProcInfo, snap_file
-from .programs import GENERIC_DIRS, STEAM_SYSTEM, _program_path, electron_app
+from .programs import GENERIC_DIRS, STEAM_LAUNCHERS, STEAM_SYSTEM, _program_path, electron_app
 
 APPTIME_FILE = "apptime.json"
 KEEP_DAYS = 35
@@ -27,7 +27,7 @@ class AppIndex:
                      if os.path.dirname(e) not in GENERIC_DIRS}
         for e, k in self.exes.items():  # Paket-Ordner, z. B. /usr/lib/heroic-games-launcher für heroic
             self.dirs.update({d: k for d in (pkg_dirs or {}).get(e, ())})
-        self.steam = next((k for e, k in self.exes.items() if e.startswith(STEAM_SYSTEM) or e == "/usr/bin/steam"),
+        self.steam = next((k for e, k in self.exes.items() if e.startswith(STEAM_SYSTEM) or e in STEAM_LAUNCHERS),
                           None)
 
     def key_for(self, info: ProcInfo, steam_root: str = "") -> str | None:
