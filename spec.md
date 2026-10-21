@@ -248,7 +248,10 @@ Verlängerungsanfragen.
     `socat`/`filan`/`procan` ausgeschlossen), ohne Programme mit sichtbarem
     .desktop-Eintrag (= Apps, Eltern-Entscheidung), ohne Shells/Interpreter/Terminals und ohne
     dynamischen Loader (`ld-linux*`, startet sonst beliebige Programme; erlaubt nur im reinen
-    Prüfmodus von `ldd`: `--verify`/`--list` bzw. `LD_TRACE_LOADED_OBJECTS`). Dazu (ergänzt
+    Prüfmodus von `ldd`: `--verify`/`--list` bzw. `LD_TRACE_LOADED_OBJECTS`). `socat` bleibt gesperrt
+    bis auf genau den Aufruf von `pam_kwallet_init` (kwallet-pam, entsperrt KWallet beim Login):
+    `socat STDIN UNIX-CONNECT:/run/user/<uid>/kwallet{5,6}.socket` mit `/usr/lib/pam_kwallet_init` als
+    Vorfahr (ergänzt 2026-10-21). Dazu (ergänzt
     2026-10-20) automatisch Programme, die installierte Pakete als Hintergrunddienst der Sitzung
     eintragen: `Exec=` aus `/etc/xdg/autostart/*.desktop` und `/usr/share/dbus-1/services/*.service`,
     `ExecStart=` aus `/usr/lib/systemd/user` und `/etc/systemd/user` – nur root-eigene, nicht
@@ -1124,3 +1127,8 @@ Verlängerungsanfragen.
 - 2026-10-21: Nutzer-Test WebUI auf Englisch (Server mit i18n) funktioniert. Kinderrechner auf Englisch noch nicht getestet.
 - 2026-10-21: Nutzer-Test Englisch beim Kind (0.26.0): Tray und Chat englisch, Benachrichtigungen des Agenten aber deutsch. Ursache: Der Agent las die Sprache auch aus startplasma-wayland, dessen Startumgebung noch die Systemsprache enthält (Plasma setzt LANGUAGE erst danach), und LANGUAGE hatte zu niedrigen Vorrang. Behoben in 0.26.1: Vorrang wie gettext (LANGUAGE vor LC_ALL/LC_MESSAGES/LANG, außer Locale C/POSIX), Sitzungsprozesse in fester Reihenfolge (Tray-App, plasmashell, ksmserver, kwin_wayland), startplasma-* ignoriert. Getestet: Agent 196, Server-i18n 9, Tray 12 grün (neu: Plasma mit deutschen Formaten und englischer Sprache, C-Locale, startplasma mit Systemsprache, Tray-App als Python-Skript erkannt).
 - 2026-10-21: Nutzer-Test 0.26.1: Benachrichtigungen des Agenten beim Kind jetzt auf Englisch (Plasma-Sprache Englisch, System Deutsch). Internationalisierung damit vollständig bestätigt.
+- 2026-10-21: `socat1`-Sperre beim Login geklärt (Journal mit Aufrufzeile): `pam_kwallet_init` aus kwallet-pam
+  übergibt per `socat STDIN UNIX-CONNECT:/run/user/<uid>/kwallet5.socket` das Login-Passwort an KWallet;
+  die Sperre verhinderte das automatische Entsperren der Brieftasche. Agent 0.26.2 erlaubt nur genau diesen
+  Aufruf mit pam_kwallet_init als Vorfahr. Getestet: Agent 197 grün (neu: erlaubt nur von pam_kwallet_init,
+  nicht ohne Vorfahr, nicht mit anderem Ziel, fremdem Socket oder zusätzlichen Argumenten).

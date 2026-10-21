@@ -141,3 +141,18 @@ def test_packaged_base_excludes_containers():
     for exe in ("/usr/bin/systemd-nspawn", "/usr/bin/systemd-vmspawn", "/usr/bin/socat1"):
         assert programs.base_paths([exe], set(), spec.excludes) == frozenset()
     assert "/usr/bin/which" in spec.globs
+
+
+def test_kwallet_unlock_socat_only_from_pam_kwallet_init():
+    a = Allowed(["/usr/bin/kwin_wayland"], set())
+    sock = "UNIX-CONNECT:/run/user/1001/kwallet5.socket"
+    init = proc("/usr/bin/bash", ["/bin/sh", "/usr/lib/pam_kwallet_init"], pid=41, ppid=30)
+    socat = proc("/usr/bin/socat1", ["socat", "STDIN", sock], pid=44, ppid=41)
+    assert classify(socat, a, ancestors=lambda: [init]) is None
+    assert classify(socat, a, ancestors=lambda: []) is not None                       # nicht von pam_kwallet_init
+    other = proc("/usr/bin/socat1", ["socat", "STDIN", "TCP:example.org:80"], pid=45, ppid=41)
+    assert classify(other, a, ancestors=lambda: [init]) is not None                   # anderes Ziel
+    foreign = proc("/usr/bin/socat1", ["socat", "STDIN", "UNIX-CONNECT:/run/user/1002/kwallet5.socket"], pid=46)
+    assert classify(foreign, a, ancestors=lambda: [init]) is not None                 # Socket eines anderen Users
+    extra = proc("/usr/bin/socat1", ["socat", "STDIN", sock, "-v"], pid=47)
+    assert classify(extra, a, ancestors=lambda: [init]) is not None                   # zusätzliche Argumente

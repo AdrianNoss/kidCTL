@@ -278,6 +278,20 @@ def loader_inspect_only(info: ProcInfo, env: dict[str, str]) -> bool:
     return (len(info.argv) > 1 and info.argv[1] in ("--verify", "--list")) or "LD_TRACE_LOADED_OBJECTS" in env
 
 
+KWALLET_INIT = "/usr/lib/pam_kwallet_init"   # kwallet-pam: übergibt beim Login das Passwort an KWallet
+
+
+def kwallet_unlock(info: ProcInfo, ancestors: Iterable[ProcInfo]) -> bool:
+    """``socat STDIN UNIX-CONNECT:/run/user/<uid>/kwallet{5,6}.socket``, gestartet von ``pam_kwallet_init``
+    (entsperrt die Brieftasche beim Login). Nur genau dieser Aufruf – ``socat`` bleibt sonst gesperrt."""
+    if not os.path.basename(info.exe).startswith("socat"):
+        return False
+    sockets = {f"UNIX-CONNECT:/run/user/{info.uid}/kwallet{v}.socket" for v in (5, 6)}
+    if len(info.argv) != 3 or info.argv[1] != "STDIN" or info.argv[2] not in sockets:
+        return False
+    return any(_program_path(a) == KWALLET_INIT for a in ancestors)
+
+
 def is_shell_or_interpreter(path: str) -> bool:
     name = os.path.basename(path)
     return name in SHELLS or re.sub(r"[0-9.]+$", "", name) in SHELLS or bool(INTERPRETER.match(name))
@@ -618,6 +632,8 @@ def classify(info: ProcInfo, allowed: Allowed,
         return None  # von Heroic/Lutris gestartet (Wine, Spiel, Hilfsprogramme)
 
     if LOADER.match(name) and loader_inspect_only(info, environ() if environ is not None else {}):
+        return None
+    if kwallet_unlock(info, chain()):
         return None
 
     if is_electron(exe):
