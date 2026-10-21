@@ -1154,3 +1154,4 @@ Verlängerungsanfragen.
   und erst nach einem Tag). Sichttest Einstellungsseite mit echtem Backup des Entwicklungsservers.
 - 2026-10-21: Backup-Download im WebUI (Einstellungen): Auswahl des Schnappschusses, erneute Eingabe des eigenen Passworts (Rate-Limiting wie Login), nur vorhandene Dateien, Log-Eintrag. Getestet: Server 116 grün (neu: falsches Passwort, fremder Dateiname, gültiger Download ist gzip-SQLite).
 - 2026-10-21: Nutzer-Test auf dem echten Server: Datenbank-Backup, Hinweis auf veraltete Agenten und Backup-Download im WebUI funktionieren.
+- 2026-10-21: Nutzer-Test auf dem echten Server: Mailversand über SMTP mit SSL funktioniert (STARTTLS nicht getestet).
