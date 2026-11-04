@@ -46,6 +46,19 @@ class WinSessions:
                 desktop="windows", leader=int(info.LogonTime)))
         return out
 
+    def login_screens(self) -> list[int]:
+        """Sitzungen, die gerade den Anmeldebildschirm zeigen (kein Benutzer angemeldet, nicht Sitzung 0)."""
+        out = []
+        for sid, state in self.api.enumerate_sessions():
+            if sid == 0 or state not in (api.WTSActive, api.WTSConnected):
+                continue
+            try:
+                if not self.api.session_info(sid).UserName:
+                    out.append(sid)
+            except OSError:
+                continue
+        return out
+
     async def sessions(self) -> list[SessionInfo]:
         return await asyncio.to_thread(self.list)
 

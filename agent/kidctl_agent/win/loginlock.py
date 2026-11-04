@@ -30,6 +30,7 @@ class WinLoginLock:
         data = store.load(STATE_FILE) or {}
         self.ours: set[str] = set(data.get("disabled", []))   # SIDs, die kidctl deaktiviert hat
         self._current: set[str] | None = None
+        self.changed = False   # ein Konto wurde (de)aktiviert – Anmeldebildschirm aktualisieren
 
     def _save(self) -> None:
         store.save(STATE_FILE, {"disabled": sorted(self.ours)})
@@ -65,6 +66,7 @@ class WinLoginLock:
             self._save()   # erst merken, dann deaktivieren
         try:
             self.api.set_user_flags(a.name, flags | api.UF_ACCOUNTDISABLE)
+            self.changed = True
             log.warning("Konto %s deaktiviert (Login-Sperre)", a.name)
         except OSError:
             log.exception("Konto %s nicht deaktivierbar", a.name)
@@ -79,6 +81,7 @@ class WinLoginLock:
             flags = self.api.user_flags(a.name)
             if flags & api.UF_ACCOUNTDISABLE:
                 self.api.set_user_flags(a.name, flags & ~api.UF_ACCOUNTDISABLE)
+                self.changed = True
                 log.warning("Konto %s wieder aktiviert", a.name)
         except OSError:
             log.exception("Konto %s nicht aktivierbar – nächster Versuch im nächsten Takt", a.name)

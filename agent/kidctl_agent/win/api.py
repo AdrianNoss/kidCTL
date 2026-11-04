@@ -505,6 +505,13 @@ def run_in_session(session_id: int, command_line: str, cwd: str | None = None) -
         close_handle(token)
 
 
+def kill_in_session(image: str, session_id: int) -> None:
+    """Prozesse ``image`` (z. B. LogonUI.exe) in einer Sitzung beenden (taskkill)."""
+    import subprocess
+    subprocess.run(["taskkill", "/F", "/IM", image, "/FI", f"SESSION eq {session_id}"],
+                   capture_output=True, timeout=15, creationflags=CREATE_NO_WINDOW)
+
+
 # ---------- Sonstiges ----------
 
 def is_user_admin() -> bool:

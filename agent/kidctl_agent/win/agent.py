@@ -84,6 +84,25 @@ class WinAgent(AgentCore):
         return {u for u, d in self.decisions(self.now_local()).items() if not d.allowed}
 
     async def _maintain(self) -> None:
+        if self.loginlock.changed:
+            self.loginlock.changed = False
+            await self._refresh_login_screens()
+        await self._blocked_logins()
+
+    async def _refresh_login_screens(self) -> None:
+        """Der Anmeldebildschirm merkt sich die Kontenliste (ein deaktiviertes Konto fehlt, ein wieder aktiviertes
+        erschiene erst nach etwa einer Minute). Neustart von LogonUI aktualisiert sie sofort – nur in Sitzungen
+        ohne angemeldeten Benutzer (ein gesperrter Desktop bleibt unberührt)."""
+        if self.logind is None:
+            return
+        try:
+            for sid in await asyncio.to_thread(self.logind.login_screens):
+                await asyncio.to_thread(self.accounts.api.kill_in_session, "LogonUI.exe", sid)
+                log.info("Anmeldebildschirm in Sitzung %s aktualisiert", sid)
+        except Exception:
+            log.exception("Anmeldebildschirm nicht aktualisierbar")
+
+    async def _blocked_logins(self) -> None:
         """Rückfall der Login-Sperre: Erscheint eine Sitzung eines Users, der schon vorher gesperrt war (Konto
         deaktiviert), meldet der Agent sie nach kurzem Hinweis ab – ohne den üblichen 60-s-Countdown."""
         current = {(s.id, s.leader) for s in self._sessions}

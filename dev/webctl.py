@@ -14,6 +14,7 @@ an (TOTP aus ~/.local/share/kidctl-dev/secret.txt) und merkt sich die Session.
     dev/webctl.py web CID MODUS [bundles=a,b] [allow=x.de,y.de] [deny=…] [lists=a,b] [safesearch=0|1]
     dev/webctl.py lock CID [DAUER] [VORWARNUNG_MIN]    (DAUER leer = bis zur Freigabe)
     dev/webctl.py unlock CID
+    dev/webctl.py chat CID TEXT
     dev/webctl.py dash
 """
 
@@ -99,6 +100,8 @@ def main(cmd: str, *args: str) -> None:
                                                       "grace": args[2] if len(args) > 2 else "1"}).status_code)
     elif cmd == "unlock":
         print(c.post(f"/children/{args[0]}/unlock", data={"csrf_token": csrf}).status_code)
+    elif cmd == "chat":
+        print(c.post(f"/children/{args[0]}/chat", data={"csrf_token": csrf, "body": args[1]}).status_code)
     elif cmd == "dash":
         print(" ".join(re.sub(r"<[^>]+>", " ", c.get("/").text.split("<h2>Kinder</h2>")[1].split("</table>")[0]).split()))
     else:

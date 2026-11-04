@@ -56,7 +56,7 @@ Verlängerungsanfragen.
   siehe „Desktop-Umgebungen“). X11 und andere Desktops werden nicht unterstützt (Cinnamon und COSMIC
   folgen als eigene Schritte, siehe „Debian/Ubuntu“).
 - Distributionen: Arch Linux sowie Debian 13, Ubuntu 24.04/26.04 und darauf aufbauend (siehe „Debian/Ubuntu“).
-- Windows 10/11 geplant (entschieden 2026-11-04, siehe „Windows“): Windows-Dienst statt systemd, Named Pipe
+- Windows 10/11 (entschieden 2026-11-04, Schritt 1 umgesetzt, siehe „Windows“): Windows-Dienst statt systemd, Named Pipe
   statt Unix-Socket, Konto-Sperre statt PAM.
 
 ### Desktop-Umgebungen (entschieden 2026-10-21)
@@ -162,7 +162,7 @@ Verlängerungsanfragen.
   offiziellen .deb: `/opt/Heroic/heroic` gilt als Launcher.
 - Logind trägt unter GDM keinen Desktop ein (auch Ubuntu) – Abmeldung über die laufende Shell (wie GNOME).
 
-### Windows (entschieden 2026-11-04, noch nicht umgesetzt)
+### Windows (entschieden 2026-11-04; Schritt 1 umgesetzt in 0.29.0)
 Per /grill-me abgestimmt. Grundsatz: gleiches Verhalten wie unter Linux, wo Windows es zulässt;
 Abweichungen stehen hier und unter „Restlücken“.
 
@@ -174,15 +174,19 @@ Abweichungen stehen hier und unter „Restlücken“.
 - **Aufbau (Weg 1):** Python wie unter Linux. Der plattformneutrale Kern (Regeln, Zählung, Spiele-Limit,
   Programmzeit, Chat-Warteschlange, Verbindung, Zustand, Sprache, `common/`) wird minimal-invasiv hinter
   eine Plattform-Schnittstelle gezogen (Sitzungen, Prozesse, Login-Sperre, Webfilter, Benachrichtigungen,
-  Programmkatalog); Linux-Verhalten bleibt unverändert. Windows-Teile über `pywin32`/`ctypes`.
+  Programmkatalog); Linux-Verhalten bleibt unverändert. Windows-Teile nur über `ctypes` (ohne `pywin32`):
+  `agent/kidctl_agent/core.py` (Kern, `AgentCore`), `agent.py` (Linux), `win/` (Windows).
   Ausgeliefert mit dem offiziellen Embeddable-Python (von der PSF signiert) und mitgebrachten Bibliotheken,
   kein PyInstaller (Fehlalarme von Virenscannern). Native Teile (z. B. Credential Provider) höchstens als
   spätere, optionale Ausbaustufe.
 - **Agent:** Windows-Dienst als `LocalSystem`, Geräte-Token nur für SYSTEM/Administratoren lesbar. Zusätzlich
   unter `HKLM\SYSTEM\CurrentControlSet\Control\SafeBoot\Minimal` und `\Network` eingetragen (läuft auch im
   abgesicherten Modus, den ein Standardnutzer vom Anmeldebildschirm aus erreicht).
-- **Zählung:** Sitzungen über die WTS-API, Sperren/Entsperren über `SERVICE_CONTROL_SESSIONCHANGE`; gezählt wird
-  die aktive, entsperrte Sitzung (Konsole) zugeordneter Kinder. Dauer über monotone Uhr ohne Ruhezustand
+- **Benutzername auf dem Draht:** Windows-Kontoname, wenn er dem Linux-Muster entspricht (meist: „lisa“,
+  „Max“), sonst `rid-<RID>`; `uid` = RID (lokale Konten ab 1000). Intern über die SID zugeordnet; voller Name
+  bzw. bei Microsoft-Konten „Name (E-Mail)“ als Anzeige.
+- **Zählung:** Sitzungen über die WTS-API im 5-s-Takt (Verbindungszustand `WTSActive`, Sperre aus
+  `WTSSessionInfoEx.SessionFlags`); gezählt wird die aktive, entsperrte Sitzung zugeordneter Kinder. Dauer über monotone Uhr ohne Ruhezustand
   (`QueryUnbiasedInterruptTime`), Systemuhr nur für Tag/Zeitfenster. Zeitzone aus der Policy (Standardnutzer
   dürfen die Zeitzone von Windows ändern, die Uhr nicht).
 - **Zeitende und „Jetzt sperren“:** Vorwarnungen und Countdown wie unter Linux, Abmeldung per
@@ -195,9 +199,19 @@ Abweichungen stehen hier und unter „Restlücken“.
     und fasst andere nie an; Deinstallation aktiviert diese Konten wieder; Admin-Konten nie.
   - Rückfall: Kommt trotz Sperre eine Sitzung eines gesperrten Kindes zustande, zeigt der Agent einen Hinweis
     und meldet sie nach etwa 10 s ab.
+  - Windows blendet deaktivierte Konten auf dem Anmeldebildschirm ganz aus (kein Hinweis sichtbar) und merkt sich
+    die Kontenliste. Ändert sich eine Sperre, startet der Agent den Anmeldebildschirm (`LogonUI.exe`) in Sitzungen
+    ohne angemeldeten Benutzer neu – sonst erschiene ein freigegebenes Konto erst nach etwa einer Minute.
   - Später optional: eigener Credential Provider (C++) für einen Hinweis wie „wieder ab 14:00“.
 - **Tray-App:** PySide6 wie unter Linux, Start für alle Benutzer über `HKLM\…\Run`. Verbindung zum Agenten
-  über eine Named Pipe; Identität über das Token des Clients (SID) statt `SO_PEERCRED`.
+  über die Named Pipe `kidctl-tray` (nur interaktive Benutzer, `PIPE_REJECT_REMOTE_CLIENTS`); Identität über
+  das Token des Client-Prozesses (SID) statt `SO_PEERCRED`.
+  - Benachrichtigungen schickt der Agent als `TrayNotify` an die Tray-App (der Dienst hat keinen Desktop); ein
+    Klick kommt als `TrayAction` zurück. Ohne verbundene Tray-App: kritische Meldungen als Meldungsfenster
+    (`WTSSendMessage`).
+  - Ist in einer aktiven Kinder-Sitzung 60 s lang keine Tray-App verbunden (Update hat sie beendet, Kind hat sie
+    geschlossen), startet der Agent sie dort (`CreateProcessAsUser`), höchstens alle 5 min je Sitzung.
+  - Countdown-Fenster aus dem Zustand (`TrayState.logout_in_seconds`, neu); die Tray-App zählt selbst herunter.
   - Toasts mit Knöpfen („Verlängerung anfordern“, „Freigabe anfragen“) über Startmenü-Verknüpfung mit
     AppUserModelID; Knöpfe öffnen `kidctl://…`, das die laufende Tray-App über ihre Pipe erreicht (kein
     COM-Server).
@@ -838,10 +852,13 @@ Abweichungen stehen hier und unter „Restlücken“.
 - Eine Freigabe-Ausnahme im Blacklist-Modus gilt nicht für spezifischere Einträge einer Sperrliste
   (z. B. Ausnahme `example.com`, Liste sperrt `ads.example.com`).
 - Kein Browserverlauf, keine Bilder/Dateien im Chat, keine Lesebestätigungen.
-- Kein Selbst-Update des Agenten unter Linux (nur über Pacman bzw. apt); unter Windows automatisch (geplant).
-- Windows (geplant, entschieden 2026-11-04):
-  - Login-Sperre zeigt nur den festen Windows-Text „Konto deaktiviert“ (eigener Hinweis bräuchte einen
-    Credential Provider).
+- Kein Selbst-Update des Agenten unter Linux (nur über Pacman bzw. apt); unter Windows automatisch.
+- Windows (entschieden 2026-11-04):
+  - Login-Sperre ohne eigenen Hinweis: Windows blendet das deaktivierte Konto auf dem Anmeldebildschirm aus (über
+    „Anderer Benutzer“ nur „Konto deaktiviert“). Ein eigener Hinweis bräuchte einen Credential Provider.
+  - Die Named Pipe muss interaktiven Benutzern Schreibrecht geben (Qt öffnet mit `GENERIC_WRITE`, das schließt das
+    Anlegen weiterer Pipe-Instanzen ein): Ein Kind könnte eine zweite Instanz anlegen und Tray-Apps anderer
+    Benutzer falsche Zustände zeigen. Durchsetzung und Identität beim Agenten sind davon nicht betroffen.
   - Website-Filter folgt der aktiven Sitzung: Ein per Benutzerwechsel im Hintergrund angemeldetes Elternteil
     ist gefiltert, solange ein Kind vorne sitzt. Auch das Firmen-VPN der Eltern löst über den lokalen
     Resolver auf (Weiterleitung der Suchdomänen).
@@ -1452,3 +1469,25 @@ Abweichungen stehen hier und unter „Restlücken“.
   Sitzung und rechnerweit erzwungenem lokalem Resolver, Spiele (Steam, Epic, Xbox/Store, neuer Schalter „zählt
   als Spiel“), Toasts plus Vordergrund-Fenster, Installer ohne Signatur mit Ed25519-geprüftem Selbst-Update,
   Test-VMs Windows 11 Home und Windows 10 Pro, Umsetzung in vier Schritten. Details unter „Windows“.
+- 2026-11-04: Windows Schritt 1 umgesetzt (Paket 0.29.0): Bildschirmzeit, Abmeldung, Login-Sperre über die
+  Konto-Deaktivierung, „Jetzt sperren“, Tray-App mit Chat, Toasts (Knopf über `kidctl://`) und Countdown-Fenster,
+  Integrität (abgesicherter Modus, Autostart, Tray-Symbol, Kinder ohne Adminrechte), Installer (Inno Setup,
+  eingebettetes Python 3.14, `packaging/windows`), automatisches Selbst-Update mit Ed25519-Signatur, Test-VMs
+  (`dev/vm/winvm.sh`). Agent: Kern als `AgentCore`, Linux unverändert. Server: Plattform je Gerät (Migration
+  `device.platform`), Windows-Installer unter `/repo/windows/`, Update-Hinweise je Plattform. Bei der Umsetzung
+  ergänzt: Agent startet fehlende Tray-Apps in Kinder-Sitzungen, Anmeldebildschirm wird nach Sperränderungen
+  aktualisiert, `TrayState.logout_in_seconds`, `Hello.platform` (abwärtskompatibel). Getestet: Agent 237,
+  Server 121, Tray 18 Tests grün (neu u. a. Windows-Teile mit Attrappen: Konten/SID/RID, Login-Sperre inkl.
+  Neustart und fremd deaktivierter Konten, Sitzungen, Benachrichtigungen/Knöpfe, Update-Signatur und
+  -Prüfsumme, Tray-Neustart, Import ohne POSIX-Module, Countdown, Toast-XML, Migration). VM Windows 11
+  (25H2, Pro – Home noch nicht): stille Installation, Rechte auf `ProgramData\KidCTL`, Dienst inkl. Stop/Neustart
+  und Wiederherstellung durch Windows, Kopplung, Konten im WebUI, Tray-App mit Restzeit und Chat, Toast bei
+  Eltern-Nachricht (unter „Bitte nicht stören“ in der Mitteilungszentrale), Zeitende: Warnfenster und Toast in der
+  letzten Minute, Countdown-Fenster, Abmeldung nach 60 s, Konto deaktiviert; Gutschrift aktiviert es wieder;
+  „Jetzt sperren“ (Fenster „Gesperrt“ ohne Verlängerungsknopf) und Freigabe im Countdown; Knopf im Toast öffnet den
+  Anfrage-Dialog, Anfrage kommt beim Server an; Selbst-Update 0.29.0 → 0.29.1 → 0.29.2 (Tray-App danach automatisch
+  neu gestartet); Deinstallation aktiviert das gesperrte Konto und entfernt alles. Dabei gefunden und behoben:
+  Linux-Import im Windows-Agenten, `icacls … /T` ließ beim Update Dateien ohne Rechte zurück, Laufzeitdateien
+  blieben nach der Deinstallation, Konsolenausgabe von `kidctl status`, SSH-Firewall der Test-VM. Nicht getestet:
+  Windows 11 Home, Windows 10, echter Rechner, Kopplungsseite im Installer (nur https), Microsoft-Konto,
+  abgesicherter Modus, Benutzerwechsel mit zwei angemeldeten Kindern.

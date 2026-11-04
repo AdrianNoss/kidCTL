@@ -155,6 +155,12 @@ def status() -> int:
 
 
 def main() -> int:
+    if WINDOWS:   # Konsole mit Codepage 850/1252: Zeichen wie „→“ ersetzen statt abzubrechen
+        for stream in (sys.stdout, sys.stderr):
+            try:
+                stream.reconfigure(errors="replace")
+            except (AttributeError, ValueError):
+                pass
     logging.basicConfig(level=os.environ.get("KIDCTL_LOG", "INFO"),
                         format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     ap = argparse.ArgumentParser(prog="kidctl")

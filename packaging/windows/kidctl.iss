@@ -72,6 +72,11 @@ en.TrayName=KidCTL
 Type: filesandordirs; Name: "{app}\lib"
 Type: filesandordirs; Name: "{app}\python"
 
+[UninstallDelete]
+; zur Laufzeit entstandene Dateien (__pycache__) mit entfernen
+Type: filesandordirs; Name: "{app}\lib"
+Type: filesandordirs; Name: "{app}\python"
+
 [Files]
 Source: "{#Staging}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 Source: "kidctl.ico"; DestDir: "{app}"; Flags: ignoreversion
@@ -168,7 +173,7 @@ end;
 
 procedure Enroll();
 var
-  Server, Code, Out: String;
+  Server, Code, OutFile: String;
   Output: AnsiString;
   Rc: Integer;
 begin
@@ -176,11 +181,11 @@ begin
   Code := Trim(PairPage.Values[1]);
   if (Code = '') or (Server = '') or Paired() then
     exit;
-  Out := ExpandConstant('{tmp}\enroll.txt');
-  Rc := Run(ExpandConstant('{cmd}'), '/C ""' + Python() + '" -m kidctl_agent enroll "' + Server + '" "' + Code + '" > "' + Out + '" 2>&1"');
+  OutFile := ExpandConstant('{tmp}\enroll.txt');
+  Rc := Run(ExpandConstant('{cmd}'), '/C ""' + Python() + '" -m kidctl_agent enroll "' + Server + '" "' + Code + '" > "' + OutFile + '" 2>&1"');
   if Rc <> 0 then
   begin
-    if not LoadStringFromFile(Out, Output) then
+    if not LoadStringFromFile(OutFile, Output) then
       Output := '';
     if not WizardSilent() then
       MsgBox(FmtMessage(CustomMessage('PairFailed'), [String(Output)]), mbError, MB_OK);
@@ -195,7 +200,10 @@ begin
   begin
     { Zustand nur für SYSTEM und Administratoren (sonst könnten Benutzer z. B. Updates austauschen) }
     ForceDirectories(StateDir());
-    Run(ExpandConstant('{sys}\icacls.exe'), '"' + StateDir() + '" /inheritance:r /grant:r *S-1-5-18:(OI)(CI)F *S-1-5-32-544:(OI)(CI)F /T /C /Q');
+    { Nur der Ordner bekommt eigene Rechte; alles darin erbt sie (/reset). Kein /T mit (OI)(CI) – das ließe
+      vorhandene Dateien ohne jeden Eintrag zurück (beim Update beobachtet). }
+    Run(ExpandConstant('{sys}\icacls.exe'), '"' + StateDir() + '" /inheritance:r /grant:r *S-1-5-18:(OI)(CI)F *S-1-5-32-544:(OI)(CI)F /C /Q');
+    Run(ExpandConstant('{sys}\icacls.exe'), '"' + StateDir() + '\*" /reset /T /C /Q');
     Bin := '"\"' + Python() + '\" -m kidctl_agent service"';
     if Run(ExpandConstant('{sys}\sc.exe'), 'create {#Svc} binPath= ' + Bin + ' start= auto DisplayName= "KidCTL"') <> 0 then
       Run(ExpandConstant('{sys}\sc.exe'), 'config {#Svc} binPath= ' + Bin + ' start= auto');
@@ -217,5 +225,8 @@ begin
     Run(ExpandConstant('{sys}\sc.exe'), 'delete {#Svc}');
   end;
   if CurUninstallStep = usPostUninstall then
+  begin
     DelTree(StateDir(), True, True, True);
+    RemoveDir(ExpandConstant('{app}'));   { bleibt sonst leer zurück }
+  end;
 end;

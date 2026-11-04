@@ -16,8 +16,6 @@ from kidctl_common import tray as t
 from kidctl_common import i18n
 from kidctl_common.i18n import _
 
-from . import loginlock
-
 log = logging.getLogger("kidctl.tray")
 
 MAX_LINE = 64 * 1024
@@ -45,7 +43,10 @@ class TrayServer:
 
     def __init__(self, handler, path: str | None = None) -> None:
         self.handler = handler
-        self.path = Path(path or (loginlock.RUN_DIR / "tray.sock"))
+        if path is None:
+            from . import loginlock   # nur Linux (grp/pwd)
+            path = loginlock.RUN_DIR / "tray.sock"
+        self.path = Path(path)
         self.clients: set[_Client] = set()
         self._server: asyncio.base_events.Server | None = None
 

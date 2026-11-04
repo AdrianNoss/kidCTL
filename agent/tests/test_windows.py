@@ -82,6 +82,9 @@ class FakeApi:
     def logoff_session(self, sid, wait):
         self.logoffs.append(sid)
 
+    def kill_in_session(self, image, sid):
+        self.killed = getattr(self, "killed", []) + [(image, sid)]
+
     def send_message(self, sid, title, body, timeout):
         self.messages.append((sid, title))
         return 1
@@ -398,4 +401,43 @@ def test_winagent_restarts_missing_tray(winagent, fake):
         clock[0] += 300
         await agent.tick_once()
         assert started == [2]                   # verbunden -> nichts zu tun
+    asyncio.run(main())
+
+
+def test_windows_modules_import_without_posix_modules():
+    """Unter Windows fehlen pwd/grp/fcntl/dbus_next: Der Windows-Agent darf sie nicht (indirekt) importieren."""
+    import subprocess
+    import sys
+    code = (
+        "import sys\n"
+        "class Block:\n"
+        "    def find_spec(self, name, path=None, target=None):\n"
+        "        if name.split('.')[0] in ('pwd', 'grp', 'fcntl', 'dbus_next', 'termios'):\n"
+        "            raise ImportError(name)\n"
+        "sys.meta_path.insert(0, Block())\n"
+        "for m in list(sys.modules):\n"
+        "    if m.split('.')[0] in ('pwd', 'grp', 'fcntl', 'termios'):\n"
+        "        del sys.modules[m]\n"
+        "import kidctl_agent.cli, kidctl_agent.win.agent, kidctl_agent.win.service, kidctl_agent.win.update\n"
+    )
+    r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                       env={**__import__('os').environ, "PYTHONPATH": ":".join(sys.path)})
+    assert r.returncode == 0, r.stderr
+
+
+def test_winagent_refreshes_login_screen_on_lock_change(winagent, fake):
+    agent, clock = winagent
+
+    async def main():
+        fake.sessions = [(1, api.WTSActive, "", -1, 0), (2, 4, "papa", 0, 9)]   # Anmeldebildschirm + gesperrter Papa
+        agent.policy = _policy(locked=True)
+        await agent.tick_once()
+        assert fake.killed == [("LogonUI.exe", 1)]        # nur die Sitzung ohne Benutzer
+        clock[0] += 5
+        await agent.tick_once()
+        assert fake.killed == [("LogonUI.exe", 1)]        # keine Änderung -> nichts
+        agent.policy = _policy()
+        clock[0] += 5
+        await agent.tick_once()
+        assert len(fake.killed) == 2                      # wieder aktiviert -> erneut
     asyncio.run(main())

@@ -17,7 +17,7 @@ In den Beispielen steht `kids.example.org` für die eigene Subdomain.
 |---|---|
 | Server | Linux mit Docker + Docker Compose, laufender **Traefik** mit certresolver `letsencrypt` und Middleware `secHeaders@file`, DNS-Eintrag für die Subdomain |
 | Bau-Rechner | Arch Linux mit `base-devel`, `git`, `gnupg`, `rsync`, SSH-Zugang zum Server |
-| Kinderrechner | **Arch Linux** mit KDE Plasma (SDDM) und/oder GNOME (GDM), jeweils unter Wayland, oder **Debian 13, Ubuntu 24.04/26.04 und darauf aufbauend** (Kubuntu, Linux Mint, Pop!_OS) mit GNOME oder Plasma auf 64-Bit-PCs (amd64); Internetzugang, ein Admin-Account mit `sudo` |
+| Kinderrechner | **Arch Linux** mit KDE Plasma (SDDM) und/oder GNOME (GDM), jeweils unter Wayland, oder **Debian 13, Ubuntu 24.04/26.04 und darauf aufbauend** (Kubuntu, Linux Mint, Pop!_OS) mit GNOME oder Plasma auf 64-Bit-PCs (amd64); Internetzugang, ein Admin-Account mit `sudo`. Oder **Windows 10 22H2 / Windows 11 ab 23H2** (Home oder Pro, x64) mit einem Administratorkonto – siehe [3.6 Windows](#36-windows) |
 | Eltern | Smartphone mit Authenticator-App (TOTP, z. B. Aegis, Google Authenticator) |
 
 ## 1. Server
@@ -263,6 +263,43 @@ journalctl -u kidctl-agent -b            # Fehlersuche
 Im WebUI zeigt der Abschnitt „Integrität“ beim Gerät, ob alle Schutzmaßnahmen aktiv sind. Fällt
 später eine aus, kommt ein Push-Alarm.
 
+### 3.6 Windows
+
+Unter Windows 10/11 gibt es in diesem Stand **Bildschirmzeit, Abmeldung, Login-Sperre, „Jetzt sperren“,
+Tray-App mit Chat und Verlängerungen**. Programmkontrolle, Website-Filter und Spiele folgen (siehe `spec.md`,
+Abschnitt „Windows“).
+
+1. **Kinderkonten** als „Standardbenutzer“ anlegen (Einstellungen → Konten → Andere Benutzer), lokale Konten oder
+   Microsoft-Konten. Administratoren schränkt KidCTL nie ein – das WebUI meldet zugeordnete Kinder mit
+   Administratorrechten unter „Integrität“.
+2. WebUI → „Geräte“ → „Gerät hinzufügen“ → Kopplungscode notieren.
+3. Auf dem Kinderrechner als Administrator `https://kids.example.org/repo/windows/KidCTL-Setup-<Version>.exe`
+   herunterladen und ausführen. Der Installer ist (noch) nicht signiert: Windows SmartScreen zeigt beim ersten Start
+   „Der Computer wurde durch Windows geschützt“ → „Weitere Informationen“ → „Trotzdem ausführen“.
+4. Im Installer Server-Adresse (`https://kids.example.org`) und Kopplungscode eingeben. Später koppeln geht auch
+   in einer Eingabeaufforderung als Administrator:
+
+   ```bat
+   "C:\Program Files\KidCTL\kidctl.cmd" enroll https://kids.example.org ABCD-EFGH
+   ```
+
+5. WebUI → Gerät → „Benutzer-Zuordnung“. Windows-Kontonamen mit Leerzeichen oder Umlauten erscheinen als
+   `rid-<Nummer>`, der volle Name (bei Microsoft-Konten mit E-Mail-Adresse) steht daneben.
+
+Was sich von Linux unterscheidet:
+
+- **Login-Sperre:** Ist keine Zeit verfügbar, deaktiviert KidCTL das Konto des Kindes. Windows zeigt dann nur
+  „Ihr Konto wurde deaktiviert“ – einen eigenen Hinweis erlaubt der Anmeldebildschirm nicht. Das gilt für jede
+  Anmeldeart (Passwort, PIN, Windows Hello) und auch im abgesicherten Modus.
+- **Updates** installiert KidCTL selbst (alle 6 Stunden geprüft, signiert). Kein Systemupdate nötig.
+- **Benachrichtigungen** sind Windows-Toasts. Ist „Bitte nicht stören“ an (auch automatisch bei Vollbildspielen),
+  zeigt die Tray-App die letzte Minute und den Countdown zusätzlich als Fenster im Vordergrund.
+- Prüfen: `"C:\Program Files\KidCTL\kidctl.cmd" status`, Dienst „KidCTL“ (`services.msc`), Log unter
+  `C:\ProgramData\KidCTL\logs\agent.log`.
+- Deinstallieren: Einstellungen → Apps → Installierte Apps → KidCTL. Gesperrte Konten werden dabei wieder aktiviert.
+
+Details zum Paket: [`packaging/windows/README.md`](../packaging/windows/README.md).
+
 ## 4. Einstellungen im WebUI
 
 Je Kind (Seite des Kindes):
@@ -350,6 +387,7 @@ root sperren und Firmware- sowie Bootloader-Passwort setzen: [`docs/haertung.md`
 |---|---|
 | Server | `git pull && docker compose up -d --build`. Datenbank-Migrationen laufen beim Start automatisch. |
 | Client-Paket | `pkgver` in `packaging/arch/PKGBUILD` und `agent/kidctl_agent/__init__.py` erhöhen, dann 2.2 ausführen (baut Arch- und `.deb`-Pakete aus derselben Version). Die Kinderrechner bekommen das Update mit `sudo pacman -Syu` bzw. `sudo apt upgrade`. |
+| Windows | `packaging/windows/build.py all --apply`, dann `kidctl-repo-publish.sh --apply` – die Windows-Rechner installieren das Update selbst (siehe `packaging/windows/README.md`). |
 | Ab 0.27.0 | Das SDDM-Theme steckt jetzt im Paket `kidctl-plasma`. Auf bestehenden Plasma-Rechnern einmalig `sudo pacman -Syu kidctl-plasma`, sonst fehlt der Hinweis im Anmeldebildschirm. |
 
 Ein Server-Update vor den Agenten ist unproblematisch, weil der Server auch die vorherige

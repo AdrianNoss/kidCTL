@@ -22,6 +22,8 @@ New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Wi
 if (-not (Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyContinue)) {
   New-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -DisplayName "OpenSSH Server (sshd)" -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22 | Out-Null
 }
+# Die Regel gilt sonst nur im Profil „Privat“ – das VM-Netz ist „Öffentlich“
+Set-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -Profile Any
 # Admins: Schlüssel in administrators_authorized_keys, nur SYSTEM und Administratoren (SIDs – Gruppennamen sind lokalisiert)
 $keys = "C:\ProgramData\ssh\administrators_authorized_keys"
 Set-Content -Path $keys -Value "@SSH_KEY@" -Encoding ascii
@@ -34,8 +36,9 @@ powercfg /hibernate off
 
 # Inno Setup (Installer bauen, siehe packaging/windows)
 try {
-  $is = "$env:TEMP\innosetup.exe"
-  Invoke-WebRequest -UseBasicParsing -Uri "https://jrsoftware.org/download.php/is.exe" -OutFile $is
+  $is = "$env:TEMP\innosetup-6.7.4.exe"
+  Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/jrsoftware/issrc/releases/download/is-6_7_4/innosetup-6.7.4.exe" -OutFile $is
+  if ((Get-FileHash -Algorithm SHA256 $is).Hash -ne "A549929319F9120716677C685535CA4671E4B937B5FDC87E2585F32D8EB30E8C") { throw "Prüfsumme falsch" }
   Start-Process -Wait -FilePath $is -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/ALLUSERS"
 } catch { Write-Output "Inno Setup nicht installiert: $_" }
 
