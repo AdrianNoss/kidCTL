@@ -56,6 +56,8 @@ Verlängerungsanfragen.
   siehe „Desktop-Umgebungen“). X11 und andere Desktops werden nicht unterstützt (Cinnamon und COSMIC
   folgen als eigene Schritte, siehe „Debian/Ubuntu“).
 - Distributionen: Arch Linux sowie Debian 13, Ubuntu 24.04/26.04 und darauf aufbauend (siehe „Debian/Ubuntu“).
+- Windows 10/11 geplant (entschieden 2026-11-04, siehe „Windows“): Windows-Dienst statt systemd, Named Pipe
+  statt Unix-Socket, Konto-Sperre statt PAM.
 
 ### Desktop-Umgebungen (entschieden 2026-10-21)
 - Plasma (SDDM) und GNOME (GDM) auf Wayland; beide dürfen auf demselben Rechner installiert sein. Der Agent
@@ -159,6 +161,123 @@ Verlängerungsanfragen.
   `/srv/steam/<kind>` (sonst wie unter Arch); Freigabe-Schlüssel `exe:/usr/games/steam`. Heroic aus dem
   offiziellen .deb: `/opt/Heroic/heroic` gilt als Launcher.
 - Logind trägt unter GDM keinen Desktop ein (auch Ubuntu) – Abmeldung über die laufende Shell (wie GNOME).
+
+### Windows (entschieden 2026-11-04, noch nicht umgesetzt)
+Per /grill-me abgestimmt. Grundsatz: gleiches Verhalten wie unter Linux, wo Windows es zulässt;
+Abweichungen stehen hier und unter „Restlücken“.
+
+- **Zielsysteme:** Windows 11 ab 23H2 und Windows 10 22H2, nur x64 (kein ARM). Home und Pro mit derselben
+  Technik (kein AppLocker, keine Gruppenrichtlinien-Editoren). Lokale und Microsoft-Konten; Zuordnung
+  Benutzer → Kind über die **SID** (Anzeige: Kontoname bzw. E-Mail des Microsoft-Kontos).
+- **Admin-Schutz:** Mitglieder der Gruppe Administratoren (`S-1-5-32-544`) werden nie eingeschränkt,
+  auch wenn sie einem Kind zugeordnet sind (Grundregel wie `wheel`/`sudo`).
+- **Aufbau (Weg 1):** Python wie unter Linux. Der plattformneutrale Kern (Regeln, Zählung, Spiele-Limit,
+  Programmzeit, Chat-Warteschlange, Verbindung, Zustand, Sprache, `common/`) wird minimal-invasiv hinter
+  eine Plattform-Schnittstelle gezogen (Sitzungen, Prozesse, Login-Sperre, Webfilter, Benachrichtigungen,
+  Programmkatalog); Linux-Verhalten bleibt unverändert. Windows-Teile über `pywin32`/`ctypes`.
+  Ausgeliefert mit dem offiziellen Embeddable-Python (von der PSF signiert) und mitgebrachten Bibliotheken,
+  kein PyInstaller (Fehlalarme von Virenscannern). Native Teile (z. B. Credential Provider) höchstens als
+  spätere, optionale Ausbaustufe.
+- **Agent:** Windows-Dienst als `LocalSystem`, Geräte-Token nur für SYSTEM/Administratoren lesbar. Zusätzlich
+  unter `HKLM\SYSTEM\CurrentControlSet\Control\SafeBoot\Minimal` und `\Network` eingetragen (läuft auch im
+  abgesicherten Modus, den ein Standardnutzer vom Anmeldebildschirm aus erreicht).
+- **Zählung:** Sitzungen über die WTS-API, Sperren/Entsperren über `SERVICE_CONTROL_SESSIONCHANGE`; gezählt wird
+  die aktive, entsperrte Sitzung (Konsole) zugeordneter Kinder. Dauer über monotone Uhr ohne Ruhezustand
+  (`QueryUnbiasedInterruptTime`), Systemuhr nur für Tag/Zeitfenster. Zeitzone aus der Policy (Standardnutzer
+  dürfen die Zeitzone von Windows ändern, die Uhr nicht).
+- **Zeitende und „Jetzt sperren“:** Vorwarnungen und Countdown wie unter Linux, Abmeldung per
+  `WTSLogoffSession`.
+- **Login-Sperre:** Konto des Kindes deaktivieren (`UF_ACCOUNTDISABLE`), solange keine Zeit verfügbar ist –
+  wirkt vor jeder Anmeldeart (Passwort, PIN, Windows Hello, Microsoft-Konto, abgesicherter Modus) und ohne
+  laufenden Agenten. Windows zeigt nur den festen Text „Konto deaktiviert“.
+  - **Nicht ausfallsicher wie PAM** (Sperre bleibt bei Absturz/Deinstallation bestehen), daher: Abgleich beim
+    Start und alle 5 s aus der gecachten Policy; kidctl merkt sich, welche Konten es selbst deaktiviert hat,
+    und fasst andere nie an; Deinstallation aktiviert diese Konten wieder; Admin-Konten nie.
+  - Rückfall: Kommt trotz Sperre eine Sitzung eines gesperrten Kindes zustande, zeigt der Agent einen Hinweis
+    und meldet sie nach etwa 10 s ab.
+  - Später optional: eigener Credential Provider (C++) für einen Hinweis wie „wieder ab 14:00“.
+- **Tray-App:** PySide6 wie unter Linux, Start für alle Benutzer über `HKLM\…\Run`. Verbindung zum Agenten
+  über eine Named Pipe; Identität über das Token des Clients (SID) statt `SO_PEERCRED`.
+  - Toasts mit Knöpfen („Verlängerung anfordern“, „Freigabe anfragen“) über Startmenü-Verknüpfung mit
+    AppUserModelID; Knöpfe öffnen `kidctl://…`, das die laufende Tray-App über ihre Pipe erreicht (kein
+    COM-Server).
+  - Toasts: Warnungen 15 und 5 min, Chat, Sperrmeldungen. **1-Minuten-Warnung und 60-s-Countdown
+    zusätzlich als eigenes Fenster im Vordergrund** (mit „Verlängerung anfordern“) – „Nicht stören“ (vom Kind
+    einschaltbar, bei Vollbildspielen automatisch) unterdrückt Toasts. Gleiches Muster beim Spiele-Limit.
+- **Programmkontrolle:**
+  - Prozessstarts über ETW (Kernel-Process) mit Abgleich im 5-s-Takt; gesperrt = Prozess beenden,
+    Benachrichtigung, Sperrprotokoll. Modi Aus / Nur protokollieren / Sperren wie unter Linux.
+  - **Ausführverbot statt `noexec`:** NTFS-ACL „Ausführen verweigern“ für das Kind auf sein Profil und seine
+    Temp-Ordner (Kinder mit Programmkontrolle ≠ Aus). Nötig, weil ein Standardnutzer per COM-Hijacking
+    (`HKCU\Software\Classes`) eigene DLLs in erlaubte Programme (z. B. Explorer) laden lassen kann; ohne
+    Ausführrecht lädt Windows sie nicht. Ein `OWNER RIGHTS`-Eintrag verhindert, dass das Kind als Besitzer
+    die ACL zurückdreht; die Integritätsprüfung kontrolliert sie.
+  - **Apps im Benutzerprofil** (Roblox, Discord, Spotify …): Der Katalog nimmt zusätzlich die
+    Startmenü-Einträge des Kindes auf. Bei Freigabe nimmt der Agent für den Ordner der App (z. B.
+    `%LOCALAPPDATA%\Roblox`) das Ausführverbot zurück (Updates im Ordner funktionieren).
+  - **Basisliste:** alles unter `%WINDIR%` (für Standardnutzer nicht beschreibbar; Pfad genügt) und die
+    System-Store-Apps der Shell (Startmenü, Suche, Benachrichtigungen, Sperrbildschirm), Agent, Tray-App.
+    Ausgenommen (gesperrt ohne Freigabe): `cmd`, `powershell`, `pwsh` (nur interaktiv gesperrt, analog
+    Shell-Regel), `wscript`, `cscript`, `mshta`, `regedit`, `reg`, `mmc`, `msiexec`/`installutil` im
+    Kinderkontext, `rundll32`/`regsvr32` mit DLL außerhalb `%WINDIR%`/`Program Files`, `bitsadmin`,
+    `certutil` (Download), `wsl`, `bash`. Endgültige Liste nach Audit im Modus „Nur protokollieren“ in der VM.
+  - **Katalog:** Startmenü-Verknüpfungen (`.lnk`, systemweit und des Kindes) und Store-Apps über den Package
+    Family Name (analog `flatpak:`). Alles mit Startmenü-Eintrag ist Eltern-Entscheidung, auch von Microsoft
+    (Edge, Editor, Paint, Rechner, Einstellungen, Store, Xbox). Vom Kind im Store installierte Apps (geht
+    ohne Admin-Rechte) starten nur nach Freigabe.
+- **Website-Filter (Profil folgt der aktiven Sitzung):** Unter Windows löst der Systemdienst `dnscache` für
+  alle Programme auf – ein Filter je Benutzer auf DNS-Ebene ist nicht möglich.
+  - Lokaler Unbound (offizieller Windows-Build), Konfiguration wie `dnsfilter.py`. Der Resolver nutzt das
+    Profil des Kindes, dessen Sitzung an der Konsole aktiv ist; Eltern/Admin aktiv = ungefiltert. Bei jedem
+    Wechsel DNS-Cache leeren.
+  - **Alle DNS-Anfragen des Rechners laufen immer über Unbound:** WFP sperrt rechnerweit ausgehend Port 53/853
+    außer für Unbound; der Agent setzt auf jedem Adapter (auch neuen, z. B. VPN) die DNS-Server auf
+    `127.0.0.1`/`::1`. Upstream: per DHCP bekannte DNS-Server (gemerkt) oder fester Upstream aus der Policy;
+    Suchdomänen eines VPN-Adapters werden als `forward-zone` an dessen DNS-Server weitergeleitet (Firmen-VPN
+    der Eltern).
+  - **Netzsperre für Kinder-Sitzungen im Hintergrund:** WFP sperrt ausgehenden Verkehr der SID eines Kindes,
+    solange dessen Sitzung nicht die aktive ist (sonst wäre es bei schnellem Benutzerwechsel ungefiltert).
+  - DoH/DoT: Sperrliste wie unter Linux, Browser-Richtlinien in `HKLM` für Edge, Chrome und Firefox, DoH von
+    Windows selbst aus. SafeSearch wie unter Linux.
+- **Spiele:**
+  - Steam: Erkennung über `SteamAppId` (`game:steam:<id>`, Name aus `appmanifest_*.acf`), Freigabe und
+    Elternkette ab `steam.exe` wie unter Linux. Die Steam-Bibliothek (für Benutzer meist beschreibbar)
+    bekommt für Kinder ohne Steam-Freigabe ein Ausführverbot (wie `/srv/steam`).
+  - Epic Games Launcher wie Heroic (Nachfahren erlaubt); als Spiel zählt, was im Installationsordner laut
+    Epic-Manifesten in `ProgramData` liegt (`game:epic:<id>`).
+  - Xbox/Game-Pass- und Store-Spiele: Erkennung an `MicrosoftGame.config` im Paket.
+  - Andere Launcher (Battle.net, EA App, Ubisoft Connect, GOG Galaxy): allgemeine Launcher-Regel; Spiele
+    daraus zählen nur über den neuen Schalter.
+  - **Neu, für alle Plattformen:** Schalter „zählt als Spiel“ je Kind und App im WebUI (in der Policy), für
+    Apps ohne Kategorie (unter Windows haben `.lnk` keine) oder mit falscher (z. B. Roblox, Minecraft-Launcher).
+- **Integrität (WebUI):** Dienst, SafeBoot-Eintrag, Unbound, WFP-Filter, DNS der Adapter, Ausführverbote
+  (ACL), Kinder nicht in der Gruppe Administratoren.
+- **Verteilung und Updates:**
+  - Installer mit Inno Setup (gebaut in der Windows-VM), zunächst **ohne Code-Signatur**: beim ersten
+    Installieren einmal SmartScreen bestätigen. Code-Signing-Zertifikat später bei Bedarf (Azure Artifact
+    Signing gibt es für Privatpersonen nur in USA/Kanada; Let's Encrypt kann kein Code signieren). Keine
+    Ausnahmen in Defender.
+  - Server liefert Installer und Updates als statisches Verzeichnis (wie die Repos), z. B. `/windows/`.
+  - **Automatisches Selbst-Update** des Agenten, sobald der Server eine neue Version anbietet; vorher Prüfung
+    einer eigenen **Ed25519-Signatur** (öffentlicher Schlüssel im Agenten). Version je Gerät im WebUI
+    (Hinweis „Agent veraltet“ wie bisher).
+  - Kopplung mit Code wie bisher (`kidctl enroll` bzw. Feld im Installer); Deinstallation nimmt alles zurück
+    (Konten, ACLs, WFP, DNS der Adapter, SafeBoot, Browser-Richtlinien).
+  - Server: Plattform je Gerät, Programmschlüssel für Windows-Pfade (Groß-/Kleinschreibung egal) und
+    Store-Apps.
+- **Härtung:** `docs/haertung.md` um Windows ergänzen (BitLocker, BIOS-Passwort, kein Booten von USB, Kinder
+  nie Administratoren, UAC mit Admin-Passwort).
+- **Testumgebung:** `dev/vm/vm.sh` mit Windows-Zielen (OVMF mit Secure Boot, `swtpm`, virtio-Treiber,
+  `autounattend.xml`: lokaler Admin, zwei Kinderkonten, OpenSSH-Server; unaktiviert). VMs: Windows 11 Home
+  25H2 (Hauptziel) und Windows 10 Pro 22H2. ISOs vom Nutzer unter `~/.local/share/kidctl-vm-win11/install.iso`
+  bzw. `…-win10/install.iso`.
+- **Umsetzung in Schritten** (je lauffähig, getestet, eigener Changelog-Eintrag):
+  1. Grundgerüst und Bildschirmzeit: Plattform-Schnittstelle (Linux-Tests grün), Dienst, Kopplung, Zählung,
+     Abmeldung, Login-Sperre, „Jetzt sperren“, Tray mit Chat/Toasts/Vordergrund-Fenster, Installer,
+     Selbst-Update, SafeBoot, Integrität, Test-VMs, Server-Anpassungen.
+  2. Programmkontrolle: ETW, Katalog (`.lnk`, AppX), Basisliste, Ausführverbote mit Ausnahmen, Freigabe-Anfragen.
+  3. Website-Filter: Unbound, WFP, DNS der Adapter, Profilwechsel, Hintergrund-Netzsperre, Browser-Richtlinien.
+  4. Spiele: Steam, Epic, Xbox/Store, Schalter „zählt als Spiel“, Spiele-Limit, Spielzeit je Spiel.
 
 ### Offline-Verhalten
 - Letzte bekannte Policy wird weiter durchgesetzt.
@@ -719,7 +838,18 @@ Verlängerungsanfragen.
 - Eine Freigabe-Ausnahme im Blacklist-Modus gilt nicht für spezifischere Einträge einer Sperrliste
   (z. B. Ausnahme `example.com`, Liste sperrt `ads.example.com`).
 - Kein Browserverlauf, keine Bilder/Dateien im Chat, keine Lesebestätigungen.
-- Kein Selbst-Update des Agenten (nur über Pacman).
+- Kein Selbst-Update des Agenten unter Linux (nur über Pacman bzw. apt); unter Windows automatisch (geplant).
+- Windows (geplant, entschieden 2026-11-04):
+  - Login-Sperre zeigt nur den festen Windows-Text „Konto deaktiviert“ (eigener Hinweis bräuchte einen
+    Credential Provider).
+  - Website-Filter folgt der aktiven Sitzung: Ein per Benutzerwechsel im Hintergrund angemeldetes Elternteil
+    ist gefiltert, solange ein Kind vorne sitzt. Auch das Firmen-VPN der Eltern löst über den lokalen
+    Resolver auf (Weiterleitung der Suchdomänen).
+  - Programmkontrolle reagiert auf Prozessstarts (wie unter Linux); in den Ordner einer freigegebenen App im
+    Benutzerprofil kann das Kind eigene DLLs legen (wie bei Steam).
+  - Vorwarn-Fenster erscheinen nicht über Spielen im exklusiven Vollbild; die Abmeldung erfolgt trotzdem.
+  - Ohne Code-Signatur: SmartScreen-Warnung beim ersten Installieren, Risiko von Fehlalarmen in Defender.
+  - VPN-Verkehr mit fest eingetragenen IP-Adressen bleibt wie unter Linux außerhalb des Threat Models.
 
 ## Offene Punkte
 
@@ -1316,3 +1446,9 @@ Verlängerungsanfragen.
   Zustand zurück. Arch-VM: Agent mit neuer Paketdatenbank-Schicht, SDDM-Theme unter Qt 6 unverändert.
   Nicht getestet: echte Rechner, Steam-Spiel unter Ubuntu, Heroic-.deb, Kubuntu mit X11 (Standard von
   Kubuntu 24.04).
+- 2026-11-04: Windows 10/11 als Client per /grill-me abgestimmt (noch nicht umgesetzt): Zielsysteme, Python mit
+  gemeinsamem Kern, Login-Sperre per Konto-Deaktivierung mit Abmelde-Rückfall, Ausführverbote per ACL mit
+  Ausnahme je freigegebener App, Basisliste `%WINDIR%` ohne Code-Ausführer, Website-Filter mit Profil der aktiven
+  Sitzung und rechnerweit erzwungenem lokalem Resolver, Spiele (Steam, Epic, Xbox/Store, neuer Schalter „zählt
+  als Spiel“), Toasts plus Vordergrund-Fenster, Installer ohne Signatur mit Ed25519-geprüftem Selbst-Update,
+  Test-VMs Windows 11 Home und Windows 10 Pro, Umsetzung in vier Schritten. Details unter „Windows“.
