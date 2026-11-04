@@ -7,6 +7,7 @@ egal wie viele Sitzungen er hat.
 
 from __future__ import annotations
 
+import sys
 import time as _time
 from datetime import date, timedelta
 
@@ -18,8 +19,18 @@ MAX_GAP = 30.0  # Sekunden
 KEEP_DAYS = 8
 
 
-def boottime() -> float:
-    return _time.clock_gettime(_time.CLOCK_BOOTTIME)
+if sys.platform == "win32":
+    import ctypes
+
+    def boottime() -> float:
+        """Windows: monotone Uhr ohne Ruhezustand (``QueryUnbiasedInterruptTime``, 100-ns-Schritte).
+        Der Ruhezustand zählt so ohnehin nicht – wie die große Lücke (``MAX_GAP``) unter Linux."""
+        t = ctypes.c_ulonglong()
+        ctypes.windll.kernel32.QueryUnbiasedInterruptTime(ctypes.byref(t))
+        return t.value / 1e7
+else:
+    def boottime() -> float:
+        return _time.clock_gettime(_time.CLOCK_BOOTTIME)
 
 
 class Usage:

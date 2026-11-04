@@ -142,3 +142,9 @@ msgstr "“{name}” is not allowed."
 msgid "„{name}“ ist nicht freigegeben. Du kannst deine Eltern um Freigabe bitten."
 msgstr "“{name}” is not allowed. You can ask your parents for access."
 
+
+msgid "Anmeldung gesperrt"
+msgstr "Sign-in blocked"
+
+msgid "Bildschirmzeit für heute aufgebraucht, außerhalb der erlaubten Zeit oder von den Eltern gesperrt. Du wirst gleich abgemeldet."
+msgstr "Screen time used up for today, outside the allowed hours or locked by your parents. You will be signed out shortly."

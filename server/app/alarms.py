@@ -45,16 +45,20 @@ def due_offline_alarms(db: Session) -> list[tuple[Device, int]]:
 UPDATE_GRACE = timedelta(days=1)   # so lange nach Veröffentlichung Zeit für das Systemupdate
 
 
-def due_update_alarms(db: Session, release: versions.Release | None = None) -> list[tuple[Device, str]]:
-    """Geräte mit veraltetem Agenten, für die jetzt ein Hinweis fällig ist; markiert sie (kein Commit)."""
-    release = release or versions.latest()
-    if release is None or utcnow() - release.published < UPDATE_GRACE:
-        return []
+def due_update_alarms(db: Session, release: versions.Release | None = None,
+                      win_release: versions.Release | None = None) -> list[tuple[Device, str]]:
+    """Geräte mit veraltetem Agenten, für die jetzt ein Hinweis fällig ist; markiert sie (kein Commit).
+    Windows-Agenten aktualisieren sich selbst – der Hinweis kommt dort nur, wenn das nach einem Tag nicht
+    geklappt hat."""
+    releases = {"linux": release or versions.latest(), "windows": win_release or versions.latest_windows()}
     due = []
     for dev in db.scalars(select(Device).where(Device.revoked_at.is_(None))):
-        if versions.update_for(dev.agent_version, release) and dev.update_alerted != release.version:
-            dev.update_alerted = release.version
-            due.append((dev, release.version))
+        rel = releases.get(dev.platform) or None
+        if rel is None or utcnow() - rel.published < UPDATE_GRACE:
+            continue
+        if versions.update_for(dev.agent_version, rel) and dev.update_alerted != rel.version:
+            dev.update_alerted = rel.version
+            due.append((dev, rel.version))
     return due
 
 
@@ -65,9 +69,13 @@ def check_once() -> int:
                         version)
             push.send_to_parents_sync(
                 lambda name=dev.name: _("Update für „{name}“ verfügbar").format(name=name),
-                lambda old=dev.agent_version, new=version: _(
+                (lambda old=dev.agent_version, new=version: _(
+                    "Agent {old} ist veraltet, verfügbar ist {new}. Das automatische Update hat nicht geklappt – "
+                    "den Installer auf dem Rechner erneut ausführen.").format(old=old, new=new))
+                if dev.platform == "windows" else
+                (lambda old=dev.agent_version, new=version: _(
                     "Agent {old} ist veraltet, verfügbar ist {new}. Auf dem Rechner das Systemupdate ausführen (pacman -Syu bzw. apt upgrade).").format(
-                    old=old, new=new),
+                    old=old, new=new)),
                 url=f"/devices/{dev.id}", tag=f"update-{dev.id}")
         db.commit()
         due = due_offline_alarms(db)

@@ -229,6 +229,24 @@ sudo systemd-cryptenroll --wipe-slot=tpm2 --tpm2-device=auto --tpm2-pcrs=7 /dev/
 Weiterführend (ArchWiki): „Unified Extensible Firmware Interface/Secure Boot“, „Unified kernel image“,
 „Trusted Platform Module#systemd-cryptenroll“.
 
+## Windows-Kinderrechner
+
+Unter Windows gelten dieselben Grundsätze, die Mittel heißen anders:
+
+| Umgehung | Gegenmaßnahme |
+|---|---|
+| Kind hat Administratorrechte (kann KidCTL stoppen/deinstallieren) | Kinder **immer** als „Standardbenutzer“ anlegen; das WebUI meldet zugeordnete Kinder mit Administratorrechten unter „Integrität“ |
+| Benutzerkontensteuerung fragt nur „Ja/Nein“ | UAC fragt bei Standardbenutzern ohnehin nach Admin-Passwort – Eltern-Passwort nie vor dem Kind eintippen |
+| Start von USB-Stick oder einem anderen System | UEFI-Firmware: Booten von USB aus, Firmware-Passwort setzen |
+| Platte ausbauen, Offline-Zugriff, Passwort zurücksetzen per Rettungsmedium | **BitLocker** (Pro) bzw. **Geräteverschlüsselung** (Home, mit Microsoft-Konto des Admins und TPM) einschalten; Wiederherstellungsschlüssel sicher ablegen |
+| Abgesicherter Modus (vom Anmeldebildschirm aus erreichbar) | KidCTL läuft dort mit (Dienst unter `SafeBoot`); ein gesperrtes Konto bleibt auch dort gesperrt |
+| Windows-Wiederherstellungsumgebung (Eingabeaufforderung) | fragt nach einem Administratorkonto; mit BitLocker ohne Wiederherstellungsschlüssel kein Zugriff auf die Platte |
+
+Hinweis zur Login-Sperre: KidCTL deaktiviert das Konto des Kindes, solange keine Zeit verfügbar ist.
+Wird KidCTL ohne Deinstallationsprogramm entfernt (z. B. Dateien gelöscht), bleibt ein gerade gesperrtes Konto
+deaktiviert – als Administrator wieder aktivieren: `net user <name> /active:yes` oder
+`"C:\Program Files\KidCTL\kidctl.cmd" unlock-all`.
+
 ## Was danach noch bleibt
 
 - Ohne Schritt 4: Platte ausbauen und in einem anderen Rechner verändern.

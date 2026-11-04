@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import pwd
 import socket
 import struct
 from pathlib import Path
@@ -98,15 +97,22 @@ class TrayServer:
     # ---------- Empfang ----------
 
     async def _handle(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        import pwd   # nur Linux
+
         try:
             uid = peer_uid(writer.get_extra_info("socket"))
             user = pwd.getpwuid(uid).pw_name
         except (OSError, KeyError):
             writer.close()
             return
+        log.debug("Tray verbunden: %s (UID %s)", user, uid)
+        await self.serve(user, reader, writer)
+
+    async def serve(self, user: str, reader, writer) -> None:
+        """Verbindung eines Users bedienen, dessen Identität das Betriebssystem bestätigt hat
+        (``reader.readline()``, ``writer.write/drain/close`` wie bei asyncio-Streams)."""
         client = _Client(user, writer)
         self.clients.add(client)
-        log.debug("Tray verbunden: %s (UID %s)", user, uid)
         try:
             while line := await reader.readline():
                 try:
@@ -132,6 +138,9 @@ class TrayServer:
             await self._send(client, state)
             if state.restricted:
                 await self._send(client, t.TrayChat(messages=self.handler.tray_history(user)))
+            return
+        if isinstance(msg, t.TrayAction):
+            await self.handler.tray_action(user, msg.id)
             return
         if not self.handler.tray_state(user).restricted:
             with i18n.use(self.handler.lang_of(user)):

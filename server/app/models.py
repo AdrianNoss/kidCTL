@@ -144,6 +144,7 @@ class Device(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(128))
     hostname: Mapped[str] = mapped_column(String(255), default="")
+    platform: Mapped[str] = mapped_column(String(16), default="linux")   # linux | windows (aus hello)
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

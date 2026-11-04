@@ -12,6 +12,8 @@ an (TOTP aus ~/.local/share/kidctl-dev/secret.txt) und merkt sich die Session.
     dev/webctl.py programs CID MODUS [SCHLÜSSEL …]
     dev/webctl.py blocked CID
     dev/webctl.py web CID MODUS [bundles=a,b] [allow=x.de,y.de] [deny=…] [lists=a,b] [safesearch=0|1]
+    dev/webctl.py lock CID [DAUER] [VORWARNUNG_MIN]    (DAUER leer = bis zur Freigabe)
+    dev/webctl.py unlock CID
     dev/webctl.py dash
 """
 
@@ -35,7 +37,9 @@ def tok(html: str) -> str:
 
 
 def client() -> httpx.Client:
-    c = httpx.Client(base_url=B, cookies=json.loads(JAR.read_text()) if JAR.exists() else {})
+    # Deutsch erzwingen: Die Auswertung unten sucht deutsche Überschriften
+    c = httpx.Client(base_url=B, cookies=json.loads(JAR.read_text()) if JAR.exists() else {},
+                     headers={"Accept-Language": "de"})
     if c.get("/", follow_redirects=False).status_code != 200:
         con = sqlite3.connect(D / "data" / "kidctl.db")
         con.execute("update parent set totp_last_step=0")  # Replay-Schutz für wiederholte Test-Logins
@@ -52,7 +56,7 @@ def main(cmd: str, *args: str) -> None:
     csrf = tok(c.get("/children").text)
     if cmd == "child":
         c.post("/children", data={"csrf_token": csrf, "name": args[0]})
-        print(re.search(rf'href="/children/(\d+)">{re.escape(args[0])}<', c.get("/children").text).group(1))
+        print(re.search(rf'href="/children/(\d+)"[^>]*>{re.escape(args[0])}<', c.get("/children").text).group(1))
     elif cmd == "schedule":
         cid, q, st, en, qwe = args
         print(c.post(f"/children/{cid}/schedule", data={
@@ -90,6 +94,11 @@ def main(cmd: str, *args: str) -> None:
         page = c.get(f"/children/{args[0]}").text.split("Gesperrte Aktionen")[1]
         for row in re.findall(r"<tr>\s*<td>[^<]*</td>\s*<td>(.*?)</td>", page, re.S):
             print(" ".join(re.sub(r"<[^>]+>", " ", row).split()))
+    elif cmd == "lock":
+        print(c.post(f"/children/{args[0]}/lock", data={"csrf_token": csrf, "duration": args[1] if len(args) > 1 else "",
+                                                      "grace": args[2] if len(args) > 2 else "1"}).status_code)
+    elif cmd == "unlock":
+        print(c.post(f"/children/{args[0]}/unlock", data={"csrf_token": csrf}).status_code)
     elif cmd == "dash":
         print(" ".join(re.sub(r"<[^>]+>", " ", c.get("/").text.split("<h2>Kinder</h2>")[1].split("</table>")[0]).split()))
     else:

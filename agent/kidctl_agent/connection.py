@@ -6,6 +6,7 @@ import asyncio
 import logging
 import random
 import socket
+import sys
 
 from pydantic import BaseModel, ValidationError
 from websockets.asyncio.client import connect
@@ -90,7 +91,8 @@ class Connection:
                            open_timeout=15, ping_interval=30, ping_timeout=30,
                            max_size=4 * 1024 * 1024) as ws:
             await ws.send(p.Hello(protocol_version=p.PROTOCOL_VERSION, agent_version=__version__,
-                                  hostname=socket.gethostname()).model_dump_json())
+                                  hostname=socket.gethostname(),
+                                  platform="windows" if sys.platform == "win32" else "linux").model_dump_json())
             first = p.server_message_adapter.validate_json(await asyncio.wait_for(ws.recv(), 15))
             if not isinstance(first, p.Welcome):
                 log.error("Handshake abgelehnt: %s", first)

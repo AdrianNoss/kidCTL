@@ -101,3 +101,34 @@ Agenten nie eingeschränkt (nicht zugeordnet), SSH bleibt damit als Zugang erhal
 
 Neu aufsetzen: VM stoppen, `~/.local/share/kidctl-vm/disk.qcow2` und `seed.iso` löschen,
 `vm.sh create --apply` (Basis-Image wird wiederverwendet).
+
+## Windows-VMs
+
+`dev/vm/winvm.sh` (eigenes Skript, gleiche Konventionen: Dry-Run ohne `--apply`, Snapshots). UEFI mit
+Secure-Boot-fähiger Firmware (OVMF), TPM 2.0 per `swtpm`, SATA-Disk und e1000e-Netz (keine virtio-Treiber nötig).
+
+| `KIDCTL_WIN` | System | SSH | ISO |
+|---|---|---|---|
+| `win11` (Standard) | Windows 11 Home | 2226 | `~/.local/share/kidctl-vm-win11/install.iso` |
+| `win10` | Windows 10 Pro | 2227 | `~/.local/share/kidctl-vm-win10/install.iso` |
+
+Zusätzlich auf dem Host: `sudo pacman -S --needed edk2-ovmf swtpm`. Die ISOs selbst bei Microsoft laden
+(deutsch, x64); Windows bleibt unaktiviert (reicht für Tests).
+
+```bash
+dev/vm/winvm.sh create --apply   # Disk, UEFI-Variablen, TPM, Antwortdatei-ISO
+dev/vm/winvm.sh start            # erster Start: Installation (Taste für „von CD starten“ drückt das Skript)
+dev/vm/winvm.sh wait             # bis SSH und Einrichtung fertig sind (20–40 min)
+dev/vm/winvm.sh stop && dev/vm/winvm.sh snapshot basis --apply
+dev/vm/winvm.sh ssh              # PowerShell als admin
+dev/vm/winvm.sh put datei C:/ziel/ ; dev/vm/winvm.sh get C:/quelle ziel
+```
+
+- **Windows 11 ab 24H2:** Setup ignoriert den WinPE-Teil der Antwortdatei teilweise und fragt nach dem Product Key
+  – einmal „Ich habe keinen Product Key“ wählen; Partitionierung, Edition, Konten und Einrichtung laufen danach
+  unbeaufsichtigt.
+- Konten: `admin`/`admin` (Administrator, SSH per Schlüssel der VM), `kind`/`kind` und `kind2`/`kind2`
+  (Standardbenutzer, legt `provision-windows.ps1` an). Einrichtung: OpenSSH-Server (PowerShell als Shell),
+  kein Ruhezustand, Inno Setup (für `packaging/windows/build.py`). Log: `C:\kidctl-provision.log`.
+- Snapshots enthalten Disk, UEFI-Variablen und TPM-Zustand.
+- Server auf dem Host wie bei Linux: `http://10.0.2.2:8000` (`dev/devserver.sh`).

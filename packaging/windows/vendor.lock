@@ -1,0 +1,19 @@
+# Mitgebrachte Laufzeit des Windows-Pakets (build.py lädt und prüft jede Datei gegen die SHA-256).
+# Format: python <url> <sha256>  bzw.  wheel <pypi-name> <version> <datei> <sha256>
+# Aktualisieren: Versionen/Dateien hier ändern, Prüfsummen von PyPI („Download files“) bzw. python.org übernehmen.
+python https://www.python.org/ftp/python/3.14.10/python-3.14.10-embed-amd64.zip 90905e64a840557d8c1bc4f5b74db3d7ee85e3ffb217611cac1c7813acea4159
+wheel annotated-types 0.8.0 annotated_types-0.8.0-py3-none-any.whl f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0
+wheel pydantic 2.14.1 pydantic-2.14.1-py3-none-any.whl 9195d967ec791692a04438115466764fb8b9a27b31f14a760437694f40d6b454
+wheel pydantic-core 2.50.1 pydantic_core-2.50.1-cp314-cp314-win_amd64.whl d32f3acc081cc3923386d88f422cde8892335e95f034e0104bb4cf9310d9915f
+wheel typing-extensions 4.16.0 typing_extensions-4.16.0-py3-none-any.whl 481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8
+wheel typing-inspection 0.4.5 typing_inspection-0.4.5-py3-none-any.whl bc210535442b39e1bf2805e0c7a17dfd6a4ace760c84c7f7d16245d23a6b1c39
+wheel tzdata 2026.6 tzdata-2026.6-py2.py3-none-any.whl 0a10eec6e13ef16b627fabed9a5f2ba61a62b1c67f327305f4e7e412a70b4aec
+wheel websockets 17.4 websockets-17.4-cp314-cp314-win_amd64.whl 70293c25d79d1f084fdd665894481547575e429d2a75e8d72caec2f6b6b07af8
+wheel pyside6-essentials 6.12.0 pyside6_essentials-6.12.0-cp310-abi3-win_amd64.whl c9a95102aa23c1f86516a30d5a9be37552d324eee7e567eb7508973f1218cb42
+wheel shiboken6 6.12.0 shiboken6-6.12.0-cp310-abi3-win_amd64.whl a1906cb8116869178c64b6bab52623bbc8b4ceed7b30bfc3c9aa0f6e67f6438e
+wheel winrt-runtime 4.1.0 winrt_runtime-4.1.0-cp314-cp314-win_amd64.whl af422bbcffa7249770ab118bc5b9aa1f8fcd401566abca478f91cf7bd9a8b7dd
+wheel winrt-windows-data-xml-dom 4!10.0.28000.2957 winrt_windows_data_xml_dom-4!10.0.28000.2957-py3-none-any.whl 26a516c6484744260cfb15ec44510d5bf020ee29a946f87f38ef7eac7df3673e
+wheel winrt-windows-foundation 4!10.0.28000.2957 winrt_windows_foundation-4!10.0.28000.2957-py3-none-any.whl 0669de7ce480806a0f9a46d005837799e37f1738911b54c4bc04788b37974e69
+wheel winrt-windows-foundation-collections 4!10.0.28000.2957 winrt_windows_foundation_collections-4!10.0.28000.2957-py3-none-any.whl 0401c1b6ed512d1fdad8ba1571698e9000ebee6a69781db9a01994ffcc54a503
+wheel winrt-windows-storage-streams 4!10.0.28000.2957 winrt_windows_storage_streams-4!10.0.28000.2957-py3-none-any.whl e113832320f2e7f8b09cedfb400cb7eaf0ac769ad1f2038ddbe88801497916c4
+wheel winrt-windows-ui-notifications 4!10.0.28000.2957 winrt_windows_ui_notifications-4!10.0.28000.2957-py3-none-any.whl 2d4e78018df29bb107d0490926ae0a7254be68b6b9c1bd81547d0df569682ea7

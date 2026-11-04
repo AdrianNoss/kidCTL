@@ -22,6 +22,8 @@ from .protocol import MAX_BODY, AccessKind, ChatMessage
 
 TRAY_PROTOCOL_VERSION = 1
 SOCKET_PATH = "/run/kidctl/tray.sock"
+# Windows: Named Pipe (QLocalSocket verbindet mit dem Namen nach \\.\pipe\)
+PIPE_NAME = "kidctl-tray"
 
 
 # ---------- Tray -> Agent ----------
@@ -54,6 +56,12 @@ class TrayGetBlocked(BaseModel):
     type: Literal["get_blocked"] = "get_blocked"
 
 
+class TrayAction(BaseModel):
+    """Klick auf den Knopf einer Benachrichtigung (Windows: Toasts zeigt die Tray-App, siehe ``TrayNotify``)."""
+    type: Literal["action"] = "action"
+    id: str = Field(max_length=64)
+
+
 class TrayAccessRequest(BaseModel):
     """Freigabe für einen Eintrag der Sperrliste anfragen; Grund optional."""
     type: Literal["access_request"] = "access_request"
@@ -78,6 +86,9 @@ class TrayState(BaseModel):
     pending_outbox: int = 0          # noch nicht zugestellte Nachrichten/Anfragen
     game_limit_minutes: int | None = None   # Spiele-Limit heute inkl. Gutschrift (None = keins)
     game_used_seconds: int = 0
+    # Abmeldung in so vielen Sekunden (Countdown nach Zeitende bzw. „Jetzt sperren“), sonst None.
+    # Windows: Die Tray-App zeigt die letzte Minute als eigenes Fenster im Vordergrund.
+    logout_in_seconds: int | None = None
 
 
 class TrayChat(BaseModel):
@@ -124,15 +135,27 @@ class TrayOpenAccessDialog(BaseModel):
     item: BlockedItem
 
 
+class TrayNotify(BaseModel):
+    """Benachrichtigung anzeigen (Windows: Der Agent läuft als Dienst ohne Desktop, die Tray-App zeigt den Toast).
+    ``action_id``/``action_label``: optionaler Knopf; ein Klick sendet ``TrayAction(id=action_id)``."""
+    type: Literal["notify"] = "notify"
+    title: str = Field(max_length=255)
+    body: str = Field(max_length=MAX_BODY)
+    critical: bool = False
+    action_id: str | None = Field(default=None, max_length=64)
+    action_label: str = Field(default="", max_length=128)
+
+
 class TrayError(BaseModel):
     type: Literal["error"] = "error"
     message: str
 
 
-TrayToAgent = Annotated[Union[TrayHello, TrayChatSend, TrayExtensionRequest, TrayGetBlocked, TrayAccessRequest],
+TrayToAgent = Annotated[Union[TrayHello, TrayChatSend, TrayExtensionRequest, TrayGetBlocked, TrayAccessRequest,
+                              TrayAction],
                         Field(discriminator="type")]
 AgentToTray = Annotated[Union[TrayState, TrayChat, TrayChatMessage, TrayQueued, TrayOpenRequestDialog,
-                              TrayBlocked, TrayOpenAccessDialog, TrayError], Field(discriminator="type")]
+                              TrayBlocked, TrayOpenAccessDialog, TrayNotify, TrayError], Field(discriminator="type")]
 
 tray_to_agent = TypeAdapter(TrayToAgent)
 agent_to_tray = TypeAdapter(AgentToTray)

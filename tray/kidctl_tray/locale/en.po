@@ -188,3 +188,25 @@ msgid_plural "{n} Nachrichten werden gesendet …"
 msgstr[0] "{n} message is being sent …"
 msgstr[1] "{n} messages are being sent …"
 
+
+msgid "Bildschirmzeit"
+msgstr "Screen time"
+
+msgid "Bildschirmzeit zu Ende"
+msgstr "Screen time is up"
+
+msgid "Gesperrt"
+msgstr "Locked"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Noch {n} Sekunde – danach wirst du abgemeldet."
+msgid_plural "Noch {n} Sekunden – danach wirst du abgemeldet."
+msgstr[0] "{n} second left – then you will be signed out."
+msgstr[1] "{n} seconds left – then you will be signed out."
+
+msgid "Abmeldung in {n} Sekunde – bitte jetzt speichern."
+msgid_plural "Abmeldung in {n} Sekunden – bitte jetzt speichern."
+msgstr[0] "Signing out in {n} second – please save your work now."
+msgstr[1] "Signing out in {n} seconds – please save your work now."

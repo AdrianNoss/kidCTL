@@ -48,7 +48,8 @@ def label_for(check: dict) -> str:
     kind, _sep, arg = cid.partition(":")
     fixed = {"pam": _("Login-Sperre (PAM)"), "nsswitch": _("Namensauflösung über DNS-Filter (nsswitch)"),
              "browser": _("Browser-Policies gegen DNS-over-HTTPS"),
-             "noexec": _("noexec für /tmp, /var/tmp, /dev/shm")}
+             "noexec": _("noexec für /tmp, /var/tmp, /dev/shm"),
+             "safeboot": _("Dienst im abgesicherten Modus"), "tray-autostart": _("Autostart der Tray-App")}
     if cid in fixed:
         return fixed[cid]
     if kind == "home" and arg:
@@ -59,6 +60,8 @@ def label_for(check: dict) -> str:
         return _("Desktop-Paket kidctl-{desktop}").format(desktop=arg)
     if kind == "gdm-autologin" and arg:
         return _("GDM-Autologin für {user}").format(user=arg)
+    if kind == "admin" and arg:
+        return _("Konto {user} ohne Administratorrechte").format(user=arg)
     if kind == "tray" and arg:
         return _("Tray-Symbol von {user}").format(user=arg)
     if kind == "dns" and arg:

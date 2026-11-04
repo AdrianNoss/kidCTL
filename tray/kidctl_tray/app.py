@@ -11,7 +11,6 @@ from __future__ import annotations
 import os
 import sys
 
-
 from kidctl_common import tray as t
 
 from .qt import QAction, QApplication, QLocalServer, QLocalSocket, QMenu, QMessageBox, QSystemTrayIcon, QTimer
@@ -23,6 +22,7 @@ from .ui import AccessDialog, BlockedWindow, ChatWindow, RequestDialog, render_i
 
 ICON_CHECK_MS = 30_000   # Sichtbarkeit des Tray-Symbols prüfen (Erweiterung ein-/ausgeschaltet)
 INSTANCE_SOCKET = "kidctl-tray.sock"
+WINDOWS = sys.platform == "win32"
 
 
 class TrayApp:
@@ -44,6 +44,16 @@ class TrayApp:
         self.menu.addAction(_("Gesperrt – Freigabe anfragen …"), self.show_blocked)
         self.tray.setContextMenu(self.menu)
         self.tray.activated.connect(self._activated)
+        self._message_action: str | None = None   # Knopf der zuletzt gezeigten einfachen Meldung
+        self.tray.messageClicked.connect(self._message_clicked)
+        self.toaster = None
+        self.countdown = None
+        if WINDOWS:
+            from .countdown import CountdownWindow
+            from .winplatform import Toaster
+            self.toaster = Toaster()
+            self.countdown = CountdownWindow()
+            self.countdown.requestExtension.connect(lambda: self.request_extension())
 
         c = self.client
         c.connectionChanged.connect(self._connection_changed)
@@ -53,6 +63,7 @@ class TrayApp:
         c.openRequestDialog.connect(self.request_extension)
         c.blockedReceived.connect(self.blocked.set_items)
         c.openAccessDialog.connect(self.request_access)
+        c.notifyReceived.connect(self.notify)
         self.blocked.requestAccess.connect(self.request_access)
         self.blocked.refresh.connect(lambda: c.send(t.TrayGetBlocked()))
         c.errorReceived.connect(self.info)
@@ -71,6 +82,23 @@ class TrayApp:
             self.tray.showMessage("KidCTL", text)
         else:
             QMessageBox.information(self.window if self.window.isVisible() else None, "KidCTL", text)
+
+    def notify(self, msg: t.TrayNotify) -> None:
+        """Benachrichtigung vom Agenten (Windows): Toast mit Knopf, sonst Meldung am Tray-Symbol."""
+        if self.toaster and self.toaster.show(msg.title, msg.body, msg.action_id, msg.action_label, msg.critical):
+            return
+        self._message_action = msg.action_id
+        icon = (QSystemTrayIcon.MessageIcon.Warning if msg.critical else QSystemTrayIcon.MessageIcon.Information)
+        self.tray.showMessage(msg.title, msg.body, icon, 15_000)
+
+    def _message_clicked(self) -> None:
+        if self._message_action:
+            self.action(self._message_action)
+            self._message_action = None
+
+    def action(self, action_id: str) -> None:
+        """Klick auf den Knopf eines Toasts (über ``kidctl://action/<id>``)."""
+        self.client.send(t.TrayAction(id=action_id))
 
     def _activated(self, reason) -> None:
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
@@ -111,6 +139,8 @@ class TrayApp:
 
     def _state_changed(self, state: t.TrayState) -> None:
         self.state = state
+        if self.countdown is not None:
+            self.countdown.set_state(state)
         if not state.restricted:  # nicht zugeordneter User: nichts anzeigen
             self.tray.hide()
             self.window.hide()
@@ -125,17 +155,21 @@ class TrayApp:
 
 
 def instance_path() -> str | None:
+    if WINDOWS:
+        from .winplatform import instance_name
+        return instance_name()
     runtime = os.environ.get("XDG_RUNTIME_DIR")
     return os.path.join(runtime, INSTANCE_SOCKET) if runtime else None
 
 
-def ask_running_instance(path: str) -> bool:
-    """Laufende Tray-App bitten, ihr Fenster zu zeigen. False = keine läuft."""
+def ask_running_instance(path: str, command: str = "show") -> bool:
+    """Laufende Tray-App bitten, ihr Fenster zu zeigen (``show``) bzw. einen Toast-Knopf weiterzugeben
+    (``action <id>``). False = keine läuft."""
     sock = QLocalSocket()
     sock.connectToServer(path)
     if not sock.waitForConnected(500):
         return False
-    sock.write(b"show\n")
+    sock.write(command.encode() + b"\n")
     sock.flush()
     sock.waitForBytesWritten(500)
     sock.disconnectFromServer()
@@ -148,9 +182,18 @@ def serve_instance(path: str, tray: TrayApp) -> QLocalServer:
     QLocalServer.removeServer(path)   # verwaister Socket einer abgestürzten Instanz
     server.listen(path)
 
+    def on_ready(conn) -> None:
+        while conn.canReadLine():
+            command = bytes(conn.readLine()).decode(errors="replace").strip()
+            kind, _sep, arg = command.partition(" ")
+            if kind == "action" and arg:
+                tray.action(arg[:64])
+            else:
+                tray.show_chat()
+
     def on_connection() -> None:
         while (conn := server.nextPendingConnection()) is not None:
-            conn.readyRead.connect(lambda c=conn: c.readAll() and tray.show_chat())
+            conn.readyRead.connect(lambda c=conn: on_ready(c))
             conn.disconnected.connect(conn.deleteLater)
     server.newConnection.connect(on_connection)
     return server
@@ -159,6 +202,14 @@ def serve_instance(path: str, tray: TrayApp) -> QLocalServer:
 def main() -> int:
     texts.setup_language()   # vor dem Aufbau der Fenster
     show = "--show" in sys.argv[1:]
+    command = "show"
+    if WINDOWS:
+        from .winplatform import parse_url, set_app_id
+        set_app_id()
+        for arg in sys.argv[1:]:   # kidctl://… (Klick auf einen Toast)
+            if parsed := parse_url(arg):
+                command = "show" if parsed[0] == "show" else f"action {parsed[1]}"
+                show = parsed[0] == "show"
     app = QApplication(sys.argv)
     app.setApplicationName("kidctl-tray")
     # GNOME: Fenster dem sichtbaren Eintrag „KidCTL“ zuordnen (Symbol im Dock, anheftbar)
@@ -166,8 +217,8 @@ def main() -> int:
     app.setDesktopFileName("kidctl" if gnome else "kidctl-tray")
     app.setQuitOnLastWindowClosed(False)
     path = instance_path()
-    if path and ask_running_instance(path):
-        return 0   # läuft schon – Fenster dort geöffnet
+    if path and ask_running_instance(path, command):
+        return 0   # läuft schon – Fenster dort geöffnet bzw. Klick weitergegeben
     tray = TrayApp(app)  # Referenz halten – sonst räumt Python Objekt und Verbindungen ab
     server = serve_instance(path, tray) if path else None
     if show:

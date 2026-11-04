@@ -4,6 +4,7 @@ sonst ``/etc/locale.conf``; ``de*`` -> Deutsch, sonst Englisch."""
 from __future__ import annotations
 
 import os
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -24,7 +25,11 @@ REASON = {
 
 def setup_language(environ=os.environ) -> str:
     """Sprache der Tray-App festlegen (einmal beim Start)."""
-    lang = i18n.from_environ(dict(environ)) or i18n.system_language()
+    if sys.platform == "win32":
+        from .winplatform import user_language
+        lang = user_language()
+    else:
+        lang = i18n.from_environ(dict(environ)) or i18n.system_language()
     i18n.set_current(lang)
     return lang
 

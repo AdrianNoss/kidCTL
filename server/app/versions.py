@@ -1,6 +1,9 @@
 """Neueste Agent-Version im Pacman-Repository (``<data>/repo/kidctl-<ver>-<rel>-any.pkg.tar.zst``) bzw. im
 APT-Repository (``<data>/repo/deb/pool/main/kidctl_<ver>-<rel>_amd64.deb``) und Vergleich mit der Version, die
-ein Gerät beim Verbinden meldet. Beide werden aus demselben Stand gebaut (gleiche Versionsnummer)."""
+ein Gerät beim Verbinden meldet. Beide werden aus demselben Stand gebaut (gleiche Versionsnummer).
+
+Windows getrennt (eigener Bau, eigene Veröffentlichung): Installer ``<data>/repo/windows/KidCTL-Setup-<ver>.exe``;
+die Agenten aktualisieren sich selbst (``latest.json``)."""
 
 from __future__ import annotations
 
@@ -14,7 +17,10 @@ from .config import settings
 PKG = re.compile(r"^kidctl-(\d+(?:\.\d+)*)-(\d+)-any\.pkg\.tar\.(?:zst|xz)$")
 DEB = re.compile(r"^kidctl_(\d+(?:\.\d+)*)-(\d+)_(?:amd64|all)\.deb$")
 DEB_POOL = Path("deb") / "pool" / "main"
+WIN = re.compile(r"^KidCTL-Setup-(\d+(?:\.\d+)*)\.exe$")
+WIN_DIR = Path("windows")
 _cache: tuple[tuple[float, float], "Release | None"] | None = None
+_win_cache: tuple[float, "Release | None"] | None = None
 
 
 @dataclass(frozen=True)
@@ -50,9 +56,30 @@ def latest(repo: Path | None = None) -> Release | None:
     return release
 
 
-def update_for(agent_version: str, release: Release | None = None) -> str | None:
+def latest_windows(repo: Path | None = None) -> Release | None:
+    """Neuester Windows-Installer (zwischengespeichert, bis sich das Verzeichnis ändert)."""
+    global _win_cache
+    folder = (repo or Path(settings.data_dir) / "repo") / WIN_DIR
+    try:
+        mtime = folder.stat().st_mtime
+    except OSError:
+        return None
+    if _win_cache is not None and _win_cache[0] == mtime:
+        return _win_cache[1]
+    best = None
+    for f in folder.iterdir():
+        m = WIN.match(f.name)
+        if m and (best is None or _key(m.group(1)) > _key(best[0])):
+            best = (m.group(1), f.stat().st_mtime)
+    release = Release(best[0], datetime.fromtimestamp(best[1], timezone.utc).replace(tzinfo=None)) if best else None
+    _win_cache = (mtime, release)
+    return release
+
+
+def update_for(agent_version: str, release: Release | None = None, platform: str = "linux") -> str | None:
     """Neuere Version, falls der Agent veraltet ist (sonst/unbekannt: ``None``)."""
-    release = release or latest()
+    if release is None:
+        release = latest_windows() if platform == "windows" else latest()
     if release is None or not agent_version or not re.match(r"^\d", agent_version):
         return None
     return release.version if _key(agent_version) < _key(release.version) else None

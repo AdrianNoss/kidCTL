@@ -112,6 +112,7 @@ async def agent_ws(ws: WebSocket):
         dev = db.get(Device, device_id)
         dev.agent_version = hello.agent_version
         dev.hostname = hello.hostname
+        dev.platform = hello.platform
         dev.protocol_version = hello.protocol_version
         dev.protocol_unsupported = not supported
         dev.last_seen_at = utcnow()

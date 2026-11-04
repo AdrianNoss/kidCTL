@@ -1589,3 +1589,27 @@ msgstr "Tray icon of {user}"
 msgid "GDM-Autologin für {user}"
 msgstr "GDM auto-login for {user}"
 
+
+msgid "System"
+msgstr "System"
+
+msgid "Wird automatisch installiert; klappt das nicht, den Installer auf dem Rechner erneut ausführen"
+msgstr "Installed automatically; if that fails, run the installer on the computer again"
+
+msgid "Update verfügbar: {new}. Wird automatisch installiert; klappt das nicht, den Installer auf dem Rechner erneut ausführen."
+msgstr "Update available: {new}. It is installed automatically; if that fails, run the installer on the computer again."
+
+msgid "veraltet – Server unterstützt {versions}. Den Installer auf dem Rechner erneut ausführen; Durchsetzung läuft mit letzter Policy weiter."
+msgstr "outdated – server supports {versions}. Run the installer on the computer again; enforcement continues with the last policy."
+
+msgid "Agent {old} ist veraltet, verfügbar ist {new}. Das automatische Update hat nicht geklappt – den Installer auf dem Rechner erneut ausführen."
+msgstr "Agent {old} is outdated, {new} is available. The automatic update did not work – run the installer on the computer again."
+
+msgid "Dienst im abgesicherten Modus"
+msgstr "Service in safe mode"
+
+msgid "Autostart der Tray-App"
+msgstr "Tray app autostart"
+
+msgid "Konto {user} ohne Administratorrechte"
+msgstr "Account {user} without administrator rights"

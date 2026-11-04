@@ -1,8 +1,10 @@
-"""Verbindung zum Agenten über den lokalen Unix-Socket (QLocalSocket), mit Reconnect."""
+"""Verbindung zum Agenten über den lokalen Unix-Socket bzw. unter Windows die Named Pipe (QLocalSocket),
+mit Reconnect."""
 
 from __future__ import annotations
 
 import os
+import sys
 
 from pydantic import BaseModel, ValidationError
 
@@ -22,11 +24,13 @@ class AgentClient(QObject):
     openRequestDialog = Signal(str)      # "screen" | "games"
     blockedReceived = Signal(list)       # list[t.BlockedItem]
     openAccessDialog = Signal(object)    # t.BlockedItem
+    notifyReceived = Signal(object)      # t.TrayNotify (Windows: Toast zeigt die Tray-App)
     errorReceived = Signal(str)
 
     def __init__(self, path: str | None = None, parent=None) -> None:
         super().__init__(parent)
-        self.path = path or os.environ.get("KIDCTL_TRAY_SOCKET", t.SOCKET_PATH)
+        default = t.PIPE_NAME if sys.platform == "win32" else t.SOCKET_PATH
+        self.path = path or os.environ.get("KIDCTL_TRAY_SOCKET", default)
         self.sock = QLocalSocket(self)
         self.sock.connected.connect(self._on_connected)
         self.sock.disconnected.connect(self._on_disconnected)
@@ -93,5 +97,7 @@ class AgentClient(QObject):
             self.blockedReceived.emit(msg.items)
         elif isinstance(msg, t.TrayOpenAccessDialog):
             self.openAccessDialog.emit(msg.item)
+        elif isinstance(msg, t.TrayNotify):
+            self.notifyReceived.emit(msg)
         elif isinstance(msg, t.TrayError):
             self.errorReceived.emit(msg.message)

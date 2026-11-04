@@ -1,4 +1,4 @@
-"""Kommandozeile: kidctl enroll | run | status."""
+"""Kommandozeile: kidctl enroll | run | status (Windows zusätzlich: service | unlock-all)."""
 
 from __future__ import annotations
 
@@ -19,10 +19,18 @@ from . import store
 
 log = logging.getLogger("kidctl")
 
+WINDOWS = sys.platform == "win32"
+
 
 def _require_root() -> None:
     # Tests setzen KIDCTL_STATE_DIR und laufen ohne root
-    if os.geteuid() != 0 and "KIDCTL_STATE_DIR" not in os.environ:
+    if "KIDCTL_STATE_DIR" in os.environ:
+        return
+    if WINDOWS:
+        from .win import api
+        if not api.is_user_admin():
+            sys.exit("Muss als Administrator laufen (Eingabeaufforderung „Als Administrator ausführen“).")
+    elif os.geteuid() != 0:
         sys.exit("Muss als root laufen (sudo).")
 
 
@@ -53,12 +61,56 @@ def enroll(server_url: str, code: str, force: bool = False, insecure_http: bool 
 
     store.save(store.DEVICE_FILE, {"server_url": server_url, "device_id": res.device_id,
                                    "token": res.token, "insecure_http": insecure_http})
-    print(f"Gekoppelt als Gerät {res.device_id}. Agent (neu) starten: systemctl restart kidctl-agent")
+    restart = "Restart-Service KidCTL" if WINDOWS else "systemctl restart kidctl-agent"
+    print(f"Gekoppelt als Gerät {res.device_id}. Agent (neu) starten: {restart}")
     return 0
+
+
+def _win_agent():
+    from .win.accounts import Accounts
+    from .win.agent import WinAgent
+    from .win.desktop import WinDesktop
+    from .win.sessions import WinSessions
+
+    accounts = Accounts()
+    return WinAgent(WinSessions(accounts), WinDesktop(), store.load(store.DEVICE_FILE), accounts)
+
+
+def service() -> int:
+    """Windows: vom Dienststeuerungs-Manager gestartet (Dienst ``KidCTL``)."""
+    from .win import service as svc
+
+    svc.setup_logging(os.environ.get("KIDCTL_LOG", "INFO"))
+
+    async def main() -> None:
+        await _win_agent().run()
+
+    svc.run_service(main)
+    return 0
+
+
+def unlock_all() -> int:
+    """Windows: alle von kidctl deaktivierten Konten wieder aktivieren (Deinstallation, Notfall)."""
+    _require_root()
+    from .win.accounts import Accounts
+    from .win.loginlock import WinLoginLock
+
+    left = WinLoginLock(Accounts()).release_all()
+    print("Alle von KidCTL gesperrten Konten sind wieder aktiv." if not left else
+          f"{left} Konto/Konten konnten nicht aktiviert werden (siehe Log).")
+    return 1 if left else 0
 
 
 def run() -> int:
     _require_root()
+    if WINDOWS:   # im Vordergrund (Fehlersuche); normal läuft der Dienst
+        async def win_main() -> None:
+            await _win_agent().run()
+        try:
+            asyncio.run(win_main())
+        except KeyboardInterrupt:
+            log.info("Agent beendet")
+        return 0
     from .agent import Agent
     from .logind import Logind
     from .usersession import UserSession
@@ -79,11 +131,14 @@ def run() -> int:
 
 
 def status() -> int:
-    from .agent import Agent
-
     device = store.load(store.DEVICE_FILE)
     print(f"Server:  {device['server_url']} (Gerät {device['device_id']})" if device else "Server:  nicht gekoppelt")
-    agent = Agent(logind=None, desktop=None)
+    if WINDOWS:
+        from .win.agent import WinAgent
+        agent = WinAgent(None, None)
+    else:
+        from .agent import Agent
+        agent = Agent(logind=None, desktop=None)
     if agent.policy is None:
         print("Policy:  keine – niemand wird eingeschränkt")
         return 0
@@ -112,11 +167,18 @@ def main() -> int:
                    help="http:// erlauben (nur Test-Server, Token unverschlüsselt)")
     sub.add_parser("run", help="Agent starten (systemd)")
     sub.add_parser("status", help="Policy und heutige Nutzung anzeigen")
+    if WINDOWS:
+        sub.add_parser("service", help="als Windows-Dienst laufen (nur vom Dienststeuerungs-Manager)")
+        sub.add_parser("unlock-all", help="alle von KidCTL deaktivierten Konten wieder aktivieren")
     args = ap.parse_args()
     if args.cmd == "enroll":
         return enroll(args.server_url, args.code, args.force, args.insecure_http)
     if args.cmd == "run":
         return run()
+    if args.cmd == "service":
+        return service()
+    if args.cmd == "unlock-all":
+        return unlock_all()
     return status()
 
 

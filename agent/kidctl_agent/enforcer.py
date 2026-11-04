@@ -10,7 +10,7 @@ import logging
 from datetime import date
 
 from .accounting import boottime
-from .logind import SessionInfo
+from .sessions import SessionInfo
 from kidctl_common import i18n
 from kidctl_common.i18n import _, ngettext
 

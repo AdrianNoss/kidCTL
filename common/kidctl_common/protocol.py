@@ -59,6 +59,8 @@ class Hello(BaseModel):
     protocol_version: int
     agent_version: str = Field(max_length=64)
     hostname: str = Field(max_length=255)
+    # Ergänzt 2026-11-04 (abwärtskompatibel: ältere Agenten senden es nicht, ältere Server ignorieren es)
+    platform: Literal["linux", "windows"] = "linux"
 
 
 class Welcome(BaseModel):

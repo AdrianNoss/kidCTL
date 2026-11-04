@@ -65,6 +65,8 @@ COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
     ("blocked_event", "detail_arg", "VARCHAR(255) NOT NULL DEFAULT ''"),
     # 2026-10-21: Hinweis auf veralteten Agenten
     ("device", "update_alerted", "VARCHAR(32) NOT NULL DEFAULT ''"),
+    # 2026-11-04: Windows-Clients
+    ("device", "platform", "VARCHAR(16) NOT NULL DEFAULT 'linux'"),
 ]
 
 
