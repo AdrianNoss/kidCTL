@@ -28,6 +28,7 @@ from .webfilter import normalize_domain
 SCOPES = {"permanent": N_("Dauerhaft erlaubt"), "today": N_("Heute erlaubt")}
 _FLATPAK = re.compile(r"^flatpak:[A-Za-z0-9_.-]{3,255}$")
 _SNAP = re.compile(r"^snap:[a-z0-9][a-z0-9-]{0,39}$")
+_APPX = re.compile(r"^appx:[A-Za-z0-9.\-]{1,100}_[a-z0-9]{13}$")   # Windows-Store-App (Package Family Name)
 
 
 class AccessError(ValueError):
@@ -43,8 +44,10 @@ def valid_key(kind: str, key: str) -> str | None:
         return key if _FLATPAK.match(key) else None
     if key.startswith("snap:"):
         return key if _SNAP.match(key) else None
+    if key.startswith("appx:"):
+        return key if _APPX.match(key) else None
     try:
-        return programs.custom_key(key[4:]) if key.startswith("exe:/") else None
+        return programs.custom_key(key[4:]) if key.startswith(("exe:/", "exe:")) and len(key) > 4 else None
     except ValueError:
         return None
 

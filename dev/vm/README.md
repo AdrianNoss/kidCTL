@@ -132,3 +132,7 @@ dev/vm/winvm.sh put datei C:/ziel/ ; dev/vm/winvm.sh get C:/quelle ziel
   kein Ruhezustand, Inno Setup (für `packaging/windows/build.py`). Log: `C:\kidctl-provision.log`.
 - Snapshots enthalten Disk, UEFI-Variablen und TPM-Zustand.
 - Server auf dem Host wie bei Linux: `http://10.0.2.2:8000` (`dev/devserver.sh`).
+- `dev/vm/winsync.sh`: Code aus dem Arbeitsbaum in die installierte VM kopieren und den Dienst neu starten
+  (statt Installer bauen).
+- `dev/vm/vmctl.py <qmp.sock> type|key|click|shot`: Tastatur (deutsches Layout), Mausklick, Screenshot über QMP –
+  z. B. zum Anmelden als Kind: `vmctl.py ~/.local/share/kidctl-vm-win11/qmp.sock type kind`.

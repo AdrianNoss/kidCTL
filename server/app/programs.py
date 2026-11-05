@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ntpath
 import posixpath
 import re
 from dataclasses import dataclass
@@ -142,12 +143,21 @@ def set_allowed(db: Session, child_id: int, keys: set[str]) -> None:
 
 MAX_CUSTOM_NAME = 64
 _PATH_RE = re.compile(r"^/[A-Za-z0-9._+@/-]{1,500}$")
+# Windows: Laufwerk + Pfad, keine Steuer- oder Shell-Sonderzeichen
+_WIN_PATH_RE = re.compile(r"^[A-Za-z]:\\[^<>:\"/|?*\x00-\x1f]{1,500}$")
 
 
 def custom_key(path: str) -> str:
     """Eingabe der Eltern -> App-Schlüssel ``exe:<pfad>``. Ohne ``/`` wird ``/usr/bin/<name>``
-    angenommen (Arch: alle Programme dort). ``ValueError`` bei ungültiger Eingabe."""
+    angenommen (Arch: alle Programme dort); Windows-Pfade (``C:\\…\\prog.exe``) bleiben, wie sie sind.
+    ``ValueError`` bei ungültiger Eingabe."""
     path = path.strip()
+    if re.match(r"^[A-Za-z]:\\", path):
+        if (not _WIN_PATH_RE.match(path) or ntpath.normpath(path) != path or path.endswith("\\")
+                or not path.lower().endswith(".exe")):
+            raise ValueError(_("Bitte einen absoluten Programmpfad angeben, z. B. /usr/bin/git oder "
+                               "C:\\Programme\\App\\app.exe"))
+        return "exe:" + path
     if path and "/" not in path:
         path = "/usr/bin/" + path
     if not _PATH_RE.match(path) or posixpath.normpath(path) != path or path.endswith("/"):
@@ -163,7 +173,7 @@ def custom_programs(db: Session, child_id: int) -> list[ChildCustomProgram]:
 def add_custom(db: Session, child_id: int, path: str, name: str = "") -> ChildCustomProgram:
     """Eigenes Programm eintragen und gleich freigeben (vorhandener Eintrag wird aktualisiert)."""
     key = custom_key(path)
-    name = (name.strip() or key.rsplit("/", 1)[-1])[:MAX_CUSTOM_NAME]
+    name = (name.strip() or re.split(r"[/\\]", key)[-1])[:MAX_CUSTOM_NAME]
     entry = db.scalar(select(ChildCustomProgram).where(ChildCustomProgram.child_id == child_id,
                                                        ChildCustomProgram.key == key))
     if entry is None:

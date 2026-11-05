@@ -385,50 +385,6 @@ class Agent(AgentCore):
         await self.sync_mounts()
         await self.sync_dns()
 
-    def _blocked_items(self, user: str) -> dict[str, t.BlockedItem]:
-        """Kürzlich Gesperrtes aller Linux-User desselben Kindes (Websites laufen unter einem User),
-        mit Status „schon angefragt“."""
-        child_id = self.policy.users[user]
-        out: dict[str, t.BlockedItem] = {}
-        for u in self.users_of(child_id):
-            for item in self.programs.recent_items(u):
-                if item.key not in out or item.last_at > out[item.key].last_at:
-                    out[item.key] = item
-        pending = {m.access_key for m in self.chat.history(child_id)
-                   if m.kind == "access_request" and m.status == "pending"}
-        pending |= {i.key for i in self.outbox.items.values()
-                    if isinstance(i, p.AccessRequest) and self.policy.users.get(i.username) == child_id}
-        with i18n.use(self.lang_of(user)):   # Programmnamen in der Sprache des Kindes
-            return {k: i.model_copy(update={"pending": k in pending, "name": self.programs.display_name(k, i.name)})
-                    for k, i in out.items()}
-
-    def tray_blocked(self, user: str) -> t.TrayBlocked:
-        items = sorted(self._blocked_items(user).values(), key=lambda i: i.last_at, reverse=True)
-        return t.TrayBlocked(items=items)
-
-    async def open_access_dialog(self, user: str, key: str) -> None:
-        """Klick auf „Freigabe anfragen“ in der Sperr-Benachrichtigung."""
-        if self.policy is None or user not in self.policy.users:
-            return
-        item = self._blocked_items(user).get(key)
-        if item is None or not await self.tray.send_to_user(user, t.TrayOpenAccessDialog(item=item)):
-            log.info("Freigabe angefragt, aber keine Tray-App von %s verbunden", user)
-
-    async def tray_access(self, user: str, key: str, reason: str) -> tuple[bool, str]:
-        """Freigabe anfragen (nur für kürzlich Gesperrtes; Name/Art aus der eigenen Liste).
-        Rückgabe (online, Fehlertext)."""
-        item = self._blocked_items(user).get(key)
-        with i18n.use(self.lang_of(user)):
-            if item is None:
-                return self.online, _("Dieser Eintrag ist nicht (mehr) in der Liste der Sperren.")
-            if item.pending:
-                return self.online, _("Schon angefragt – warte auf die Antwort deiner Eltern.")
-        self.outbox.add(p.AccessRequest(client_msg_id=new_client_msg_id(), username=user,
-                                        access_kind=item.access_kind, key=item.key, name=item.name[:255],
-                                        reason=reason.strip()))
-        await self.flush_outbox()
-        return self.online, ""
-
     # ---------- Lauf ----------
 
     async def _startup(self) -> None:

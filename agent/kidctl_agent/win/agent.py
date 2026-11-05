@@ -12,24 +12,35 @@ from kidctl_common import i18n
 from kidctl_common import protocol as p
 from kidctl_common.i18n import _
 
-from .. import __version__
+from .. import __version__, store
 from ..accounting import boottime
 from ..core import AgentCore
 from ..rules import Decision
 from . import integrity
 from .accounts import Accounts
+from .acl import AclManager
 from .desktop import WinDesktop
 from .langs import WinLanguages
 from .loginlock import WinLoginLock
 from .pipeserver import PipeTrayServer
 from .sessions import WinSessions
 from .update import Updater
+from .watcher import WinProgramWatcher
 
 log = logging.getLogger("kidctl.agent")
 
 BLOCKED_LOGIN_GRACE = 10   # Sekunden: Sitzung trotz Login-Sperre -> Hinweis, dann Abmeldung
 TRAY_GRACE = 60            # Sekunden nach Erscheinen einer Sitzung: Zeit für den Autostart der Tray-App
 TRAY_RETRY = 300           # frühestens so oft je Sitzung neu starten
+SCAN_EVERY = 2             # Takte (10 s): vollständiger Abgleich aller Prozesse (neue prüft der Watcher sofort)
+
+
+def install_dir() -> str:
+    """Installationsordner (``…\\KidCTL``, über dem eingebetteten Python); leer außerhalb der Installation."""
+    if sys.platform != "win32":
+        return ""
+    folder = Path(sys.executable).parent.parent
+    return str(folder) if (folder / "lib" / "kidctl_agent").is_dir() else ""
 
 
 def tray_command() -> tuple[str, str] | None:
@@ -52,6 +63,8 @@ class WinAgent(AgentCore):
         self.langs = WinLanguages(self.accounts)
         self.loginlock = WinLoginLock(self.accounts, self.accounts.api)
         self.updater = Updater(device)
+        self.programs = WinProgramWatcher(self, install_dir=install_dir())
+        self.acl = AclManager(store)
         self._known: set[tuple[str, int]] = set()   # bekannte Sitzungen (ID, Anmeldezeit)
         self._prev_locked: set[str] = set()          # im letzten Takt gesperrte User
         self._tasks: set[asyncio.Task] = set()
@@ -123,7 +136,37 @@ class WinAgent(AgentCore):
             task.add_done_callback(self._tasks.discard)
 
     async def _enforce_more(self, day, sessions, decisions: dict[str, Decision]) -> None:
-        await self._ensure_trays(sessions, decisions)   # Spiele-Limit und Programmkontrolle: spätere Schritte
+        await self._ensure_trays(sessions, decisions)   # Spiele-Limit: späterer Schritt
+        if self._ticks % SCAN_EVERY == 0:
+            await self.programs.scan()
+
+    # ---------- Programmkontrolle ----------
+
+    async def _startup(self) -> None:
+        await self.programs.refresh_catalog()
+        self.apps = self.programs.apps
+        await self.sync_acl()
+        task = asyncio.create_task(self.programs.poll_forever())
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
+
+    async def _policy_applied(self) -> None:
+        self.programs.policy_changed()
+        await self.sync_acl()
+        await self.programs.scan()   # neue Sperren sofort, nicht erst beim nächsten Abgleich
+
+    def acl_wanted(self) -> dict[str, list[str]]:
+        """SID -> freigegebene App-Ordner der Kinder mit Programmkontrolle (≠ Aus)."""
+        return {sid: list(allowed.dirs) for sid, (_u, _m, allowed) in self.programs.targets().items()}
+
+    async def sync_acl(self) -> None:
+        try:
+            await asyncio.to_thread(self.acl.sync, self.acl_wanted())
+        except Exception:
+            log.exception("Ausführverbote nicht anwendbar")
+
+    async def _connected_more(self, conn) -> None:
+        await self.programs.flush(conn)
 
     async def _ensure_trays(self, sessions, decisions: dict[str, Decision]) -> None:
         """Tray-App in aktiven Kinder-Sitzungen starten, wenn keine verbunden ist (nach einem Update, das sie
@@ -156,6 +199,11 @@ class WinAgent(AgentCore):
     # ---------- Bericht, Integrität, Update ----------
 
     async def _report_more(self) -> None:
+        await self.programs.flush(self.conn)
+        if self.programs.catalog_due() and await self.programs.refresh_catalog():
+            self.apps = self.programs.apps
+            if self.online:
+                await self.conn.send(p.ReportApps(apps=self.apps))
         await self.check_integrity()
         if self.online and self.updater.due():
             await asyncio.to_thread(self.updater.check)
@@ -163,13 +211,24 @@ class WinAgent(AgentCore):
     def _run_checks(self) -> list[p.IntegrityCheck]:
         assigned = set(self.policy.users) if self.policy else set()
         present = {a.wire for a in self.accounts.all()}
+        users = {sid: user for sid, (user, _m, _a) in self.programs.targets().items()}
         return ([integrity.check_safeboot(), integrity.check_tray_autostart()]
                 + integrity.check_tray(self.tray.tray_icons(), assigned)
-                + integrity.check_admins(assigned & present, self.accounts.is_admin_wire))
+                + integrity.check_admins(assigned & present, self.accounts.is_admin_wire)
+                + integrity.check_acl(users, self.acl.problems(users)))
 
     async def check_integrity(self) -> None:
         try:
             checks = await asyncio.to_thread(self._run_checks)
+            broken = [c for c in checks if not c.ok and c.id.startswith("acl:")]
+            if broken:   # selbst gesetzt -> wiederherstellen
+                log.warning("Ausführverbot fehlt (%s) – setze es neu", ", ".join(c.label for c in broken))
+                users = {user: sid for sid, (user, _m, _a) in self.programs.targets().items()}
+                for c in broken:
+                    if (sid := users.get(c.id.split(":", 1)[1])):
+                        self.acl.forget(sid)
+                await self.sync_acl()
+                checks = await asyncio.to_thread(self._run_checks)
         except Exception:
             log.exception("Integritätsprüfung fehlgeschlagen")
             return

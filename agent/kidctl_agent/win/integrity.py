@@ -42,6 +42,13 @@ def check_tray(icons: dict[str, bool], kid_users: set[str]) -> list[IntegrityChe
             for user, visible in sorted(icons.items()) if user in kid_users]
 
 
+def check_acl(users: dict[str, str], problems: dict[str, str]) -> list[IntegrityCheck]:
+    """Ausführverbot im Profil der Kinder mit Programmkontrolle (``users``: SID -> User)."""
+    return [IntegrityCheck(id=f"acl:{user}", label=f"Ausführverbot im Profil von {user}", ok=sid not in problems,
+                           detail="" if sid not in problems else f"fehlt in {problems[sid]}")
+            for sid, user in sorted(users.items(), key=lambda x: x[1])]
+
+
 def check_admins(assigned: set[str], is_admin) -> list[IntegrityCheck]:
     """Zugeordnete Kinder mit Administratorrechten werden nie eingeschränkt (Grundregel) – sichtbar machen."""
     return [IntegrityCheck(id=f"admin:{user}", label=f"Konto {user} ohne Administratorrechte", ok=False,

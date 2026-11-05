@@ -68,6 +68,9 @@ DETAILS = {
     "blocklist": N_("Sperrliste {arg}"),
     "parent_deny": N_("von Eltern gesperrt"),
     "doh": N_("DNS-over-HTTPS-Anbieter"),
+    "own_program": N_("eigene Programmdatei"),
+    "system_tool": N_("Systemwerkzeug"),
+    "foreign_dll": N_("fremde DLL ({arg})"),
 }
 
 

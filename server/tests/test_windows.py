@@ -85,3 +85,41 @@ def test_update_hints_per_platform(client, parent, monkeypatch):
     page = client.get(f"/devices/{win_id}").text
     assert "Update verfügbar: 0.29.0. Wird automatisch installiert" in page and "pacman" not in page
     assert "Update: 0.28.0 → 0.29.0" in client.get("/devices").text
+
+
+def test_windows_program_keys():
+    from app import access, programs
+    assert access.valid_key("program", r"exe:C:\Program Files\Mozilla Firefox\firefox.exe") == \
+        r"exe:C:\Program Files\Mozilla Firefox\firefox.exe"
+    assert access.valid_key("program", "appx:Microsoft.WindowsCalculator_8wekyb3d8bbwe")
+    assert access.valid_key("program", "appx:kaputt") is None
+    assert access.valid_key("program", r"exe:C:\Programme\..\Windows\x.exe") is None
+    assert access.valid_key("program", "exe:/usr/bin/git") == "exe:/usr/bin/git"
+    assert programs.custom_key(r"C:\Tools\spiel.exe") == r"exe:C:\Tools\spiel.exe"
+    for bad in (r"C:\Tools\spiel.bat", "C:\\Tools\\a|b.exe", "C:\\Tools\\", r"C:\Tools\..\x.exe"):
+        try:
+            programs.custom_key(bad)
+            raise AssertionError(bad)
+        except ValueError:
+            pass
+
+
+def test_windows_programs_in_webui(client, parent):
+    from app.models import Child, ChildProgram
+    from conftest import csrf_from
+    login(client, parent)
+    client.post("/children", data={"csrf_token": csrf_from(client.get("/children").text), "name": "Lisa"})
+    with SessionLocal() as db:
+        cid = db.scalar(select(Child.id).where(Child.name == "Lisa"))
+    page = client.get(f"/children/{cid}").text
+    r = client.post(f"/children/{cid}/programs", data={"csrf_token": csrf_from(page), "program_mode": "enforce",
+                                                        "app": ["appx:Microsoft.WindowsCalculator_8wekyb3d8bbwe",
+                                                                r"exe:C:\Program Files\Mozilla Firefox\firefox.exe"]})
+    assert r.status_code in (200, 303)
+    r = client.post(f"/children/{cid}/programs/custom", data={"csrf_token": csrf_from(page), "path": r"C:\Tools\spiel.exe",
+                                                               "name": ""}, follow_redirects=True)
+    assert r.status_code == 200 and "spiel.exe" in r.text
+    with SessionLocal() as db:
+        keys = {k for (k,) in db.query(ChildProgram.key).filter(ChildProgram.child_id == cid)}
+    assert {"appx:Microsoft.WindowsCalculator_8wekyb3d8bbwe", r"exe:C:\Program Files\Mozilla Firefox\firefox.exe",
+            r"exe:C:\Tools\spiel.exe"} <= keys

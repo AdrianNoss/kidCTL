@@ -162,7 +162,7 @@ Verlängerungsanfragen.
   offiziellen .deb: `/opt/Heroic/heroic` gilt als Launcher.
 - Logind trägt unter GDM keinen Desktop ein (auch Ubuntu) – Abmeldung über die laufende Shell (wie GNOME).
 
-### Windows (entschieden 2026-11-04; Schritt 1 umgesetzt in 0.29.0)
+### Windows (entschieden 2026-11-04; Schritt 1 umgesetzt in 0.29.0, Schritt 2 in 0.30.0)
 Per /grill-me abgestimmt. Grundsatz: gleiches Verhalten wie unter Linux, wo Windows es zulässt;
 Abweichungen stehen hier und unter „Restlücken“.
 
@@ -218,27 +218,39 @@ Abweichungen stehen hier und unter „Restlücken“.
   - Toasts: Warnungen 15 und 5 min, Chat, Sperrmeldungen. **1-Minuten-Warnung und 60-s-Countdown
     zusätzlich als eigenes Fenster im Vordergrund** (mit „Verlängerung anfordern“) – „Nicht stören“ (vom Kind
     einschaltbar, bei Vollbildspielen automatisch) unterdrückt Toasts. Gleiches Muster beim Spiele-Limit.
-- **Programmkontrolle:**
-  - Prozessstarts über ETW (Kernel-Process) mit Abgleich im 5-s-Takt; gesperrt = Prozess beenden,
-    Benachrichtigung, Sperrprotokoll. Modi Aus / Nur protokollieren / Sperren wie unter Linux.
-  - **Ausführverbot statt `noexec`:** NTFS-ACL „Ausführen verweigern“ für das Kind auf sein Profil und seine
-    Temp-Ordner (Kinder mit Programmkontrolle ≠ Aus). Nötig, weil ein Standardnutzer per COM-Hijacking
-    (`HKCU\Software\Classes`) eigene DLLs in erlaubte Programme (z. B. Explorer) laden lassen kann; ohne
-    Ausführrecht lädt Windows sie nicht. Ein `OWNER RIGHTS`-Eintrag verhindert, dass das Kind als Besitzer
-    die ACL zurückdreht; die Integritätsprüfung kontrolliert sie.
-  - **Apps im Benutzerprofil** (Roblox, Discord, Spotify …): Der Katalog nimmt zusätzlich die
-    Startmenü-Einträge des Kindes auf. Bei Freigabe nimmt der Agent für den Ordner der App (z. B.
-    `%LOCALAPPDATA%\Roblox`) das Ausführverbot zurück (Updates im Ordner funktionieren).
-  - **Basisliste:** alles unter `%WINDIR%` (für Standardnutzer nicht beschreibbar; Pfad genügt) und die
-    System-Store-Apps der Shell (Startmenü, Suche, Benachrichtigungen, Sperrbildschirm), Agent, Tray-App.
-    Ausgenommen (gesperrt ohne Freigabe): `cmd`, `powershell`, `pwsh` (nur interaktiv gesperrt, analog
-    Shell-Regel), `wscript`, `cscript`, `mshta`, `regedit`, `reg`, `mmc`, `msiexec`/`installutil` im
-    Kinderkontext, `rundll32`/`regsvr32` mit DLL außerhalb `%WINDIR%`/`Program Files`, `bitsadmin`,
-    `certutil` (Download), `wsl`, `bash`. Endgültige Liste nach Audit im Modus „Nur protokollieren“ in der VM.
-  - **Katalog:** Startmenü-Verknüpfungen (`.lnk`, systemweit und des Kindes) und Store-Apps über den Package
-    Family Name (analog `flatpak:`). Alles mit Startmenü-Eintrag ist Eltern-Entscheidung, auch von Microsoft
-    (Edge, Editor, Paint, Rechner, Einstellungen, Store, Xbox). Vom Kind im Store installierte Apps (geht
-    ohne Admin-Rechte) starten nur nach Freigabe.
+- **Programmkontrolle (Schritt 2, umgesetzt in 0.30.0):**
+  - Prozessliste alle 0,5 s (Toolhelp; Abweichung von „ETW“: ETW über ctypes wäre fehleranfällig, die Abfrage
+    kostet < 1 ms), neue Prozesse sofort geprüft, vollständiger Abgleich alle 10 s und nach jeder Policy.
+    Gesperrt = Prozess beenden, Toast „Programm gesperrt“ mit „Freigabe anfragen“, Sperrprotokoll. Modi Aus /
+    Nur protokollieren / Sperren wie unter Linux; ohne gelesenen Katalog wird nur protokolliert.
+  - **Schlüssel:** `exe:<Pfad>` (Groß-/Kleinschreibung egal, gemeldet in der Schreibweise des Katalogs) und
+    `appx:<Package Family Name>` für Store-Apps (Server prüft das Format; eigene Programme auch als
+    `C:\…\prog.exe`).
+  - **Regeln** (`win/programs.py`), in dieser Reihenfolge: KidCTL selbst und Basisordner (WebView2-Laufzeit,
+    `Common Files\microsoft shared`, Windows Defender) erlaubt; Store-Apps: freigegeben erlaubt, mit
+    Startmenü-Eintrag Eltern-Entscheidung, unbekanntes Paket wie eine App (Katalog wird neu gelesen), ohne
+    Eintrag (Hintergrund) erlaubt, Windows-Helfer aus `System32` mit App-Identität (`backgroundTaskHost`)
+    erlaubt, Pakete `MicrosoftWindows.Client.*` (Suche, Geräteübergreifendes …) Basis; **Programmdateien,
+    die dem Kind gehören, gesperrt** (auch in beschreibbaren Ordnern unter `C:\Windows`), außer im App-Ordner
+    einer freigegebenen App; unter `%WINDIR%`: `cmd` nur mit `/c` (interaktiv gesperrt), Systemwerkzeuge
+    (PowerShell, Skript-Hosts, `reg`/`regedit`, `mmc`, `msiexec`, Task-Manager, Systemsteuerung, `schtasks`,
+    `netsh`, `wmic` … siehe `SYSTEM_TOOLS`) nur mit Freigabe, `rundll32`/`regsvr32` mit DLL außerhalb von
+    Windows/Program Files gesperrt (nicht anfragbar), Programme mit Startmenü-Eintrag Eltern-Entscheidung
+    (außer Explorer; erlaubt, wenn die Aufgabenplanung bzw. ein Dienst sie startet), sonst Basis; freigegebene
+    Programme samt Programmordner erlaubt (unter AppData der App-Ordner, z. B. `…\AppData\Local\Roblox` –
+    übersteht Updates in neue Versionsordner); alles andere gesperrt.
+  - **Ausführverbot statt `noexec`** (`win/acl.py`, per `icacls`, Zustand `winacl.json`): auf dem Profil des
+    Kindes sowie `C:\Users\Public` und `%WINDIR%\Temp`: `Deny Kind (OI)(IO)(X)` (Dateien nicht ausführbar,
+    keine DLLs daraus – gegen COM-Hijacking), `Deny Kind (OI)(CI)(WDAC)` und `OWNER RIGHTS (OI)(CI)(M)` (Kind kann
+    Rechte nicht ändern). Freigegebene Apps im Profil: `Allow Kind (OI)(IO)(RX)` auf dem App-Ordner (vererbte
+    Einträge des näheren Ordners gehen vor). Aufheben stellt den Vollzugriff des Kindes auf sein Profil wieder
+    her (`icacls /deny` streicht WDAC auch aus dessen Erlaubt-Eintrag). Integrität `acl:<user>` (aus SDDL,
+    sprachunabhängig) mit Selbstreparatur; Deinstallation (`unlock-all`) nimmt alles zurück.
+  - **Katalog** (`win/catalog.py`, PowerShell als SYSTEM, alle 6 h und bei unbekanntem Paket): Startmenü-
+    Verknüpfungen (systemweit und je Profil, ohne Admin-Profile und KidCTL) mit übersetztem Anzeigenamen,
+    Shells als „<name> (Shell)“, Store-Apps mit sichtbarem Eintrag. Store-Namen löst Windows für SYSTEM nicht
+    auf – feste Namen für die mitgelieferten Microsoft-Apps (`KNOWN_APPS`, deutsch/englisch), sonst lesbarer
+    Paketname. Kategorien über Schlüsselwörter, Programme unter `%WINDIR%` als „System“.
 - **Website-Filter (Profil folgt der aktiven Sitzung):** Unter Windows löst der Systemdienst `dnscache` für
   alle Programme auf – ein Filter je Benutzer auf DNS-Ebene ist nicht möglich.
   - Lokaler Unbound (offizieller Windows-Build), Konfiguration wie `dnsfilter.py`. Der Resolver nutzt das
@@ -289,7 +301,8 @@ Abweichungen stehen hier und unter „Restlücken“.
   1. Grundgerüst und Bildschirmzeit: Plattform-Schnittstelle (Linux-Tests grün), Dienst, Kopplung, Zählung,
      Abmeldung, Login-Sperre, „Jetzt sperren“, Tray mit Chat/Toasts/Vordergrund-Fenster, Installer,
      Selbst-Update, SafeBoot, Integrität, Test-VMs, Server-Anpassungen.
-  2. Programmkontrolle: ETW, Katalog (`.lnk`, AppX), Basisliste, Ausführverbote mit Ausnahmen, Freigabe-Anfragen.
+  2. Programmkontrolle: Prozessliste, Katalog (`.lnk`, AppX), Basisliste, Ausführverbote mit Ausnahmen,
+     Freigabe-Anfragen – umgesetzt in 0.30.0.
   3. Website-Filter: Unbound, WFP, DNS der Adapter, Profilwechsel, Hintergrund-Netzsperre, Browser-Richtlinien.
   4. Spiele: Steam, Epic, Xbox/Store, Schalter „zählt als Spiel“, Spiele-Limit, Spielzeit je Spiel.
 
@@ -862,8 +875,18 @@ Abweichungen stehen hier und unter „Restlücken“.
   - Website-Filter folgt der aktiven Sitzung: Ein per Benutzerwechsel im Hintergrund angemeldetes Elternteil
     ist gefiltert, solange ein Kind vorne sitzt. Auch das Firmen-VPN der Eltern löst über den lokalen
     Resolver auf (Weiterleitung der Suchdomänen).
-  - Programmkontrolle reagiert auf Prozessstarts (wie unter Linux); in den Ordner einer freigegebenen App im
-    Benutzerprofil kann das Kind eigene DLLs legen (wie bei Steam).
+  - Programmkontrolle reagiert auf Prozessstarts (Prozessliste alle 0,5 s); sehr kurzlebige Prozesse
+    (z. B. `reg.exe` aus `cmd /c`) können durchrutschen – eigener Code des Kindes läuft wegen des Ausführverbots
+    trotzdem nicht. `cmd /c …` ist erlaubt (Systemkomponenten brauchen es); was es startet, wird geprüft.
+  - In den Ordner einer freigegebenen App im Benutzerprofil kann das Kind eigene DLLs legen (wie bei Steam).
+  - Programme im Profil, die das Ausführverbot schon beim Start abweist, sieht der Agent nicht: kein Toast und
+    keine „Freigabe anfragen“ – die Eltern geben sie im WebUI frei (sie stehen im Katalog, wenn sie einen
+    Startmenü-Eintrag haben). Selbst installieren kann das Kind bei aktiver Programmkontrolle nicht
+    (Installer im Download-Ordner) – Eltern stellen dafür kurz auf „Aus“.
+  - Weitere vom Kind beschreibbare Ordner (z. B. unter `C:\ProgramData`) haben kein Ausführverbot; Programme
+    darin gehören dem Kind und sind gesperrt, DLLs daraus nicht.
+  - Store-App-Namen der mitgelieferten Microsoft-Apps aus einer festen Liste (Windows löst sie für SYSTEM nicht
+    auf); andere Store-Apps zeigen den Namen aus dem Manifest bzw. den Paketnamen.
   - Vorwarn-Fenster erscheinen nicht über Spielen im exklusiven Vollbild; die Abmeldung erfolgt trotzdem.
   - Ohne Code-Signatur: SmartScreen-Warnung beim ersten Installieren, Risiko von Fehlalarmen in Defender.
   - VPN-Verkehr mit fest eingetragenen IP-Adressen bleibt wie unter Linux außerhalb des Threat Models.
@@ -1491,3 +1514,19 @@ Abweichungen stehen hier und unter „Restlücken“.
   blieben nach der Deinstallation, Konsolenausgabe von `kidctl status`, SSH-Firewall der Test-VM. Nicht getestet:
   Windows 11 Home, Windows 10, echter Rechner, Kopplungsseite im Installer (nur https), Microsoft-Konto,
   abgesicherter Modus, Benutzerwechsel mit zwei angemeldeten Kindern.
+- 2026-11-05: Windows Schritt 2 umgesetzt (Paket 0.30.0): Programmkontrolle mit Katalog (Startmenü, Store-Apps),
+  Regeln (`win/programs.py`), Prozessliste alle 0,5 s, Beenden mit Toast und „Freigabe anfragen“, Sperrprotokoll,
+  Ausführverbot per ACL mit Ausnahme je freigegebener App im Profil, Integrität `acl:<user>`. Server: Schlüssel
+  `appx:` und Windows-Pfade (Freigaben, Anfragen, eigene Programme), neue Sperrgründe (eigene Programmdatei,
+  Systemwerkzeug, fremde DLL). Kern: Freigabe-Anfragen in `AgentCore` (Linux unverändert). Abweichung von der
+  Planung: Prozessliste statt ETW. Bei der Umsetzung ergänzt: Regel „Programmdatei gehört dem Kind“, Basis für
+  `MicrosoftWindows.Client.*`, Windows-Helfer mit App-Identität, Defender-Plattform und von Aufgabenplanung/
+  Diensten gestartete Programme (Audit in der VM), feste Namen für mitgelieferte Store-Apps, `dev/vm/vmctl.py`,
+  `dev/vm/winsync.sh`. Getestet: Agent 247, Server 123, Tray 18 Tests grün (neu u. a. Regeln, Katalog,
+  Watcher mit Sperren/Protokoll/Freigabe, ACL-Abgleich, SDDL-Prüfung, Server-Schlüssel). VM Windows 11: Audit
+  beim Login (nur Systemteile, danach in die Basis aufgenommen), im Modus „Sperren“ Edge, Rechner, Task-Manager,
+  Terminal gesperrt mit Toast; Programm im Download-Ordner von Windows abgewiesen (ACL); Freigabe-Anfrage aus der
+  Tray-App, „nur heute“ erlaubt -> Rechner startet; App im Profil (gehört dem Kind) erst abgewiesen, nach
+  Freigabe lauffähig (Ausnahme am App-Ordner); Integrität grün; Programmkontrolle aus bzw. `unlock-all` nimmt alle
+  Einträge zurück (Profil wieder Vollzugriff – dabei gefunden und behoben). Nicht getestet: Store-Installation
+  durch das Kind, Microsoft-Konto, Windows 10, Windows 11 Home, echter Rechner.

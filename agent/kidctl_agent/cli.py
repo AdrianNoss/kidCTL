@@ -93,11 +93,14 @@ def unlock_all() -> int:
     """Windows: alle von kidctl deaktivierten Konten wieder aktivieren (Deinstallation, Notfall)."""
     _require_root()
     from .win.accounts import Accounts
+    from .win.acl import AclManager
     from .win.loginlock import WinLoginLock
 
     left = WinLoginLock(Accounts()).release_all()
     print("Alle von KidCTL gesperrten Konten sind wieder aktiv." if not left else
           f"{left} Konto/Konten konnten nicht aktiviert werden (siehe Log).")
+    AclManager(store).sync({})   # Ausführverbote und Ausnahmen zurücknehmen
+    print("Ausführverbote entfernt.")
     return 1 if left else 0
 
 
@@ -175,7 +178,7 @@ def main() -> int:
     sub.add_parser("status", help="Policy und heutige Nutzung anzeigen")
     if WINDOWS:
         sub.add_parser("service", help="als Windows-Dienst laufen (nur vom Dienststeuerungs-Manager)")
-        sub.add_parser("unlock-all", help="alle von KidCTL deaktivierten Konten wieder aktivieren")
+        sub.add_parser("unlock-all", help="alle von KidCTL deaktivierten Konten aktivieren, Ausführverbote entfernen")
     args = ap.parse_args()
     if args.cmd == "enroll":
         return enroll(args.server_url, args.code, args.force, args.insecure_http)

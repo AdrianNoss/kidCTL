@@ -1613,3 +1613,15 @@ msgstr "Tray app autostart"
 
 msgid "Konto {user} ohne Administratorrechte"
 msgstr "Account {user} without administrator rights"
+
+msgid "Bitte einen absoluten Programmpfad angeben, z. B. /usr/bin/git oder C:\\Programme\\App\\app.exe"
+msgstr "Please enter an absolute program path, e.g. /usr/bin/git or C:\\Program Files\\App\\app.exe"
+
+msgid "eigene Programmdatei"
+msgstr "own program file"
+
+msgid "Systemwerkzeug"
+msgstr "system tool"
+
+msgid "fremde DLL ({arg})"
+msgstr "foreign DLL ({arg})"

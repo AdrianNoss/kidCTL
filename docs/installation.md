@@ -266,8 +266,8 @@ später eine aus, kommt ein Push-Alarm.
 ### 3.6 Windows
 
 Unter Windows 10/11 gibt es in diesem Stand **Bildschirmzeit, Abmeldung, Login-Sperre, „Jetzt sperren“,
-Tray-App mit Chat und Verlängerungen**. Programmkontrolle, Website-Filter und Spiele folgen (siehe `spec.md`,
-Abschnitt „Windows“).
+Tray-App mit Chat und Verlängerungen sowie die Programmkontrolle**. Website-Filter und Spiele folgen (siehe
+`spec.md`, Abschnitt „Windows“).
 
 1. **Kinderkonten** als „Standardbenutzer“ anlegen (Einstellungen → Konten → Andere Benutzer), lokale Konten oder
    Microsoft-Konten. Administratoren schränkt KidCTL nie ein – das WebUI meldet zugeordnete Kinder mit
@@ -296,7 +296,12 @@ Was sich von Linux unterscheidet:
   zeigt die Tray-App die letzte Minute und den Countdown zusätzlich als Fenster im Vordergrund.
 - Prüfen: `"C:\Program Files\KidCTL\kidctl.cmd" status`, Dienst „KidCTL“ (`services.msc`), Log unter
   `C:\ProgramData\KidCTL\logs\agent.log`.
-- Deinstallieren: Einstellungen → Apps → Installierte Apps → KidCTL. Gesperrte Konten werden dabei wieder aktiviert.
+- **Programmkontrolle:** Die Programmliste im WebUI zeigt Startmenü-Einträge und Store-Apps (z. B. „Rechner“,
+  „Microsoft Edge“). Mit Programmkontrolle kann das Kind im eigenen Profil (Downloads, AppData …) keine Programme
+  starten. Apps, die sich ins Profil installieren (Roblox, Discord …), installieren die Eltern mit Programmkontrolle
+  „Aus“ im Konto des Kindes und geben sie dann frei – KidCTL macht ihren Ordner dann wieder ausführbar.
+- Deinstallieren: Einstellungen → Apps → Installierte Apps → KidCTL. Gesperrte Konten werden dabei wieder aktiviert
+  und die Ausführverbote entfernt.
 
 Details zum Paket: [`packaging/windows/README.md`](../packaging/windows/README.md).
 
