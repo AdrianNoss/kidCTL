@@ -53,7 +53,7 @@ class TrayApp:
             from .winplatform import Toaster
             self.toaster = Toaster()
             self.countdown = CountdownWindow()
-            self.countdown.requestExtension.connect(lambda: self.request_extension())
+            self.countdown.requestExtension.connect(self.request_extension)
 
         c = self.client
         c.connectionChanged.connect(self._connection_changed)

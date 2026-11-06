@@ -17,7 +17,7 @@ from . import access
 from . import lock as lk
 from . import schedule as sch
 from .chat import device_ids_for_child
-from .programs import allowed_keys
+from .programs import allowed_keys, game_keys
 from .webfilter import web_policy
 from .config import settings
 from .db import SessionLocal
@@ -53,6 +53,7 @@ def build_policy(db: Session, device_id: int) -> p.Policy:
                                       extra_game_minutes=e.extra_game_minutes or 0) for e in excs],
             program_mode=child.program_mode,
             allowed_programs=allowed_keys(db, child.id),
+            game_apps=game_keys(db, child.id),
             web=web_policy(db, child),
             locked=lk.is_locked(child),
             lock_grace_seconds=(child.lock_grace_minutes if child.lock_grace_minutes is not None else 1) * 60,

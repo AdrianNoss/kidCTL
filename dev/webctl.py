@@ -3,7 +3,7 @@
 an (TOTP aus ~/.local/share/kidctl-dev/secret.txt) und merkt sich die Session.
 
     dev/webctl.py child NAME                       -> Kind anlegen, gibt ID aus
-    dev/webctl.py schedule CID QUOTA START END QUOTA_WE
+    dev/webctl.py schedule CID QUOTA START END QUOTA_WE [SPIELE_MIN]
     dev/webctl.py credit CID TAG MINUTEN
     dev/webctl.py exc-delete CID
     dev/webctl.py pair NAME                        -> Kopplungscode
@@ -60,10 +60,11 @@ def main(cmd: str, *args: str) -> None:
         c.post("/children", data={"csrf_token": csrf, "name": args[0]})
         print(re.search(rf'href="/children/(\d+)"[^>]*>{re.escape(args[0])}<', c.get("/children").text).group(1))
     elif cmd == "schedule":
-        cid, q, st, en, qwe = args
+        cid, q, st, en, qwe, *games = args
+        g = games[0] if games else ""
         print(c.post(f"/children/{cid}/schedule", data={
-            "csrf_token": csrf, "quota_wd": q, "start_wd": st, "end_wd": en,
-            "quota_we": qwe, "start_we": st, "end_we": en}).status_code)
+            "csrf_token": csrf, "quota_wd": q, "start_wd": st, "end_wd": en, "games_wd": g,
+            "quota_we": qwe, "start_we": st, "end_we": en, "games_we": g}).status_code)
     elif cmd == "credit":
         print(c.post(f"/children/{args[0]}/credit", data={
             "csrf_token": csrf, "day": args[1], "extra_minutes": args[2], "window_end": ""}).status_code)

@@ -22,7 +22,7 @@ SHOW_BELOW = 60   # Sekunden
 
 @dataclass(frozen=True)
 class Due:
-    kind: str          # "logout" | "warn"
+    kind: str          # "logout" | "warn" | "games"
     seconds: int
     can_request: bool  # „Verlängerung anfordern“ (nicht bei Sperre durch die Eltern)
 
@@ -32,13 +32,14 @@ class CountdownTracker:
         self.clock = clock
         self.logout_at: float | None = None
         self.warn_at: float | None = None
+        self.games_at: float | None = None
         self.reason: str | None = None
         self.dismissed: set[str] = set()
 
     def update(self, state: t.TrayState | None) -> None:
         now = self.clock()
         if state is None or not state.restricted:
-            self.logout_at = self.warn_at = None
+            self.logout_at = self.warn_at = self.games_at = None
             self.dismissed.clear()
             return
         self.reason = state.reason
@@ -52,6 +53,13 @@ class CountdownTracker:
         else:
             self.warn_at = None
             self.dismissed.discard("warn")
+        games_left = (state.game_limit_minutes * 60 - state.game_used_seconds
+                      if state.game_limit_minutes is not None else None)
+        if state.allowed and state.gaming and games_left is not None and 0 < games_left <= SHOW_BELOW:
+            self.games_at = now + games_left
+        else:
+            self.games_at = None
+            self.dismissed.discard("games")
 
     def due(self) -> Due | None:
         now = self.clock()
@@ -61,6 +69,8 @@ class CountdownTracker:
                 return Due("logout", left, self.reason != "locked")
         if self.warn_at is not None and "warn" not in self.dismissed:
             return Due("warn", max(0, round(self.warn_at - now)), True)
+        if self.games_at is not None and "games" not in self.dismissed:
+            return Due("games", max(0, round(self.games_at - now)), True)
         return None
 
     def dismiss(self, kind: str) -> None:
@@ -68,6 +78,10 @@ class CountdownTracker:
 
 
 def texts_for(due: Due) -> tuple[str, str]:
+    if due.kind == "games":
+        return _("Spielzeit"), ngettext("Noch {n} Sekunde Spielzeit – danach werden Spiele geschlossen.",
+                                        "Noch {n} Sekunden Spielzeit – danach werden Spiele geschlossen.",
+                                        due.seconds).format(n=due.seconds)
     if due.kind == "warn":
         return _("Bildschirmzeit"), ngettext("Noch {n} Sekunde – danach wirst du abgemeldet.",
                                              "Noch {n} Sekunden – danach wirst du abgemeldet.", due.seconds).format(n=due.seconds)
@@ -77,7 +91,7 @@ def texts_for(due: Due) -> tuple[str, str]:
 
 
 class CountdownWindow(QWidget):
-    requestExtension = Signal()
+    requestExtension = Signal(str)   # "screen" | "games"
 
     def __init__(self, tracker: CountdownTracker | None = None) -> None:
         super().__init__(None, Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint
@@ -124,6 +138,7 @@ class CountdownWindow(QWidget):
         self.title.setText(title)
         self.text.setText(text)
         self.request.setVisible(due.can_request)
+        self.request.setText(_("Mehr Spielzeit anfragen …") if due.kind == "games" else _("Verlängerung anfordern …"))
         if self._kind != due.kind or not self.isVisible():
             self._kind = due.kind
             self.show()
@@ -131,8 +146,9 @@ class CountdownWindow(QWidget):
             self.activateWindow()
 
     def _request(self) -> None:
+        kind = self._kind
         self._dismiss()
-        self.requestExtension.emit()
+        self.requestExtension.emit("games" if kind == "games" else "screen")
 
     def _dismiss(self) -> None:
         if self._kind:

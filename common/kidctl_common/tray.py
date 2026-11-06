@@ -89,6 +89,7 @@ class TrayState(BaseModel):
     # Abmeldung in so vielen Sekunden (Countdown nach Zeitende bzw. „Jetzt sperren“), sonst None.
     # Windows: Die Tray-App zeigt die letzte Minute als eigenes Fenster im Vordergrund.
     logout_in_seconds: int | None = None
+    gaming: bool = False   # gerade läuft ein Spiel (Windows: letzte Minute Spielzeit als Fenster)
 
 
 class TrayChat(BaseModel):

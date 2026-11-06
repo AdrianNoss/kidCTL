@@ -19,12 +19,14 @@ from kidctl_common.i18n import _
 from .. import store
 from ..accounting import boottime
 from . import catalog as catalog_mod
+from . import games as games_mod
 from . import procs as procs_mod
 from .programs import Verdict, WinAllowed, classify, key_norm
 
 log = logging.getLogger("kidctl.programs")
 
 POLL = 0.5                 # Sekunden zwischen zwei Prozesslisten
+MAX_ANCESTORS = 16
 CATALOG_EVERY = 6 * 3600.0
 CATALOG_MIN_GAP = 60.0     # neu lesen bei unbekanntem Paket höchstens so oft
 BLOCKED_FILE = "blocked.json"
@@ -47,6 +49,8 @@ class WinProgramWatcher:
         self.clock = clock
         self.install_dir = install_dir
         self.catalog: catalog_mod.Catalog | None = None
+        self.games = games_mod.GameIndex()
+        self.scan_games = games_mod.scan
         self._catalog_at: float | None = None
         self._catalog_task: asyncio.Task | None = None
         self.names: dict[str, str] = {}
@@ -54,6 +58,7 @@ class WinProgramWatcher:
         self.canon: dict[str, str] = {}   # Normalform -> Schlüssel wie im Katalog (Schreibweise)
         self.handled: set[tuple[int, int]] = set()
         self._known_pids: set[int] = set()
+        self._ppids: dict[int, int] = {}
         self.last_report: dict[tuple[str, str], float] = {}
         self.last_notify: dict[tuple[str, str], float] = {}
         self.recent: dict[str, dict[str, tuple[t.BlockedItem, float]]] = {}
@@ -82,7 +87,11 @@ class WinProgramWatcher:
             return False
         changed = self.catalog is None or cat.apps != self.catalog.apps or cat.known_pfns != self.catalog.known_pfns
         self.catalog = cat
-        self.names = {a.key: a.name for a in cat.apps}
+        try:
+            self.games = await asyncio.to_thread(self.scan_games)
+        except Exception:
+            log.exception("Spiele nicht lesbar")
+        self.names = {a.key: a.name for a in cat.apps} | self.games.names()
         self.names_en = {a.key: a.name_en for a in cat.apps if a.name_en}
         self.canon = {key_norm(a.key): a.key for a in cat.apps}
         self.policy_changed()
@@ -128,11 +137,23 @@ class WinProgramWatcher:
                     account = self.agent.accounts.by_wire(user)
                     if account is None:
                         continue
+                    keys = set(child.programs_on(now.date()))
                     out[account.sid] = (user, child.program_mode, WinAllowed(
-                        set(child.programs_on(now.date())), sid=account.sid, catalog_exes=cat.exes,
-                        catalog_pfns=cat.pfns, known_pfns=cat.known_pfns, install_dir=self.install_dir))
+                        keys, sid=account.sid, catalog_exes=cat.exes, catalog_pfns=cat.pfns,
+                        known_pfns=cat.known_pfns, install_dir=self.install_dir,
+                        launcher_dirs=self.launcher_dirs(keys)))
             self._targets = out
         return self._targets
+
+    def launcher_dirs(self, keys: set[str]) -> tuple[str, ...]:
+        """Spieleordner der freigegebenen Launcher (Steam: Bibliotheken, Epic: Installationsordner)."""
+        released = {key_norm(k) for k in keys}
+        dirs: list[str] = []
+        if self.games.steam_exe and key_norm("exe:" + self.games.steam_exe) in released:
+            dirs += self.games.steam_dirs
+        if any(k.startswith("exe:") and k.endswith("\\epicgameslauncher.exe") for k in released):
+            dirs += self.games.epic_dirs
+        return tuple(dirs)
 
     def users(self) -> set[str]:
         return {user for user, _m, _a in self.targets().values()}
@@ -152,6 +173,7 @@ class WinProgramWatcher:
             self._known_pids.clear()
             return
         snap = await asyncio.to_thread(self.procs.snapshot)
+        self._ppids = snap
         new = [(pid, ppid) for pid, ppid in snap.items() if pid not in self._known_pids and pid > 4]
         self._known_pids = set(snap)
         if new:
@@ -162,6 +184,7 @@ class WinProgramWatcher:
         if not self.targets():
             return
         snap = await asyncio.to_thread(self.procs.snapshot)
+        self._ppids = snap
         alive = await self.check_many([(pid, ppid) for pid, ppid in snap.items() if pid > 4])
         self.handled &= alive
 
@@ -184,7 +207,20 @@ class WinProgramWatcher:
         def parent_exe() -> str:
             parent = self.procs.read(info.ppid) if info.ppid else None
             return parent.exe if parent and parent.start < info.start else ""
-        verdict = classify(info, allowed, owner=self.procs.file_owner, parent_exe=parent_exe)
+
+        def ancestors() -> list[str]:
+            out, cur, seen = [], info, set()
+            for _ in range(MAX_ANCESTORS):
+                if not cur.ppid or cur.ppid in seen:
+                    break
+                seen.add(cur.ppid)
+                parent = self.procs.read(cur.ppid, self._ppids.get(cur.ppid, 0))
+                if parent is None or parent.start > cur.start:   # beendet bzw. PID wiederverwendet
+                    break
+                out.append(parent.exe)
+                cur = parent
+            return out
+        verdict = classify(info, allowed, owner=self.procs.file_owner, parent_exe=parent_exe, ancestors=ancestors)
         if verdict is None:
             return
         if verdict.unknown_package:

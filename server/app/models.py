@@ -225,6 +225,17 @@ class DeviceApp(Base):
         return self.name_en if current() == "en" and self.name_en else self.name
 
 
+class ChildGameApp(Base):
+    """App, die für ein Kind als Spiel zählt (Spiele-Limit, Spielzeit), zusätzlich zur Kategorie „Spiele“
+    (ergänzt 2026-11-06: Windows-Verknüpfungen haben keine Kategorien, z. B. Roblox, Minecraft-Launcher)."""
+    __tablename__ = "child_game_app"
+    __table_args__ = (UniqueConstraint("child_id", "key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    child_id: Mapped[int] = mapped_column(ForeignKey("child.id", ondelete="CASCADE"), index=True)
+    key: Mapped[str] = mapped_column(String(512))
+
+
 class ChildProgram(Base):
     """Von den Eltern freigegebenes Programm (App-Schlüssel) für ein Kind."""
     __tablename__ = "child_program"

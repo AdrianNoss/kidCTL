@@ -263,6 +263,8 @@ class ChildPolicy(BaseModel):
     locked_until: datetime | None = None
     lock_grace_seconds: int = Field(default=60, ge=0, le=7200)  # Vorwarnung bis zur Abmeldung
     temp_grants: list[TempGrant] = []  # Freigaben „nur heute“ (ergänzt 2026-10-20)
+    # Apps, die zusätzlich zur Kategorie „Spiele“ als Spiel zählen (ergänzt 2026-11-06, App-Schlüssel)
+    game_apps: list[str] = []
 
     def programs_on(self, day: date) -> list[str]:
         """Freigegebene Programme an ``day``: dauerhafte plus „nur heute“."""

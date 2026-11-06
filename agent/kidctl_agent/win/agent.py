@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -27,8 +28,21 @@ from .sessions import WinSessions
 from .update import Updater
 from .dnsfilter import WinDnsFilter
 from .watcher import WinProgramWatcher
+from ..apptime import AppTime
+from ..gamelimit import GameLimit
+from .apptime import WinAppIndex
 
 log = logging.getLogger("kidctl.agent")
+
+LAUNCHER_PFNS = ("microsoft.gamingapp_", "microsoft.xboxgamingoverlay_", "microsoft.xboxapp_")
+
+
+def is_launcher(key: str) -> bool:
+    from .games import LAUNCHERS
+    low = key.lower()
+    return (low.startswith("appx:") and low[5:].startswith(LAUNCHER_PFNS)) or \
+        (low.startswith("exe:") and low.rsplit("\\", 1)[-1] in LAUNCHERS)
+
 
 BLOCKED_LOGIN_GRACE = 10   # Sekunden: Sitzung trotz Login-Sperre -> Hinweis, dann Abmeldung
 TRAY_GRACE = 60            # Sekunden nach Erscheinen einer Sitzung: Zeit für den Autostart der Tray-App
@@ -68,6 +82,12 @@ class WinAgent(AgentCore):
         self.programs = WinProgramWatcher(self, install_dir=install_dir())
         self.acl = AclManager(store)
         self.dns = WinDnsFilter(install_dir())
+        self.apptime = AppTime.load()
+        self.playing: dict[str, dict[str, str]] = {}   # User -> {Spiel-Schlüssel: Name} („spielt gerade“)
+        self.gaming: set[str] = set()                   # User mit laufendem Spiel (letzter gezählter Takt)
+        self._game_procs: dict[str, list[tuple[int, int]]] = {}   # User -> Spielprozesse (PID, Start)
+        self.gamelimit = GameLimit(desktop, kill=lambda pid, sig: self.programs.procs.terminate(pid),
+                                   on_request=self.open_game_request_dialog, lang_of=self.lang_of)
         self.wfp = None            # WFP-Sitzung (nur Windows, beim Start geöffnet)
         self._dns_key = None       # zuletzt angewendetes Profil (aktive Sitzung, Policy, Tag)
         self._dns_lock = asyncio.Lock()   # Abgleich nie doppelt gleichzeitig (Takt, Policy, Start)
@@ -103,6 +123,7 @@ class WinAgent(AgentCore):
         return {u for u, d in self.decisions(self.now_local()).items() if not d.allowed}
 
     async def _after_count(self, now, counting: set[str], delta: float) -> None:
+        await self._count_apps(counting, now.date(), delta)
         for cid, domain, source in self.dns.collect_blocked():
             users = sorted(self.users_of(cid))
             if users:
@@ -150,7 +171,11 @@ class WinAgent(AgentCore):
             task.add_done_callback(self._tasks.discard)
 
     async def _enforce_more(self, day, sessions, decisions: dict[str, Decision]) -> None:
-        await self._ensure_trays(sessions, decisions)   # Spiele-Limit: späterer Schritt
+        await self._ensure_trays(sessions, decisions)
+        for user in {s.user for s in sessions if s.is_user_session and s.user in decisions and decisions[s.user].allowed}:
+            remaining = self.game_remaining(user, day)
+            procs = self._game_procs.get(user, []) if remaining is not None and remaining <= 0 else []
+            await self.gamelimit.step(user, 0, day, remaining, user in self.gaming, procs)
         if self._ticks % SCAN_EVERY == 0:
             await self.programs.scan()
 
@@ -179,11 +204,87 @@ class WinAgent(AgentCore):
         """SID -> freigegebene App-Ordner der Kinder mit Programmkontrolle (≠ Aus)."""
         return {sid: list(allowed.dirs) for sid, (_u, _m, allowed) in self.programs.targets().items()}
 
+    def acl_extra(self) -> dict[str, list[str]]:
+        """Steam-Bibliotheken (vom Kind beschreibbar) mit Verbot, solange Steam für das Kind nicht freigegeben ist."""
+        games = self.programs.games
+        if not games.steam_exe:
+            return {}
+        roots = [d for d in games.steam_dirs if os.path.isdir(d)]
+        return {sid: roots for sid, (_u, _m, allowed) in self.programs.targets().items() if not allowed.launcher_dirs
+                or games.steam_dirs[0] not in allowed.launcher_dirs}
+
     async def sync_acl(self) -> None:
         try:
-            await asyncio.to_thread(self.acl.sync, self.acl_wanted())
+            await asyncio.to_thread(self.acl.sync, self.acl_wanted(), self.acl_extra())
         except Exception:
             log.exception("Ausführverbote nicht anwendbar")
+
+    # ---------- Programm- und Spielzeit ----------
+
+    @property
+    def game_keys(self) -> set[str]:
+        """Katalog-Apps der Kategorie „Spiele“ ohne Launcher (Steam, Xbox-App, Game Bar …) – wie unter Linux."""
+        cat = getattr(self, "programs", None) and self.programs.catalog
+        if not cat:
+            return set()
+        return {a.key for a in cat.apps if "Game" in a.categories and not is_launcher(a.key)}
+
+    @game_keys.setter
+    def game_keys(self, _value) -> None:
+        pass   # der Kern setzt einen Anfangswert; hier immer aus dem Katalog
+
+    async def _count_apps(self, counting: set[str], day, delta: float) -> None:
+        """Je User die Apps mit mindestens einem Prozess (Programmzeit), Spiele (Spielzeit, „spielt gerade“) und die
+        Spielprozesse (Spiele-Limit). Gelesen wird auch ohne gezählte Zeit (Limit wirkt sofort)."""
+        users = {a.sid: a.wire for a in self.accounts.all() if self.policy and a.wire in self.policy.users}
+        if not users:
+            self.playing, self.gaming, self._game_procs = {}, set(), {}
+            return
+        procs = self.programs.procs
+        index = WinAppIndex(self.programs.catalog, self.programs.games)
+
+        def collect():
+            snap = procs.snapshot()
+            return [i for pid, ppid in snap.items() if pid > 4 and (i := procs.read(pid, ppid)) and i.sid in users]
+        try:
+            infos = await asyncio.to_thread(collect)
+        except Exception:
+            log.exception("Prozesse nicht lesbar (Programmzeit)")
+            return
+        keys: dict[str, set[str]] = {}
+        playing: dict[str, dict[str, str]] = {}
+        game_procs: dict[str, list[tuple[int, int]]] = {}
+        for info in infos:
+            user = users[info.sid]
+            found = index.key_for(info)
+            if found is None:
+                continue
+            key, name = found
+            keys.setdefault(user, set()).add(key)
+            if name:
+                self.apptime.names.setdefault(key, name)
+            if self.is_game(key, user):
+                playing.setdefault(user, {})[key] = self.apptime.names.get(key) or self.programs.names.get(key, key)
+                game_procs.setdefault(user, []).append(info.ident)
+        if delta:
+            for user in counting:
+                self.apptime.add(user, day, keys.get(user, set()), delta)
+                if user in playing:
+                    self.usage.add_games(user, day, delta)
+        self.playing = {u: g for u, g in playing.items() if u in counting}
+        self.gaming = set(self.playing)
+        self._game_procs = game_procs
+
+    def _app_usage_report(self, today) -> p.AppUsageReport:
+        apps = [p.AppUsageEntry(username=u, day=d, key=k, seconds=s, name=self.apptime.names.get(k, ""))
+                for u, d, k, s in self.apptime.report_entries(today)]
+        playing = [p.PlayingEntry(username=u, key=k, name=n)
+                   for u, games in sorted(self.playing.items()) for k, n in sorted(games.items())]
+        return p.AppUsageReport(entries=apps[:2000], playing=playing[:200])
+
+    def _save_more(self, day) -> None:
+        self.apptime.prune(day)
+        self.apptime.save()
 
     # ---------- Website-Filter ----------
 
@@ -248,6 +349,7 @@ class WinAgent(AgentCore):
 
     async def _shutdown(self) -> None:
         from .service import STOP_REASON
+        self.apptime.save()
         self.dns.stop()
         if STOP_REASON.get("control") == 1:   # von einem Admin gestoppt (nicht Herunterfahren): DNS freigeben
             await asyncio.to_thread(self.dns.restore_adapters)

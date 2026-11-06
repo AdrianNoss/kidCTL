@@ -266,8 +266,8 @@ später eine aus, kommt ein Push-Alarm.
 ### 3.6 Windows
 
 Unter Windows 10/11 gibt es in diesem Stand **Bildschirmzeit, Abmeldung, Login-Sperre, „Jetzt sperren“,
-Tray-App mit Chat und Verlängerungen, die Programmkontrolle und der Website-Filter**. Spiele folgen (siehe
-`spec.md`, Abschnitt „Windows“).
+Tray-App mit Chat und Verlängerungen, die Programmkontrolle, der Website-Filter und das Spiele-Limit** (Steam,
+Epic Games, Store-Spiele; weitere Apps lassen sich im WebUI als „Spiel“ markieren).
 
 1. **Kinderkonten** als „Standardbenutzer“ anlegen (Einstellungen → Konten → Andere Benutzer), lokale Konten oder
    Microsoft-Konten. Administratoren schränkt KidCTL nie ein – das WebUI meldet zugeordnete Kinder mit
@@ -319,6 +319,8 @@ Je Kind (Seite des Kindes):
 - **Spiele-Limit** („davon Spiele“ in der Wochenvorlage): höchstens so viele Minuten Spiele am Tag
   (Steam, Heroic und Programme der Gruppe „Spiele“, nicht die Launcher). Vorwarnung 5 und 1 Minute
   vorher, danach werden Spiele geschlossen; der restliche Rechner bleibt nutzbar. Leer = kein Limit.
+  Weitere Apps zählen als Spiel, wenn in der Programmliste das Kästchen „Spiel“ neben der App angehakt ist
+  (z. B. Roblox oder der Minecraft-Launcher; Apps der Gruppe „Spiele“ sind immer Spiele).
 - **Zeit gutschreiben**: zusätzliche Minuten, ein längeres Zeitfenster oder zusätzliche Spielzeit für
   ein bestimmtes Datum. Verlängerungs- und Spielzeit-Anfragen aus der Tray-App lassen sich auch direkt
   im Chat genehmigen.

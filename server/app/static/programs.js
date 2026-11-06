@@ -19,7 +19,7 @@
   const initiallyOpen = new Map(groups.map((g) => [g, g.open]));
 
   function updateCount(group) {
-    const boxes = [...group.querySelectorAll('input[type="checkbox"]')];
+    const boxes = [...group.querySelectorAll('input[name="app"]')];
     const n = boxes.filter((b) => b.checked).length;
     const pill = group.querySelector(".app-count");
     pill.textContent = root.dataset.countText.replace("{n}", n).replace("{total}", boxes.length);

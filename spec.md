@@ -162,7 +162,7 @@ Verlängerungsanfragen.
   offiziellen .deb: `/opt/Heroic/heroic` gilt als Launcher.
 - Logind trägt unter GDM keinen Desktop ein (auch Ubuntu) – Abmeldung über die laufende Shell (wie GNOME).
 
-### Windows (entschieden 2026-11-04; Schritt 1 umgesetzt in 0.29.0, Schritt 2 in 0.30.0, Schritt 3 in 0.31.0)
+### Windows (entschieden 2026-11-04; Schritte 1–4 umgesetzt in 0.29.0–0.32.0)
 Per /grill-me abgestimmt. Grundsatz: gleiches Verhalten wie unter Linux, wo Windows es zulässt;
 Abweichungen stehen hier und unter „Restlücken“.
 
@@ -276,17 +276,25 @@ Abweichungen stehen hier und unter „Restlücken“.
     `DNSOverHTTPS` aus und gesperrt, Windows `DoHPolicy=1` (verboten). Integrität `dns` (Resolver läuft, Adapter
     umgestellt) und `browser` (Richtlinien), nur wenn ein Kind den Filter nutzt.
   - Gesperrte Anfragen: Sperrprotokoll und „Freigabe anfragen“ (Hauptdomain) wie unter Linux.
-- **Spiele:**
-  - Steam: Erkennung über `SteamAppId` (`game:steam:<id>`, Name aus `appmanifest_*.acf`), Freigabe und
-    Elternkette ab `steam.exe` wie unter Linux. Die Steam-Bibliothek (für Benutzer meist beschreibbar)
-    bekommt für Kinder ohne Steam-Freigabe ein Ausführverbot (wie `/srv/steam`).
-  - Epic Games Launcher wie Heroic (Nachfahren erlaubt); als Spiel zählt, was im Installationsordner laut
-    Epic-Manifesten in `ProgramData` liegt (`game:epic:<id>`).
-  - Xbox/Game-Pass- und Store-Spiele: Erkennung an `MicrosoftGame.config` im Paket.
-  - Andere Launcher (Battle.net, EA App, Ubisoft Connect, GOG Galaxy): allgemeine Launcher-Regel; Spiele
-    daraus zählen nur über den neuen Schalter.
-  - **Neu, für alle Plattformen:** Schalter „zählt als Spiel“ je Kind und App im WebUI (in der Policy), für
-    Apps ohne Kategorie (unter Windows haben `.lnk` keine) oder mit falscher (z. B. Roblox, Minecraft-Launcher).
+- **Spiele (Schritt 4, umgesetzt in 0.32.0):**
+  - Steam: Erkennung über den Installationsordner (Abweichung: Umgebungsvariablen wie `SteamAppId` fremder
+    Prozesse sind unter Windows nicht ohne Weiteres lesbar) – Bibliotheken aus `steamapps\libraryfolders.vdf`,
+    Spiele aus `appmanifest_*.acf` (`installdir`) -> `game:steam:<appid>` mit Namen. Steam-Ordner aus der Registry.
+  - Epic Games: Manifeste `ProgramData\Epic\EpicGamesLauncher\Data\Manifests\*.item` (`InstallLocation`,
+    `AppName`, `DisplayName`) -> `game:epic:<AppName>`.
+  - Store-/Xbox-Spiele: Katalog (Kategorie „Spiele“ bei `MicrosoftGame.config`). Launcher (Steam, Xbox-App, Game Bar
+    …) zählen nicht als Spiel; die Game Bar (startet mit jedem Spiel) gehört zur Basis.
+  - **Launcher-Regel** (`win/games.LAUNCHERS`: Steam, Epic, Battle.net, EA App, Ubisoft Connect, GOG Galaxy, Riot):
+    Ist der Launcher freigegeben, sind von ihm gestartete Prozesse erlaubt; bei Steam und Epic zusätzlich ihre
+    Spieleordner – auch wenn die Dateien dem Kind gehören (Steam lädt unter dem Konto des Kindes).
+  - Steam-Bibliothek (vom Kind beschreibbar) bekommt ohne Steam-Freigabe das Ausführverbot (ACL, wie Profil).
+  - **Programmzeit, Spielzeit, „spielt gerade“** (`win/apptime.py`): je Prozess erkanntes Spiel, Store-App oder
+    Katalog-Programm (samt Programm-/App-Ordner); Spielzeit, wenn mindestens ein Spiel läuft. Spiele-Limit wie
+    unter Linux (`gamelimit.GameLimit`: Vorwarnung 5/1 min, danach Spielprozesse beenden, auch neu gestartete).
+  - Tray: letzte Minute Spielzeit als Fenster im Vordergrund mit „Mehr Spielzeit anfragen“ (`TrayState.gaming`).
+  - **Neu, für alle Plattformen:** Schalter „zählt als Spiel“ je Kind und App in der Programmliste (Tabelle
+    `child_game_app`, `ChildPolicy.game_apps`); Apps der Kategorie „Spiele“ sind fest markiert. Der Agent (Linux
+    und Windows) prüft Spiele je Kind (`AgentCore.is_game`).
 - **Integrität (WebUI):** Dienst, SafeBoot-Eintrag, Unbound, WFP-Filter, DNS der Adapter, Ausführverbote
   (ACL), Kinder nicht in der Gruppe Administratoren.
 - **Verteilung und Updates:**
@@ -316,7 +324,8 @@ Abweichungen stehen hier und unter „Restlücken“.
      Freigabe-Anfragen – umgesetzt in 0.30.0.
   3. Website-Filter: Unbound, WFP, DNS der Adapter, Profilwechsel, Hintergrund-Netzsperre, Browser-Richtlinien –
      umgesetzt in 0.31.0.
-  4. Spiele: Steam, Epic, Xbox/Store, Schalter „zählt als Spiel“, Spiele-Limit, Spielzeit je Spiel.
+  4. Spiele: Steam, Epic, Xbox/Store, Schalter „zählt als Spiel“, Spiele-Limit, Spielzeit je Spiel –
+     umgesetzt in 0.32.0.
 
 ### Offline-Verhalten
 - Letzte bekannte Policy wird weiter durchgesetzt.
@@ -1563,3 +1572,15 @@ Abweichungen stehen hier und unter „Restlücken“.
   gleichzeitige Abgleiche, Übergabe der gemerkten Adapter an PowerShell, GUID-Format von `Get-NetAdapter`. Nicht
   getestet: Whitelist-Modus und Sperrlisten unter Windows (Konfiguration wie Linux), VPN, Browser mit eigenem
   DNS, Windows 10, echter Rechner.
+- 2026-11-06: Windows Schritt 4 umgesetzt (Paket 0.32.0): Spielerkennung Steam/Epic über die Installationsordner,
+  Store-Spiele über den Katalog, Launcher-Regel (Nachfahren und Spieleordner freigegebener Launcher), Ausführverbot
+  für die Steam-Bibliothek ohne Steam-Freigabe, Programm- und Spielzeit, „spielt gerade“, Spiele-Limit, Countdown-
+  Fenster für die letzte Minute Spielzeit. Für alle Plattformen: Schalter „zählt als Spiel“ im WebUI (Tabelle
+  `child_game_app`, `ChildPolicy.game_apps`), `is_game`/`game_remaining` im gemeinsamen Kern. Getestet: Agent 256,
+  Server 124, Tray 19 Tests grün (neu: Steam-/Epic-Index mit Windows-Pfaden, Launcher-Regel, App-Zuordnung,
+  Spielzeit und Spiele-Limit im Windows-Agenten, Spiel-Schalter in WebUI und Policy, Countdown für Spiele).
+  VM Windows 11: Solitaire (Store-Spiel) freigegeben, Spiele-Limit 1 min – Toast „Noch 1 Minute Spielzeit“,
+  Fenster „Noch 27 Sekunden Spielzeit“, Spielzeit und Programmzeit beim Server, nach Ablauf „Spielzeit
+  aufgebraucht“ und Spiel geschlossen, auch beim erneuten Start. Dabei gefunden: Game Bar startet mit jedem Spiel
+  (jetzt Basis). Nicht getestet: Steam und Epic mit echten Spielen (Anmeldung nötig), andere Launcher, Spiele im
+  Vollbild, Windows 10, echter Rechner.

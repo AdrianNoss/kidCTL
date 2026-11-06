@@ -52,7 +52,7 @@ class GameLimit:
                 sig, new = signal.SIGTERM, True
                 termed[ident] = now
             elif now - sent >= KILL_AFTER:
-                sig = signal.SIGKILL
+                sig = getattr(signal, "SIGKILL", signal.SIGTERM)   # Windows: kein SIGKILL (Beenden ist dort hart)
             if sig is not None:
                 try:
                     self.kill(ident[0], sig)

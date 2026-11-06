@@ -115,18 +115,6 @@ class Agent(AgentCore):
         # liegt vor systemd-user-sessions.service, Anmeldungen sind also erst danach möglich.
         sdnotify.notify("READY=1")
 
-    def is_game(self, key: str) -> bool:
-        return key.startswith("game:") or key in self.game_keys
-
-    def game_remaining(self, user: str, day) -> int | None:
-        """Restspielzeit (Sekunden) heute, ``None`` = kein Spiele-Limit."""
-        child_id = self.policy.users[user]
-        child = next(c for c in self.policy.children if c.id == child_id)
-        limit = game_limit(child, day)
-        if limit is None:
-            return None
-        return limit - self.usage.used_game_seconds(child_id, self.users_of(child_id), day)
-
     async def _enforce_games(self, day, sessions, decisions: dict[str, Decision]) -> None:
         """Spiele-Limit je User mit Sitzung, solange Bildschirmzeit bleibt (sonst regelt der Enforcer)."""
         for s in sessions:
@@ -144,7 +132,7 @@ class Agent(AgentCore):
             if info is None:
                 continue
             key = self._game_key(info, user) or self.app_index.key_for(info, steam_lib)
-            if key and self.is_game(key):
+            if key and self.is_game(key, user):
                 out.append((info.pid, info.start))
         return out
 
@@ -346,7 +334,7 @@ class Agent(AgentCore):
                 elif k := self.app_index.key_for(info, steam_lib + "/"):
                     keys.add(k)
             self.apptime.add(user, day, keys, delta)
-            if any(self.is_game(k) for k in keys):
+            if any(self.is_game(k, user) for k in keys):
                 self.usage.add_games(user, day, delta)
                 gaming.add(user)
         self._game_of = {k: v for k, v in self._game_of.items() if k in alive}

@@ -123,3 +123,33 @@ def test_windows_programs_in_webui(client, parent):
         keys = {k for (k,) in db.query(ChildProgram.key).filter(ChildProgram.child_id == cid)}
     assert {"appx:Microsoft.WindowsCalculator_8wekyb3d8bbwe", r"exe:C:\Program Files\Mozilla Firefox\firefox.exe",
             r"exe:C:\Tools\spiel.exe"} <= keys
+
+
+def test_game_flag_in_webui_and_policy(client, parent):
+    from app import policy as pol
+    from app.models import Child, DeviceApp, DeviceUser
+    from conftest import csrf_from
+    login(client, parent)
+    client.post("/children", data={"csrf_token": csrf_from(client.get("/children").text), "name": "Ben"})
+    with SessionLocal() as db:
+        cid = db.scalar(select(Child.id).where(Child.name == "Ben"))
+        dev = Device(name="PC", token_hash="e" * 64, platform="windows")
+        db.add(dev)
+        db.flush()
+        db.add_all([DeviceUser(device_id=dev.id, username="ben", uid=1004, child_id=cid),
+                    DeviceApp(device_id=dev.id, key=r"exe:C:\Users\ben\AppData\Local\Roblox\Roblox.exe", name="Roblox",
+                              categories=""),
+                    DeviceApp(device_id=dev.id, key="appx:Microsoft.MicrosoftSolitaireCollection_8wekyb3d8bbwe",
+                              name="Solitaire", categories="Game")])
+        db.commit()
+        dev_id = dev.id
+    page = client.get(f"/children/{cid}").text
+    assert 'name="game" value="appx:Microsoft.MicrosoftSolitaireCollection_8wekyb3d8bbwe" checked disabled' in page
+    roblox = r"exe:C:\Users\ben\AppData\Local\Roblox\Roblox.exe"
+    client.post(f"/children/{cid}/programs", data={"csrf_token": csrf_from(page), "program_mode": "enforce",
+                                                    "app": [roblox], "game": [roblox, "kaputt"]})
+    page = client.get(f"/children/{cid}").text
+    assert f'name="game" value="{roblox}" checked>' in page
+    with SessionLocal() as db:
+        built = pol.build_policy(db, dev_id)
+    assert next(c for c in built.children if c.id == cid).game_apps == [roblox]   # „kaputt“ verworfen

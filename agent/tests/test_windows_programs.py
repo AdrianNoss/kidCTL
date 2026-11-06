@@ -286,3 +286,20 @@ def test_acl_protected_sddl():
     assert acl.protected(sddl, KID)
     assert not acl.protected("D:AI(A;OICIID;FA;;;SY)", KID)
     assert not acl.protected(f"D:(D;OICI;WD;;;{KID})", KID)
+
+
+def test_acl_extra_dirs(state, tmp_path):
+    calls = []
+
+    def run(args, **kw):
+        calls.append(args[1:-2])
+        return SimpleNamespace(returncode=0, stdout=b"")
+    prof, steam = tmp_path / "kind", tmp_path / "Steam"
+    prof.mkdir()
+    steam.mkdir()
+    m = acl.AclManager(store, run=run, profile=lambda sid: str(prof), shared=())
+    m.sync({KID: []}, {KID: [str(steam)]})
+    assert [str(steam), "/deny", f"*{KID}:(OI)(IO)(X)", f"*{KID}:(OI)(CI)(WDAC)"] in calls
+    calls.clear()
+    m.sync({KID: []}, {KID: []})          # Steam freigegeben -> Verbot weg
+    assert [str(steam), "/remove:d", f"*{KID}"] in calls and [str(prof), "/remove:d", f"*{KID}"] not in calls

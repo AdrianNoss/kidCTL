@@ -15,7 +15,7 @@ from kidctl_common import protocol as p
 
 from .chat import device_ids_for_child
 from .i18n import N_, _
-from .models import BlockedEvent, ChildCustomProgram, ChildProgram, Device, DeviceApp, DeviceUser
+from .models import BlockedEvent, ChildCustomProgram, ChildGameApp, ChildProgram, Device, DeviceApp, DeviceUser
 
 MODES = {"off": N_("Aus"), "audit": N_("Nur protokollieren"), "enforce": N_("Sperren")}
 MAX_EVENTS_PER_REPORT = 500
@@ -62,6 +62,8 @@ class CatalogEntry:
     missing: bool = False  # freigegeben, aber auf keinem Gerät (mehr) gemeldet
     group: str = "other"
     custom_id: int | None = None  # eigenes Programm der Eltern (löschbar)
+    game: bool = False      # zählt als Spiel (von den Eltern markiert oder Kategorie „Spiele“)
+    game_auto: bool = False  # Kategorie „Spiele“ – immer Spiel, nicht abwählbar
 
 
 # Gruppen der Programmliste: (ID, Anzeige, freedesktop-Kategorien) – erste passende Gruppe gewinnt
@@ -101,18 +103,24 @@ def grouped_catalog(entries: list[CatalogEntry]) -> list[tuple[str, str, list[Ca
 def catalog_for_child(db: Session, child_id: int) -> list[CatalogEntry]:
     devices = device_ids_for_child(db, child_id)
     allowed = set(allowed_keys(db, child_id))
+    games = set(game_keys(db, child_id))
     entries: dict[str, CatalogEntry] = {}
     if devices:
         for app in db.scalars(select(DeviceApp).where(DeviceApp.device_id.in_(devices))):
             e = entries.get(app.key)
+            auto = "Game" in (app.categories or "").split(";")
             if e is None:
                 entries[app.key] = CatalogEntry(app.key, app.label, 1, app.key in allowed,
-                                                group=group_for(app.categories or ""))
+                                                group=group_for(app.categories or ""),
+                                                game=auto or app.key in games, game_auto=auto)
             else:
                 e.devices += 1
+                e.game_auto = e.game_auto or auto
+                e.game = e.game or auto
     for c in custom_programs(db, child_id):  # eigene Programme: Name der Eltern, eigene Gruppe
         e = entries.get(c.key)
-        entries[c.key] = CatalogEntry(c.key, c.name, e.devices if e else 0, c.key in allowed, custom_id=c.id)
+        entries[c.key] = CatalogEntry(c.key, c.name, e.devices if e else 0, c.key in allowed, custom_id=c.id,
+                                      game=c.key in games)
     for key in allowed - entries.keys():
         entries[key] = CatalogEntry(key, key.split(":", 1)[-1].rsplit("/", 1)[-1], 0, True, missing=True)
     return sorted(entries.values(), key=lambda e: (not e.allowed, e.name.lower()))
@@ -125,6 +133,18 @@ def name_lookup(db: Session):
     def name_of(key: str, fallback: str) -> str:
         return names.get(key, fallback)
     return name_of
+
+
+def game_keys(db: Session, child_id: int) -> list[str]:
+    return sorted(db.scalars(select(ChildGameApp.key).where(ChildGameApp.child_id == child_id)))
+
+
+def set_games(db: Session, child_id: int, keys: set[str]) -> None:
+    current = set(game_keys(db, child_id))
+    for key in current - keys:
+        db.execute(delete(ChildGameApp).where(ChildGameApp.child_id == child_id, ChildGameApp.key == key))
+    for key in keys - current:
+        db.add(ChildGameApp(child_id=child_id, key=key))
 
 
 def allowed_keys(db: Session, child_id: int) -> list[str]:

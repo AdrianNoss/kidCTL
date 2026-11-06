@@ -255,6 +255,12 @@ details > summary { cursor:pointer; color:var(--ink-2); font-weight:600; font-si
 .custom-item { display:flex; align-items:stretch; gap:.25rem; }
 .custom-item .option { flex:1; min-width:0; }
 .custom-item .option small { overflow-wrap:anywhere; }
+/* „zählt als Spiel“ neben der Freigabe */
+.game-row { display:flex; align-items:stretch; gap:.25rem; }
+.game-row .option { flex:1; min-width:0; }
+.game-flag { display:flex; align-items:center; gap:.25rem; padding:0 .4rem; font-size:.8rem; color:var(--muted);
+             white-space:nowrap; cursor:pointer; }
+.game-flag:has(input:checked) { color:var(--ink); }
 .dialog { width:min(30rem, calc(100% - 32px)); padding:1.1rem 1.2rem; background:var(--surface); color:var(--ink);
   border:1px solid var(--line-strong); border-radius:var(--radius-lg); }
 .dialog::backdrop { background:rgb(0 0 0 / .35); }

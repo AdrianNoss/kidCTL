@@ -83,6 +83,7 @@ class AgentCore:
         self._ticks = 0
         self._admin_warned: set[str] = set()
         self._started = self.clock()
+        self.game_keys: set[str] = set()   # Katalog-Apps der Kategorie „Game“ (ohne Launcher)
         self._synced = self.conn is None  # ohne Server: sofort gecachte Policy durchsetzen
 
     # ---------- Plattform ----------
@@ -128,6 +129,25 @@ class AgentCore:
             used = self.usage.used_seconds(child_id, same_child, now.date())
             out[user] = evaluate(child, now, used)
         return out
+
+    def is_game(self, key: str, user: str | None = None) -> bool:
+        """Spiel: erkanntes Spiel (``game:``), Katalog-App der Kategorie „Game“ oder von den Eltern für das Kind
+        des Users als Spiel markiert (``ChildPolicy.game_apps``)."""
+        if key.startswith("game:") or key in self.game_keys:
+            return True
+        if user is None or self.policy is None or user not in self.policy.users:
+            return False
+        child = next((c for c in self.policy.children if c.id == self.policy.users[user]), None)
+        return child is not None and key in child.game_apps
+
+    def game_remaining(self, user: str, day) -> int | None:
+        """Restspielzeit (Sekunden) heute, ``None`` = kein Spiele-Limit."""
+        child_id = self.policy.users[user]
+        child = next(c for c in self.policy.children if c.id == child_id)
+        limit = game_limit(child, day)
+        if limit is None:
+            return None
+        return limit - self.usage.used_game_seconds(child_id, self.users_of(child_id), day)
 
     # ---------- Takt ----------
 
@@ -325,7 +345,7 @@ class AgentCore:
             online=self.online, pending_outbox=self.outbox.pending_for(same),
             game_limit_minutes=None if (gl := game_limit(child, now.date())) is None else gl // 60,
             game_used_seconds=self.usage.used_game_seconds(child_id, same, now.date()),
-            logout_in_seconds=self.logout_in(user))
+            logout_in_seconds=self.logout_in(user), gaming=user in getattr(self, "gaming", set()))
 
     def logout_in(self, user: str) -> int | None:
         """Sekunden bis zur Abmeldung (laufender Countdown), sonst ``None``."""

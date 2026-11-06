@@ -210,3 +210,11 @@ msgid "Abmeldung in {n} Sekunde – bitte jetzt speichern."
 msgid_plural "Abmeldung in {n} Sekunden – bitte jetzt speichern."
 msgstr[0] "Signing out in {n} second – please save your work now."
 msgstr[1] "Signing out in {n} seconds – please save your work now."
+
+msgid "Mehr Spielzeit anfragen …"
+msgstr "Ask for more game time …"
+
+msgid "Noch {n} Sekunde Spielzeit – danach werden Spiele geschlossen."
+msgid_plural "Noch {n} Sekunden Spielzeit – danach werden Spiele geschlossen."
+msgstr[0] "{n} second of game time left – then games will be closed."
+msgstr[1] "{n} seconds of game time left – then games will be closed."

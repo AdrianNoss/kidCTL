@@ -87,3 +87,16 @@ def test_parse_url():
     assert parse_url("kidctl://action/../x") is None
     assert parse_url("kidctl://action/AB;calc") is None
     assert parse_url("--show") is None
+
+
+def test_countdown_games():
+    now = [0.0]
+    tr = CountdownTracker(clock=lambda: now[0])
+    tr.update(state(game_limit_minutes=30, game_used_seconds=1750, gaming=False))
+    assert tr.due() is None                                   # kein Spiel läuft
+    tr.update(state(game_limit_minutes=30, game_used_seconds=1750, gaming=True))
+    d = tr.due()
+    assert d.kind == "games" and d.seconds == 50 and "Spielzeit" in texts_for(d)[1]
+    tr.dismiss("games")
+    tr.update(state(game_limit_minutes=30, game_used_seconds=1760, gaming=True))
+    assert tr.due() is None

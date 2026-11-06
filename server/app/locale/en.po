@@ -1625,3 +1625,12 @@ msgstr "system tool"
 
 msgid "fremde DLL ({arg})"
 msgstr "foreign DLL ({arg})"
+
+msgid "Spiel"
+msgstr "Game"
+
+msgid "Zählt als Spiel (Spiele-Limit, Spielzeit)"
+msgstr "Counts as a game (game limit, game time)"
+
+msgid "Kategorie „Spiele“ – zählt immer als Spiel"
+msgstr "Category “Games” – always counts as a game"

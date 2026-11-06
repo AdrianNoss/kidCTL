@@ -193,8 +193,10 @@ async def child_programs(child_id: int, request: Request, db: Session = Depends(
     if mode not in programs.MODES:
         raise HTTPException(400, "Ungültiger Modus")
     child.program_mode = mode
-    keys = {str(k) for k in form.getlist("app") if str(k).startswith(("exe:", "flatpak:", "snap:", "appx:"))}
+    prefixes = ("exe:", "flatpak:", "snap:", "appx:")
+    keys = {str(k) for k in form.getlist("app") if str(k).startswith(prefixes)}
     programs.set_allowed(db, child.id, keys)
+    programs.set_games(db, child.id, {str(k)[:512] for k in form.getlist("game") if str(k).startswith(prefixes)})
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
     return _redirect(f"/children/{child_id}?programs=1#programme")

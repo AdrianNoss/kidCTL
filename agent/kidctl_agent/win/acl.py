@@ -133,14 +133,22 @@ class AclManager:
     def _save(self) -> None:
         self.store.save(self.STATE, {"profiles": self.profiles, "shared": self.shared, "dirs": self.dirs})
 
-    def sync(self, wanted: dict[str, list[str]]) -> None:
-        """``wanted``: SID -> freigegebene App-Ordner. Kinder ohne Programmkontrolle fehlen."""
+    def sync(self, wanted: dict[str, list[str]], extra: dict[str, list[str]] | None = None) -> None:
+        """``wanted``: SID -> freigegebene App-Ordner. Kinder ohne Programmkontrolle fehlen. ``extra``: SID ->
+        weitere vom Kind beschreibbare Ordner mit Verbot (z. B. Steam-Bibliothek ohne Steam-Freigabe)."""
+        extra = extra or {}
+        for path, sids in list(self.shared.items()):   # Ordner, die für ein Kind nicht mehr gelten sollen
+            for sid in list(sids):
+                if sid in wanted and path not in self.shared_dirs and path not in extra.get(sid, []):
+                    sids.remove(sid)
+                    unprotect(path, sid, keep_owner_rights=bool(sids), run=self.run)
+                    log.info("Ausführverbot in %s für %s aufgehoben", path, sid)
         for sid, dirs in wanted.items():
             path = self.profile(sid)
             if path and self.profiles.get(sid) != path and protect(path, sid, run=self.run):
                 self.profiles[sid] = path
                 log.warning("Ausführverbot im Profil %s gesetzt", path)
-            for d in self.shared_dirs:
+            for d in list(self.shared_dirs) + [x for x in extra.get(sid, []) if x not in self.shared_dirs]:
                 if sid not in self.shared.setdefault(d, []) and os.path.isdir(d) and protect(d, sid, run=self.run):
                     self.shared[d].append(sid)
             want = sorted(x for x in dirs if path and _under(x, path) and os.path.isdir(x))

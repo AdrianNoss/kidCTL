@@ -21,6 +21,7 @@ import re
 from dataclasses import dataclass, field
 
 from .catalog import norm
+from .games import LAUNCHERS
 
 WINDIR = norm(os.environ.get("WINDIR", r"C:\Windows"))
 PROGRAM_FILES = norm(os.environ.get("ProgramFiles", r"C:\Program Files"))
@@ -37,7 +38,8 @@ SYSTEM_PARENTS = {WINDIR + r"\system32\taskhostw.exe", WINDIR + r"\system32\svch
 ESSENTIAL = {WINDIR + r"\explorer.exe"}   # hat einen Startmenü-Eintrag, ist aber die Shell
 # Pakete des Systems mit (einzelnen) Startmenü-Einträgen, die zugleich Shell-Teile enthalten (Suche, Widgets,
 # „Klick und los“, Geräteübergreifendes) – Basis, nicht im Katalog
-BASE_PFN_PREFIXES = ("microsoftwindows.client.",)
+BASE_PFN_PREFIXES = ("microsoftwindows.client.",
+                     "microsoft.xboxgamingoverlay_")   # Game Bar startet bei jedem Spiel automatisch mit
 SHELLS = {"cmd.exe"}
 # Werkzeuge unter %WINDIR%, die nur mit Freigabe laufen (Code ausführen, System umbauen, Dateien laden)
 SYSTEM_TOOLS = {"powershell.exe", "powershell_ise.exe", "pwsh.exe", "wscript.exe", "cscript.exe", "mshta.exe",
@@ -71,6 +73,7 @@ class WinAllowed:
     catalog_pfns: set[str] = field(default_factory=set)   # Store-Apps mit Eintrag (klein)
     known_pfns: set[str] = field(default_factory=set)     # alle Pakete (klein)
     install_dir: str = ""                                 # KidCTL selbst
+    launcher_dirs: tuple[str, ...] = ()                   # Ordner freigegebener Launcher (Steam-Bibliotheken …)
 
     def __post_init__(self) -> None:
         self.keys = {key_norm(k) for k in self.keys}
@@ -112,9 +115,10 @@ def _under(path: str, folder: str) -> bool:
     return path == folder or path.startswith(folder + "\\")
 
 
-def classify(proc, allowed: WinAllowed, owner=lambda path: "", parent_exe=lambda: "") -> Verdict | None:
+def classify(proc, allowed: WinAllowed, owner=lambda path: "", parent_exe=lambda: "",
+             ancestors=lambda: ()) -> Verdict | None:
     """``None`` = erlaubt, sonst Begründung. ``owner(pfad)`` liefert die SID des Dateibesitzers,
-    ``parent_exe()`` den Pfad des Elternprozesses (nur bei Bedarf gelesen)."""
+    ``parent_exe()`` den Pfad des Elternprozesses, ``ancestors()`` die Pfade der Vorfahren (nur bei Bedarf)."""
     exe = norm(proc.exe)
     name = ntpath.basename(proc.exe)
     base = name.lower()
@@ -136,6 +140,13 @@ def classify(proc, allowed: WinAllowed, owner=lambda path: "", parent_exe=lambda
         return None   # Paket ohne Startmenü-Eintrag: Hintergrunddienst
     key = "exe:" + proc.exe
     if "exe:" + exe in allowed.keys:
+        return None
+    # Freigegebener Launcher: seine Spieleordner (Steam lädt Spiele als Kind – Dateien gehören ihm) und alles, was
+    # er startet (Spiele, Installer der Spiele); wie Steam/Heroic unter Linux
+    if any(_under(exe, d) for d in allowed.launcher_dirs):
+        return None
+    if allowed.keys and any(ntpath.basename(a).lower() in LAUNCHERS and "exe:" + norm(a) in allowed.keys
+                            for a in ancestors()):
         return None
     try:
         own = bool(allowed.sid) and owner(proc.exe) == allowed.sid

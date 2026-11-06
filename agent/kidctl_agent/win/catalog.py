@@ -198,7 +198,7 @@ def parse(data: dict, exists=os.path.isfile, skip_dir: str = "", skip_profiles=(
         if not re.fullmatch(r"[A-Za-z0-9.\-]{1,100}_[a-z0-9]{13}", pfn):
             continue
         cat.known_pfns.add(pfn)
-        if not item.get("entry") or pfn.lower().startswith("microsoftwindows.client."):
+        if not item.get("entry") or pfn.lower().startswith(("microsoftwindows.client.", "microsoft.xboxgamingoverlay_")):
             continue   # Hintergrundpaket bzw. Shell-Teil (siehe programs.BASE_PFN_PREFIXES)
         cat.pfns.add(pfn)
         package = pfn.rsplit("_", 1)[0]
