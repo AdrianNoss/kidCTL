@@ -127,6 +127,10 @@ dev/vm/winvm.sh put datei C:/ziel/ ; dev/vm/winvm.sh get C:/quelle ziel
 - **Windows 11 ab 24H2:** Setup ignoriert den WinPE-Teil der Antwortdatei teilweise und fragt nach dem Product Key
   – einmal „Ich habe keinen Product Key“ wählen; Partitionierung, Edition, Konten und Einrichtung laufen danach
   unbeaufsichtigt.
+- **Windows 10 22H2:** Der OpenSSH-Server aus den optionalen Features (Stand 2019) startet nicht. Das
+  Provisioning ersetzt ihn dann durch Win32-OpenSSH als MSI (Version und SHA-256 gepinnt) und trägt `sftp-server`
+  mit 8.3-Kurzpfad ein (sonst scheitert `scp`). Host-Schlüssel nie als `admin` mit `ssh-keygen -A` erzeugen –
+  der Dienst (SYSTEM) lehnt sie ab („Bad owner“) und startet in einer Schleife neu.
 - Konten: `admin`/`admin` (Administrator, SSH per Schlüssel der VM), `kind`/`kind` und `kind2`/`kind2`
   (Standardbenutzer, legt `provision-windows.ps1` an). Einrichtung: OpenSSH-Server (PowerShell als Shell),
   kein Ruhezustand, Inno Setup (für `packaging/windows/build.py`). Log: `C:\kidctl-provision.log`.

@@ -17,7 +17,27 @@ Add-LocalGroupMember -SID "S-1-5-32-544" -Member "admin" -ErrorAction SilentlyCo
 $cap = Get-WindowsCapability -Online -Name "OpenSSH.Server*" | Select-Object -First 1
 if ($cap.State -ne "Installed") { Add-WindowsCapability -Online -Name $cap.Name }
 Set-Service sshd -StartupType Automatic
-Start-Service sshd
+Start-Service sshd -ErrorAction SilentlyContinue
+Start-Sleep 5
+if ((Get-Service sshd).Status -ne "Running") {
+  # Windows 10 22H2: Der Feature-sshd (Stand 2019) startet nicht (beendet sich still, Neustartschleife) –
+  # ersetzen durch Win32-OpenSSH als MSI (Version gepinnt). Host-Schlüssel erzeugt der Dienst selbst als
+  # SYSTEM; mit „ssh-keygen -A“ als admin erzeugte Schlüssel lehnt er ab („Bad owner“).
+  Remove-WindowsCapability -Online -Name $cap.Name | Out-Null
+  $msi = "$env:TEMP\OpenSSH-Win64-v10.0.0.0.msi"
+  Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/PowerShell/Win32-OpenSSH/releases/download/10.0.0.0p2-Preview/OpenSSH-Win64-v10.0.0.0.msi" -OutFile $msi
+  if ((Get-FileHash -Algorithm SHA256 $msi).Hash -eq "DDEC9C53864280759CF9F74791CEFD387100E3946AA849A1C138A4ED1B96B7D9") {
+    Start-Process -Wait msiexec -ArgumentList "/i", $msi, "/qn", "ADDLOCAL=Server"
+    # sftp-server.exe (für scp) liegt nicht im PATH des Dienstes; der Pfad muss ohne Leerzeichen sein,
+    # da sshd ihn über die Shell startet → 8.3-Kurzname
+    $cfg = "C:\ProgramData\ssh\sshd_config"
+    if (-not (Test-Path $cfg)) { Copy-Item "C:\Program Files\OpenSSH\sshd_config_default" $cfg }
+    $sftp = (New-Object -ComObject Scripting.FileSystemObject).GetFile("C:\Program Files\OpenSSH\sftp-server.exe").ShortPath
+    (Get-Content $cfg) -replace "^Subsystem\s+sftp\s+.*", "Subsystem sftp $sftp" | Set-Content $cfg -Encoding ascii
+    Set-Service sshd -StartupType Automatic
+    Start-Service sshd
+  } else { Write-Output "OpenSSH-MSI: Prüfsumme falsch" }
+}
 New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force | Out-Null
 if (-not (Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyContinue)) {
   New-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -DisplayName "OpenSSH Server (sshd)" -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22 | Out-Null

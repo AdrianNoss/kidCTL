@@ -1584,3 +1584,14 @@ Abweichungen stehen hier und unter „Restlücken“.
   aufgebraucht“ und Spiel geschlossen, auch beim erneuten Start. Dabei gefunden: Game Bar startet mit jedem Spiel
   (jetzt Basis). Nicht getestet: Steam und Epic mit echten Spielen (Anmeldung nötig), andere Launcher, Spiele im
   Vollbild, Windows 10, echter Rechner.
+- 2026-11-06: Windows 10 getestet (VM Windows 10 Pro 22H2, Installer 0.32.0 in der Win10-VM gebaut): stille
+  Installation, Kopplung, Dienst und Tray-App (Autostart, Restzeit, Chatverlauf); Nachricht als Toast; Sperre mit
+  1 min Vorwarnung – Toast und Countdown-Fenster, Abmeldung nach 60 s, Konto deaktiviert und vom
+  Anmeldebildschirm verschwunden, nach Freigabe wieder da; Programmkontrolle – Rechner (Store-App) geschlossen,
+  Toast „Programm gesperrt“, Knopf „Freigabe anfragen“ aus dem Info-Center öffnet den Dialog über `kidctl://`,
+  Anfrage beim Server, „heute erlauben“ wirkt sofort; Website-Filter (Whitelist) – example.com gesperrt,
+  Wikipedia erreichbar. Keine Codeänderung nötig. Test-VM: Feature-OpenSSH von Windows 10 startet nicht →
+  `provision-windows.ps1` installiert dann Win32-OpenSSH 10.0 (MSI, gepinnt) und setzt den sftp-Pfad. Bemerkt:
+  Im Whitelist-Modus werden auch Windows-Dienste wie SmartScreen (`checkappexec.microsoft.com`) und Telemetrie
+  gefiltert und als gesperrte Domains gemeldet. Nicht getestet: Spiele unter Windows 10,
+  Update über `latest.json` (Entwicklungsserver liefert das Windows-Repo nicht aus).
