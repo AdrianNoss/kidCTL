@@ -98,6 +98,12 @@ Root: HKLM; Subkey: "Software\Classes\kidctl"; ValueType: string; ValueName: "UR
 Root: HKLM; Subkey: "Software\Classes\kidctl\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\kidctl.ico"
 Root: HKLM; Subkey: "Software\Classes\kidctl\shell\open\command"; ValueType: string; ValueName: ""; \
   ValueData: """{app}\python\pythonw.exe"" -m kidctl_tray ""%1"""
+; Website-Filter: DNS-over-HTTPS in Browsern und in Windows aus (sonst an Unbound vorbei)
+Root: HKLM; Subkey: "SOFTWARE\Policies\Microsoft\Edge"; ValueType: string; ValueName: "DnsOverHttpsMode"; ValueData: "off"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "SOFTWARE\Policies\Google\Chrome"; ValueType: string; ValueName: "DnsOverHttpsMode"; ValueData: "off"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "SOFTWARE\Policies\Mozilla\Firefox\DNSOverHTTPS"; ValueType: dword; ValueName: "Enabled"; ValueData: 0; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "SOFTWARE\Policies\Mozilla\Firefox\DNSOverHTTPS"; ValueType: dword; ValueName: "Locked"; ValueData: 1; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "SOFTWARE\Policies\Microsoft\Windows NT\DNSClient"; ValueType: dword; ValueName: "DoHPolicy"; ValueData: 1; Flags: uninsdeletevalue
 ; Dienst auch im abgesicherten Modus
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\SafeBoot\Minimal\{#Svc}"; ValueType: string; ValueName: ""; ValueData: "Service"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\SafeBoot\Network\{#Svc}"; ValueType: string; ValueName: ""; ValueData: "Service"; Flags: uninsdeletekey

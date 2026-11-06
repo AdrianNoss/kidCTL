@@ -20,6 +20,7 @@ from . import api
 log = logging.getLogger("kidctl.service")
 
 SERVICE_NAME = "KidCTL"
+STOP_REASON: dict[str, int] = {}   # "control": Steuercode, mit dem der Dienst beendet wurde (Stopp/Herunterfahren)
 LOG_DIR = store.PROGRAM_DATA / "logs"
 
 
@@ -62,6 +63,7 @@ def run_service(make_main) -> None:
     def handler(control, _event_type, _event_data, _context):
         if control in (api.SERVICE_CONTROL_STOP, api.SERVICE_CONTROL_SHUTDOWN):
             log.info("Dienst wird beendet (Steuercode %s)", control)
+            STOP_REASON["control"] = control
             report(api.SERVICE_STOP_PENDING, 15000)
             loop, task = state["loop"], state["task"]
             if loop and task:

@@ -25,6 +25,7 @@ from .loginlock import WinLoginLock
 from .pipeserver import PipeTrayServer
 from .sessions import WinSessions
 from .update import Updater
+from .dnsfilter import WinDnsFilter
 from .watcher import WinProgramWatcher
 
 log = logging.getLogger("kidctl.agent")
@@ -33,6 +34,7 @@ BLOCKED_LOGIN_GRACE = 10   # Sekunden: Sitzung trotz Login-Sperre -> Hinweis, da
 TRAY_GRACE = 60            # Sekunden nach Erscheinen einer Sitzung: Zeit für den Autostart der Tray-App
 TRAY_RETRY = 300           # frühestens so oft je Sitzung neu starten
 SCAN_EVERY = 2             # Takte (10 s): vollständiger Abgleich aller Prozesse (neue prüft der Watcher sofort)
+DNS_CHECK_EVERY = 6        # Takte (30 s): Resolver läuft? Adapter (z. B. neues VPN) noch auf dem Filter?
 
 
 def install_dir() -> str:
@@ -65,6 +67,10 @@ class WinAgent(AgentCore):
         self.updater = Updater(device)
         self.programs = WinProgramWatcher(self, install_dir=install_dir())
         self.acl = AclManager(store)
+        self.dns = WinDnsFilter(install_dir())
+        self.wfp = None            # WFP-Sitzung (nur Windows, beim Start geöffnet)
+        self._dns_key = None       # zuletzt angewendetes Profil (aktive Sitzung, Policy, Tag)
+        self._dns_lock = asyncio.Lock()   # Abgleich nie doppelt gleichzeitig (Takt, Policy, Start)
         self._known: set[tuple[str, int]] = set()   # bekannte Sitzungen (ID, Anmeldezeit)
         self._prev_locked: set[str] = set()          # im letzten Takt gesperrte User
         self._tasks: set[asyncio.Task] = set()
@@ -96,7 +102,15 @@ class WinAgent(AgentCore):
     def _locked_now(self) -> set[str]:
         return {u for u, d in self.decisions(self.now_local()).items() if not d.allowed}
 
+    async def _after_count(self, now, counting: set[str], delta: float) -> None:
+        for cid, domain, source in self.dns.collect_blocked():
+            users = sorted(self.users_of(cid))
+            if users:
+                self.programs.record_domain(users[0], domain, source)
+
     async def _maintain(self) -> None:
+        if self._dns_profile_key() != self._dns_key or self._ticks % DNS_CHECK_EVERY == 0:
+            await self.sync_dns()
         if self.loginlock.changed:
             self.loginlock.changed = False
             await self._refresh_login_screens()
@@ -143,6 +157,10 @@ class WinAgent(AgentCore):
     # ---------- Programmkontrolle ----------
 
     async def _startup(self) -> None:
+        if sys.platform == "win32":
+            from .wfp import Wfp
+            self.wfp = Wfp()
+        await self.sync_dns()
         await self.programs.refresh_catalog()
         self.apps = self.programs.apps
         await self.sync_acl()
@@ -153,6 +171,8 @@ class WinAgent(AgentCore):
     async def _policy_applied(self) -> None:
         self.programs.policy_changed()
         await self.sync_acl()
+        self._dns_key = None
+        await self.sync_dns()
         await self.programs.scan()   # neue Sperren sofort, nicht erst beim nächsten Abgleich
 
     def acl_wanted(self) -> dict[str, list[str]]:
@@ -164,6 +184,75 @@ class WinAgent(AgentCore):
             await asyncio.to_thread(self.acl.sync, self.acl_wanted())
         except Exception:
             log.exception("Ausführverbote nicht anwendbar")
+
+    # ---------- Website-Filter ----------
+
+    def web_kids(self) -> dict[str, tuple[str, int, p.WebFilter]]:
+        """SID -> (User, Kind-ID, Filter heute) der zugeordneten Nicht-Admins mit Website-Filter."""
+        if self.policy is None:
+            return {}
+        now = self.now_local()
+        eligible = self.decisions(now)
+        children = {c.id: c for c in self.policy.children}
+        out = {}
+        for user, cid in self.policy.users.items():
+            child = children.get(cid)
+            if child is None or user not in eligible:
+                continue
+            web = child.web_on(now.date())
+            account = self.accounts.by_wire(user)
+            if web.mode != "off" and account is not None:
+                out[account.sid] = (user, cid, web)
+        return out
+
+    def _active_user(self) -> str | None:
+        active = [s.user for s in self._sessions if s.active and s.is_user_session]
+        return active[0] if len(active) == 1 else None
+
+    def _dns_profile_key(self):
+        kids = self.web_kids()
+        background = sorted(s.user for s in self._sessions if s.is_user_session and not s.active)
+        return (self.policy.version if self.policy else None, self.now_local().date(), self._active_user(),
+                tuple(background), tuple(sorted(kids)))
+
+    async def sync_dns(self) -> None:
+        """Website-Filter an Policy und aktive Sitzung angleichen (Resolver, Adapter, WFP)."""
+        async with self._dns_lock:
+            key = self._dns_profile_key()
+            kids = self.web_kids()
+            try:
+                await asyncio.to_thread(self._sync_dns, kids)
+                self._dns_key = key
+            except Exception:
+                log.exception("Website-Filter nicht anwendbar")
+
+    def _sync_dns(self, kids: dict[str, tuple[str, int, p.WebFilter]]) -> None:
+        from ..dnsfilter import fetch_lists
+        if not kids:
+            if self.wfp:
+                self.wfp.set_rules(set())
+            self.dns.stop()
+            self.dns.restore_adapters()
+            return
+        refs = [r for _u, _c, web in kids.values() if web.mode == "blacklist" for r in web.lists]
+        fetch_lists(self.dns.lists_dir, refs, self.device)
+        by_user = {user: (cid, web) for _sid, (user, cid, web) in kids.items()}
+        cid, web = by_user.get(self._active_user(), (None, None))
+        self.dns.apply(cid, web)
+        self.dns.redirect_adapters()
+        if self.wfp:
+            background = {s.user for s in self._sessions if s.is_user_session and not s.active}
+            rules = {(sid, port) for sid in kids for port in (53, 853)}
+            rules |= {(sid, None) for sid, (user, _c, _w) in kids.items() if user in background}
+            self.wfp.set_rules(rules)
+
+    async def _shutdown(self) -> None:
+        from .service import STOP_REASON
+        self.dns.stop()
+        if STOP_REASON.get("control") == 1:   # von einem Admin gestoppt (nicht Herunterfahren): DNS freigeben
+            await asyncio.to_thread(self.dns.restore_adapters)
+        if self.wfp:
+            self.wfp.close()
 
     async def _connected_more(self, conn) -> None:
         await self.programs.flush(conn)
@@ -215,7 +304,9 @@ class WinAgent(AgentCore):
         return ([integrity.check_safeboot(), integrity.check_tray_autostart()]
                 + integrity.check_tray(self.tray.tray_icons(), assigned)
                 + integrity.check_admins(assigned & present, self.accounts.is_admin_wire)
-                + integrity.check_acl(users, self.acl.problems(users)))
+                + integrity.check_acl(users, self.acl.problems(users))
+                + integrity.check_dns(bool(self.web_kids()), self.dns.problems)
+                + integrity.check_browser_policies(bool(self.web_kids())))
 
     async def check_integrity(self) -> None:
         try:

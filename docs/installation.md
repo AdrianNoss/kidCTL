@@ -266,7 +266,7 @@ später eine aus, kommt ein Push-Alarm.
 ### 3.6 Windows
 
 Unter Windows 10/11 gibt es in diesem Stand **Bildschirmzeit, Abmeldung, Login-Sperre, „Jetzt sperren“,
-Tray-App mit Chat und Verlängerungen sowie die Programmkontrolle**. Website-Filter und Spiele folgen (siehe
+Tray-App mit Chat und Verlängerungen, die Programmkontrolle und der Website-Filter**. Spiele folgen (siehe
 `spec.md`, Abschnitt „Windows“).
 
 1. **Kinderkonten** als „Standardbenutzer“ anlegen (Einstellungen → Konten → Andere Benutzer), lokale Konten oder
@@ -300,8 +300,13 @@ Was sich von Linux unterscheidet:
   „Microsoft Edge“). Mit Programmkontrolle kann das Kind im eigenen Profil (Downloads, AppData …) keine Programme
   starten. Apps, die sich ins Profil installieren (Roblox, Discord …), installieren die Eltern mit Programmkontrolle
   „Aus“ im Konto des Kindes und geben sie dann frei – KidCTL macht ihren Ordner dann wieder ausführbar.
-- Deinstallieren: Einstellungen → Apps → Installierte Apps → KidCTL. Gesperrte Konten werden dabei wieder aktiviert
-  und die Ausführverbote entfernt.
+- **Website-Filter:** Unter Windows gilt der Filter des Kindes, das gerade vorne angemeldet ist (für den ganzen
+  Rechner); ist ein Elternteil vorne, wird nicht gefiltert. Ein Kind, das per „Benutzer wechseln“ im Hintergrund
+  angemeldet bleibt, hat währenddessen kein Internet. KidCTL stellt die DNS-Server der Netzwerkadapter auf den
+  eigenen Filter um; stoppt ein Administrator den Dienst oder wird KidCTL deinstalliert, kommen die ursprünglichen
+  Einstellungen zurück.
+- Deinstallieren: Einstellungen → Apps → Installierte Apps → KidCTL. Gesperrte Konten werden dabei wieder aktiviert,
+  die Ausführverbote entfernt und die DNS-Einstellungen wiederhergestellt.
 
 Details zum Paket: [`packaging/windows/README.md`](../packaging/windows/README.md).
 

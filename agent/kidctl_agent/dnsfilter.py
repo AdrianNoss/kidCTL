@@ -13,7 +13,6 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
-import pwd
 import re
 import subprocess
 import tempfile
@@ -23,7 +22,7 @@ from pathlib import Path
 
 from kidctl_common import protocol as p
 
-from . import loginlock, store
+from . import store
 
 log = logging.getLogger("kidctl.dns")
 
@@ -231,8 +230,44 @@ def _run(*cmd: str, input: str | None = None) -> subprocess.CompletedProcess:
                           env={"PATH": "/usr/bin:/usr/sbin", "LC_ALL": "C"})
 
 
+def fetch_lists(lists_dir: Path, refs: list[p.BlocklistRef], device: dict | None) -> None:
+    """Fehlende/veraltete Sperrlisten beim Server holen (blockierend, Geräte-Token, SHA-256 geprüft).
+    Bei Fehlern bleibt der Cache. Gemeinsam für Linux und Windows."""
+    lists_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+    for ref in refs:
+        path = lists_dir / f"{ref.id}.txt"
+        if not ref.sha256 or (path.exists() and _sha(path.read_bytes()) == ref.sha256):
+            continue
+        if device is None:
+            continue
+        url = f"{device['server_url'].rstrip('/')}{p.LISTS_PATH}/{ref.id}"
+        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {device['token']}"})
+        try:
+            with _opener.open(req, timeout=60) as resp:
+                body = resp.read()
+        except (urllib.error.URLError, OSError) as e:
+            log.warning("Sperrliste %s nicht abrufbar (%s) – nutze Cache", ref.id, e)
+            continue
+        if _sha(body) != ref.sha256:
+            log.warning("Sperrliste %s: Prüfsumme passt nicht – verworfen", ref.id)
+            continue
+        tmp = path.with_suffix(".tmp")
+        tmp.write_bytes(body)
+        os.replace(tmp, path)
+        log.info("Sperrliste %s aktualisiert", ref.id)
+
+
+def load_list(lists_dir: Path, list_id: str) -> list[str]:
+    try:
+        return (lists_dir / f"{list_id}.txt").read_text().split()
+    except OSError:
+        return []
+
+
 class DnsFilter:
     def __init__(self, run=_run) -> None:
+        from . import loginlock   # nur Linux (grp/pwd)
+
         self.run = run
         self.dns_dir = loginlock.RUN_DIR / "dns"
         self.lists_dir = store.STATE_DIR / "lists"
@@ -244,35 +279,10 @@ class DnsFilter:
     # ---------- Sperrlisten ----------
 
     def fetch_lists(self, refs: list[p.BlocklistRef], device: dict | None) -> None:
-        """Fehlende/veraltete Listen holen (blockierend). Bei Fehlern bleibt der Cache."""
-        self.lists_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
-        for ref in refs:
-            path = self.lists_dir / f"{ref.id}.txt"
-            if not ref.sha256 or (path.exists() and _sha(path.read_bytes()) == ref.sha256):
-                continue
-            if device is None:
-                continue
-            url = f"{device['server_url'].rstrip('/')}{p.LISTS_PATH}/{ref.id}"
-            req = urllib.request.Request(url, headers={"Authorization": f"Bearer {device['token']}"})
-            try:
-                with _opener.open(req, timeout=60) as resp:
-                    body = resp.read()
-            except (urllib.error.URLError, OSError) as e:
-                log.warning("Sperrliste %s nicht abrufbar (%s) – nutze Cache", ref.id, e)
-                continue
-            if _sha(body) != ref.sha256:
-                log.warning("Sperrliste %s: Prüfsumme passt nicht – verworfen", ref.id)
-                continue
-            tmp = path.with_suffix(".tmp")
-            tmp.write_bytes(body)
-            os.replace(tmp, path)
-            log.info("Sperrliste %s aktualisiert", ref.id)
+        fetch_lists(self.lists_dir, refs, device)
 
     def load_list(self, list_id: str) -> list[str]:
-        try:
-            return (self.lists_dir / f"{list_id}.txt").read_text().split()
-        except OSError:
-            return []
+        return load_list(self.lists_dir, list_id)
 
     # ---------- Anwenden ----------
 
@@ -305,6 +315,8 @@ class DnsFilter:
                 self._applied.pop(cid, None)
                 for suffix in ("conf", "zones"):
                     (self.dns_dir / f"{cid}.{suffix}").unlink(missing_ok=True)
+        import pwd   # nur Linux
+
         ports = {}
         for cid, (_web, users) in active.items():
             for user in users:

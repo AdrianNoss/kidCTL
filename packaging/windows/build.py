@@ -50,6 +50,7 @@ QT_KEEP_DLLS = {"Qt6Core", "Qt6Gui", "Qt6Widgets", "Qt6Network", "Qt6Svg", "Qt6O
 QT_DROP_DIRS = ("qml", "include", "typesystems", "glue", "scripts", "metatypes", "resources", "doc")
 
 APPLY = False
+UNBOUND: tuple[str, str] | None = None
 
 
 def say(msg: str) -> None:
@@ -71,12 +72,15 @@ def sha256(path: Path) -> str:
 
 def lock() -> tuple[tuple[str, str], list[tuple[str, str, str, str]]]:
     python, wheels = None, []
+    global UNBOUND
     for line in (HERE / "vendor.lock").read_text().splitlines():
         parts = line.split()
         if not parts or parts[0].startswith("#"):
             continue
         if parts[0] == "python":
             python = (parts[1], parts[2])
+        elif parts[0] == "unbound":
+            UNBOUND = (parts[1], parts[2])
         elif parts[0] == "wheel":
             wheels.append(tuple(parts[1:5]))
     if python is None:
@@ -157,6 +161,9 @@ def cmd_stage() -> None:
     ver = version()
     say(f"Staging für KidCTL {ver}: {STAGING}")
     embed = fetch(py_url, py_url.rsplit("/", 1)[1], py_sha)
+    if UNBOUND is None:
+        sys.exit("vendor.lock: Zeile „unbound“ fehlt")
+    unbound_zip = fetch(UNBOUND[0], UNBOUND[0].rsplit("/", 1)[1], UNBOUND[1])
     paths = []
     for project, ver_, fn, sha in wheels:
         cached = (CACHE / "downloads" / fn).exists()
@@ -182,6 +189,11 @@ def cmd_stage() -> None:
         with zipfile.ZipFile(path) as z:
             z.extractall(site)
     prune_qt(site)
+    ub = STAGING / "unbound"
+    ub.mkdir()
+    with zipfile.ZipFile(unbound_zip) as z:   # nur der Resolver selbst (statisch gelinkt) und die Lizenz
+        for name in ("unbound.exe", "LICENSE"):
+            (ub / name).write_bytes(z.read(name))
     lib = STAGING / "lib"
     for src, pkg in PACKAGES:
         shutil.copytree(ROOT / src / pkg, lib / pkg, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "tests"))

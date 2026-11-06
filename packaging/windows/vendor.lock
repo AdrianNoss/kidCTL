@@ -2,6 +2,8 @@
 # Format: python <url> <sha256>  bzw.  wheel <pypi-name> <version> <datei> <sha256>
 # Aktualisieren: Versionen/Dateien hier ändern, Prüfsummen von PyPI („Download files“) bzw. python.org übernehmen.
 python https://www.python.org/ftp/python/3.14.10/python-3.14.10-embed-amd64.zip 90905e64a840557d8c1bc4f5b74db3d7ee85e3ffb217611cac1c7813acea4159
+# Resolver für den Website-Filter (offizieller Windows-Build von NLnet Labs, Prüfsumme wie veröffentlicht)
+unbound https://nlnetlabs.nl/downloads/unbound/unbound-1.26.2.zip 1274c4798ee418601b422e2c8112503844b4644f4bad73e6a691da8c9d1bc0d6
 wheel annotated-types 0.8.0 annotated_types-0.8.0-py3-none-any.whl f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0
 wheel pydantic 2.14.1 pydantic-2.14.1-py3-none-any.whl 9195d967ec791692a04438115466764fb8b9a27b31f14a760437694f40d6b454
 wheel pydantic-core 2.50.1 pydantic_core-2.50.1-cp314-cp314-win_amd64.whl d32f3acc081cc3923386d88f422cde8892335e95f034e0104bb4cf9310d9915f

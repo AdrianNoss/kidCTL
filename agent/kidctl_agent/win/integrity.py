@@ -49,6 +49,32 @@ def check_acl(users: dict[str, str], problems: dict[str, str]) -> list[Integrity
             for sid, user in sorted(users.items(), key=lambda x: x[1])]
 
 
+def check_dns(active: bool, problems) -> list[IntegrityCheck]:
+    """Website-Filter (nur wenn ein Kind ihn nutzt): Resolver läuft, Adapter zeigen auf ihn."""
+    if not active:
+        return []
+    found = problems()
+    return [IntegrityCheck(id="dns", label="Website-Filter (Resolver, DNS der Adapter)", ok=not found,
+                           detail="; ".join(found))]
+
+
+BROWSER_POLICIES = (   # (Schlüssel unter HKLM, Wert, erwarteter Inhalt) – setzt der Installer
+    (r"SOFTWARE\Policies\Microsoft\Edge", "DnsOverHttpsMode", "off"),
+    (r"SOFTWARE\Policies\Google\Chrome", "DnsOverHttpsMode", "off"),
+    (r"SOFTWARE\Policies\Mozilla\Firefox\DNSOverHTTPS", "Enabled", "0"),
+    (r"SOFTWARE\Policies\Microsoft\Windows NT\DNSClient", "DoHPolicy", "1"),
+)
+
+
+def check_browser_policies(active: bool, read=_read) -> list[IntegrityCheck]:
+    if not active:
+        return []
+    missing = [f"{key.rsplit(chr(92), 1)[-1]}\\{value}" for key, value, want in BROWSER_POLICIES
+               if read(key, value) != want]
+    return [IntegrityCheck(id="browser", label="Richtlinien gegen DNS-over-HTTPS", ok=not missing,
+                           detail="" if not missing else f"fehlt: {', '.join(missing)} – KidCTL neu installieren")]
+
+
 def check_admins(assigned: set[str], is_admin) -> list[IntegrityCheck]:
     """Zugeordnete Kinder mit Administratorrechten werden nie eingeschränkt (Grundregel) – sichtbar machen."""
     return [IntegrityCheck(id=f"admin:{user}", label=f"Konto {user} ohne Administratorrechte", ok=False,

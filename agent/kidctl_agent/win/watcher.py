@@ -29,7 +29,7 @@ CATALOG_EVERY = 6 * 3600.0
 CATALOG_MIN_GAP = 60.0     # neu lesen bei unbekanntem Paket höchstens so oft
 BLOCKED_FILE = "blocked.json"
 MAX_PENDING = 500
-REPORT_DEDUP = {"audit": 600.0, "enforce": 60.0}
+REPORT_DEDUP = {"audit": 600.0, "enforce": 60.0, "domain": 600.0}
 NOTIFY_DEDUP = 60.0
 RECENT_SECONDS = 24 * 3600
 RECENT_MAX = 100
@@ -240,10 +240,10 @@ class WinProgramWatcher:
             return en
         return self.names.get(key, fallback)
 
-    def remember(self, user: str, key: str, name: str) -> None:
+    def remember(self, user: str, key: str, name: str, kind: str = "program") -> None:
         items = self.recent.setdefault(user, {})
         old = items.pop(key, None)
-        item = t.BlockedItem(access_kind="program", key=key, name=name, last_at=datetime.now(timezone.utc),
+        item = t.BlockedItem(access_kind=kind, key=key, name=name, last_at=datetime.now(timezone.utc),
                              count=old[0].count + 1 if old else 1)
         items[key] = (item, self.clock())
         while len(items) > RECENT_MAX:
@@ -256,13 +256,24 @@ class WinProgramWatcher:
             del items[key]
         return [i for i, _at in sorted(items.values(), key=lambda x: -x[1])]
 
-    def _record(self, user: str, verdict: Verdict, name: str, audit: bool) -> bool:
+    def record_domain(self, user: str, domain: str, source: str) -> bool:
+        """Vom Website-Filter gesperrte Anfrage: ins Protokoll, Hauptdomain für „Freigabe anfragen“."""
+        from ..dnsfilter import site_of, source_code
+        if source != "DNS-over-HTTPS-Anbieter":
+            site = site_of(domain)
+            self.remember(user, f"domain:{site}", site, kind="domain")
+        code, arg = source_code(source)
+        return self._record(user, Verdict(f"domain:{domain}", domain, source, code=code, arg=arg), domain,
+                            audit=False, kind="domain")
+
+    def _record(self, user: str, verdict: Verdict, name: str, audit: bool, kind: str = "program") -> bool:
         now = self.clock()
         k = (user, verdict.key)
-        if now - self.last_report.get(k, -1e9) < REPORT_DEDUP["audit" if audit else "enforce"]:
+        dedup = REPORT_DEDUP["domain" if kind == "domain" else "audit" if audit else "enforce"]
+        if now - self.last_report.get(k, -1e9) < dedup:
             return False
         self.last_report[k] = now
-        self.pending.append(p.BlockedEvent(username=user, at=datetime.now(timezone.utc), kind="program",
+        self.pending.append(p.BlockedEvent(username=user, at=datetime.now(timezone.utc), kind=kind,
                                            key=verdict.key[:512], name=name[:255], detail=verdict.detail[:255],
                                            audit=audit, detail_code=verdict.code[:32], detail_arg=verdict.arg[:255]))
         del self.pending[:-MAX_PENDING]

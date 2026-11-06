@@ -101,6 +101,12 @@ def unlock_all() -> int:
           f"{left} Konto/Konten konnten nicht aktiviert werden (siehe Log).")
     AclManager(store).sync({})   # Ausführverbote und Ausnahmen zurücknehmen
     print("Ausführverbote entfernt.")
+    from .win.agent import install_dir
+    from .win.dnsfilter import WinDnsFilter
+    dns = WinDnsFilter(install_dir())
+    dns.kill_stale()
+    dns.restore_adapters()       # DNS der Netzwerkadapter wie vor KidCTL
+    print("DNS der Netzwerkadapter wiederhergestellt.")
     return 1 if left else 0
 
 

@@ -162,7 +162,7 @@ Verlängerungsanfragen.
   offiziellen .deb: `/opt/Heroic/heroic` gilt als Launcher.
 - Logind trägt unter GDM keinen Desktop ein (auch Ubuntu) – Abmeldung über die laufende Shell (wie GNOME).
 
-### Windows (entschieden 2026-11-04; Schritt 1 umgesetzt in 0.29.0, Schritt 2 in 0.30.0)
+### Windows (entschieden 2026-11-04; Schritt 1 umgesetzt in 0.29.0, Schritt 2 in 0.30.0, Schritt 3 in 0.31.0)
 Per /grill-me abgestimmt. Grundsatz: gleiches Verhalten wie unter Linux, wo Windows es zulässt;
 Abweichungen stehen hier und unter „Restlücken“.
 
@@ -251,20 +251,31 @@ Abweichungen stehen hier und unter „Restlücken“.
     Shells als „<name> (Shell)“, Store-Apps mit sichtbarem Eintrag. Store-Namen löst Windows für SYSTEM nicht
     auf – feste Namen für die mitgelieferten Microsoft-Apps (`KNOWN_APPS`, deutsch/englisch), sonst lesbarer
     Paketname. Kategorien über Schlüsselwörter, Programme unter `%WINDIR%` als „System“.
-- **Website-Filter (Profil folgt der aktiven Sitzung):** Unter Windows löst der Systemdienst `dnscache` für
-  alle Programme auf – ein Filter je Benutzer auf DNS-Ebene ist nicht möglich.
-  - Lokaler Unbound (offizieller Windows-Build), Konfiguration wie `dnsfilter.py`. Der Resolver nutzt das
-    Profil des Kindes, dessen Sitzung an der Konsole aktiv ist; Eltern/Admin aktiv = ungefiltert. Bei jedem
-    Wechsel DNS-Cache leeren.
-  - **Alle DNS-Anfragen des Rechners laufen immer über Unbound:** WFP sperrt rechnerweit ausgehend Port 53/853
-    außer für Unbound; der Agent setzt auf jedem Adapter (auch neuen, z. B. VPN) die DNS-Server auf
-    `127.0.0.1`/`::1`. Upstream: per DHCP bekannte DNS-Server (gemerkt) oder fester Upstream aus der Policy;
-    Suchdomänen eines VPN-Adapters werden als `forward-zone` an dessen DNS-Server weitergeleitet (Firmen-VPN
-    der Eltern).
-  - **Netzsperre für Kinder-Sitzungen im Hintergrund:** WFP sperrt ausgehenden Verkehr der SID eines Kindes,
-    solange dessen Sitzung nicht die aktive ist (sonst wäre es bei schnellem Benutzerwechsel ungefiltert).
-  - DoH/DoT: Sperrliste wie unter Linux, Browser-Richtlinien in `HKLM` für Edge, Chrome und Firefox, DoH von
-    Windows selbst aus. SafeSearch wie unter Linux.
+- **Website-Filter (Profil folgt der aktiven Sitzung; Schritt 3, umgesetzt in 0.31.0):** Unter Windows löst der
+  Systemdienst `dnscache` für alle Programme auf – ein Filter je Benutzer auf DNS-Ebene ist nicht möglich.
+  - Lokaler Unbound (offizieller Windows-Build 1.26.2, `<Installation>\unbound`, Kindprozess des Agenten) auf
+    `127.0.0.1:53`/`::1:53`, Konfiguration unter `ProgramData\KidCTL\dns`. Zonen, SafeSearch, DoH-Sperren,
+    Sperrlisten und Sperrprotokoll wie unter Linux (`dnsfilter.build_zones` usw.). Profil: Kind, dessen Sitzung
+    aktiv ist; Eltern/Admin aktiv oder niemand = ungefiltert (ohne Zonen). Bei jedem Wechsel Neustart und
+    DNS-Cache von Windows leeren (`DnsFlushResolverCache`). Verwaiste Resolver beendet der Agent beim Start.
+  - Weiterleitung an die ursprünglichen DNS-Server der Adapter (Router; lokale Namen wie `fritz.box`) mit
+    `forward-first` (sonst eigene Rekursion); Suchdomänen eines Adapters (Firmen-VPN) an dessen DNS-Server.
+    Ein fester Upstream aus der Policy ist nicht umgesetzt.
+  - **Adapter:** Alle Schnittstellen zeigen auf `127.0.0.1`/`::1` (PowerShell `Set-DnsClientServerAddress`);
+    die ursprünglichen Einstellungen (statisch bzw. DHCP) merkt sich der Agent (`windns.json`). Prüfung alle 30 s
+    (Registry, z. B. neues VPN). Zurückgesetzt, wenn kein Kind mehr einen Filter hat, wenn ein Admin den Dienst
+    stoppt (sonst hätte niemand DNS) und bei der Deinstallation (`unlock-all`).
+  - **WFP** (`win/wfp.py`, statt Windows-Firewall: deren Regeln mit „Lokaler Benutzer“ sperren ausgehend nicht –
+    in der VM geprüft): Filter auf `ALE_AUTH_CONNECT` V4/V6 mit `ALE_USER_ID` = Kind; Port 53 und 853 für Kinder
+    mit Website-Filter (eigene Resolver in Apps, DoT/DoQ). Abweichung von der Planung: keine rechnerweite Sperre
+    von Port 53 – die Adapter zeigen ohnehin auf Unbound. Dynamische WFP-Sitzung: Endet der Agent, entfernt
+    Windows die Filter (nie verwaiste Sperren; der Dienst startet neu).
+  - **Netzsperre für Kinder-Sitzungen im Hintergrund:** WFP sperrt alle neuen Verbindungen der SID eines Kindes
+    mit Website-Filter, solange es eine Sitzung hat, die nicht die aktive ist.
+  - DoH: Sperrliste wie unter Linux; Richtlinien des Installers: Edge und Chrome `DnsOverHttpsMode=off`, Firefox
+    `DNSOverHTTPS` aus und gesperrt, Windows `DoHPolicy=1` (verboten). Integrität `dns` (Resolver läuft, Adapter
+    umgestellt) und `browser` (Richtlinien), nur wenn ein Kind den Filter nutzt.
+  - Gesperrte Anfragen: Sperrprotokoll und „Freigabe anfragen“ (Hauptdomain) wie unter Linux.
 - **Spiele:**
   - Steam: Erkennung über `SteamAppId` (`game:steam:<id>`, Name aus `appmanifest_*.acf`), Freigabe und
     Elternkette ab `steam.exe` wie unter Linux. Die Steam-Bibliothek (für Benutzer meist beschreibbar)
@@ -303,7 +314,8 @@ Abweichungen stehen hier und unter „Restlücken“.
      Selbst-Update, SafeBoot, Integrität, Test-VMs, Server-Anpassungen.
   2. Programmkontrolle: Prozessliste, Katalog (`.lnk`, AppX), Basisliste, Ausführverbote mit Ausnahmen,
      Freigabe-Anfragen – umgesetzt in 0.30.0.
-  3. Website-Filter: Unbound, WFP, DNS der Adapter, Profilwechsel, Hintergrund-Netzsperre, Browser-Richtlinien.
+  3. Website-Filter: Unbound, WFP, DNS der Adapter, Profilwechsel, Hintergrund-Netzsperre, Browser-Richtlinien –
+     umgesetzt in 0.31.0.
   4. Spiele: Steam, Epic, Xbox/Store, Schalter „zählt als Spiel“, Spiele-Limit, Spielzeit je Spiel.
 
 ### Offline-Verhalten
@@ -872,6 +884,11 @@ Abweichungen stehen hier und unter „Restlücken“.
   - Die Named Pipe muss interaktiven Benutzern Schreibrecht geben (Qt öffnet mit `GENERIC_WRITE`, das schließt das
     Anlegen weiterer Pipe-Instanzen ein): Ein Kind könnte eine zweite Instanz anlegen und Tray-Apps anderer
     Benutzer falsche Zustände zeigen. Durchsetzung und Identität beim Agenten sind davon nicht betroffen.
+  - Website-Filter: Hintergrund-Netzsperre gilt nur für neue Verbindungen – eine bestehende (z. B. laufender
+    Download) eines Kindes läuft nach dem Benutzerwechsel weiter, bis sie endet. Nach dem Hinzufügen eines Adapters
+    (z. B. VPN) kann `dnscache` bis zu 30 s dessen DNS-Server nutzen. Während ein Kind vorne ist, gilt sein Filter
+    auch für Dienste und Hintergrundprozesse anderer Benutzer (alle lösen über `dnscache` auf). Beim Start beendet
+    der Agent jeden laufenden `unbound.exe` (auch einen fremden).
   - Website-Filter folgt der aktiven Sitzung: Ein per Benutzerwechsel im Hintergrund angemeldetes Elternteil
     ist gefiltert, solange ein Kind vorne sitzt. Auch das Firmen-VPN der Eltern löst über den lokalen
     Resolver auf (Weiterleitung der Suchdomänen).
@@ -1530,3 +1547,19 @@ Abweichungen stehen hier und unter „Restlücken“.
   Freigabe lauffähig (Ausnahme am App-Ordner); Integrität grün; Programmkontrolle aus bzw. `unlock-all` nimmt alle
   Einträge zurück (Profil wieder Vollzugriff – dabei gefunden und behoben). Nicht getestet: Store-Installation
   durch das Kind, Microsoft-Konto, Windows 10, Windows 11 Home, echter Rechner.
+- 2026-11-06: Windows Schritt 3 umgesetzt (Paket 0.31.0): Website-Filter mit Unbound (mitgeliefert, vendor.lock),
+  Profil der aktiven Sitzung, Adapter auf den lokalen Resolver (Originale gemerkt und wiederhergestellt), WFP-Filter
+  je Kind (Port 53/853, Netzsperre im Hintergrund) in einer dynamischen Sitzung, Richtlinien gegen DoH (Installer),
+  Integrität, Sperrprotokoll und Website-Freigaben. Gemeinsam: Abruf der Sperrlisten als Modulfunktion
+  (`dnsfilter.fetch_lists`), Linux unverändert. Abweichungen: WFP statt Firewall-Regeln (wirken ausgehend nicht je
+  Benutzer – in der VM gezeigt), keine rechnerweite Port-53-Sperre. Getestet: Agent 251, Server 123, Tray 18 Tests
+  grün (neu: Unbound-Konfiguration, Adapter umstellen/merken/wiederherstellen, Profile und Sperrprotokoll,
+  WFP-Regeln je Sitzung). VM Windows 11: WFP sperrt DNS (53, UDP) und DoT (853) eines Benutzers, HTTPS bleibt;
+  „alles“ sperrt auch HTTPS; nach dem Schließen der Sitzung alles frei. Mit Kind vorne: Adapter auf 127.0.0.1,
+  `tiktok.com` (Eltern-Sperre) und `dns.google` (DoH) NXDOMAIN, `www.google.com` -> `forcesafesearch.google.com`,
+  `example.com` erreichbar, Einträge im Sperrprotokoll; Benutzerwechsel zum Admin: ungefiltert, Kind im Hintergrund
+  mit Netzsperre (Filter in `netsh wfp`); zurück zum Kind: Filter wieder aktiv, Netzsperre weg; Dienst durch Admin
+  gestoppt: Adapter zurück auf DHCP (10.0.2.3), nach dem Start wieder auf den Filter. Dabei gefunden und behoben:
+  gleichzeitige Abgleiche, Übergabe der gemerkten Adapter an PowerShell, GUID-Format von `Get-NetAdapter`. Nicht
+  getestet: Whitelist-Modus und Sperrlisten unter Windows (Konfiguration wie Linux), VPN, Browser mit eigenem
+  DNS, Windows 10, echter Rechner.
