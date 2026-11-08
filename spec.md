@@ -1666,3 +1666,10 @@ Abweichungen stehen hier und unter „Restlücken“.
   Installieren von Steam). Getestet auf Windows 10 mit Installer 0.32.6 als Kind, Programm in `Downloads`: 0.32.5 und
   „Nur protokollieren“ Zugriffsfehler; 0.32.6 startet es und meldet „Protokolliert“, bei „Sperren“ wieder Zugriffsfehler, Verbot wird
   in beide Richtungen gesetzt und aufgehoben. Nicht getestet: echtes `SteamSetup.exe`, Windows 11, echter PC.
+- 2026-11-08: Steam ist plattformübergreifend ein Programm (Agent 0.32.7, Server): Im WebUI gibt es eine Zeile „Steam“, gespeichert unter
+  `exe:/usr/bin/steam`. Der Windows-Agent bezieht jede Steam-Freigabe auf sein per Registry (HKLM) erkanntes Steam samt Ordner und
+  Bibliotheken; Helfer wie `steamwebhelper.exe` erscheinen im Protokoll als „Steam“, ein gesperrtes `steam.exe` löst einen neuen
+  Katalog-Scan aus. Bewusst nur Steam und nicht nach Anzeigenamen: Verknüpfungen im Profil kann das Kind selbst benennen. Getestet:
+  Agent- und Server-Tests (auch gefälschtes `steam.exe` wird nicht mit freigegeben), Windows 10 mit Installer 0.32.7 als Kind und
+  nachgestelltem Steam: frisch installiert gesperrt und nach dem Sperren im Katalog, eine WebUI-Zeile, Freigabe über den Linux-Schlüssel erlaubt
+  `steam.exe` und `steamwebhelper.exe`, Entzug beendet beide. Nicht getestet: echtes Steam, Windows 11, echter PC.

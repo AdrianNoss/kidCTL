@@ -128,3 +128,30 @@ def test_terminal_group():
     from app.programs import group_for
     assert group_for("Shell") == "terminal"
     assert group_for("Qt;KDE;System;TerminalEmulator") == "terminal"    # Konsole nicht unter „System“
+
+
+def test_steam_is_one_program_across_platforms(client, parent):
+    from app import programs
+    cid, tok = _setup(client, parent)
+    win = r"exe:C:\Program Files (x86)\Steam\steam.exe"
+    fake = r"exe:D:\x\steam.exe"             # Verknüpfung „Steam“ des Kindes auf eine eigene Datei
+    apps = [p.AppEntry(key=p.STEAM_KEY, name="Steam", categories=["Game"]), p.AppEntry(key=win, name="Steam"),
+            p.AppEntry(key=fake, name="Steam")]
+    with device(client, tok, "pc", map_to=cid) as (ws, _):
+        _policy(ws)
+        ws.send_text(p.ReportApps(apps=apps).model_dump_json())
+        _sync(ws)
+    with SessionLocal() as db:
+        rows = programs.catalog_for_child(db, cid)
+        assert [(e.key, e.name, e.allowed, e.game_auto) for e in rows] == [(p.STEAM_KEY, "Steam", False, True)]
+        programs.set_allowed(db, cid, {win})              # z. B. über „Freigabe anfragen“ unter Windows
+        db.commit()
+        assert [(e.key, e.allowed, e.missing) for e in programs.catalog_for_child(db, cid)] == [(p.STEAM_KEY, True, False)]
+        assert set(p.STEAM_KEYS) | {win} == set(programs.policy_programs(db, cid))
+        programs.set_allowed(db, cid, {p.STEAM_KEY})       # gespeichert über die gemeinsame Zeile
+        db.commit()
+        keys = programs.policy_programs(db, cid)
+        assert set(keys) == set(p.STEAM_KEYS) and fake not in keys and win not in keys
+        programs.set_allowed(db, cid, set())
+        db.commit()
+        assert programs.policy_programs(db, cid) == []

@@ -344,3 +344,37 @@ def test_execute_deny_only_when_enforcing():
     agent.acl_targets = lambda: WinAgent.acl_targets(agent)
     assert list(WinAgent.acl_targets(agent)) == ["S-enforce"]
     assert WinAgent.acl_wanted(agent) == {"S-enforce": ["c:\\app"]}
+
+
+STEAM_DIR = r"C:\Program Files (x86)\Steam"
+
+
+def _steam_watcher(programs, procs):
+    agent = FakeAgent(programs=programs)
+    w = WinProgramWatcher(agent, procs=procs, scan_catalog=_catalog, clock=lambda: 1000.0)
+    w.scan_games = lambda: SimpleNamespace(
+        steam_exe=STEAM_DIR + r"\steam.exe", steam_dirs=[catalog.norm(STEAM_DIR)], epic_dirs=[], names=dict)
+    return agent, w
+
+
+def test_steam_grant_from_any_platform_covers_windows_install(state):
+    async def main():
+        fp = FakeProcs({10: proc(STEAM_DIR + r"\steam.exe", pid=10),
+                        11: proc(STEAM_DIR + r"\bin\cef\cef.win64\steamwebhelper.exe", pid=11, start=2)})
+        _agent, w = _steam_watcher([p.STEAM_KEY], fp)
+        await w.refresh_catalog()
+        await w.scan()
+        assert fp.killed == [] and w.pending == [] and len(w.handled) == 2
+    asyncio.run(main())
+
+
+def test_steam_helper_is_reported_as_steam(state):
+    async def main():
+        helper = STEAM_DIR + r"\bin\cef\cef.win64\steamwebhelper.exe"
+        fp = FakeProcs({10: proc(helper, pid=10)})
+        _agent, w = _steam_watcher([], fp)
+        await w.refresh_catalog()
+        await w.poll()
+        assert fp.killed == [10]
+        assert [(e.key, e.name) for e in w.pending] == [("exe:" + STEAM_DIR + r"\steam.exe", "Steam")]
+    asyncio.run(main())

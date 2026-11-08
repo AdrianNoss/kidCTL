@@ -117,13 +117,29 @@ def catalog_for_child(db: Session, child_id: int) -> list[CatalogEntry]:
                 e.devices += 1
                 e.game_auto = e.game_auto or auto
                 e.game = e.game or auto
+    steam_row = _merge_steam(entries, allowed)
     for c in custom_programs(db, child_id):  # eigene Programme: Name der Eltern, eigene Gruppe
         e = entries.get(c.key)
         entries[c.key] = CatalogEntry(c.key, c.name, e.devices if e else 0, c.key in allowed, custom_id=c.id,
                                       game=c.key in games)
     for key in allowed - entries.keys():
+        if steam_row and p.is_steam_key(key):
+            continue   # gehört zur gemeinsamen Zeile „Steam“
         entries[key] = CatalogEntry(key, key.split(":", 1)[-1].rsplit("/", 1)[-1], 0, True, missing=True)
     return sorted(entries.values(), key=lambda e: (not e.allowed, e.name.lower()))
+
+
+def _merge_steam(entries: dict[str, CatalogEntry], allowed: set[str]) -> bool:
+    """Steam-Einträge aller Plattformen zu einer Zeile zusammenfassen (gespeichert wird immer ``STEAM_KEY``)."""
+    found = [e for key, e in entries.items() if p.is_steam_key(key)]
+    if not found:
+        return False
+    for e in found:
+        del entries[e.key]
+    entries[p.STEAM_KEY] = CatalogEntry(p.STEAM_KEY, "Steam", sum(e.devices for e in found),
+                                        any(p.is_steam_key(k) for k in allowed), group=found[0].group,
+                                        game=any(e.game for e in found), game_auto=any(e.game_auto for e in found))
+    return True
 
 
 def name_lookup(db: Session):
@@ -149,6 +165,14 @@ def set_games(db: Session, child_id: int, keys: set[str]) -> None:
 
 def allowed_keys(db: Session, child_id: int) -> list[str]:
     return sorted(db.scalars(select(ChildProgram.key).where(ChildProgram.child_id == child_id)))
+
+
+def policy_programs(db: Session, child_id: int) -> list[str]:
+    """Freigaben für die Policy: Steam gilt auf jeder Plattform, egal unter welchem Schlüssel es freigegeben wurde."""
+    keys = set(allowed_keys(db, child_id))
+    if any(p.is_steam_key(k) for k in keys):
+        keys |= set(p.STEAM_KEYS)
+    return sorted(keys)
 
 
 def set_allowed(db: Session, child_id: int, keys: set[str]) -> None:

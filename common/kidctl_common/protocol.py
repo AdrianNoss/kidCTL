@@ -321,6 +321,16 @@ class UsageUpdate(BaseModel):
 # "flatpak:<app-id>" (systemweites Flatpak).
 
 
+# Steam ist für Eltern ein einziges Programm, die Schlüssel unterscheiden sich aber je Plattform. Eine Freigabe wird
+# unter STEAM_KEY gespeichert, der Windows-Agent bezieht sie auf sein per Registry (HKLM) erkanntes Steam.
+STEAM_KEY = "exe:/usr/bin/steam"
+STEAM_KEYS = (STEAM_KEY, "exe:/usr/games/steam", "flatpak:com.valvesoftware.Steam", "snap:steam")
+
+
+def is_steam_key(key: str) -> bool:
+    return key in STEAM_KEYS or (key.startswith("exe:") and key.lower().endswith("\\steam.exe"))
+
+
 class AppEntry(BaseModel):
     key: str = Field(max_length=512)
     name: str = Field(max_length=255)

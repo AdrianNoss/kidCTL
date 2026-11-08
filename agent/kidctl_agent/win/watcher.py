@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import ntpath
+from dataclasses import replace
 from datetime import datetime, timezone
 
 from kidctl_common import i18n
@@ -138,6 +140,8 @@ class WinProgramWatcher:
                     if account is None:
                         continue
                     keys = set(child.programs_on(now.date()))
+                    if self.games.steam_exe and any(p.is_steam_key(k) for k in keys):
+                        keys.add("exe:" + self.games.steam_exe)   # Steam ist plattformübergreifend ein Programm
                     out[account.sid] = (user, child.program_mode, WinAllowed(
                         keys, sid=account.sid, catalog_exes=cat.exes, catalog_pfns=cat.pfns,
                         known_pfns=cat.known_pfns, install_dir=self.install_dir,
@@ -223,8 +227,11 @@ class WinProgramWatcher:
         verdict = classify(info, allowed, owner=self.procs.file_owner, parent_exe=parent_exe, ancestors=ancestors)
         if verdict is None:
             return
-        if verdict.unknown_package:
+        if verdict.unknown_package or (not self.games.steam_exe and ntpath.basename(info.exe).lower() == "steam.exe"):
             self._rescan_soon()
+        if self.games.steam_dirs and catalog_mod.norm(info.exe).startswith(self.games.steam_dirs[0] + "\\"):
+            # Helfer wie steamwebhelper nicht einzeln melden: freigeben lässt sich Steam nur als Ganzes
+            verdict = replace(verdict, key="exe:" + self.games.steam_exe, name="Steam")
         if (key := self.canon.get(key_norm(verdict.key))) and key != verdict.key:
             verdict = Verdict(key, verdict.name, verdict.detail, verdict.code, verdict.arg, verdict.grantable)
         name = self.names.get(verdict.key, verdict.name)
