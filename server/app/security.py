@@ -107,9 +107,18 @@ def is_rate_limited(db: Session, kind: str, ip: str, username: str = "") -> bool
         LoginAttempt.kind == kind, LoginAttempt.at >= since)
     if db.scalar(base.where(LoginAttempt.ip == ip)) >= settings.login_max_failures:
         return True
-    if username and db.scalar(base.where(LoginAttempt.username == username)) >= settings.login_max_failures:
+    if username and db.scalar(base.where(LoginAttempt.username == username)) >= settings.login_user_max_failures:
         return True
     return False
+
+
+def totp_locked(db: Session, username: str) -> bool:
+    """Zu viele falsche Codes bei richtigem Passwort – streng je Benutzer. Nur wer das Passwort kennt, kann das
+    auslösen; ohne Passwort lässt sich so niemand aussperren."""
+    since = utcnow() - timedelta(minutes=settings.login_window_minutes)
+    return db.scalar(select(func.count()).select_from(LoginAttempt).where(
+        LoginAttempt.kind == "totp", LoginAttempt.at >= since,
+        LoginAttempt.username == username)) >= settings.login_max_failures
 
 
 def record_failure(db: Session, kind: str, ip: str, username: str = "") -> None:
@@ -120,7 +129,10 @@ def record_failure(db: Session, kind: str, ip: str, username: str = "") -> None:
 
 
 def client_ip(request: Request) -> str:
-    # uvicorn --proxy-headers setzt request.client aus X-Forwarded-For (Traefik)
+    # Traefik hängt die echte Gegenstelle rechts an; alles links davon kann der Client selbst mitschicken
+    forwarded = ",".join(request.headers.getlist("x-forwarded-for"))
+    if last := forwarded.rsplit(",", 1)[-1].strip():
+        return last[:64]
     return request.client.host if request.client else "unknown"
 
 

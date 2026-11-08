@@ -76,7 +76,7 @@
   </form>
   <hr style="border:0;border-top:1px solid var(--line);margin:1rem 0">
   <form method="post" action="/devices/{{ device.id }}/revoke"
-        data-confirm="{{ _('Geräte-Token widerrufen? Das Gerät muss danach neu gekoppelt werden.') }}" onsubmit="return confirm(this.dataset.confirm)">
+        data-confirm="{{ _('Geräte-Token widerrufen? Das Gerät muss danach neu gekoppelt werden.') }}">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <button type="submit" class="danger">{{ _("Token widerrufen") }}</button>
   </form>

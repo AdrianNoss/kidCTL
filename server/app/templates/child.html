@@ -197,8 +197,7 @@
             </label>
             <button type="submit" class="ghost small" formaction="/children/{{ child.id }}/programs/custom/{{ app.custom_id }}/delete"
                     formnovalidate title="{{ _('Eintrag entfernen') }}" aria-label="{{ _('{name} entfernen').format(name=app.name) }}"
-                    data-confirm="{{ _('Eigenes Programm „{name}“ entfernen? Die Freigabe wird entzogen.').format(name=app.name) }}"
-                    onclick="return confirm(this.dataset.confirm)">{{ _("Entfernen") }}</button>
+                    data-confirm="{{ _('Eigenes Programm „{name}“ entfernen? Die Freigabe wird entzogen.').format(name=app.name) }}">{{ _("Entfernen") }}</button>
           </div>
           {% else %}
           <div class="app-item game-row" data-name="{{ app.name | lower }}">

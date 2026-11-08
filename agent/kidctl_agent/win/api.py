@@ -358,6 +358,17 @@ def security_attributes(sddl: str) -> tuple[SECURITY_ATTRIBUTES, c_void_p]:
     return SECURITY_ATTRIBUTES(sizeof(SECURITY_ATTRIBUTES), psd, False), psd
 
 
+def open_dir_pinned(path: str) -> int:
+    """Ordner öffnen, ohne einer Verknüpfung zu folgen; solange der Handle offen ist, lässt er sich nicht umbenennen,
+    löschen oder ersetzen. Mit Lesezugriff: Handles nur für Attribute zählen beim Teilen nicht."""
+    create = _fn("kernel32", "CreateFileW", w.HANDLE, c_wchar_p, w.DWORD, w.DWORD, c_void_p, w.DWORD, w.DWORD, w.HANDLE)
+    handle = create(path, 0x0001 | 0x0080, 0x1 | 0x2, None, 3,   # LIST_DIRECTORY|READ_ATTRIBUTES, READ|WRITE, OPEN_EXISTING
+                    0x02000000 | 0x00200000, None)               # BACKUP_SEMANTICS|OPEN_REPARSE_POINT
+    if handle in (None, w.HANDLE(-1).value):
+        raise _err(f"CreateFile {path}")
+    return handle
+
+
 def create_pipe(name: str, sa: SECURITY_ATTRIBUTES, first: bool) -> int:
     f = _fn("kernel32", "CreateNamedPipeW", w.HANDLE, c_wchar_p, w.DWORD, w.DWORD, w.DWORD, w.DWORD, w.DWORD,
             w.DWORD, POINTER(SECURITY_ATTRIBUTES))

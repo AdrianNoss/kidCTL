@@ -11,13 +11,12 @@
       <td class="right"><div class="actions">
         {% if p.id != current_parent.id %}
         <form method="post" action="/parents/{{ p.id }}/totp-reset" class="inline"
-              data-confirm="{{ _('Authenticator von {name} zurücksetzen? Der bisherige wird sofort ungültig, du bekommst einen Einrichtungslink zum Weitergeben.').format(name=p.username) }}"
-              onsubmit="return confirm(this.dataset.confirm)">
+              data-confirm="{{ _('Authenticator von {name} zurücksetzen? Der bisherige wird sofort ungültig, du bekommst einen Einrichtungslink zum Weitergeben.').format(name=p.username) }}">
           <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
           <button type="submit" class="secondary small">{{ _("Authenticator zurücksetzen") }}</button>
         </form>
         <form method="post" action="/parents/{{ p.id }}/delete" class="inline"
-              data-confirm="{{ _('Account löschen?') }}" onsubmit="return confirm(this.dataset.confirm)">
+              data-confirm="{{ _('Account löschen?') }}">
           <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
           <button type="submit" class="danger small">{{ _("Löschen") }}</button>
         </form>

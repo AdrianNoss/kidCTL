@@ -757,7 +757,7 @@ Abweichungen stehen hier und unter „Restlücken“.
 - Mehrere gleichberechtigte Eltern-Accounts; jeder sieht und verwaltet alle Kinder.
 - Bootstrap des ersten Accounts per CLI-Skript, weitere im WebUI.
 - TOTP-2FA verpflichtend (`pyotp`).
-- Login-Rate-Limiting (z. B. 5 Fehlversuche / 15 min pro IP und Account).
+- Login-Rate-Limiting je 15 min: 5 Fehlversuche pro IP, 50 pro Account, 5 falsche Codes bei richtigem Passwort pro Account (ein Fremder ohne Passwort darf niemanden aussperren).
 - Sessions 30 Tage gültig.
 - CSRF-Schutz auf allen Formularen/Aktionen.
 - Push-Abos pro Account und Endgerät.
@@ -1619,3 +1619,20 @@ Abweichungen stehen hier und unter „Restlücken“.
   Kind bekommt den Hinweis und wird abgemeldet; mit Netzwerk: Wächter läuft; danach Normalstart: Konten wieder
   aktiv. Nicht getestet: echter Rechner, Windows 11 Home, Microsoft-Konto, Kopplungsseite im Installer,
   Store-Installation durch das Kind, Steam/Epic mit echten Spielen, VPN, Browser mit eigenem DNS.
+- 2026-11-08: Sicherheitsprüfung des Gesamtsystems, alle Befunde behoben (Agent 0.32.3). Server: Größenlimit 2 MiB je
+  Anfrage (`app/middleware.py`, vorher ohne Anmeldung unbegrenzt: 200 MB -> 1,3 GB Speicher); Login-Sperre nicht mehr
+  je Benutzer nach 5 Fehlern (jeder konnte ein Elternteil aussperren), sondern 5 je IP, 50 je Benutzer und 5 falsche
+  Codes bei richtigem Passwort je Benutzer; für IP-Sperren zählt der letzte `X-Forwarded-For`-Eintrag (von Traefik),
+  nicht der vom Client mitgeschickte; Mail bei „Passwort vergessen“ im Hintergrund (Laufzeit verriet Konten);
+  Content-Security-Policy ohne Inline-Skripte (Rückfragen über `data-confirm` in `app.js`); Warnung bei `SECRET_KEY`
+  unter 32 Zeichen; `docker-compose.yml` mit `mem_limit`, `cap_drop: ALL`, `no-new-privileges`. Windows-Agent: Eine
+  Junction im Pfad eines freigegebenen App-Ordners brachte dem Kind Leserecht auf beliebige Ordner (z. B. Geräte-Token);
+  jetzt werden alle Pfadteile während `icacls` ohne Verknüpfungen geöffnet und gesperrt (`acl.pin_path`). Getestet:
+  Agent 261, Server 135, Tray 19 Tests grün (neu `server/tests/test_security.py`, je Befund der ursprüngliche Angriff).
+  Echter uvicorn: 200 MB mit und ohne Längenangabe -> 413, Speicher 125 statt 1286 MiB; richtiger Login trotz fremder
+  Fehlversuche. VM Windows 10 mit echtem `AclManager`: Junction im Zwischenpfad -> keine Rechte am Ziel, Ordner während
+  des Vorgangs nicht austauschbar (WinError 32), normale Freigabe und Rücknahme gehen. Browser: alle Seiten ohne
+  CSP-Verstoß, Rückfrage bei Formular und Knopf in beide Richtungen. Geprüft ohne Befund: Zugriffsschutz aller Routen,
+  CSRF, XSS, Open Redirect, Pfad-Traversal, TLS und Signaturprüfung der Updates, Abhängigkeiten (`pip-audit`), keine von
+  außen erreichbaren Ports des Agenten. Nicht getestet: Traefik-Konfiguration und Host, `docker compose` (kein Docker
+  auf dem Entwicklungsrechner), Web Push im Browser (Service Worker läuft im Test-Browser generell nicht).

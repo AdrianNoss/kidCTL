@@ -12,7 +12,7 @@
         <a href="/children/{{ c.id }}" class="btn secondary small">{{ _("Einstellungen") }}</a>
         <a href="/children/{{ c.id }}/chat" class="btn secondary small">{{ _("Chat") }}{% if (pending or {}).get(c.id) %} <span class="count" title="{{ _('offene Anfragen') }}">{{ pending[c.id] }}</span>{% endif %}</a>
         <form method="post" action="/children/{{ c.id }}/delete" class="inline"
-              data-confirm="{{ _('Kind mit allen Regeln löschen?') }}" onsubmit="return confirm(this.dataset.confirm)">
+              data-confirm="{{ _('Kind mit allen Regeln löschen?') }}">
           <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
           <button type="submit" class="danger small">{{ _("Löschen") }}</button>
         </form>

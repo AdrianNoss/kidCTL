@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
 
@@ -23,7 +24,8 @@ class Settings:
     timezone: str
     totp_issuer: str
     session_days: int = 30
-    login_max_failures: int = 5
+    login_max_failures: int = 5        # je IP; „Passwort richtig, Code falsch“ auch je Benutzer
+    login_user_max_failures: int = 50  # je Benutzer: hoch, sonst könnte jeder ein Elternteil aussperren
     login_window_minutes: int = 15
     pairing_code_minutes: int = 10
     vapid_private_key: str = ""   # Web Push; erzeugen mit `python -m app.cli vapid-keys`
@@ -54,6 +56,10 @@ def load_settings() -> Settings:
         if not dev:
             raise RuntimeError("SECRET_KEY fehlt (in .env setzen). Nur mit KIDCTL_DEV=1 optional.")
         secret = "dev-insecure-secret"
+    if not dev and len(secret) < 32:
+        # kein Abbruch: Ein neuer Schlüssel macht alle Geräte-Token ungültig, das entscheidet der Betreiber
+        logging.getLogger("kidctl.config").warning("SECRET_KEY ist kürzer als 32 Zeichen – bitte zufällig und länger "
+                                                   "wählen (Achtung: Geräte müssen danach neu gekoppelt werden)")
     data_dir = os.environ.get("KIDCTL_DATA_DIR", "/data")
     return Settings(
         secret_key=secret,

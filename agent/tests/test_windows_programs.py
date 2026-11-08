@@ -280,6 +280,35 @@ def test_acl_manager(state, tmp_path):
     assert store.load("winacl.json") == {"profiles": {}, "shared": {str(shared): []}, "dirs": {}}
 
 
+def test_acl_junction_in_app_path_gets_no_rights(state, tmp_path):
+    """Junction im App-Pfad: Das Kind darf über die Freigabe keine Rechte auf fremde Ordner bekommen."""
+    from contextlib import contextmanager
+    calls = []
+
+    def run(args, **kw):
+        calls.append(args)
+        return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+    prof = tmp_path / "kind"
+    app = prof / "Spiele" / "state"
+    app.mkdir(parents=True)
+    safe = [False]
+
+    @contextmanager
+    def pin(path, root):
+        assert path == str(app) and root == str(prof)
+        yield safe[0]
+    m = acl.AclManager(store, run=run, profile=lambda sid: str(prof), shared=(), pin=pin)
+    m.sync({KID: [str(app)]})
+    assert not [c for c in calls if str(app) in c] and m.dirs[KID] == []
+    safe[0] = True                                                # Junction entfernt: nächster Abgleich klappt
+    m.sync({KID: [str(app)]})
+    assert [c for c in calls if str(app) in c and "/grant" in c] and m.dirs[KID] == [str(app)]
+    calls.clear()
+    safe[0] = False                                               # nachträglich ausgetauscht: nichts anfassen
+    m.sync({KID: []})
+    assert not [c for c in calls if str(app) in c]
+
+
 def test_acl_protected_sddl():
     sddl = (f"D:AI(D;OIIO;0x20;;;{KID})(D;OICI;WD;;;{KID})(A;OICIID;FA;;;SY)(A;OICIID;FA;;;{KID})"
             "(A;OICI;0x1301bf;;;OW)")

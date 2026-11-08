@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from . import alarms, backup, blocklog, i18n, policy, report, webfilter
 from .config import settings
 from .db import SessionLocal, init_db
+from .middleware import SecurityMiddleware
 from .routes import admin, api, auth, pwa
 from .security import LoginRequired
 
@@ -57,6 +58,7 @@ async def _prune_log_forever() -> None:
 
 
 app = FastAPI(title="KidCTL", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+app.add_middleware(SecurityMiddleware)
 app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
 
 # Pacman-Repository (signiert; per kidctl-repo-publish.sh nach <data>/repo kopiert)

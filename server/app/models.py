@@ -70,7 +70,7 @@ class LoginAttempt(Base):
     __tablename__ = "login_attempt"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    kind: Mapped[str] = mapped_column(String(16), default="login")  # login | enroll
+    kind: Mapped[str] = mapped_column(String(16), default="login")  # login | totp | reset | enroll
     ip: Mapped[str] = mapped_column(String(64), index=True)
     username: Mapped[str] = mapped_column(String(64), default="", index=True)
     at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)

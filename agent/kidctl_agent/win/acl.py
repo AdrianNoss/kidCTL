@@ -8,16 +8,21 @@ Auf dem Profil des Kindes (und auf ``C:\\Users\\Public`` und ``%WINDIR%\\Temp``,
 - Freigegebene Apps im Profil: ``Allow <Kind>: (OI)(IO)(RX)`` auf ihrem App-Ordner. Vererbte Einträge des näheren
   Ordners gehen vor, das Verbot vom Profil greift dort nicht.
 Geschrieben wird mit ``icacls`` (setzt auch die Vererbung auf vorhandene Dateien), gelesen über SDDL
-(sprachunabhängig).
+(sprachunabhängig). Der App-Ordner liegt im Profil, das Kind kontrolliert also den Pfad: Damit eine Junction darin
+nicht Rechte auf fremde Ordner bringt, bleiben alle Pfadteile während ``icacls`` geöffnet und gesperrt (``pin_path``).
 """
 
 from __future__ import annotations
 
 import ctypes
 import logging
+import ntpath
 import os
 import re
+import stat
 import subprocess
+import sys
+from contextlib import contextmanager
 from ctypes import POINTER, byref, c_void_p, c_wchar_p
 from ctypes import wintypes as w
 
@@ -62,6 +67,36 @@ def allow_dir(path: str, sid: str, run=subprocess.run) -> bool:
 
 def disallow_dir(path: str, sid: str, run=subprocess.run) -> bool:
     return icacls(path, "/remove:g", f"*{sid}", run=run)
+
+
+@contextmanager
+def pin_path(path: str, root: str):
+    """Liefert ``True``, wenn ``path`` unterhalb von ``root`` ohne Junction/Symlink erreichbar ist, und hält alle
+    Pfadteile (von oben nach unten) für die Dauer des Blocks gegen Umbenennen und Ersetzen fest."""
+    handles, safe, current = [], True, root
+    try:
+        for part in ntpath.relpath(path, root).split("\\"):
+            if part in ("", ".", ".."):
+                safe = False
+                break
+            current = ntpath.join(current, part)
+            handles.append(api.open_dir_pinned(current))
+            if os.lstat(current).st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
+                safe = False
+                break
+    except (OSError, ValueError) as e:
+        log.warning("Pfad %s nicht sicher zu öffnen: %s", path, e)
+        safe = False
+    try:
+        yield safe
+    finally:
+        for h in reversed(handles):
+            api.close_handle(h)
+
+
+@contextmanager
+def _unpinned(_path: str, _root: str):
+    yield True   # nur außerhalb von Windows (Tests)
 
 
 def sddl(path: str) -> str:
@@ -120,8 +155,9 @@ class AclManager:
 
     STATE = "winacl.json"
 
-    def __init__(self, store_mod, run=subprocess.run, profile=profile_path, shared=SHARED_DIRS) -> None:
+    def __init__(self, store_mod, run=subprocess.run, profile=profile_path, shared=SHARED_DIRS, pin=None) -> None:
         self.store = store_mod
+        self.pin = pin or (pin_path if sys.platform == "win32" else _unpinned)
         self.run = run
         self.profile = profile
         self.shared_dirs = tuple(d for d in shared if d)
@@ -153,14 +189,21 @@ class AclManager:
                     self.shared[d].append(sid)
             want = sorted(x for x in dirs if path and _under(x, path) and os.path.isdir(x))
             have = self.dirs.get(sid, [])
-            for d in want:
-                if d not in have and allow_dir(d, sid, run=self.run):
-                    log.info("App-Ordner %s ausführbar (Freigabe)", d)
+            for d in list(want):
+                if d in have:
+                    continue
+                with self.pin(d, path) as safe:
+                    if not safe:
+                        want.remove(d)   # beim nächsten Abgleich erneut versuchen
+                        log.warning("App-Ordner %s nicht freigegeben: Pfad enthält eine Verknüpfung oder ist in Benutzung", d)
+                    elif allow_dir(d, sid, run=self.run):
+                        log.info("App-Ordner %s ausführbar (Freigabe)", d)
             for d in have:
-                if d not in want and os.path.isdir(d):
-                    disallow_dir(d, sid, run=self.run)
+                if d not in want and path and os.path.isdir(d):
+                    self._revoke(d, sid, path)
             self.dirs[sid] = want
         for sid in [s for s in list(self.profiles) + [s for v in self.shared.values() for s in v] if s not in wanted]:
+            root = self.profiles.get(sid) or self.profile(sid)
             if sid in self.profiles:
                 unprotect(self.profiles.pop(sid), sid, profile=True, run=self.run)
                 log.warning("Ausführverbot im Profil von %s aufgehoben", sid)
@@ -169,8 +212,14 @@ class AclManager:
                     sids.remove(sid)
                     unprotect(d, sid, keep_owner_rights=bool(sids), run=self.run)
             for d in self.dirs.pop(sid, []):
-                disallow_dir(d, sid, run=self.run)
+                if root:
+                    self._revoke(d, sid, root)
         self._save()
+
+    def _revoke(self, d: str, sid: str, root: str) -> None:
+        with self.pin(d, root) as safe:
+            if safe:
+                disallow_dir(d, sid, run=self.run)
 
     def forget(self, sid: str) -> None:
         """Beim nächsten Abgleich neu setzen (Integrität verletzt)."""
