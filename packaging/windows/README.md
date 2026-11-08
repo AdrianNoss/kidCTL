@@ -25,6 +25,8 @@ packaging/repo/kidctl-repo-publish.sh --apply
   installierte Rechner nicht mehr automatisch aktualisieren.
 - Ergebnis: `~/.local/share/kidctl-repo/repo/windows/` mit Installer, `latest.json` und `latest.json.sig`; der
   Server liefert es unter `<BASE_URL>/repo/windows/`.
+- Aufräumen: `sign` behält den neuesten Installer und eine ältere Version, ältere löscht es. Beim nächsten
+  `kidctl-repo-publish.sh --apply` verschwinden sie auch vom Server.
 - Zwischenspeicher: `~/.cache/kidctl-windows/` (Downloads, Staging). PySide6 wird auf QtCore/Gui/Widgets/
   Network/Svg verkleinert.
 

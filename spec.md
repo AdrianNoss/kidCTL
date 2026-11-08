@@ -1639,3 +1639,7 @@ Abweichungen stehen hier und unter „Restlücken“.
 - 2026-11-08: Repo-Skripte: Fehlt der GPG-Ordner, brach `kidctl-repo-build.sh` wegen `set -e`/`pipefail` ohne Meldung ab;
   jetzt kommt „kein Signierschlüssel“. Getestet mit leerem `KIDCTL_REPO_HOME` (Meldung, Exit 1; `key.sh status` meldet
   „Noch kein Schlüssel“) und mit Wegwerf-Schlüssel (Dry-Run läuft durch).
+- 2026-11-08: Windows-Repo: `build.py sign` behält nur noch den neuesten Installer und eine ältere Version, der Rest
+  wird nach dem Schreiben der Signatur gelöscht (Dry-Run listet ihn nur). Getestet mit Testordner und Wegwerf-Schlüssel:
+  numerische Reihenfolge (0.9.0 vor 0.30.0), `latest.json` zeigt auf den neuesten, Signatur gültig, ein bis zwei
+  Installer bleiben unangetastet; Dry-Run gegen das echte Repo löscht nichts.

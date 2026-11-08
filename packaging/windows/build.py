@@ -4,7 +4,7 @@
     build.py keygen  [--apply]   Ed25519-Schlüssel für Updates anlegen (einmalig)
     build.py stage   [--apply]   eingebettetes Python + Bibliotheken (vendor.lock) + kidctl-Code zusammenstellen
     build.py compile [--apply]   Installer in der Windows-VM bauen (dev/vm/winvm.sh, Inno Setup), Ergebnis ins Repo
-    build.py sign    [--apply]   latest.json + Signatur für den neuesten Installer im Repo schreiben
+    build.py sign    [--apply]   latest.json + Signatur für den neuesten Installer schreiben, ältere bis auf einen löschen
     build.py all     [--apply]   stage + compile + sign
 
 Ohne --apply nur Anzeige (Dry-Run). Veröffentlichen wie die übrigen Pakete mit
@@ -242,14 +242,20 @@ def cmd_sign() -> None:
     exe = found[-1]
     ver = re.match(r"KidCTL-Setup-(.+)\.exe$", exe.name).group(1)
     manifest = json.dumps({"version": ver, "file": exe.name, "sha256": sha256(exe)}, sort_keys=True).encode()
+    outdated = found[:-2]  # die aktuelle und eine ältere Version bleiben liegen
     say(f"latest.json -> {ver}")
     if not APPLY:
         print(f"[dry-run] {REPO_WIN}/latest.json + .sig")
+        for old in outdated:
+            print(f"[dry-run] entfernen: {old.name}")
         return
     import base64
     sig = base64.b64encode(ed25519.sign(secret_key(), manifest)).decode()
     (REPO_WIN / "latest.json").write_bytes(manifest)
     (REPO_WIN / "latest.json.sig").write_text(sig + "\n")
+    for old in outdated:  # erst nach der neuen Signatur, damit latest.json nie ins Leere zeigt
+        old.unlink()
+        say(f"Entfernt: {old.name}")
 
 
 def main() -> None:
