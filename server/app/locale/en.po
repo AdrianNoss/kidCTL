@@ -1634,3 +1634,24 @@ msgstr "Counts as a game (game limit, game time)"
 
 msgid "Kategorie „Spiele“ – zählt immer als Spiel"
 msgstr "Category “Games” – always counts as a game"
+
+msgid "KidCTL für Windows"
+msgstr "KidCTL for Windows"
+
+msgid "Version"
+msgstr "Version"
+
+msgid "Datei"
+msgstr "File"
+
+msgid "Größe"
+msgstr "Size"
+
+msgid "Veröffentlicht"
+msgstr "Published"
+
+msgid "Auf dem Kinderrechner als Administrator ausführen. Der Installer ist nicht signiert, Windows SmartScreen fragt deshalb beim ersten Start nach."
+msgstr "Run it as administrator on the child's computer. The installer is not signed, so Windows SmartScreen asks for confirmation on first start."
+
+msgid "Noch keine Installer veröffentlicht."
+msgstr "No installers published yet."

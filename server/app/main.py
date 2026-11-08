@@ -6,15 +6,16 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import alarms, backup, blocklog, i18n, policy, report, webfilter
+from . import alarms, backup, blocklog, i18n, policy, report, versions, webfilter
 from .config import settings
 from .db import SessionLocal, init_db
 from .middleware import SecurityMiddleware
 from .routes import admin, api, auth, pwa
 from .security import LoginRequired
+from .web import render
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
@@ -60,6 +61,16 @@ async def _prune_log_forever() -> None:
 app = FastAPI(title="KidCTL", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 app.add_middleware(SecurityMiddleware)
 app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
+
+
+
+@app.get("/repo/", response_class=HTMLResponse)
+@app.get("/repo/windows/", response_class=HTMLResponse)
+def repo_listing(request: Request):
+    """Download-Seite: zeigt nur die Windows-Installer, die Dateien selbst liefert der Mount darunter."""
+    i18n.set_current(i18n.request_language(request))   # die Middleware lässt /repo/ aus
+    return render(request, "repo.html", installers=versions.windows_installers())
+
 
 # Pacman-Repository (signiert; per kidctl-repo-publish.sh nach <data>/repo kopiert)
 _repo_dir = Path(settings.data_dir) / "repo"

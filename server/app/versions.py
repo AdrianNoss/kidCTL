@@ -76,6 +76,30 @@ def latest_windows(repo: Path | None = None) -> Release | None:
     return release
 
 
+@dataclass(frozen=True)
+class Installer:
+    name: str
+    version: str
+    size: int
+    published: datetime   # UTC ohne Zeitzone (wie die DB)
+
+
+def windows_installers(repo: Path | None = None) -> list[Installer]:
+    """Windows-Installer für die Download-Seite, neuester zuerst (nur Dateien nach dem Namensmuster)."""
+    folder = (repo or Path(settings.data_dir) / "repo") / WIN_DIR
+    found = []
+    try:
+        for f in folder.iterdir():
+            m = WIN.match(f.name)
+            if m and f.is_file():
+                st = f.stat()
+                found.append(Installer(f.name, m.group(1), st.st_size,
+                                       datetime.fromtimestamp(st.st_mtime, timezone.utc).replace(tzinfo=None)))
+    except OSError:
+        return []
+    return sorted(found, key=lambda i: _key(i.version), reverse=True)
+
+
 def update_for(agent_version: str, release: Release | None = None, platform: str = "linux") -> str | None:
     """Neuere Version, falls der Agent veraltet ist (sonst/unbekannt: ``None``)."""
     if release is None:

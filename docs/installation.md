@@ -273,7 +273,7 @@ Epic Games, Store-Spiele; weitere Apps lassen sich im WebUI als „Spiel“ mark
    Microsoft-Konten. Administratoren schränkt KidCTL nie ein – das WebUI meldet zugeordnete Kinder mit
    Administratorrechten unter „Integrität“.
 2. WebUI → „Geräte“ → „Gerät hinzufügen“ → Kopplungscode notieren.
-3. Auf dem Kinderrechner als Administrator `https://kids.example.org/repo/windows/KidCTL-Setup-<Version>.exe`
+3. Auf dem Kinderrechner als Administrator von `https://kids.example.org/repo/windows/` (Liste aller Versionen) `KidCTL-Setup-<Version>.exe`
    herunterladen und ausführen. Der Installer ist (noch) nicht signiert: Windows SmartScreen zeigt beim ersten Start
    „Der Computer wurde durch Windows geschützt“ → „Weitere Informationen“ → „Trotzdem ausführen“.
 4. Im Installer Server-Adresse (`https://kids.example.org`) und Kopplungscode eingeben. Später koppeln geht auch

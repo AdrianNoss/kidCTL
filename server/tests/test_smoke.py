@@ -192,6 +192,34 @@ def test_add_second_parent_shows_totp(client, parent):
     assert r.status_code == 303
 
 
+def test_repo_listing_shows_only_installers(client):
+    import shutil
+    from pathlib import Path
+    from app.config import settings
+    win = Path(settings.data_dir) / "repo" / "windows"
+    shutil.rmtree(win, ignore_errors=True)
+    assert "Noch keine Installer" in client.get("/repo/windows/").text       # Ordner fehlt
+    win.mkdir(parents=True)
+    try:
+        for v in ("0.9.0", "0.30.0", "0.32.3"):
+            (win / f"KidCTL-Setup-{v}.exe").write_bytes(b"exe" + v.encode())
+        (win / "latest.json").write_text("{}")
+        (win / "KidCTL-Setup-boese.exe").write_bytes(b"x")                   # passt nicht aufs Namensmuster
+        (win / "KidCTL-Setup-1.0.0.exe").mkdir()                             # kein Installer
+        for url in ("/repo/", "/repo/windows/"):                             # ohne Anmeldung
+            r = client.get(url)
+            assert r.status_code == 200
+            assert r.text.index("0.32.3") < r.text.index("0.30.0") < r.text.index("0.9.0")
+            assert 'href="/repo/windows/KidCTL-Setup-0.32.3.exe"' in r.text
+            assert r.text.count(">aktuell<") == 1
+            assert "latest.json" not in r.text and "boese" not in r.text and "1.0.0" not in r.text
+        assert client.get("/repo/windows/KidCTL-Setup-0.32.3.exe").content == b"exe0.32.3"
+        assert client.get("/repo/windows/latest.json").text == "{}"          # Agenten-Updates unverändert
+        assert client.get("/repo/windows/", headers={"Accept-Language": "en"}).text.count(">up to date<") == 1
+    finally:
+        shutil.rmtree(win)
+
+
 def test_repo_served_statically(client):
     from pathlib import Path
     from app.config import settings

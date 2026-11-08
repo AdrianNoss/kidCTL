@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ _("KidCTL für Windows") }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ _("KidCTL für Windows") }}</h1></div>
+</div>
+<section class="card">
+  {% if installers %}
+  <div class="scroll">
+  <table>
+    <tr><th>{{ _("Version") }}</th><th>{{ _("Datei") }}</th><th class="right hide-narrow">{{ _("Größe") }}</th><th class="right hide-narrow">{{ _("Veröffentlicht") }}</th></tr>
+    {% for i in installers %}
+    <tr>
+      <td class="num">{{ i.version }}{% if loop.first %} <span class="pill ok">{{ _("aktuell") }}</span>{% endif %}</td>
+      <td><a href="/repo/windows/{{ i.name }}" download>{{ i.name }}</a></td>
+      <td class="num right hide-narrow">{{ fmt_size(i.size) }}</td>
+      <td class="num right hide-narrow">{{ i.published | localtime }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  <p class="muted"><small>{{ _("Auf dem Kinderrechner als Administrator ausführen. Der Installer ist nicht signiert, Windows SmartScreen fragt deshalb beim ersten Start nach.") }}</small></p>
+  {% else %}
+  <p class="muted">{{ _("Noch keine Installer veröffentlicht.") }}</p>
+  {% endif %}
+</section>
+{% endblock %}

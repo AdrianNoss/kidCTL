@@ -1643,3 +1643,7 @@ Abweichungen stehen hier und unter „Restlücken“.
   wird nach dem Schreiben der Signatur gelöscht (Dry-Run listet ihn nur). Getestet mit Testordner und Wegwerf-Schlüssel:
   numerische Reihenfolge (0.9.0 vor 0.30.0), `latest.json` zeigt auf den neuesten, Signatur gültig, ein bis zwei
   Installer bleiben unangetastet; Dry-Run gegen das echte Repo löscht nichts.
+- 2026-11-08: Download-Seite: `/repo/` und `/repo/windows/` listen öffentlich die Windows-Installer (neuester zuerst,
+  Größe, Datum, Download-Link); andere Dateien des Repos erscheinen nicht, deren URLs bleiben unverändert.
+  Getestet: Server-Tests (numerische Reihenfolge, nur Dateien nach dem Namensmuster, leerer Ordner, Sprache) und am
+  Entwicklungsserver im Browser (Liste ohne Anmeldung, Links liefern den 37-MB-Installer, keine CSP-Fehler).
