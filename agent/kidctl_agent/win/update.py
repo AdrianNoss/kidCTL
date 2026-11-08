@@ -19,12 +19,11 @@ import re
 import subprocess
 import sys
 import time
-import urllib.request
 from pathlib import Path
 
 from kidctl_common import ed25519
 
-from .. import __version__, store
+from .. import __version__, store, tls
 
 log = logging.getLogger("kidctl.update")
 
@@ -73,7 +72,7 @@ def parse_manifest(data: bytes, signature_b64: bytes, key: bytes) -> dict:
 
 
 class Updater:
-    def __init__(self, device: dict | None, clock=time.monotonic, opener=urllib.request.urlopen) -> None:
+    def __init__(self, device: dict | None, clock=time.monotonic, opener=tls.urlopen) -> None:
         self.base = (device or {}).get("server_url", "").rstrip("/")
         if not self.base.startswith("https://") and not (device or {}).get("insecure_http"):
             self.base = ""   # wie die Serververbindung: ohne TLS nur mit --insecure-http (Test-Server)

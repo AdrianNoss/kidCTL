@@ -766,7 +766,8 @@ Abweichungen stehen hier und unter „Restlücken“.
 
 - Transport nur TLS: `kidctl enroll` verlangt `https://` (`--insecure-http` nur für Test-Server,
   wird in `device.json` vermerkt); der Agent baut ohne diesen Vermerk keine `ws://`-Verbindung auf.
-  Zertifikatsprüfung über die System-CAs (websockets/urllib, Standard).
+  Zertifikatsprüfung über die System-CAs (websockets/urllib, Standard); unter Windows prüft Windows selbst
+  (`truststore`), weil Python fehlende Stammzertifikate nicht nachladen kann.
 - Kopplung: 8-Zeichen-Code (≈ 40 Bit), 10 min, einmalig, Rate-Limit je IP; danach 256-Bit-Geräte-Token,
   serverseitig nur als HMAC(SECRET_KEY) gespeichert, auf dem Client `root:root 0600`. Widerruf
   wirkt sofort (Prüfung bei jeder Nachricht).
@@ -1647,3 +1648,10 @@ Abweichungen stehen hier und unter „Restlücken“.
   Größe, Datum, Download-Link); andere Dateien des Repos erscheinen nicht, deren URLs bleiben unverändert.
   Getestet: Server-Tests (numerische Reihenfolge, nur Dateien nach dem Namensmuster, leerer Ordner, Sprache) und am
   Entwicklungsserver im Browser (Liste ohne Anmeldung, Links liefern den 37-MB-Installer, keine CSP-Fehler).
+- 2026-11-08: Windows-Client (Paket 0.32.4): Kopplung auf frischen Rechnern scheiterte mit `CERTIFICATE_VERIFY_FAILED`, weil
+  Python fehlende Stammzertifikate (ISRG Root X1) nicht nachladen kann. Neues `kidctl_agent/tls.py`: unter Windows prüft
+  `truststore` über die Windows-API (Kopplung, WebSocket, Updates, Sperrlisten); Linux unverändert. Getestet auf Windows 10
+  mit Installer 0.32.4 gegen `https://kids.nossco.de`, vor jedem Fall Root aus dem Speicher entfernt: Python-Standard
+  scheitert wie gemeldet, alle vier Wege klappen als Administrator und als SYSTEM, die Root wird dabei nachgeladen, `enroll`
+  erreicht den Server. Abgelehnt werden abgelaufenes, selbstsigniertes, nicht vertrauenswürdiges Zertifikat und falscher
+  Hostname (HTTPS und WSS). Agent-Tests grün. Nicht getestet: Windows 11, echter PC.

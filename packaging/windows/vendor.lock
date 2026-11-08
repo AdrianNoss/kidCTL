@@ -7,6 +7,7 @@ unbound https://nlnetlabs.nl/downloads/unbound/unbound-1.26.2.zip 1274c4798ee418
 wheel annotated-types 0.8.0 annotated_types-0.8.0-py3-none-any.whl f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0
 wheel pydantic 2.14.1 pydantic-2.14.1-py3-none-any.whl 9195d967ec791692a04438115466764fb8b9a27b31f14a760437694f40d6b454
 wheel pydantic-core 2.50.1 pydantic_core-2.50.1-cp314-cp314-win_amd64.whl d32f3acc081cc3923386d88f422cde8892335e95f034e0104bb4cf9310d9915f
+wheel truststore 0.10.5 truststore-0.10.5-py3-none-any.whl 9aaaedaefaf06d8b206278cf8b5012bc897f485a874503501e12d776df78951c
 wheel typing-extensions 4.16.0 typing_extensions-4.16.0-py3-none-any.whl 481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8
 wheel typing-inspection 0.4.5 typing_inspection-0.4.5-py3-none-any.whl bc210535442b39e1bf2805e0c7a17dfd6a4ace760c84c7f7d16245d23a6b1c39
 wheel tzdata 2026.6 tzdata-2026.6-py2.py3-none-any.whl 0a10eec6e13ef16b627fabed9a5f2ba61a62b1c67f327305f4e7e412a70b4aec

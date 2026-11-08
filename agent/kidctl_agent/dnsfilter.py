@@ -22,7 +22,7 @@ from pathlib import Path
 
 from kidctl_common import protocol as p
 
-from . import store
+from . import store, tls
 
 log = logging.getLogger("kidctl.dns")
 
@@ -69,7 +69,7 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-_opener = urllib.request.build_opener(_NoRedirect)
+_opener = urllib.request.build_opener(_NoRedirect, *tls.handlers())
 
 
 # Zweite Ebene unter Länder-Domains, z. B. co.uk, com.au (ohne Public-Suffix-Liste: Näherung)

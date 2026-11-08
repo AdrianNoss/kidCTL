@@ -15,7 +15,7 @@ import urllib.request
 
 from kidctl_common import protocol as p
 
-from . import store
+from . import store, tls
 
 log = logging.getLogger("kidctl")
 
@@ -47,7 +47,7 @@ def enroll(server_url: str, code: str, force: bool = False, insecure_http: bool 
     req = urllib.request.Request(server_url + p.ENROLL_PATH, data=body, method="POST",
                                  headers={"Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with tls.urlopen(req, timeout=20) as resp:
             res = p.EnrollResponse.model_validate_json(resp.read())
     except urllib.error.HTTPError as e:
         detail = e.read().decode(errors="replace")

@@ -14,7 +14,7 @@ from websockets.exceptions import ConnectionClosed, InvalidStatus, WebSocketExce
 
 from kidctl_common import protocol as p
 
-from . import __version__
+from . import __version__, tls
 
 log = logging.getLogger("kidctl.conn")
 
@@ -87,7 +87,8 @@ class Connection:
             await asyncio.sleep(delay * random.uniform(0.8, 1.2))
 
     async def _session(self) -> None:
-        async with connect(self.url, additional_headers={"Authorization": f"Bearer {self.token}"},
+        ssl_context = tls.context() if self.url.startswith("wss://") else None
+        async with connect(self.url, ssl=ssl_context, additional_headers={"Authorization": f"Bearer {self.token}"},
                            open_timeout=15, ping_interval=30, ping_timeout=30,
                            max_size=4 * 1024 * 1024) as ws:
             await ws.send(p.Hello(protocol_version=p.PROTOCOL_VERSION, agent_version=__version__,
