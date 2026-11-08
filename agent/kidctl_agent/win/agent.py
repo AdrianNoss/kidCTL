@@ -200,9 +200,13 @@ class WinAgent(AgentCore):
         await self.sync_dns()
         await self.programs.scan()   # neue Sperren sofort, nicht erst beim nächsten Abgleich
 
+    def acl_targets(self) -> dict:
+        """Kinder mit Ausführverbot: nur im Modus „Sperren“ („Nur protokollieren“ sperrt nichts)."""
+        return {sid: target for sid, target in self.programs.targets().items() if target[1] == "enforce"}
+
     def acl_wanted(self) -> dict[str, list[str]]:
-        """SID -> freigegebene App-Ordner der Kinder mit Programmkontrolle (≠ Aus)."""
-        return {sid: list(allowed.dirs) for sid, (_u, _m, allowed) in self.programs.targets().items()}
+        """SID -> freigegebene App-Ordner der Kinder mit Ausführverbot."""
+        return {sid: list(allowed.dirs) for sid, (_u, _m, allowed) in self.acl_targets().items()}
 
     def acl_extra(self) -> dict[str, list[str]]:
         """Steam-Bibliotheken (vom Kind beschreibbar) mit Verbot, solange Steam für das Kind nicht freigegeben ist."""
@@ -210,7 +214,7 @@ class WinAgent(AgentCore):
         if not games.steam_exe:
             return {}
         roots = [d for d in games.steam_dirs if os.path.isdir(d)]
-        return {sid: roots for sid, (_u, _m, allowed) in self.programs.targets().items() if not allowed.launcher_dirs
+        return {sid: roots for sid, (_u, _m, allowed) in self.acl_targets().items() if not allowed.launcher_dirs
                 or games.steam_dirs[0] not in allowed.launcher_dirs}
 
     async def sync_acl(self) -> None:
@@ -404,7 +408,7 @@ class WinAgent(AgentCore):
     def _run_checks(self) -> list[p.IntegrityCheck]:
         assigned = set(self.policy.users) if self.policy else set()
         present = {a.wire for a in self.accounts.all()}
-        users = {sid: user for sid, (user, _m, _a) in self.programs.targets().items()}
+        users = {sid: user for sid, (user, _m, _a) in self.acl_targets().items()}
         return ([integrity.check_safeboot(), integrity.check_tray_autostart()]
                 + integrity.check_tray(self.tray.tray_icons(), assigned)
                 + integrity.check_admins(assigned & present, self.accounts.is_admin_wire)

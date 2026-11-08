@@ -334,3 +334,13 @@ def test_acl_extra_dirs(state, tmp_path):
     calls.clear()
     m.sync({KID: []}, {KID: []})          # Steam freigegeben -> Verbot weg
     assert [str(steam), "/remove:d", f"*{KID}"] in calls and [str(prof), "/remove:d", f"*{KID}"] not in calls
+
+
+def test_execute_deny_only_when_enforcing():
+    from kidctl_agent.win.agent import WinAgent
+    allowed = SimpleNamespace(dirs=("c:\\app",), launcher_dirs=())
+    agent = SimpleNamespace(programs=SimpleNamespace(
+        targets=lambda: {"S-audit": ("a", "audit", allowed), "S-enforce": ("b", "enforce", allowed)}))
+    agent.acl_targets = lambda: WinAgent.acl_targets(agent)
+    assert list(WinAgent.acl_targets(agent)) == ["S-enforce"]
+    assert WinAgent.acl_wanted(agent) == {"S-enforce": ["c:\\app"]}

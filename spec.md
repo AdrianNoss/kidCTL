@@ -243,7 +243,7 @@ Abweichungen stehen hier und unter „Restlücken“.
     (außer Explorer; erlaubt, wenn die Aufgabenplanung bzw. ein Dienst sie startet), sonst Basis; freigegebene
     Programme samt Programmordner erlaubt (unter AppData der App-Ordner, z. B. `…\AppData\Local\Roblox` –
     übersteht Updates in neue Versionsordner); alles andere gesperrt.
-  - **Ausführverbot statt `noexec`** (`win/acl.py`, per `icacls`, Zustand `winacl.json`): auf dem Profil des
+  - **Ausführverbot statt `noexec`** (`win/acl.py`, per `icacls`, Zustand `winacl.json`; nur im Modus „Sperren“): auf dem Profil des
     Kindes sowie `C:\Users\Public` und `%WINDIR%\Temp`: `Deny Kind (OI)(IO)(X)` (Dateien nicht ausführbar,
     keine DLLs daraus – gegen COM-Hijacking), `Deny Kind (OI)(CI)(WDAC)` und `OWNER RIGHTS (OI)(CI)(M)` (Kind kann
     Rechte nicht ändern). Freigegebene Apps im Profil: `Allow Kind (OI)(IO)(RX)` auf dem App-Ordner (vererbte
@@ -1661,3 +1661,8 @@ Abweichungen stehen hier und unter „Restlücken“.
   im Protokoll gesperrt, danach Hintergrund gewechselt, Taskleisten-Schalter und Dialog „Infobereichsymbole“ gehen, Rechner
   bleibt gesperrt. Änderungen am System verlangen in den Einstellungen weiter Administratorrechte; Proxy und VPN
   des eigenen Kontos kann das Kind dort einstellen. Nicht getestet: Windows 11, echter PC.
+- 2026-11-08: Windows-Programmkontrolle (Paket 0.32.6): Das Ausführverbot im Profil gilt nur noch im Modus „Sperren“. Bei „Nur
+  protokollieren“ ließ NTFS Programme aus dem Profil nicht starten, obwohl der Modus laut WebUI nichts sperrt (gemeldet beim
+  Installieren von Steam). Getestet auf Windows 10 mit Installer 0.32.6 als Kind, Programm in `Downloads`: 0.32.5 und
+  „Nur protokollieren“ Zugriffsfehler; 0.32.6 startet es und meldet „Protokolliert“, bei „Sperren“ wieder Zugriffsfehler, Verbot wird
+  in beide Richtungen gesetzt und aufgehoben. Nicht getestet: echtes `SteamSetup.exe`, Windows 11, echter PC.
