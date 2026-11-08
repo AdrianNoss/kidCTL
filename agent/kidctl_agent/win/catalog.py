@@ -42,6 +42,10 @@ KEYWORDS = [   # (Muster im Namen bzw. Pfad, Kategorien)
 
 # Mitgelieferte Store-Apps: Als SYSTEM löst Windows deren Ressourcen-Namen nicht auf (nur für Benutzer, bei denen
 # das Paket registriert ist) – daher feste Namen (deutsch, englisch); sonst wird der Paketname lesbar gemacht.
+# Pakete des Systems, die zur Grundausstattung gehören (immer erlaubt, nicht im Katalog): Shell-Teile (Suche, Widgets,
+# „Klick und los“, Geräteübergreifendes), die Game Bar (startet bei jedem Spiel automatisch mit) und die Einstellungen
+# (Hintergrund, Taskleiste, Infobereich; was das System ändert, verlangt ohnehin Administratorrechte)
+BASE_PFN_PREFIXES = ("microsoftwindows.client.", "microsoft.xboxgamingoverlay_", "windows.immersivecontrolpanel_")
 KNOWN_APPS = {
     "Microsoft.WindowsCalculator": ("Rechner", "Calculator"),
     "Microsoft.WindowsNotepad": ("Editor", "Notepad"),
@@ -63,7 +67,6 @@ KNOWN_APPS = {
     "Microsoft.GamingApp": ("Xbox", "Xbox"),
     "Microsoft.XboxGamingOverlay": ("Game Bar", "Game Bar"),
     "Microsoft.WindowsStore": ("Microsoft Store", "Microsoft Store"),
-    "windows.immersivecontrolpanel": ("Einstellungen", "Settings"),
     "Microsoft.SecHealthUI": ("Windows-Sicherheit", "Windows Security"),
     "MicrosoftCorporationII.QuickAssist": ("Remotehilfe", "Quick Assist"),
     "Microsoft.Todos": ("Microsoft To Do", "Microsoft To Do"),
@@ -198,8 +201,8 @@ def parse(data: dict, exists=os.path.isfile, skip_dir: str = "", skip_profiles=(
         if not re.fullmatch(r"[A-Za-z0-9.\-]{1,100}_[a-z0-9]{13}", pfn):
             continue
         cat.known_pfns.add(pfn)
-        if not item.get("entry") or pfn.lower().startswith(("microsoftwindows.client.", "microsoft.xboxgamingoverlay_")):
-            continue   # Hintergrundpaket bzw. Shell-Teil (siehe programs.BASE_PFN_PREFIXES)
+        if not item.get("entry") or pfn.lower().startswith(BASE_PFN_PREFIXES):
+            continue   # Hintergrundpaket bzw. Shell-Teil
         cat.pfns.add(pfn)
         package = pfn.rsplit("_", 1)[0]
         name = (item.get("name") or "").strip()

@@ -81,8 +81,10 @@ def test_store_apps():
     a = allowed("appx:Microsoft.WindowsCalculator_8wekyb3d8bbwe")
     calc = r"C:\Program Files\WindowsApps\Microsoft.WindowsCalculator_1_x64__8wekyb3d8bbwe\CalculatorApp.exe"
     assert classify(proc(calc, pfn="Microsoft.WindowsCalculator_8wekyb3d8bbwe"), a) is None
-    v = classify(proc(W + r"\ImmersiveControlPanel\SystemSettings.exe", pfn="windows.immersivecontrolpanel_cw5n1h2txyewy"), a)
-    assert v.key == "appx:windows.immersivecontrolpanel_cw5n1h2txyewy"
+    # Einstellungen (Hintergrund, Taskleiste) sind Basis, auch als Paket mit Startmenü-Eintrag
+    settings = "windows.immersivecontrolpanel_cw5n1h2txyewy"
+    assert classify(proc(W + r"\ImmersiveControlPanel\SystemSettings.exe", pfn=settings),
+                    WinAllowed(set(), catalog_pfns={settings}, known_pfns={settings})) is None
     assert classify(proc(W + r"\SystemApps\X\StartMenuExperienceHost.exe",
                          pfn="Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy"), a) is None
     v = classify(proc(r"C:\Program Files\WindowsApps\New_1__abc\new.exe", pfn="Neu.App_0123456789abc"), a)

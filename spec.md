@@ -234,7 +234,7 @@ Abweichungen stehen hier und unter „Restlücken“.
     `Common Files\microsoft shared`, Windows Defender) erlaubt; Store-Apps: freigegeben erlaubt, mit
     Startmenü-Eintrag Eltern-Entscheidung, unbekanntes Paket wie eine App (Katalog wird neu gelesen), ohne
     Eintrag (Hintergrund) erlaubt, Windows-Helfer aus `System32` mit App-Identität (`backgroundTaskHost`)
-    erlaubt, Pakete `MicrosoftWindows.Client.*` (Suche, Geräteübergreifendes …) Basis; **Programmdateien,
+    erlaubt, Pakete `MicrosoftWindows.Client.*` (Suche, Geräteübergreifendes …) und die Einstellungen Basis; **Programmdateien,
     die dem Kind gehören, gesperrt** (auch in beschreibbaren Ordnern unter `C:\Windows`), außer im App-Ordner
     einer freigegebenen App; unter `%WINDIR%`: `cmd` nur mit `/c` (interaktiv gesperrt), Systemwerkzeuge
     (PowerShell, Skript-Hosts, `reg`/`regedit`, `mmc`, `msiexec`, Task-Manager, Systemsteuerung, `schtasks`,
@@ -1655,3 +1655,9 @@ Abweichungen stehen hier und unter „Restlücken“.
   scheitert wie gemeldet, alle vier Wege klappen als Administrator und als SYSTEM, die Root wird dabei nachgeladen, `enroll`
   erreicht den Server. Abgelehnt werden abgelaufenes, selbstsigniertes, nicht vertrauenswürdiges Zertifikat und falscher
   Hostname (HTTPS und WSS). Agent-Tests grün. Nicht getestet: Windows 11, echter PC.
+- 2026-11-08: Windows-Programmkontrolle (Paket 0.32.5): Die App „Einstellungen“ ist Basis statt Eltern-Entscheidung; ohne sie
+  ließen sich Hintergrund, Taskleiste und Infobereich nicht anpassen (die App wurde beim Start kommentarlos beendet),
+  sie erscheint auch nicht mehr im Katalog. Getestet auf Windows 10 mit Installer 0.32.5 als Kind im Modus „Sperren“: vorher
+  im Protokoll gesperrt, danach Hintergrund gewechselt, Taskleisten-Schalter und Dialog „Infobereichsymbole“ gehen, Rechner
+  bleibt gesperrt. Änderungen am System verlangen in den Einstellungen weiter Administratorrechte; Proxy und VPN
+  des eigenen Kontos kann das Kind dort einstellen. Nicht getestet: Windows 11, echter PC.

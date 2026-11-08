@@ -20,7 +20,7 @@ import os
 import re
 from dataclasses import dataclass, field
 
-from .catalog import norm
+from .catalog import BASE_PFN_PREFIXES, norm
 from .games import LAUNCHERS
 
 WINDIR = norm(os.environ.get("WINDIR", r"C:\Windows"))
@@ -36,10 +36,6 @@ BASE_DIRS = (
 # Von der Aufgabenplanung bzw. einem Dienst gestartet (z. B. automatische Datenträgerbereinigung)
 SYSTEM_PARENTS = {WINDIR + r"\system32\taskhostw.exe", WINDIR + r"\system32\svchost.exe"}
 ESSENTIAL = {WINDIR + r"\explorer.exe"}   # hat einen Startmenü-Eintrag, ist aber die Shell
-# Pakete des Systems mit (einzelnen) Startmenü-Einträgen, die zugleich Shell-Teile enthalten (Suche, Widgets,
-# „Klick und los“, Geräteübergreifendes) – Basis, nicht im Katalog
-BASE_PFN_PREFIXES = ("microsoftwindows.client.",
-                     "microsoft.xboxgamingoverlay_")   # Game Bar startet bei jedem Spiel automatisch mit
 SHELLS = {"cmd.exe"}
 # Werkzeuge unter %WINDIR%, die nur mit Freigabe laufen (Code ausführen, System umbauen, Dateien laden)
 SYSTEM_TOOLS = {"powershell.exe", "powershell_ise.exe", "pwsh.exe", "wscript.exe", "cscript.exe", "mshta.exe",
