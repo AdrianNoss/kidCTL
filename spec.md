@@ -1636,3 +1636,6 @@ Abweichungen stehen hier und unter „Restlücken“.
   CSRF, XSS, Open Redirect, Pfad-Traversal, TLS und Signaturprüfung der Updates, Abhängigkeiten (`pip-audit`), keine von
   außen erreichbaren Ports des Agenten. Nicht getestet: Traefik-Konfiguration und Host, `docker compose` (kein Docker
   auf dem Entwicklungsrechner), Web Push im Browser (Service Worker läuft im Test-Browser generell nicht).
+- 2026-11-08: Repo-Skripte: Fehlt der GPG-Ordner, brach `kidctl-repo-build.sh` wegen `set -e`/`pipefail` ohne Meldung ab;
+  jetzt kommt „kein Signierschlüssel“. Getestet mit leerem `KIDCTL_REPO_HOME` (Meldung, Exit 1; `key.sh status` meldet
+  „Noch kein Schlüssel“) und mit Wegwerf-Schlüssel (Dry-Run läuft durch).

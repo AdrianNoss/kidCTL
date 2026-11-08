@@ -12,5 +12,6 @@ run() { if (( APPLY )); then "$@"; else printf '[dry-run]'; printf ' %q' "$@"; e
 die() { echo "Fehler: $*" >&2; exit 1; }
 
 fingerprint() {
-  gpg --batch --with-colons --list-secret-keys 2>/dev/null | awk -F: '/^fpr:/ {print $10; exit}'
+  # „|| true“: fehlt der GPG-Ordner, endet gpg mit Fehler – sonst bräche set -e ohne Meldung ab
+  gpg --batch --with-colons --list-secret-keys 2>/dev/null | awk -F: '/^fpr:/ {print $10; exit}' || true
 }
