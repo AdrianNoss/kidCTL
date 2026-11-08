@@ -106,6 +106,25 @@ def test_apply_profiles_and_blocked_log(state, monkeypatch):
     assert "include" not in (wd.DNS_DIR / "unbound.conf").read_text()
 
 
+def test_whitelist_system_domains(state, monkeypatch):
+    monkeypatch.setattr(wd.os.path, "isfile", lambda path: True)
+    f = wd.WinDnsFilter(r"C:\KidCTL", run=lambda *a, **k: SimpleNamespace(returncode=0), popen=FakeProc,
+                        interfaces=FakeIf(), flush=lambda: None)
+    f.apply(1, p.WebFilter(mode="whitelist", allow=["wikipedia.org", "time.windows.com"]))
+    zones = (wd.DNS_DIR / "zones.conf").read_text()
+    assert 'local-zone: "windowsupdate.com." transparent' in zones
+    assert 'local-zone: "checkappexec.microsoft.com." transparent' in zones
+    assert zones.count('"time.windows.com."') == 1             # schon freigegeben: nicht doppelt
+    assert "msn.com" not in zones                              # Rauschen bleibt gesperrt
+    (wd.DNS_DIR / "blocked.log").write_text(
+        "info: . always_nxdomain 127.0.0.1@5 v10.events.data.microsoft.com. A IN\n"
+        "info: . always_nxdomain 127.0.0.1@5 api.msn.com. A IN\n"
+        "info: . always_nxdomain 127.0.0.1@5 www.example.com. A IN\n")
+    assert f.collect_blocked() == [(1, "www.example.com", "nicht freigegeben")]
+    f.apply(1, p.WebFilter(mode="blacklist", deny=["tiktok.com"]))
+    assert "windowsupdate.com" not in (wd.DNS_DIR / "zones.conf").read_text()   # nur Whitelist
+
+
 # ---------- WinAgent ----------
 
 class FakeWfp:

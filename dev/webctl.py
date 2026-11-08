@@ -78,7 +78,13 @@ def main(cmd: str, *args: str) -> None:
     elif cmd == "map":
         page = c.get(f"/devices/{args[0]}").text
         rows = re.findall(r'<td>(\w+)(?: \([^)]*\))?</td>\s*<td>\d+</td>\s*<td>\s*<select name="(user_\d+)"', page)
-        print(c.post(f"/devices/{args[0]}/mapping", data={"csrf_token": csrf, dict(rows)[args[1]]: args[2]}).status_code)
+        # das Formular schickt alle Zuordnungen – bestehende übernehmen, sonst setzt der Server sie zurück
+        data = {"csrf_token": csrf}
+        for sel in re.finditer(r'<select name="(user_\d+)">(.*?)</select>', page, re.S):
+            m = re.search(r'<option value="(\d*)" selected', sel.group(2))
+            data[sel.group(1)] = m.group(1) if m else ""
+        data[dict(rows)[args[1]]] = args[2]
+        print(c.post(f"/devices/{args[0]}/mapping", data=data).status_code)
     elif cmd == "device":
         page = c.get(f"/devices/{args[0]}").text
         print(" ".join(re.sub(r"<[^>]+>", " ", page.split("<h2>Benutzer-Zuordnung")[0].split("<dl>")[1]).split()))

@@ -139,8 +139,8 @@ class WinAgent(AgentCore):
 
     async def _refresh_login_screens(self) -> None:
         """Der Anmeldebildschirm merkt sich die Kontenliste (ein deaktiviertes Konto fehlt, ein wieder aktiviertes
-        erschiene erst nach etwa einer Minute). Neustart von LogonUI aktualisiert sie sofort – nur in Sitzungen
-        ohne angemeldeten Benutzer (ein gesperrter Desktop bleibt unberührt)."""
+        erschiene in einer gesperrten Sitzung gar nicht). Neustart von LogonUI aktualisiert sie sofort – in Sitzungen
+        ohne angemeldeten Benutzer und in gesperrten (Windows startet LogonUI neu, die Sitzung bleibt gesperrt)."""
         if self.logind is None:
             return
         try:
@@ -361,7 +361,8 @@ class WinAgent(AgentCore):
 
     async def _ensure_trays(self, sessions, decisions: dict[str, Decision]) -> None:
         """Tray-App in aktiven Kinder-Sitzungen starten, wenn keine verbunden ist (nach einem Update, das sie
-        beendet hat, oder wenn das Kind sie geschlossen hat)."""
+        beendet hat, oder wenn das Kind sie geschlossen hat). Nicht nach angeforderter Abmeldung: Die Sitzung
+        meldet sich noch einige Sekunden als aktiv, die Tray-App ist aber schon beendet."""
         if not self.tray_command or self.run_in_session is None:
             return
         now = self.clock()
@@ -372,7 +373,8 @@ class WinAgent(AgentCore):
         for s in sessions:
             key = (s.id, s.leader)
             first = self._seen_at.setdefault(key, now)
-            if not s.active or s.user not in decisions or s.user in connected or now - first < TRAY_GRACE:
+            if (not s.active or s.user not in decisions or s.user in connected or s.user in self.enforcer.hard
+                    or now - first < TRAY_GRACE):
                 continue
             if now - self._tray_tried.get(key, -TRAY_RETRY) < TRAY_RETRY:
                 continue

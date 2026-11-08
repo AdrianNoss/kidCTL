@@ -148,3 +148,9 @@ msgstr "Sign-in blocked"
 
 msgid "Bildschirmzeit für heute aufgebraucht, außerhalb der erlaubten Zeit oder von den Eltern gesperrt. Du wirst gleich abgemeldet."
 msgstr "Screen time used up for today, outside the allowed hours or locked by your parents. You will be signed out shortly."
+
+msgid "Abgesicherter Modus"
+msgstr "Safe Mode"
+
+msgid "Im abgesicherten Modus kannst du den Computer nicht benutzen. Du wirst abgemeldet – starte den Computer bitte neu."
+msgstr "You can't use the computer in Safe Mode. You will be signed out – please restart the computer."

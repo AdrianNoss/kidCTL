@@ -2,12 +2,12 @@
 Dienststeuerungs-Manager (SCM) an und lässt den Agenten in ``ServiceMain`` laufen.
 
 Den Dienst legt der Installer an (``LocalSystem``, automatischer Start, Neustart bei Absturz, Eintrag unter
-``SafeBoot\\Minimal`` und ``\\Network``). Stoppen dürfen nur Administratoren.
+``SafeBoot\\Minimal`` und ``\\Network``). Stoppen dürfen nur Administratoren. ``asyncio`` wird erst in
+``run_service`` importiert: Im abgesicherten Modus ohne Netzwerk-Stack ist es nicht ladbar (siehe ``safemode``).
 """
 
 from __future__ import annotations
 
-import asyncio
 import ctypes
 import logging
 import logging.handlers
@@ -36,6 +36,33 @@ def setup_logging(level: str = "INFO") -> None:
 
 def run_service(make_main) -> None:
     """``make_main()`` liefert die Koroutine des Agenten. Blockiert, bis der Dienst gestoppt ist."""
+    import asyncio
+
+    state: dict = {"loop": None, "task": None}
+
+    def on_stop() -> None:
+        loop, task = state["loop"], state["task"]
+        if loop and task:
+            loop.call_soon_threadsafe(task.cancel)
+
+    def body(running) -> None:
+        async def main() -> None:
+            state["loop"] = asyncio.get_running_loop()
+            state["task"] = asyncio.current_task()
+            running()
+            await make_main()
+
+        try:
+            asyncio.run(main())
+        except asyncio.CancelledError:
+            pass
+
+    dispatch(body, on_stop)
+
+
+def dispatch(body, on_stop) -> None:
+    """Beim SCM anmelden und ``body(running)`` als Dienst ausführen: blockiert, bis der Dienst endet, und ruft
+    ``running()``, sobald er läuft. ``on_stop()`` kommt aus dem Handler-Thread."""
     SERVICE_MAIN = ctypes.WINFUNCTYPE(None, w.DWORD, POINTER(c_wchar_p))
     HANDLER_EX = ctypes.WINFUNCTYPE(w.DWORD, w.DWORD, w.DWORD, c_void_p, c_void_p)
 
@@ -48,7 +75,7 @@ def run_service(make_main) -> None:
     set_status = advapi.SetServiceStatus
     set_status.restype, set_status.argtypes = w.BOOL, [c_void_p, POINTER(api.SERVICE_STATUS)]
 
-    state: dict = {"handle": None, "loop": None, "task": None}
+    state: dict = {"handle": None}
     status = api.SERVICE_STATUS(api.SERVICE_WIN32_OWN_PROCESS, api.SERVICE_START_PENDING, 0, 0, 0, 0, 3000)
 
     def report(current: int, wait_hint: int = 0) -> None:
@@ -65,9 +92,7 @@ def run_service(make_main) -> None:
             log.info("Dienst wird beendet (Steuercode %s)", control)
             STOP_REASON["control"] = control
             report(api.SERVICE_STOP_PENDING, 15000)
-            loop, task = state["loop"], state["task"]
-            if loop and task:
-                loop.call_soon_threadsafe(task.cancel)
+            on_stop()
         elif control == api.SERVICE_CONTROL_INTERROGATE:
             report(status.dwCurrentState)
         return api.NO_ERROR
@@ -81,16 +106,8 @@ def run_service(make_main) -> None:
             return
         report(api.SERVICE_START_PENDING, 10000)
 
-        async def main() -> None:
-            state["loop"] = asyncio.get_running_loop()
-            state["task"] = asyncio.current_task()
-            report(api.SERVICE_RUNNING)
-            await make_main()
-
         try:
-            asyncio.run(main())
-        except asyncio.CancelledError:
-            pass
+            body(lambda: report(api.SERVICE_RUNNING))
         except Exception:
             log.exception("Agent mit Fehler beendet")
             status.dwWin32ExitCode = 1064   # ERROR_EXCEPTION_IN_SERVICE -> SCM startet neu (Wiederherstellung)

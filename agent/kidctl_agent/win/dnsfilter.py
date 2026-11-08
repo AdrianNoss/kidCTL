@@ -12,6 +12,10 @@ ist nicht möglich. Deshalb:
   Filter hat bzw. bei der Deinstallation.
 - Zonen, SafeSearch, DoH-Sperren, Sperrlisten und die Auswertung gesperrter Anfragen wie unter Linux
   (``dnsfilter``).
+- Weil der Filter für den ganzen Rechner gilt, bekommt der Whitelist-Modus zwei feste Listen: Windows-
+  Infrastruktur (``SYSTEM_ALLOW``: Update, Defender, SmartScreen, Konnektivitätstest, Zeit, Zertifikate,
+  Lizenzen) ist immer erlaubt; bekanntes Hintergrundrauschen (``SYSTEM_QUIET``: Telemetrie, MSN/Widgets, Wetter-
+  Kacheln, Edge-Konfiguration) bleibt gesperrt, landet aber nicht im Sperrprotokoll.
 """
 
 from __future__ import annotations
@@ -27,7 +31,7 @@ from pathlib import Path
 from kidctl_common import protocol as p
 
 from .. import store
-from ..dnsfilter import build_zones, load_list, parse_blocked, report_sources, valid_domain
+from ..dnsfilter import build_zones, covered, load_list, parse_blocked, report_sources, valid_domain
 
 log = logging.getLogger("kidctl.dns")
 
@@ -37,6 +41,40 @@ TCPIP = r"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"
 LOOPBACK = ("127.0.0.1", "::1")
 CREATE_NO_WINDOW = 0x08000000
 _IP = re.compile(r"^[0-9a-fA-F:.%]+$")
+
+# Whitelist-Modus: Windows-Infrastruktur, immer erlaubt (inkl. Subdomains; keine Websites mit Inhalten)
+SYSTEM_ALLOW = (
+    # Windows Update, Übermittlungsoptimierung, Zertifikats-Vertrauenslisten (ctldl.windowsupdate.com)
+    "windowsupdate.com", "update.microsoft.com", "windowsupdate.microsoft.com", "delivery.mp.microsoft.com",
+    "dsp.mp.microsoft.com", "cwsapp.update.microsoft.com",
+    # Defender (Signaturen, Cloud-Schutz), SmartScreen
+    "definitionupdates.microsoft.com", "wdcp.microsoft.com", "wdcpalt.microsoft.com", "cp.wd.microsoft.com",
+    "smartscreen.microsoft.com", "smartscreen-prod.microsoft.com", "checkappexec.microsoft.com",
+    "urs.microsoft.com",
+    # Konnektivitätstest (sonst „Kein Internet“), Zeit
+    "msftconnecttest.com", "msftncsi.com", "time.windows.com",
+    # Sperrlisten/OCSP der Zertifizierungsstellen (sonst hängen Signaturprüfungen bis zum Timeout)
+    "crl.microsoft.com", "oneocsp.microsoft.com", "ocsp.msocsp.com", "ocsp.digicert.com", "crl3.digicert.com",
+    "crl4.digicert.com", "ocsp.sectigo.com", "crl.sectigo.com", "ocsp.usertrust.com", "crl.usertrust.com",
+    "ocsp.comodoca.com", "ocsp.globalsign.com", "crl.globalsign.com", "lencr.org", "pki.goog",
+    # Lizenzen (Store-Apps, Aktivierung)
+    "licensing.mp.microsoft.com", "sls.microsoft.com",
+)
+# Whitelist-Modus: gesperrt, aber nicht ins Sperrprotokoll (Hintergrundabfragen von Windows und Edge)
+SYSTEM_QUIET = (
+    "data.microsoft.com",            # Telemetrie (v10.events…, watson.events…, settings-win…)
+    "telemetry.microsoft.com", "msn.com", "img-s-msn-com.akamaized.net", "iris.microsoft.com",
+    "weather.microsoft.com", "cdn.onenote.net", "edge.microsoft.com", "config.edge.skype.com",
+    "edge-consumer-static.azureedge.net", "wns.windows.com", "xboxservices.com",
+)
+
+
+def system_zones(web: p.WebFilter | None, zones: list[str]) -> list[str]:
+    """``SYSTEM_ALLOW`` als erlaubte Zonen (nur Whitelist-Modus, ohne vorhandene Namen zu doppeln)."""
+    if web is None or web.mode != "whitelist":
+        return []
+    have = {line.split('"')[1] for line in zones if line.startswith("local-zone:")}
+    return [f'local-zone: "{d}." transparent' for d in SYSTEM_ALLOW if f"{d}." not in have]
 
 PS_SET = r"""
 $ErrorActionPreference = 'SilentlyContinue'
@@ -217,7 +255,11 @@ class WinDnsFilter:
         """Profil anwenden: ``web`` des aktiven Kindes, ``None`` = ungefiltert. Blockierend."""
         self.dir.mkdir(parents=True, exist_ok=True)
         lists = {r.id: load_list(self.lists_dir, r.id) for r in (web.lists if web else [])}
-        zones = "\n".join(build_zones(web, lists)) + "\n" if web and web.mode != "off" else ""
+        if web and web.mode != "off":
+            lines = build_zones(web, lists)
+            zones = "\n".join(lines + system_zones(web, lines)) + "\n"
+        else:
+            zones = ""
         ups, doms = self.upstreams()
         conf = unbound_conf(web if web and web.mode != "off" else None, str(self.dir / "zones.conf"),
                             str(self.dir / "blocked.log"), ups, doms)
@@ -281,6 +323,8 @@ class WinDnsFilter:
             if hit is None:
                 continue
             zone, qname = hit
+            if zone == "." and covered(qname, set(SYSTEM_QUIET)):
+                continue   # Hintergrundrauschen von Windows
             if zone in self.reportable:
                 out.append((self.active_child, qname if zone == "." else zone, self.reportable[zone]))
         return out

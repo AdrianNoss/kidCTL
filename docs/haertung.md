@@ -239,7 +239,7 @@ Unter Windows gelten dieselben Grundsätze, die Mittel heißen anders:
 | Benutzerkontensteuerung fragt nur „Ja/Nein“ | UAC fragt bei Standardbenutzern ohnehin nach Admin-Passwort – Eltern-Passwort nie vor dem Kind eintippen |
 | Start von USB-Stick oder einem anderen System | UEFI-Firmware: Booten von USB aus, Firmware-Passwort setzen |
 | Platte ausbauen, Offline-Zugriff, Passwort zurücksetzen per Rettungsmedium | **BitLocker** (Pro) bzw. **Geräteverschlüsselung** (Home, mit Microsoft-Konto des Admins und TPM) einschalten; Wiederherstellungsschlüssel sicher ablegen |
-| Abgesicherter Modus (vom Anmeldebildschirm aus erreichbar) | KidCTL läuft dort mit (Dienst unter `SafeBoot`); ein gesperrtes Konto bleibt auch dort gesperrt |
+| Abgesicherter Modus (vom Anmeldebildschirm aus erreichbar) | KidCTL startet dort einen Wächter (Dienst unter `SafeBoot`): Zugeordnete Kinderkonten werden deaktiviert, angemeldete Kinder abgemeldet; beim nächsten normalen Start gilt wieder die Policy |
 | Windows-Wiederherstellungsumgebung (Eingabeaufforderung) | fragt nach einem Administratorkonto; mit BitLocker ohne Wiederherstellungsschlüssel kein Zugriff auf die Platte |
 
 Hinweis zur Login-Sperre: KidCTL deaktiviert das Konto des Kindes, solange keine Zeit verfügbar ist.

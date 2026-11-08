@@ -162,7 +162,7 @@ Verlängerungsanfragen.
   offiziellen .deb: `/opt/Heroic/heroic` gilt als Launcher.
 - Logind trägt unter GDM keinen Desktop ein (auch Ubuntu) – Abmeldung über die laufende Shell (wie GNOME).
 
-### Windows (entschieden 2026-11-04; Schritte 1–4 umgesetzt in 0.29.0–0.32.0)
+### Windows (entschieden 2026-11-04; Schritte 1–4 umgesetzt in 0.29.0–0.32.0, Nacharbeit bis 0.32.2)
 Per /grill-me abgestimmt. Grundsatz: gleiches Verhalten wie unter Linux, wo Windows es zulässt;
 Abweichungen stehen hier und unter „Restlücken“.
 
@@ -180,8 +180,12 @@ Abweichungen stehen hier und unter „Restlücken“.
   kein PyInstaller (Fehlalarme von Virenscannern). Native Teile (z. B. Credential Provider) höchstens als
   spätere, optionale Ausbaustufe.
 - **Agent:** Windows-Dienst als `LocalSystem`, Geräte-Token nur für SYSTEM/Administratoren lesbar. Zusätzlich
-  unter `HKLM\SYSTEM\CurrentControlSet\Control\SafeBoot\Minimal` und `\Network` eingetragen (läuft auch im
-  abgesicherten Modus, den ein Standardnutzer vom Anmeldebildschirm aus erreicht).
+  unter `HKLM\SYSTEM\CurrentControlSet\Control\SafeBoot\Minimal` und `\Network` eingetragen: Den abgesicherten
+  Modus erreicht ein Standardnutzer vom Anmeldebildschirm aus. Dort läuft statt des Agenten ein **Wächter**
+  (`win/safemode.py`, ohne `asyncio`, das ohne Netzwerk-Stack nicht ladbar ist): Er deaktiviert alle zugeordneten
+  Kinderkonten aus der gespeicherten Policy und meldet ihre Sitzungen nach einem Hinweis ab. Kinder können im
+  abgesicherten Modus (mit und ohne Netzwerk) also nicht arbeiten; Eltern und Admins sind nicht betroffen. Beim
+  nächsten normalen Start stellt der Agent die Konten nach der Policy wieder her (entschieden 2026-11-08).
 - **Benutzername auf dem Draht:** Windows-Kontoname, wenn er dem Linux-Muster entspricht (meist: „lisa“,
   „Max“), sonst `rid-<RID>`; `uid` = RID (lokale Konten ab 1000). Intern über die SID zugeordnet; voller Name
   bzw. bei Microsoft-Konten „Name (E-Mail)“ als Anzeige.
@@ -888,6 +892,11 @@ Abweichungen stehen hier und unter „Restlücken“.
 - Kein Browserverlauf, keine Bilder/Dateien im Chat, keine Lesebestätigungen.
 - Kein Selbst-Update des Agenten unter Linux (nur über Pacman bzw. apt); unter Windows automatisch.
 - Windows (entschieden 2026-11-04):
+  - Website-Filter im Whitelist-Modus: Weil der Filter für den ganzen Rechner gilt, sind Windows-Infrastruktur
+    (Update, Defender, SmartScreen, Konnektivitätstest, Zeit, Zertifikate, Lizenzen) fest erlaubt; bekanntes
+    Hintergrundrauschen (Telemetrie, MSN/Widgets, Wetter-Kacheln, Edge-Konfiguration) bleibt gesperrt und erscheint
+    nicht im Sperrprotokoll (feste Listen in `win/dnsfilter.py`, entschieden 2026-11-07). Bing bleibt sichtbar: Es
+    ist die Standardsuche in Edge, das Kind muss dafür eine Freigabe anfragen können.
   - Login-Sperre ohne eigenen Hinweis: Windows blendet das deaktivierte Konto auf dem Anmeldebildschirm aus (über
     „Anderer Benutzer“ nur „Konto deaktiviert“). Ein eigener Hinweis bräuchte einen Credential Provider.
   - Die Named Pipe muss interaktiven Benutzern Schreibrecht geben (Qt öffnet mit `GENERIC_WRITE`, das schließt das
@@ -1595,3 +1604,18 @@ Abweichungen stehen hier und unter „Restlücken“.
   Im Whitelist-Modus werden auch Windows-Dienste wie SmartScreen (`checkappexec.microsoft.com`) und Telemetrie
   gefiltert und als gesperrte Domains gemeldet. Nicht getestet: Spiele unter Windows 10,
   Update über `latest.json` (Entwicklungsserver liefert das Windows-Repo nicht aus).
+- 2026-11-08: Windows-Nacharbeit (Paket 0.32.2): Abgesicherter Modus – der Agent stürzte im minimalen Modus sofort
+  ab (`import asyncio`: WinError 10050, kein Netzwerk-Stack), Kinder hätten dort keine Zeitbegrenzung gehabt; jetzt
+  Wächter ohne `asyncio` (`win/safemode.py`, `service.dispatch`), Kinder werden in beiden abgesicherten Modi
+  gesperrt. Whitelist-Modus: feste Listen für Windows-Infrastruktur (erlaubt) und Hintergrundrauschen (still
+  gesperrt). Anmeldebildschirm auch in gesperrten Sitzungen aktualisieren (ein freigegebenes Konto fehlte dort in
+  „Benutzer wechseln“). Keine Tray-App mehr in einer Sitzung starten, deren Abmeldung läuft. `dev/webctl.py map`
+  behält bestehende Zuordnungen. Getestet: Agent 260, Server 124, Tray 19 Tests grün. VM Windows 10
+  mit echtem Installer: Selbst-Update 0.32.0 -> 0.32.1 -> 0.32.2 (Signatur, stille Installation, Agent nach etwa
+  12 s zurück); Whitelist mit echtem Unbound: Systemdomains erreichbar, Telemetrie/MSN gesperrt und nicht gemeldet;
+  zwei Kinder gleichzeitig: Filterprofil folgt der vorderen Sitzung, Sperre meldet die getrennte Sitzung nach 60 s
+  ab, das andere Kind arbeitet weiter, freigegebenes Konto erscheint sofort in der Liste der gesperrten Sitzung;
+  abgesicherter Modus minimal: Dienst läuft, beide Kinder fehlen auf dem Anmeldebildschirm, ein schon angemeldetes
+  Kind bekommt den Hinweis und wird abgemeldet; mit Netzwerk: Wächter läuft; danach Normalstart: Konten wieder
+  aktiv. Nicht getestet: echter Rechner, Windows 11 Home, Microsoft-Konto, Kopplungsseite im Installer,
+  Store-Installation durch das Kind, Steam/Epic mit echten Spielen, VPN, Browser mit eigenem DNS.

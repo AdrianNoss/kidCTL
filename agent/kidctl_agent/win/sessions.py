@@ -47,13 +47,15 @@ class WinSessions:
         return out
 
     def login_screens(self) -> list[int]:
-        """Sitzungen, die gerade den Anmeldebildschirm zeigen (kein Benutzer angemeldet, nicht Sitzung 0)."""
+        """Sitzungen, die gerade den Anmeldebildschirm zeigen: ohne angemeldeten Benutzer oder gesperrt (dort zeigt
+        „Benutzer wechseln“ dieselbe Kontenliste); nicht Sitzung 0."""
         out = []
         for sid, state in self.api.enumerate_sessions():
             if sid == 0 or state not in (api.WTSActive, api.WTSConnected):
                 continue
             try:
-                if not self.api.session_info(sid).UserName:
+                info = self.api.session_info(sid)
+                if not info.UserName or info.SessionFlags == api.WTS_SESSIONSTATE_LOCK:
                     out.append(sid)
             except OSError:
                 continue

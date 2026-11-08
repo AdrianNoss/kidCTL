@@ -401,7 +401,63 @@ def test_winagent_restarts_missing_tray(winagent, fake):
         clock[0] += 300
         await agent.tick_once()
         assert started == [2]                   # verbunden -> nichts zu tun
+        agent.tray.clients = set()              # Abmeldung angefordert: Tray-App beendet, Sitzung noch aktiv
+        agent.enforcer.hard["lisa"] = clock[0] + 1000
+
+        async def keep(*a):                     # Enforcer hier nicht abräumen lassen (Lisa ist im Test erlaubt)
+            pass
+        agent.enforcer.step = keep
+        clock[0] += 300
+        await agent.tick_once()
+        assert started == [2]
     asyncio.run(main())
+
+
+def test_safe_mode_guard_imports_without_asyncio():
+    """Im minimalen abgesicherten Modus ist asyncio nicht ladbar (WinError 10050)."""
+    import subprocess
+    import sys
+    code = (
+        "import sys\n"
+        "class Block:\n"
+        "    def find_spec(self, name, path=None, target=None):\n"
+        "        if name.split('.')[0] in ('asyncio', '_overlapped', 'websockets'):\n"
+        "            raise ImportError(name)\n"
+        "sys.meta_path.insert(0, Block())\n"
+        "for m in list(sys.modules):\n"
+        "    if m.split('.')[0] == 'asyncio':\n"
+        "        del sys.modules[m]\n"
+        "import kidctl_agent.win.safemode\n"
+    )
+    r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                       env={**__import__('os').environ, "PYTHONPATH": ":".join(sys.path)})
+    assert r.returncode == 0, r.stderr
+
+
+def test_safe_mode_guard_locks_children_only(fake):
+    from kidctl_agent.win import safemode
+    store.save(store.POLICY_FILE, {"users": {"lisa": 1, "papa": 2}})      # papa ist Admin: nie sperren
+    fake.sessions = [(1, api.WTSActive, "", -1, 0), (2, api.WTSActive, "lisa", 1, 5),
+                     (3, 4, "papa", 1, 6), (4, api.WTSActive, "mama", 1, 7)]
+    guard = safemode.Guard(backend=fake)
+    guard.langs.lang_of = lambda user: "de"
+    guard.tick()
+    assert guard.lock.ours and fake.user_flags("lisa") & api.UF_ACCOUNTDISABLE
+    assert not fake.user_flags("papa") & api.UF_ACCOUNTDISABLE
+    assert fake.logoffs == [2]                                            # nur das Kind
+    assert [m[0] for m in fake.messages] == [2]
+    assert fake.killed == [("LogonUI.exe", 1)]                            # Kontenliste aktualisieren
+    fake.sessions = [(1, api.WTSActive, "", -1, 0)]
+    guard.tick()
+    assert len(fake.killed) == 1                                          # keine Änderung -> nichts
+
+
+def test_safe_mode_guard_without_policy_locks_nobody(fake):
+    from kidctl_agent.win import safemode
+    fake.sessions = [(2, api.WTSActive, "lisa", 1, 5)]
+    guard = safemode.Guard(backend=fake)
+    guard.tick()
+    assert not guard.lock.ours and fake.logoffs == []
 
 
 def test_windows_modules_import_without_posix_modules():
@@ -429,15 +485,17 @@ def test_winagent_refreshes_login_screen_on_lock_change(winagent, fake):
     agent, clock = winagent
 
     async def main():
-        fake.sessions = [(1, api.WTSActive, "", -1, 0), (2, 4, "papa", 0, 9)]   # Anmeldebildschirm + gesperrter Papa
+        # Anmeldebildschirm, getrennter Papa, vorne gesperrte Sitzung von Mama („Benutzer wechseln“), entsperrter Tim
+        fake.sessions = [(1, api.WTSActive, "", -1, 0), (2, 4, "papa", 0, 9), (3, api.WTSActive, "mama", 0, 10),
+                         (4, api.WTSActive, "tim", 1, 11)]
         agent.policy = _policy(locked=True)
         await agent.tick_once()
-        assert fake.killed == [("LogonUI.exe", 1)]        # nur die Sitzung ohne Benutzer
+        assert fake.killed == [("LogonUI.exe", 1), ("LogonUI.exe", 3)]
         clock[0] += 5
         await agent.tick_once()
-        assert fake.killed == [("LogonUI.exe", 1)]        # keine Änderung -> nichts
+        assert len(fake.killed) == 2                      # keine Änderung -> nichts
         agent.policy = _policy()
         clock[0] += 5
         await agent.tick_once()
-        assert len(fake.killed) == 2                      # wieder aktiviert -> erneut
+        assert len(fake.killed) == 4                      # wieder aktiviert -> erneut
     asyncio.run(main())
