@@ -1673,3 +1673,13 @@ Abweichungen stehen hier und unter „Restlücken“.
   Agent- und Server-Tests (auch gefälschtes `steam.exe` wird nicht mit freigegeben), Windows 10 mit Installer 0.32.7 als Kind und
   nachgestelltem Steam: frisch installiert gesperrt und nach dem Sperren im Katalog, eine WebUI-Zeile, Freigabe über den Linux-Schlüssel erlaubt
   `steam.exe` und `steamwebhelper.exe`, Entzug beendet beide. Nicht getestet: echtes Steam, Windows 11, echter PC.
+- 2026-11-09: WebUI: Die lange Kinderseite ist auf Reiter verteilt: Heute (`/children/<id>`: Rest und genutzte Zeit, erlaubte Zeitspanne, Online-Status,
+  Sperren, Zeit gutschreiben, Zusammenfassung, letzte 5 Sperren), Zeiten (`/zeiten`), Internet (`/internet`), Programme (`/programme`), dazu Statistik,
+  Protokoll und Chat in derselben Leiste. Speichern führt zurück auf denselben Reiter. Programme: nur Spiele und eigene Programme aufgeklappt, Filter „Nur
+  erlaubte“, Speichern bleibt sichtbar, Hinweis auf ungespeicherte Änderungen, „Spiel“ nur bei erlaubten Programmen, gleichnamige Einträge unterscheidbar,
+  Hilfetexte eingeklappt und passend zur Plattform des Kindes. Begriffe vereinfacht (z. B. „Zeit pro Tag“, „Nur freigegebene Websites“ statt Whitelist).
+  Handy: Wochenvorlage ohne seitliches Scrollen. Statische Dateien tragen eine Prüfsumme in der URL, Updates kommen ohne Cache-Reste an. Fix: `hidden` wirkte
+  bei Elementen mit eigenem `display` nicht, die Programmsuche blendete deshalb einzelne Zeilen nicht aus. Getestet: Server-Tests (neu `test_child_pages.py`)
+  und im Browser am Entwicklungsserver auf 1280 px und 375 px: alle Reiter, Filter, Suche, Änderungshinweis; Seitenhöhe mit 67 Programmen von 5152 px auf
+  höchstens rund 1200 px auf den Reitern Heute, Zeiten, Internet und Programme (Handy von 8663 px auf höchstens 1900 px). Nicht im Browser getestet: Absenden der Formulare (Testserver lehnt die Herkunft
+  `localhost` ab, abgedeckt durch die Server-Tests).

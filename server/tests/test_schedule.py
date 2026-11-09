@@ -27,7 +27,7 @@ def _rules(child_id):
 
 def test_group_mode_writes_all_days(client, parent):
     cid, tok = _setup(client, parent)
-    page = client.get(f"/children/{cid}")
+    page = client.get(f"/children/{cid}/zeiten")
     assert page.status_code == 200 and "Werktage (Mo–Fr)" in page.text
     r = client.post(f"/children/{cid}/schedule", data={
         "csrf_token": tok, "quota_wd": "90", "start_wd": "14:00", "end_wd": "19:30",
@@ -41,7 +41,7 @@ def test_group_mode_writes_all_days(client, parent):
 def test_individual_mode_and_differs_hint(client, parent):
     cid, tok = _setup(client, parent)
     client.post(f"/children/{cid}/mode", data={"csrf_token": tok, "weekdays_same": ""})
-    page = client.get(f"/children/{cid}")
+    page = client.get(f"/children/{cid}/zeiten")
     assert "Mittwoch" in page.text
     data = {"csrf_token": tok}
     for d in range(7):
@@ -50,7 +50,7 @@ def test_individual_mode_and_differs_hint(client, parent):
     assert _rules(cid)[3][0] == 60
     # Zurück in den Gruppenmodus: Regeln bleiben unverändert, Hinweis erscheint
     client.post(f"/children/{cid}/mode", data={"csrf_token": tok, "weekdays_same": "1"})
-    page = client.get(f"/children/{cid}")
+    page = client.get(f"/children/{cid}/zeiten")
     assert "Unterschiedliche Tageswerte" in page.text
     assert _rules(cid)[3][0] == 60
 
@@ -83,7 +83,7 @@ def test_credit_creates_and_accumulates_exception(client, parent):
         exc = db.scalar(select(DayException).where(DayException.child_id == cid))
         assert exc.extra_minutes == 60 and exc.window_end_override == time(21, 30)
         exc_id = exc.id
-    page = client.get(f"/children/{cid}").text
+    page = client.get(f"/children/{cid}/zeiten").text
     assert "(heute)" in page and "1:00 h" in page and "21:30" in page
 
     client.post(f"/children/{cid}/exceptions/{exc_id}/delete", data={"csrf_token": tok})

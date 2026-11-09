@@ -91,9 +91,9 @@ def test_child_page_links_and_limit(client, parent):
         _add(cid, at=datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=i), kind="program",
              key=f"exe:/usr/bin/p{i}", name=f"Prog{i:02d}")
     page = client.get(f"/children/{cid}").text
-    assert "Ganzes Protokoll" in page and "Die letzten 10 Einträge" in page
-    assert f'href="/children/{cid}/protokoll" class="btn secondary">Protokoll</a>' in page   # Kopfzeile
-    assert "Prog00" in page and "Prog14" not in page
+    assert "Ganzes Protokoll" in page and "Zuletzt gesperrt" in page
+    assert f'href="/children/{cid}/protokoll" class="tab">Protokoll</a>' in page   # Reiter
+    assert "Prog00" in page and "Prog04" in page and "Prog05" not in page
 
 
 def test_prune_after_90_days(client, parent):

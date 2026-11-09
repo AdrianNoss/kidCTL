@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{{ child.name }} – KidCTL{% endblock %}
+{% block content %}
+{% include "_child_head.html" %}
+
+<section class="today{% if is_locked(child) %} is-locked{% endif %}" aria-label="{{ _('Stand heute') }}">
+  <div class="today-main">
+    {% if is_locked(child) %}
+    <p class="today-value">{{ _("Gesperrt") }}</p>
+    <p class="today-sub">{% if child.locked_until %}{{ _("bis {time}").format(time=child.locked_until | localtime) }}{% else %}{{ _("bis zur Freigabe") }}{% endif %}</p>
+    {% elif status.overrun_minutes %}
+    <p class="today-value">0:00 h</p>
+    <p class="today-sub"><span class="pill warn">{{ _("überzogen um {n} min").format(n=status.overrun_minutes) }}</span></p>
+    {% else %}
+    <p class="today-value">{{ fmt_minutes(status.remaining_minutes) }}</p>
+    <p class="today-sub">{{ _("heute noch übrig") }}</p>
+    {% endif %}
+    <progress max="{{ status.allowed_minutes or 1 }}" value="{{ [status.used_seconds // 60, status.allowed_minutes] | min }}" aria-label="{{ _('Genutzte Zeit') }}"></progress>
+    <p class="today-used">{{ _("{used} von {total} genutzt").format(used=fmt_minutes(status.used_seconds // 60), total=fmt_minutes(status.allowed_minutes)) }}</p>
+  </div>
+  <dl class="today-facts">
+    <div><dt>{{ _("Erlaubt") }}</dt><dd>{% if status.window_start %}{{ status.window_start.strftime("%H:%M") }}–{{ status.window_end.strftime("%H:%M") }}{% else %}–{% endif %}</dd></div>
+    <div><dt>{{ _("Online") }}</dt><dd>{% if online_devices %}{{ online_devices | join(", ") }}{% else %}{{ _("kein Rechner") }}{% endif %}</dd></div>
+  </dl>
+</section>
+
+<div class="today-actions">
+  <section class="card{% if is_locked(child) %} locked-card{% endif %}" id="sperre">
+    <h2>{{ _("Sperren") }}</h2>
+    {% if is_locked(child) %}
+    <form method="post" action="/children/{{ child.id }}/unlock">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <button type="submit">{{ _("Jetzt freigeben") }}</button>
+    </form>
+    <p class="muted"><small>{{ _("Danach gelten wieder die eingestellten Zeiten.") }}</small></p>
+    {% else %}
+    <form method="post" action="/children/{{ child.id }}/lock" class="stack">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <label>{{ _("Dauer") }} <select name="duration">
+        {% for key, label in lock_durations.items() %}<option value="{{ key }}">{{ _(label) }}</option>{% endfor %}
+      </select></label>
+      <label>{{ _("Abmeldung in") }} <span class="unit"><input type="number" name="grace" min="0" max="{{ max_grace }}" value="1" class="short" required> {{ _("min") }}</span></label>
+      <button type="submit" class="danger">{{ _("Jetzt sperren") }}</button>
+    </form>
+    <details class="help"><summary>{{ _("Was passiert beim Sperren?") }}</summary>
+      <p>{{ _("Sperrt alle Rechner von {name}: {name} bekommt eine Benachrichtigung und wird nach der Vorwarnzeit abgemeldet (0 = sofort); neu anmelden ist ab sofort nicht möglich. Läuft eine Dauer ab, wird automatisch freigegeben – auch ohne Internetverbindung.").format(name=child.name) }}</p>
+    </details>
+    {% endif %}
+  </section>
+
+  <section class="card" id="gutschrift">
+    <h2>{{ _("Zeit gutschreiben") }}</h2>
+    {% if request.query_params.get("credited") %}<p class="success">{{ _("Zeit gutgeschrieben.") }}</p>{% endif %}
+    <form method="post" action="/children/{{ child.id }}/credit" class="stack">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <label>{{ _("Zusätzlich") }} <span class="unit"><input type="number" name="extra_minutes" min="0" max="{{ max_extra }}" step="5" value="0" class="short"> {{ _("min") }}</span></label>
+      <label>{{ _("Davon Spielzeit") }} <span class="unit"><input type="number" name="extra_games" min="0" max="{{ max_extra }}" step="5" value="0" class="short"> {{ _("min") }}</span></label>
+      <details class="help"{% if credit_day != today.isoformat() %} open{% endif %}><summary>{{ _("Anderer Tag oder länger erlaubt") }}</summary>
+        <label>{{ _("Datum") }} <input type="date" name="day" value="{{ credit_day }}" min="{{ today.isoformat() }}" required></label>
+        <label>{{ _("Erlaubt bis") }} <input type="time" name="window_end"></label>
+      </details>
+      <button type="submit">{{ _("Gutschreiben") }}</button>
+    </form>
+  </section>
+</div>
+
+<section class="card">
+  <h2>{{ _("Eingestellt") }}</h2>
+  <ul class="settings-summary">
+    <li><span>{{ _("Internet") }}</span><strong>{{ _(web_mode_label) }}</strong><a href="/children/{{ child.id }}/internet">{{ _("Ändern") }}</a></li>
+    <li><span>{{ _("Programme") }}</span><strong>{{ _(program_mode_label) }}{% if child.program_mode != "off" %} – {{ _("{n} erlaubt").format(n=n_allowed) }}{% endif %}</strong><a href="/children/{{ child.id }}/programme">{{ _("Ändern") }}</a></li>
+  </ul>
+</section>
+
+<section class="card">
+  <div class="card-head">
+    <h2>{{ _("Zuletzt gesperrt") }}</h2>
+    <a href="/children/{{ child.id }}/protokoll" class="btn ghost small">{{ _("Ganzes Protokoll") }}</a>
+  </div>
+  {% if blocked %}
+  <div class="scroll">
+  <table>
+    {% for e in blocked %}
+    <tr>
+      <td class="num log-time">{{ e.at | localtime("%H:%M") }}</td>
+      <td>{% if e.kind == "domain" %}<span class="pill">{{ _("Website") }}</span> {% endif %}{{ name_of(e.key, e.name) }}{% if blocked_detail(e) %} <small class="muted">({{ blocked_detail(e) }})</small>{% endif %}</td>
+      <td class="right">{% if e.audit %}<span class="pill">{{ _("nur protokolliert") }}</span>{% else %}<span class="pill warn">{{ _("gesperrt") }}</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% else %}<p class="muted">{{ _("Keine gesperrten Aktionen.") }}</p>{% endif %}
+</section>
+{% endblock %}

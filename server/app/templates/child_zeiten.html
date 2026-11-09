@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Zeiten") }} {{ child.name }} – KidCTL{% endblock %}
+{% macro rule_row(key, label, rule) %}
+<tr>
+  <td class="rule-day">{{ label }}</td>
+  <td data-label="{{ _('Zeit pro Tag') }}"><span class="unit"><input type="number" name="quota_{{ key }}" min="0" max="{{ max_quota }}" step="5" value="{{ rule.quota_minutes }}" class="short" required> {{ _("min") }}</span></td>
+  <td data-label="{{ _('Erlaubt von') }}"><input type="time" name="start_{{ key }}" value="{{ rule.window_start.strftime('%H:%M') }}" required></td>
+  <td data-label="{{ _('bis') }}"><input type="time" name="end_{{ key }}" value="{{ rule.window_end.strftime('%H:%M') }}" required></td>
+  <td data-label="{{ _('davon Spiele') }}"><span class="unit"><input type="number" name="games_{{ key }}" min="0" max="{{ max_quota }}" step="5" value="{{ rule.game_minutes if rule.game_minutes is not none else '' }}" class="short" placeholder="–"> {{ _("min") }}</span></td>
+</tr>
+{% endmacro %}
+{% block content %}
+{% include "_child_head.html" %}
+{% if request.query_params.get("saved") %}<p class="success">{{ _("Zeiten gespeichert.") }}</p>{% endif %}
+
+<section class="card">
+  <div class="card-head">
+    <h2>{{ _("Wochenvorlage") }}</h2>
+    <form method="post" action="/children/{{ child.id }}/mode" class="segmented" style="margin:0">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <input type="hidden" name="weekdays_same" value="{{ '' if child.weekdays_same else '1' }}">
+      {% if child.weekdays_same %}<span class="active">{{ _("Werktage / Wochenende") }}</span><button type="submit" class="ghost small">{{ _("Jeder Tag einzeln") }}</button>
+      {% else %}<button type="submit" class="ghost small">{{ _("Werktage / Wochenende") }}</button><span class="active">{{ _("Jeder Tag einzeln") }}</span>{% endif %}
+    </form>
+  </div>
+  {% if child.weekdays_same and differs %}
+  <p class="warn">{% set ns = namespace(groups=[]) %}{% for g in differs %}{% set ns.groups = ns.groups + [_(g)] %}{% endfor %}{{ _("Unterschiedliche Tageswerte in: {groups}. Angezeigt sind die Werte von Montag bzw. Samstag; beim Speichern gelten sie für alle Tage der Gruppe.").format(groups=ns.groups | join(", ")) }}</p>
+  {% endif %}
+  <form method="post" action="/children/{{ child.id }}/schedule">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <div class="scroll">
+    <table class="schedule-table">
+      <tr><th></th><th>{{ _("Zeit pro Tag") }}</th><th>{{ _("Erlaubt von") }}</th><th>{{ _("bis") }}</th><th>{{ _("davon Spiele") }}</th></tr>
+      {% if child.weekdays_same %}
+        {% for key, (label, days) in groups.items() %}{{ rule_row(key, _(label), rules[days[0]]) }}{% endfor %}
+      {% else %}
+        {% for d in range(7) %}{{ rule_row(d, weekday_names[d], rules[d]) }}{% endfor %}
+      {% endif %}
+    </table>
+    </div>
+    <details class="help"><summary>{{ _("Wie wirken diese Werte?") }}</summary>
+      <p>{{ _("Die Nutzung endet, wenn die Zeit pro Tag aufgebraucht ist oder die erlaubte Zeitspanne vorbei ist. Der Tag wechselt um 00:00 Uhr.") }}</p>
+      <p>{{ _("„davon Spiele“: höchstens so viel Zeit mit Spielen (Steam, Heroic und Programme der Gruppe „Spiele“) – danach werden Spiele mit Vorwarnung geschlossen, der Rest des Rechners bleibt nutzbar. Leer = kein eigenes Limit.") }}</p>
+    </details>
+    <button type="submit">{{ _("Zeiten speichern") }}</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>{{ _("Geplante Gutschriften") }}</h2>
+  {% if exceptions %}
+  <div class="scroll">
+  <table>
+    <tr><th>{{ _("Datum") }}</th><th>{{ _("Zusätzlich") }}</th><th>{{ _("Erlaubt bis") }}</th><th>{{ _("Spielzeit") }}</th><th></th></tr>
+    {% for e in exceptions %}
+    <tr>
+      <td>{{ fmt_date(e.day, with_weekday=True) }}{% if e.day == today %} ({{ _("heute") }}){% endif %}</td>
+      <td>{{ fmt_minutes(e.extra_minutes) if e.extra_minutes else "–" }}</td>
+      <td>{{ e.window_end_override.strftime("%H:%M") if e.window_end_override else "–" }}</td>
+      <td>{{ "+" ~ fmt_minutes(e.extra_game_minutes) if e.extra_game_minutes else "–" }}</td>
+      <td class="right">
+        <form method="post" action="/children/{{ child.id }}/exceptions/{{ e.id }}/delete" class="inline">
+          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+          <button type="submit" class="danger small">{{ _("Entfernen") }}</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% else %}<p class="muted">{{ _("Keine geplanten Gutschriften. Zeit schreibst du unter „Heute“ gut.") }}</p>{% endif %}
+</section>
+{% endblock %}

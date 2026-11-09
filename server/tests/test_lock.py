@@ -39,13 +39,13 @@ def test_timed_lock_and_expiry(client, parent):
         assert pol.locked and pol.locked_until.tzinfo is not None
         left = pol.locked_until - datetime.now(timezone.utc)
         assert timedelta(minutes=29) < left <= timedelta(minutes=30)
-        assert "gesperrt bis" in client.get(f"/children/{cid}").text
+        assert "today-value\">Gesperrt" in client.get(f"/children/{cid}").text
     with SessionLocal() as db:
         child = db.get(Child, cid)
         child.locked_until = utcnow() - timedelta(seconds=1)   # abgelaufen
         db.commit()
         assert not lk.is_locked(child)
-    assert "nicht gesperrt" in client.get(f"/children/{cid}").text
+    assert "heute noch übrig" in client.get(f"/children/{cid}").text
 
 
 def test_invalid_duration_rejected(client, parent):

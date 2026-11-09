@@ -29,7 +29,7 @@ def test_schedule_game_minutes(client, parent):
                        follow_redirects=False).status_code == 303
     g = _games(cid)
     assert all(g[d] == 45 for d in range(5)) and g[5] is None and g[6] is None
-    page = client.get(f"/children/{cid}").text
+    page = client.get(f"/children/{cid}/zeiten").text
     assert "davon Spiele" in page and 'name="games_wd" min="0" max="1440" step="5" value="45"' in page
     r = client.post(f"/children/{cid}/schedule", data=base | {"games_wd": "abc"})
     assert r.status_code == 400 and "Werktage (Mo–Fr) (Spiele)" in r.text
@@ -51,7 +51,7 @@ def test_game_credit(client, parent):
     with SessionLocal() as db:
         exc = db.scalar(select(DayException))
         assert (exc.extra_minutes, exc.extra_game_minutes) == (0, 25)
-    assert "+0:25 h" in client.get(f"/children/{cid}").text
+    assert "+0:25 h" in client.get(f"/children/{cid}/zeiten").text
 
 
 def test_game_request_and_policy(client, parent):

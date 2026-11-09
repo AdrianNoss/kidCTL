@@ -98,7 +98,7 @@ def test_credit_and_exception_delete_push_policy(client, parent):
         assert len(exc) == 1 and exc[0].day == today and exc[0].extra_minutes == 30
         assert exc[0].window_end_override == time(21)
 
-        page = client.get(f"/children/{cid}").text
+        page = client.get(f"/children/{cid}/zeiten").text
         exc_id = page.split(f"/children/{cid}/exceptions/")[1].split("/")[0]
         client.post(f"/children/{cid}/exceptions/{exc_id}/delete", data={"csrf_token": tok})
         assert _policy(ws).children[0].exceptions == []

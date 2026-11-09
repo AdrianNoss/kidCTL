@@ -23,7 +23,7 @@ from .models import BlocklistState, Child, ChildBlocklist, ChildDomain, ChildWeb
 
 log = logging.getLogger("kidctl.webfilter")
 
-MODES = {"off": N_("Aus"), "whitelist": N_("Whitelist (nur Freigegebenes)"), "blacklist": N_("Blacklist (alles außer Gesperrtem)")}
+MODES = {"off": N_("Aus"), "whitelist": N_("Nur freigegebene Websites"), "blacklist": N_("Alle Websites außer gesperrten")}
 
 
 # ---------- Dienst-Bundles (Whitelist) ----------

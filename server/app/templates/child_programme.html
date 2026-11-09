@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Programme") }} {{ child.name }} – KidCTL{% endblock %}
+{% block content %}
+{% include "_child_head.html" %}
+{% if request.query_params.get("programs") %}<p class="success">{{ _("Programm-Einstellungen gespeichert.") }}</p>{% endif %}
+
+<section class="card" id="programme">
+  <form method="post" action="/children/{{ child.id }}/programs">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>{{ _("Programmkontrolle") }}
+      <select name="program_mode">
+        {% for key, label in program_modes.items() %}<option value="{{ key }}"{% if child.program_mode == key %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}
+      </select>
+    </label>
+    <details class="help"><summary>{{ _("Was bedeuten die Modi?") }}</summary>
+      <p>{{ _("„Nur protokollieren“ sperrt nichts, meldet aber, was gesperrt würde – zum gefahrlosen Einstieg.") }}</p>
+      {% if has_linux %}<p>{{ _("Systemkomponenten (KDE/Plasma, KidCTL) sind immer erlaubt. Terminals, Shells und Interpreter sind gesperrt, solange sie nicht ausdrücklich freigegeben sind – für ein nutzbares Terminal das Terminal-Programm (z. B. Konsole) und die Shell des Kindes freigeben (Gruppe „Terminal & Shells“).") }}</p>{% endif %}
+      {% if has_windows %}<p>{{ _("Windows-Bestandteile wie Explorer und Einstellungen sind immer erlaubt. Eingabeaufforderung, PowerShell und ähnliche Werkzeuge bleiben gesperrt, solange sie nicht freigegeben sind.") }}</p>{% endif %}
+    </details>
+    {% if catalog %}
+    <div class="app-catalog" data-count-text="{{ _('{n} von {total} erlaubt') }}">
+      <div class="app-tools">
+        <input type="search" class="app-search" placeholder="{{ _('Programm suchen …') }}" aria-label="{{ _('Programm suchen') }}" hidden>
+        <label class="check app-only-allowed" hidden><input type="checkbox"> <span>{{ _("Nur erlaubte") }}</span></label>
+        <a href="/children/{{ child.id }}/programme?add_program=1#add-program" class="btn secondary small" data-dialog="add-program">{{ _("Programm hinzufügen") }}</a>
+      </div>
+      <p class="app-nomatch muted" hidden>{{ _("Kein Programm gefunden.") }}</p>
+      {% for gid, label, apps in catalog_groups %}{% set n_allowed = apps | selectattr("allowed") | list | length %}
+      <details class="app-group" data-group="{{ gid }}"{% if gid in open_groups %} open{% endif %}>
+        <summary>
+          <span class="app-group-title">{{ _(label) }}</span>
+          <span class="pill{% if n_allowed %} ok{% endif %} app-count">{{ _("{n} von {total} erlaubt").format(n=n_allowed, total=apps | length) }}</span>
+          <span class="app-bulk" hidden>
+            <button type="button" class="ghost small" data-bulk="all">{{ _("Alle") }}</button>
+            <button type="button" class="ghost small" data-bulk="none">{{ _("Keine") }}</button>
+          </span>
+        </summary>
+        <div class="options app-options">
+          {% for app in apps %}
+          {% if app.custom_id %}
+          <div class="app-item custom-item" data-name="{{ app.name | lower }} {{ app.key | lower }}">
+            <label class="option" title="{{ app.key }}">
+              <input type="checkbox" name="app" value="{{ app.key }}"{% if app.allowed %} checked{% endif %}>
+              <span>{{ app.name }}<small>{{ app.key[4:] if app.key.startswith("exe:") else app.key }}</small></span>
+            </label>
+            <label class="game-flag" title="{{ _('Zählt als Spiel (Spiele-Limit, Spielzeit)') }}">
+              <input type="checkbox" name="game" value="{{ app.key }}"{% if app.game %} checked{% endif %}> {{ _("Spiel") }}
+            </label>
+            <button type="submit" class="ghost small" formaction="/children/{{ child.id }}/programs/custom/{{ app.custom_id }}/delete"
+                    formnovalidate title="{{ _('Eintrag entfernen') }}" aria-label="{{ _('{name} entfernen').format(name=app.name) }}"
+                    data-confirm="{{ _('Eigenes Programm „{name}“ entfernen? Die Freigabe wird entzogen.').format(name=app.name) }}">{{ _("Entfernen") }}</button>
+          </div>
+          {% else %}
+          <div class="app-item game-row" data-name="{{ app.name | lower }}">
+            <label class="option" title="{{ app.key }}">
+              <input type="checkbox" name="app" value="{{ app.key }}"{% if app.allowed %} checked{% endif %}>
+              <span>{{ app.name }}{% if app.missing %}<small>{{ _("nicht mehr installiert") }}</small>{% elif app.note %}<small>{{ app.note }}</small>{% elif app.devices > 1 %}<small>{{ _("{n} Geräte").format(n=app.devices) }}</small>{% endif %}</span>
+            </label>
+            <label class="game-flag" title="{{ _('Kategorie „Spiele“ – zählt immer als Spiel') if app.game_auto else _('Zählt als Spiel (Spiele-Limit, Spielzeit)') }}">
+              <input type="checkbox" name="game" value="{{ app.key }}"{% if app.game %} checked{% endif %}{% if app.game_auto %} disabled{% endif %}> {{ _("Spiel") }}
+            </label>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </details>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="muted">{{ _("Noch keine Programmliste – sie erscheint, sobald ein Gerät mit zugeordnetem Benutzer verbunden ist.") }}</p>
+    <p><a href="/children/{{ child.id }}/programme?add_program=1#add-program" class="btn secondary small" data-dialog="add-program">{{ _("Programm hinzufügen") }}</a></p>
+    {% endif %}
+    <div class="save-bar">
+      <button type="submit">{{ _("Programme speichern") }}</button>
+      <small class="save-note muted" hidden>{{ _("Nicht gespeicherte Änderungen") }}</small>
+    </div>
+  </form>
+  <dialog id="add-program" class="dialog"{% if custom_error or request.query_params.get("add_program") %} open{% endif %}>
+    <form method="post" action="/children/{{ child.id }}/programs/custom">
+      <h2>{{ _("Eigenes Programm hinzufügen") }}</h2>
+      {% if custom_error %}<p class="error">{{ custom_error }}</p>{% endif %}
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <label>{{ _("Programm") }}
+        <input name="path" required maxlength="500" placeholder="{{ 'C:\\Programme\\App\\app.exe' if has_windows and not has_linux else '/usr/bin/git' }}" value="{{ custom_path or '' }}" autocomplete="off" spellcheck="false">
+      </label>
+      {% if has_linux %}<p class="muted"><small>{{ _("Pfad oder Name eines Programms aus /usr/bin. Den Pfad zeigt auf dem Rechner des Kindes „which git“. Hilfsprogramme aus demselben Paket (bei git /usr/lib/git-core) sind mit erlaubt. Für Kommandozeilenprogramme zusätzlich Terminal und Shell freigeben.") }}</small></p>{% endif %}
+      {% if has_windows %}<p class="muted"><small>{{ _("Unter Windows der vollständige Pfad der .exe-Datei, der Programmordner wird mit freigegeben.") }}</small></p>{% endif %}
+      <label><span>{{ _("Anzeigename") }} <span class="muted">{{ _("(optional)") }}</span></span>
+        <input name="name" maxlength="64" placeholder="Git" value="{{ custom_name or '' }}">
+      </label>
+      <div class="actions">
+        <button type="submit">{{ _("Hinzufügen und erlauben") }}</button>
+        <a href="/children/{{ child.id }}/programme" class="btn secondary" data-close>{{ _("Abbrechen") }}</a>
+      </div>
+      <p class="muted"><small>{{ _("Nicht gespeicherte Änderungen an der Programmliste gehen dabei verloren.") }}</small></p>
+    </form>
+  </dialog>
+  <script src="{{ asset('programs.js') }}" defer></script>
+</section>
+{% endblock %}

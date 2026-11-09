@@ -101,7 +101,8 @@ def test_english_pages_render(client, parent):
     login(client, parent)
     tok = csrf_from(client.get("/children").text)
     client.post("/children", data={"name": "Max", "csrf_token": tok})
-    for url, text in [("/", "Overview"), ("/children", "Add child"), ("/children/1", "Weekly schedule"),
+    for url, text in [("/", "Overview"), ("/children", "Add child"), ("/children/1", "left today"), ("/children/1/zeiten", "Weekly schedule"),
+                      ("/children/1/internet", "Web filter"), ("/children/1/programme", "App control"),
                       ("/children/1/stats", "Screen time per day"), ("/children/1/protokoll", "Activity log"),
                       ("/children/1/protokoll?kind=game", "Games"), ("/children/1/chat", "No messages yet."),
                       ("/devices", "Add device"), ("/parents", "Parent accounts"), ("/settings", "Settings"),

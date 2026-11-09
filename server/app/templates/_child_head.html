@@ -1,0 +1,13 @@
+{# Kopf aller Seiten eines Kindes: Name, Zustand, Reiter. Erwartet child, tab, playing, pending_chat, is_locked. #}
+<div class="child-head">
+  <h1>{{ child.name }}</h1>
+  {% if is_locked(child) %}<span class="pill danger">{{ _("gesperrt") }}</span>{% endif %}
+  {% if playing %}<span class="pill play" title="{{ _('Spielt gerade') }}">▶ {{ _("spielt gerade: {games}").format(games=playing | join(", ")) }}</span>{% endif %}
+</div>
+<nav class="tabs" aria-label="{{ _('Bereiche von {name}').format(name=child.name) }}">
+  {% for key, path, label in [("heute", "", _("Heute")), ("zeiten", "/zeiten", _("Zeiten")), ("internet", "/internet", _("Internet")),
+                              ("programme", "/programme", _("Programme")), ("stats", "/stats", _("Statistik")),
+                              ("protokoll", "/protokoll", _("Protokoll")), ("chat", "/chat", _("Chat"))] %}
+  <a href="/children/{{ child.id }}{{ path }}" class="tab{% if tab == key %} active{% endif %}"{% if tab == key %} aria-current="page"{% endif %}>{{ label }}{% if key == "chat" and pending_chat %} <span class="count" title="{{ _('offene Anfragen') }}">{{ pending_chat }}</span>{% endif %}</a>
+  {% endfor %}
+</nav>

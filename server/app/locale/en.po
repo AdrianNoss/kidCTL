@@ -654,9 +654,6 @@ msgstr "Please enter minutes, game time and/or a later end of allowed hours."
 msgid "Bitte einen absoluten Programmpfad angeben, z. B. /usr/bin/git"
 msgstr "Please enter an absolute program path, e.g. /usr/bin/git"
 
-msgid "Blacklist (alles außer Gesperrtem)"
-msgstr "Block list (everything except blocked)"
-
 msgid "Browser-Policies gegen DNS-over-HTTPS"
 msgstr "Browser policies against DNS-over-HTTPS"
 
@@ -668,9 +665,6 @@ msgstr "Container: file differs from the system"
 
 msgid "DNS-over-HTTPS-Anbieter"
 msgstr "DNS-over-HTTPS provider"
-
-msgid "Danach gelten wieder Kontingent und Zeitfenster."
-msgstr "Afterwards the daily limit and allowed hours apply again."
 
 msgid "Das Fensterende muss nach dem regulären Ende ({time}) liegen."
 msgstr "The end of allowed hours must be after the regular end ({time})."
@@ -701,9 +695,6 @@ msgstr "The setup has expired. Please start again."
 
 msgid "Die Passwörter stimmen nicht überein."
 msgstr "The passwords do not match."
-
-msgid "Die letzten {n} Einträge."
-msgstr "The last {n} entries."
 
 msgid "Diese Woche"
 msgstr "This week"
@@ -762,12 +753,6 @@ msgstr "If this wasn’t you, sign in immediately."
 msgid "Fehler:"
 msgstr "Error:"
 
-msgid "Fenster bis"
-msgstr "Hours until"
-
-msgid "Fenster von"
-msgstr "Allowed from"
-
 msgid "Fensterende"
 msgstr "End of allowed hours"
 
@@ -809,9 +794,6 @@ msgstr "Blocked actions"
 
 msgid "Gestern"
 msgstr "Yesterday"
-
-msgid "Gilt nur für das gewählte Datum. Minuten werden zu einer bestehenden Gutschrift addiert."
-msgstr "Applies only to the selected date. Minutes are added to existing bonus time."
 
 msgid "Glücksspiel"
 msgstr "Gambling"
@@ -918,9 +900,6 @@ msgstr "KidCTL: email address changed"
 msgid "KidCTL: Passwort zurücksetzen"
 msgstr "KidCTL: reset password"
 
-msgid "Kontingent"
-msgstr "Daily limit"
-
 msgid "Lernen"
 msgstr "Learning"
 
@@ -999,9 +978,6 @@ msgstr "Monitor only"
 msgid "Nur protokolliert"
 msgstr "Monitored only"
 
-msgid "Nutzung endet, wenn das Kontingent aufgebraucht oder das Zeitfenster geschlossen ist. Tageswechsel 00:00 Uhr."
-msgstr "Use ends when the daily limit is used up or the allowed hours are over. The day changes at 00:00."
-
 msgid "Nutzungsbericht gesendet."
 msgstr "Usage report sent."
 
@@ -1035,9 +1011,6 @@ msgstr "Profile saved."
 msgid "Programm"
 msgstr "App"
 
-msgid "Programm / Domain"
-msgstr "App / domain"
-
 msgid "Programm / Website"
 msgstr "App / website"
 
@@ -1065,9 +1038,6 @@ msgstr "App control"
 msgid "Reihenfolge"
 msgstr "Order"
 
-msgid "SafeSearch erzwingen"
-msgstr "Enforce SafeSearch"
-
 msgid "Seit {hours} Stunden keine Meldung."
 msgstr "No report for {hours} hours."
 
@@ -1079,9 +1049,6 @@ msgstr "Script ({arg})"
 
 msgid "Sonstiges"
 msgstr "Other"
-
-msgid "Sperre"
-msgstr "Lock"
 
 msgid "Sperren"
 msgstr "Block"
@@ -1230,9 +1197,6 @@ msgstr "Weekdays / weekend"
 msgid "Werkzeuge"
 msgstr "Utilities"
 
-msgid "Whitelist (nur Freigegebenes)"
-msgstr "Allow list (only what is allowed)"
-
 msgid "Wochenbericht"
 msgstr "Weekly report"
 
@@ -1242,14 +1206,8 @@ msgstr "Weekend (Sat–Sun)"
 msgid "Wochenvorlage"
 msgstr "Weekly schedule"
 
-msgid "Wochenvorlage gespeichert."
-msgstr "Weekly schedule saved."
-
 msgid "Wöchentlich (montags)"
 msgstr "Weekly (Mondays)"
-
-msgid "Zeit"
-msgstr "Time"
 
 msgid "Zeit gutschreiben"
 msgstr "Add time"
@@ -1317,9 +1275,6 @@ msgstr "injected code ({arg})"
 msgid "erlaubt"
 msgstr "allowed"
 
-msgid "für Programme ohne Eintrag in der Liste, z. B."
-msgstr "for apps not in the list, e.g."
-
 msgid "für deinen Account wurde ein neuer Authenticator eingerichtet."
 msgstr "a new authenticator was set up for your account."
 
@@ -1331,9 +1286,6 @@ msgstr "used"
 
 msgid "genutzt (alle Geräte)"
 msgstr "used (all devices)"
-
-msgid "gesperrt bis zur Freigabe"
-msgstr "locked until unlocked"
 
 msgid "ggü. {period}"
 msgstr "vs. {period}"
@@ -1376,9 +1328,6 @@ msgstr "not allowed"
 
 msgid "nicht freigegeben – {arg}"
 msgstr "not allowed – {arg}"
-
-msgid "nicht gesperrt"
-msgstr "not locked"
 
 msgid "nicht mehr installiert"
 msgstr "no longer installed"
@@ -1589,7 +1538,6 @@ msgstr "Tray icon of {user}"
 msgid "GDM-Autologin für {user}"
 msgstr "GDM auto-login for {user}"
 
-
 msgid "System"
 msgstr "System"
 
@@ -1655,3 +1603,120 @@ msgstr "Run it as administrator on the child's computer. The installer is not si
 
 msgid "Noch keine Installer veröffentlicht."
 msgstr "No installers published yet."
+
+msgid "Bereiche von {name}"
+msgstr "Sections for {name}"
+
+msgid "Stand heute"
+msgstr "Today's status"
+
+msgid "bis {time}"
+msgstr "until {time}"
+
+msgid "heute noch übrig"
+msgstr "left today"
+
+msgid "Genutzte Zeit"
+msgstr "Time used"
+
+msgid "{used} von {total} genutzt"
+msgstr "{used} of {total} used"
+
+msgid "Erlaubt"
+msgstr "Allowed"
+
+msgid "Online"
+msgstr "Online"
+
+msgid "kein Rechner"
+msgstr "no computer"
+
+msgid "Danach gelten wieder die eingestellten Zeiten."
+msgstr "The configured times apply again afterwards."
+
+msgid "Was passiert beim Sperren?"
+msgstr "What happens when you lock?"
+
+msgid "Zeit gutgeschrieben."
+msgstr "Time added."
+
+msgid "Davon Spielzeit"
+msgstr "Of which game time"
+
+msgid "Anderer Tag oder länger erlaubt"
+msgstr "Another day or allow longer"
+
+msgid "Erlaubt bis"
+msgstr "Allowed until"
+
+msgid "Eingestellt"
+msgstr "Current settings"
+
+msgid "{n} erlaubt"
+msgstr "{n} allowed"
+
+msgid "Ändern"
+msgstr "Change"
+
+msgid "Zuletzt gesperrt"
+msgstr "Recently blocked"
+
+msgid "Zeit pro Tag"
+msgstr "Time per day"
+
+msgid "Erlaubt von"
+msgstr "Allowed from"
+
+msgid "Zeiten gespeichert."
+msgstr "Times saved."
+
+msgid "Wie wirken diese Werte?"
+msgstr "How do these values work?"
+
+msgid "Die Nutzung endet, wenn die Zeit pro Tag aufgebraucht ist oder die erlaubte Zeitspanne vorbei ist. Der Tag wechselt um 00:00 Uhr."
+msgstr "Use ends when the time per day is used up or the allowed period is over. The day changes at midnight."
+
+msgid "Zeiten speichern"
+msgstr "Save times"
+
+msgid "Geplante Gutschriften"
+msgstr "Planned extra time"
+
+msgid "Keine geplanten Gutschriften. Zeit schreibst du unter „Heute“ gut."
+msgstr "No planned extra time. You can add time under “Today”."
+
+msgid "Zeiten"
+msgstr "Times"
+
+msgid "Sichere Suche erzwingen"
+msgstr "Force safe search"
+
+msgid "Was ist immer gesperrt?"
+msgstr "What is always blocked?"
+
+msgid "Internet-Einstellungen speichern"
+msgstr "Save internet settings"
+
+msgid "Was bedeuten die Modi?"
+msgstr "What do the modes mean?"
+
+msgid "Windows-Bestandteile wie Explorer und Einstellungen sind immer erlaubt. Eingabeaufforderung, PowerShell und ähnliche Werkzeuge bleiben gesperrt, solange sie nicht freigegeben sind."
+msgstr "Windows components such as Explorer and Settings are always allowed. Command Prompt, PowerShell and similar tools stay blocked unless you allow them."
+
+msgid "Nur erlaubte"
+msgstr "Allowed only"
+
+msgid "Programme speichern"
+msgstr "Save programs"
+
+msgid "Nicht gespeicherte Änderungen"
+msgstr "Unsaved changes"
+
+msgid "Unter Windows der vollständige Pfad der .exe-Datei, der Programmordner wird mit freigegeben."
+msgstr "On Windows, the full path of the .exe file; its program folder is allowed too."
+
+msgid "Nur freigegebene Websites"
+msgstr "Only allowed websites"
+
+msgid "Alle Websites außer gesperrten"
+msgstr "All websites except blocked"

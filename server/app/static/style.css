@@ -31,7 +31,7 @@ main { max-width:56rem; margin:0 auto; padding:1.5rem 1rem 4rem; }
 h1, h2, h3 { line-height:1.2; margin:0 0 .8rem; }
 h1 { font:600 2rem/1.15 var(--serif); letter-spacing:-.01em; }
 h2 { font-size:1.05rem; font-weight:650; }
-h3 { font-size:.8rem; font-weight:650; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-top:1.4rem; }
+h3 { font-size:.92rem; font-weight:650; color:var(--ink-2); margin-top:1.4rem; }
 p { margin:0 0 .8rem; }
 small { font-size:.82rem; }
 a { color:var(--accent); text-decoration-thickness:1px; text-underline-offset:3px; }
@@ -149,7 +149,7 @@ input[type=checkbox]:focus { box-shadow:0 0 0 3px var(--accent-soft); }
 /* ---------- Tabellen ---------- */
 .scroll { overflow-x:auto; }
 table { width:100%; border-collapse:collapse; margin-bottom:.8rem; }
-th { text-align:left; font-size:.72rem; font-weight:650; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);
+th { text-align:left; font-size:.82rem; font-weight:600; color:var(--muted);
      padding:.4rem .5rem; border-bottom:1px solid var(--line-strong); }
 td { text-align:left; padding:.6rem .5rem; border-bottom:1px solid var(--line); vertical-align:middle; }
 tr:last-child td { border-bottom:0; }
@@ -199,7 +199,7 @@ details > summary { cursor:pointer; color:var(--ink-2); font-weight:600; font-si
 /* ---------- Statistik (eine Datenreihe = Akzent; Text nie in Datenfarbe) ---------- */
 .tiles { display:grid; grid-template-columns:repeat(auto-fit, minmax(10rem, 1fr)); gap:.8rem; margin-bottom:1rem; }
 .tile { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg); padding:.8rem 1rem; }
-.tile-label { color:var(--muted); font-size:.75rem; font-weight:650; text-transform:uppercase; letter-spacing:.06em; }
+.tile-label { color:var(--muted); font-size:.82rem; font-weight:600; }
 .tile-value { font:600 1.75rem/1.2 var(--serif); margin-top:.2rem; }
 .legend { display:flex; gap:1.2rem; flex-wrap:wrap; font-size:.82rem; color:var(--ink-2); margin-bottom:.5rem; }
 .legend i { display:inline-block; vertical-align:middle; margin-right:.35rem; }
@@ -311,3 +311,70 @@ details > summary { cursor:pointer; color:var(--ink-2); font-weight:600; font-si
 /* ---------- Sprachumschalter (Seiten ohne Anmeldung) ---------- */
 .lang-switch { text-align:center; margin:1rem 0 0; font-size:.85rem; color:var(--muted); }
 .section-title { margin:1.6rem 0 .8rem; }
+
+/* ---------- Seiten eines Kindes: Kopf und Reiter ---------- */
+[hidden] { display:none !important; }
+.child-head { display:flex; align-items:center; gap:.5rem .7rem; flex-wrap:wrap; margin-bottom:.6rem; }
+.child-head h1 { margin:0 .2rem 0 0; }
+.tabs { display:flex; gap:.1rem; overflow-x:auto; scrollbar-width:none; border-bottom:1px solid var(--line); margin-bottom:1.3rem; }
+.tab { padding:.65rem .75rem; margin-bottom:-1px; color:var(--ink-2); font-weight:600; font-size:.92rem; text-decoration:none;
+       white-space:nowrap; border-bottom:2px solid transparent; }
+.tab:hover { color:var(--ink); border-bottom-color:var(--line-strong); }
+.tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+/* Heute: der Stand ist das Wichtigste auf der Seite und bewusst keine Karte */
+.today { display:grid; grid-template-columns:minmax(0, 1fr) minmax(11rem, auto); gap:1rem 3rem; align-items:end; margin:0 0 1.6rem; }
+.today-value { font:600 3.4rem/1 var(--serif); letter-spacing:-.02em; margin:0; font-variant-numeric:tabular-nums; }
+.today.is-locked .today-value { color:var(--danger); }
+.today-sub { color:var(--ink-2); margin:.3rem 0 .8rem; }
+.today progress { display:block; width:100%; max-width:26rem; height:.55rem; accent-color:var(--accent); }
+.today.is-locked progress { accent-color:var(--danger); }
+.today-used { color:var(--muted); font-size:.85rem; margin:.4rem 0 0; }
+.today-facts { margin:0; display:grid; grid-template-columns:minmax(0, 1fr); gap:.5rem; }
+.today-facts div { display:grid; grid-template-columns:4.5rem minmax(0, 1fr); gap:.6rem; }
+.today-facts dt { color:var(--muted); }
+.today-facts dd { margin:0; font-weight:600; overflow-wrap:anywhere; }
+.today-actions { display:grid; grid-template-columns:repeat(auto-fit, minmax(18rem, 1fr)); gap:1rem; margin-bottom:1rem; align-items:start; }
+.today-actions .card { margin:0; }
+.stack label { margin-bottom:.7rem; }
+.stack > button { justify-self:start; }
+.unit { display:inline-flex; align-items:center; gap:.4rem; font-weight:400; }
+.help { margin:.5rem 0 .9rem; }
+.help > summary { font-weight:500; color:var(--muted); }
+.help p { font-size:.88rem; color:var(--ink-2); margin:.4rem 0; max-width:42rem; }
+.help label { margin:.5rem 0; }
+.settings-summary { list-style:none; margin:0; padding:0; }
+.settings-summary li { display:grid; grid-template-columns:6.5rem minmax(0, 1fr) auto; gap:.8rem; align-items:baseline; padding:.5rem 0; border-top:1px solid var(--line); }
+.settings-summary li:first-child { border-top:0; padding-top:0; }
+.settings-summary span { color:var(--muted); }
+.settings-summary strong { font-weight:600; }
+
+/* Speichern bleibt in langen Formularen sichtbar */
+.save-bar { position:sticky; bottom:0; display:flex; align-items:center; gap:.8rem; flex-wrap:wrap; background:var(--surface);
+            border-top:1px solid var(--line); margin:1rem -1.2rem -1.1rem; padding:.7rem 1.2rem;
+            border-radius:0 0 var(--radius-lg) var(--radius-lg); }
+
+/* Programmliste */
+.app-tools { display:flex; align-items:center; gap:.5rem .9rem; flex-wrap:wrap; margin-bottom:.8rem; }
+.app-tools .app-search { flex:1 1 14rem; width:auto; margin:0; }
+.app-only-allowed { align-items:center; font-size:.88rem; }
+.app-item:not(:has(input[name="app"]:checked)) .game-flag, .game-flag:has(input:disabled) { display:none; }
+
+@media (max-width:40rem) {
+  .nav { flex-wrap:wrap; overflow:visible; }
+  .tabs { flex-wrap:wrap; overflow:visible; }
+  .today { grid-template-columns:minmax(0, 1fr); gap:1rem; }
+  .today-value { font-size:2.8rem; }
+  .save-bar { margin:1rem -.9rem -.9rem; padding:.7rem .9rem; }
+  .settings-summary li { grid-template-columns:minmax(0, 1fr) auto; }
+  .settings-summary span { grid-column:1 / -1; }
+  /* Wochenvorlage ohne seitliches Scrollen */
+  .schedule-table, .schedule-table tbody { display:block; }
+  .schedule-table tr:first-child { display:none; }
+  .schedule-table tr { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.2rem .8rem; padding:.7rem 0; border-bottom:1px solid var(--line); }
+  .schedule-table tr:last-child { border-bottom:0; }
+  .schedule-table td { display:block; padding:.15rem 0; border:0; }
+  .schedule-table td.rule-day { grid-column:1 / -1; font-weight:650; }
+  .schedule-table td[data-label]::before { content:attr(data-label); display:block; color:var(--muted); font-size:.82rem; margin-bottom:.2rem; }
+  .schedule-table input[type=time] { width:100%; }
+}

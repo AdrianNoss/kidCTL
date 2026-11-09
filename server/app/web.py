@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import secrets
 from datetime import datetime, timezone
 from pathlib import Path
@@ -34,6 +35,17 @@ def _fmt_size(n: int) -> str:
     return ""
 
 
+def asset(name: str) -> str:
+    """URL einer statischen Datei mit Prüfsumme, damit Browser nach einem Update nicht die alte Fassung nehmen."""
+    if name not in _assets:
+        digest = hashlib.sha256((Path(__file__).parent / "static" / name).read_bytes()).hexdigest()[:10]
+        _assets[name] = f"/static/{name}?v={digest}"
+    return _assets[name]
+
+
+_assets: dict[str, str] = {}
+
+
 def _today_minus(days: int):
     from datetime import timedelta
     return datetime.now(_TZ).date() - timedelta(days=days)
@@ -47,7 +59,7 @@ templates.env.globals.update(_=i18n.gettext, gettext=i18n.gettext, ngettext=i18n
                              weekday=i18n.weekday, LANGUAGE_CHOICES=i18n.LANGUAGE_CHOICES,
                              integrity_label=integrity.label_for, blocked_detail=blocklog.detail,
                              update_for=versions.update_for, fmt_datetime=i18n.fmt_datetime, fmt_size=_fmt_size,
-                             today_minus=_today_minus)
+                             today_minus=_today_minus, asset=asset)
 
 
 def render(request: Request, template: str, status_code: int = 200, **ctx):

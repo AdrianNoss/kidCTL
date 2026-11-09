@@ -95,30 +95,59 @@ async def child_delete(child_id: int, db: Session = Depends(get_db)):
     return _redirect("/children")
 
 
-def _child_page(request: Request, db: Session, child: Child, status_code: int = 200, **ctx):
-    today = sch.today_local()
-    exceptions = db.scalars(select(DayException).where(
-        DayException.child_id == child.id, DayException.day >= today).order_by(DayException.day)).all()
-    ctx.setdefault("credit_day", today.isoformat())
-    return render(request, "child.html", status_code=status_code, child=child, name_of=programs.name_lookup(db),
-                  catalog=(catalog := programs.catalog_for_child(db, child.id)),
-                  catalog_groups=programs.grouped_catalog(catalog), collapsed_groups=programs.COLLAPSED_GROUPS,
-                  program_modes=programs.MODES,
-                  web=webfilter.child_settings(db, child.id), web_modes=webfilter.MODES,
-                  bundles=webfilter.BUNDLES, blocklists=webfilter.BLOCKLISTS,
-                  default_lists=webfilter.DEFAULT_LISTS,
-                  list_states={s.id: s for s in db.scalars(select(BlocklistState))},
-                  blocked=programs.blocked_log(db, child.id, limit=10),
-                  rules=sch.rules_by_day(child), groups=sch.GROUPS, weekday_names=i18n.weekday_names(),
-                  differs=sch.group_differs(child), exceptions=exceptions, today=today,
-                  fmt_minutes=sch.fmt_minutes, max_quota=sch.MAX_QUOTA, max_extra=sch.MAX_EXTRA,
-                  is_locked=lk.is_locked, lock_durations=lk.DURATIONS, max_grace=lk.MAX_GRACE_MINUTES,
-                  playing=nowplaying.for_children(db).get(child.id, []), **ctx)
+def _child_head(db: Session, child: Child) -> dict:
+    """Was der gemeinsame Kopf aller Seiten eines Kindes braucht."""
+    return dict(playing=nowplaying.for_children(db).get(child.id, []),
+                pending_chat=chat.pending_count(db).get(child.id, 0), is_locked=lk.is_locked)
 
+
+def _child_page(request: Request, db: Session, child: Child, tab: str = "heute", status_code: int = 200, **ctx):
+    today = sch.today_local()
+    devices = db.scalars(select(Device).where(Device.id.in_(chat.device_ids_for_child(db, child.id)))).all()
+    if tab == "heute":
+        ctx.setdefault("credit_day", today.isoformat())
+        ctx.update(status=policy.day_status(db, child), name_of=programs.name_lookup(db),
+                   blocked=programs.blocked_log(db, child.id, limit=5), fmt_minutes=sch.fmt_minutes,
+                   online_devices=[d.name for d in devices if manager.is_online(d.id)],
+                   web_mode_label=webfilter.MODES[child.web_mode], program_mode_label=programs.MODES[child.program_mode],
+                   n_allowed=len(programs.allowed_keys(db, child.id)), max_extra=sch.MAX_EXTRA,
+                   lock_durations=lk.DURATIONS, max_grace=lk.MAX_GRACE_MINUTES)
+    elif tab == "zeiten":
+        ctx.update(rules=sch.rules_by_day(child), groups=sch.GROUPS, weekday_names=i18n.weekday_names(),
+                   differs=sch.group_differs(child), max_quota=sch.MAX_QUOTA, fmt_minutes=sch.fmt_minutes,
+                   exceptions=db.scalars(select(DayException).where(
+                       DayException.child_id == child.id, DayException.day >= today).order_by(DayException.day)).all())
+    elif tab == "internet":
+        ctx.update(web=webfilter.child_settings(db, child.id), web_modes=webfilter.MODES, bundles=webfilter.BUNDLES,
+                   blocklists=webfilter.BLOCKLISTS, default_lists=webfilter.DEFAULT_LISTS,
+                   list_states={s.id: s for s in db.scalars(select(BlocklistState))})
+    else:
+        platforms = {d.platform for d in devices}
+        catalog = programs.catalog_for_child(db, child.id)
+        ctx.update(catalog=catalog, catalog_groups=programs.grouped_catalog(catalog), open_groups=programs.OPEN_GROUPS,
+                   program_modes=programs.MODES, has_linux=not platforms or "linux" in platforms,
+                   has_windows=not platforms or "windows" in platforms)
+    return render(request, f"child_{tab}.html", status_code=status_code, child=child, tab=tab, today=today,
+                  **_child_head(db, child), **ctx)
 
 @router.get("/children/{child_id}")
 def child_detail(child_id: int, request: Request, db: Session = Depends(get_db)):
     return _child_page(request, db, _get_or_404(db, Child, child_id))
+
+
+@router.get("/children/{child_id}/zeiten")
+def child_times(child_id: int, request: Request, db: Session = Depends(get_db)):
+    return _child_page(request, db, _get_or_404(db, Child, child_id), "zeiten")
+
+
+@router.get("/children/{child_id}/internet")
+def child_internet(child_id: int, request: Request, db: Session = Depends(get_db)):
+    return _child_page(request, db, _get_or_404(db, Child, child_id), "internet")
+
+
+@router.get("/children/{child_id}/programme")
+def child_programs_page(child_id: int, request: Request, db: Session = Depends(get_db)):
+    return _child_page(request, db, _get_or_404(db, Child, child_id), "programme")
 
 
 @router.post("/children/{child_id}/mode", dependencies=[Depends(csrf_protect)])
@@ -127,7 +156,7 @@ def child_mode(child_id: int, weekdays_same: str = Form(""), db: Session = Depen
     child = _get_or_404(db, Child, child_id)
     child.weekdays_same = weekdays_same == "1"
     db.commit()
-    return _redirect(f"/children/{child_id}")
+    return _redirect(f"/children/{child_id}/zeiten")
 
 
 @router.post("/children/{child_id}/schedule", dependencies=[Depends(csrf_protect)])
@@ -137,10 +166,10 @@ async def child_schedule(child_id: int, request: Request, db: Session = Depends(
         sch.apply_schedule(child, await request.form())
     except sch.ScheduleError as e:
         db.rollback()
-        return _child_page(request, db, child, status_code=400, error=str(e))
+        return _child_page(request, db, child, "zeiten", status_code=400, error=str(e))
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
-    return _redirect(f"/children/{child_id}?saved=1")
+    return _redirect(f"/children/{child_id}/zeiten?saved=1")
 
 
 @router.post("/children/{child_id}/credit", dependencies=[Depends(csrf_protect)])
@@ -155,7 +184,7 @@ async def child_credit(child_id: int, request: Request, day: str = Form(...), ex
     sch.add_credit(db, child, the_day, extra, override, games)
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
-    return _redirect(f"/children/{child_id}")
+    return _redirect(f"/children/{child_id}?credited=1")
 
 
 def _back(child_id: int, back: str) -> str:
@@ -199,7 +228,7 @@ async def child_programs(child_id: int, request: Request, db: Session = Depends(
     programs.set_games(db, child.id, {str(k)[:512] for k in form.getlist("game") if str(k).startswith(prefixes)})
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
-    return _redirect(f"/children/{child_id}?programs=1#programme")
+    return _redirect(f"/children/{child_id}/programme?programs=1")
 
 
 @router.post("/children/{child_id}/programs/custom", dependencies=[Depends(csrf_protect)])
@@ -209,11 +238,11 @@ async def child_custom_add(child_id: int, request: Request, path: str = Form("")
     try:
         programs.add_custom(db, child.id, path, name)
     except ValueError as e:
-        return _child_page(request, db, child, status_code=400, custom_error=str(e), custom_path=path[:500],
+        return _child_page(request, db, child, "programme", status_code=400, custom_error=str(e), custom_path=path[:500],
                            custom_name=name[:programs.MAX_CUSTOM_NAME])
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
-    return _redirect(f"/children/{child_id}?programs=1#programme")
+    return _redirect(f"/children/{child_id}/programme?programs=1")
 
 
 @router.post("/children/{child_id}/programs/custom/{custom_id}/delete", dependencies=[Depends(csrf_protect)])
@@ -223,7 +252,7 @@ async def child_custom_delete(child_id: int, custom_id: int, db: Session = Depen
         raise HTTPException(404)
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
-    return _redirect(f"/children/{child_id}?programs=1#programme")
+    return _redirect(f"/children/{child_id}/programme?programs=1")
 
 
 @router.get("/children/{child_id}/protokoll")
@@ -237,7 +266,7 @@ def child_blocked(child_id: int, request: Request, db: Session = Depends(get_db)
     else:
         rows, total = blocklog.events(db, child.id, f, today)
         days, top = blocklog.by_day(rows, today), blocklog.top(db, child.id, f, today)
-    return render(request, "blocked.html", child=child, f=f, base=f"/children/{child.id}/protokoll",
+    return render(request, "blocked.html", child=child, tab="protokoll", **_child_head(db, child), f=f, base=f"/children/{child.id}/protokoll",
                   name_of=programs.name_lookup(db),
                   days=days, shown=len(rows), total=total, top=top, users=blocklog.users(db, child.id),
                   games=f.kind == blocklog.GAME, session_minutes=blocklog.session_minutes,
@@ -253,7 +282,7 @@ def child_stats(child_id: int, request: Request, range: int = 7, db: Session = D
     bars = stats.daily(db, child)
     scale = max([b.used_minutes for b in bars] + [b.allowed_minutes for b in bars] + [1])
     app_rows = stats.apps(db, child, app_days)
-    return render(request, "stats.html", child=child, playing=nowplaying.for_children(db).get(child.id, []), bars=bars, scale=scale, sums=stats.week_sums(bars),
+    return render(request, "stats.html", child=child, tab="stats", **_child_head(db, child), bars=bars, scale=scale, sums=stats.week_sums(bars),
                   apps=app_rows, app_days=app_days, app_scale=max([r.minutes for r in app_rows] + [1]),
                   fmt_minutes=sch.fmt_minutes, weekday_names=i18n.weekday_names())
 
@@ -268,7 +297,7 @@ async def child_web(child_id: int, request: Request, db: Session = Depends(get_d
     allow, bad_allow = webfilter.parse_domain_input(str(form.get("allow", "")))
     deny, bad_deny = webfilter.parse_domain_input(str(form.get("deny", "")))
     if bad_allow or bad_deny:
-        return _child_page(request, db, child, status_code=400,
+        return _child_page(request, db, child, "internet", status_code=400,
                            error=_("Ungültige Domain(s):") + " " + ", ".join((bad_allow + bad_deny)[:10]))
     lists = {str(x) for x in form.getlist("list")}
     webfilter.save_child_settings(db, child, mode, form.get("safesearch") == "1",
@@ -282,7 +311,7 @@ async def child_web(child_id: int, request: Request, db: Session = Depends(get_d
         task = asyncio.create_task(_fetch_and_push(missing))
         _background.add(task)
         task.add_done_callback(_background.discard)
-    return _redirect(f"/children/{child_id}?web=1#internet")
+    return _redirect(f"/children/{child_id}/internet?web=1")
 
 
 _background: set[asyncio.Task] = set()
@@ -302,7 +331,7 @@ async def child_exception_delete(child_id: int, exc_id: int, db: Session = Depen
     db.delete(exc)
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child_id))
-    return _redirect(f"/children/{child_id}")
+    return _redirect(f"/children/{child_id}/zeiten")
 
 
 # ---------- Chat & Verlängerungsanfragen ----------
@@ -326,7 +355,8 @@ def _chat_ctx(db: Session, child: Child) -> dict:
 
 @router.get("/children/{child_id}/chat")
 def child_chat(child_id: int, request: Request, db: Session = Depends(get_db)):
-    return render(request, "chat.html", **_chat_ctx(db, _get_or_404(db, Child, child_id)))
+    child = _get_or_404(db, Child, child_id)
+    return render(request, "chat.html", tab="chat", **_child_head(db, child), **_chat_ctx(db, child))
 
 
 @router.get("/children/{child_id}/chat/messages")
@@ -341,7 +371,7 @@ async def child_chat_send(child_id: int, request: Request, body: str = Form(...)
     child = _get_or_404(db, Child, child_id)
     body = body.strip()
     if not body or len(body) > MAX_BODY:
-        return render(request, "chat.html", status_code=400, **_chat_ctx(db, child),
+        return render(request, "chat.html", status_code=400, tab="chat", **_child_head(db, child), **_chat_ctx(db, child),
                       error=_("Nachricht muss 1 bis {max} Zeichen lang sein.").format(max=MAX_BODY))
     msg = Message(child_id=child.id, from_child=False, sender_parent_id=sess.parent_id, body=body)
     db.add(msg)
@@ -369,7 +399,7 @@ async def child_request_decide(child_id: int, msg_id: int, request: Request,
             chat.decide(db, msg, sess.parent_id, False)
     except sch.ScheduleError as e:
         db.rollback()
-        return render(request, "chat.html", status_code=400, **_chat_ctx(db, child), error=str(e))
+        return render(request, "chat.html", status_code=400, tab="chat", **_child_head(db, child), **_chat_ctx(db, child), error=str(e))
     await chat.push_to_child(db, msg)
     if msg.status == "approved":
         await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
@@ -388,7 +418,7 @@ async def child_access_decide(child_id: int, msg_id: int, request: Request, acti
         access.decide(db, msg, sess.parent_id, None if action == "reject" else action)
     except access.AccessError as e:
         db.rollback()
-        return render(request, "chat.html", status_code=400, **_chat_ctx(db, child), error=str(e))
+        return render(request, "chat.html", status_code=400, tab="chat", **_child_head(db, child), **_chat_ctx(db, child), error=str(e))
     await chat.push_to_child(db, msg)
     if msg.status == "approved":
         await policy.push_policies(db, chat.device_ids_for_child(db, child.id))

@@ -26,27 +26,38 @@
     pill.classList.toggle("ok", n > 0);
   }
 
-  search.hidden = false;
-  search.addEventListener("input", () => {
+  const onlyLabel = root.querySelector(".app-only-allowed");
+  const onlyAllowed = onlyLabel.querySelector("input");
+  const note = root.closest("form").querySelector(".save-note");
+  const markDirty = () => { note.hidden = false; };
+
+  function applyFilter() {
     const q = search.value.trim().toLowerCase();
+    const only = onlyAllowed.checked;
     let any = false;
     for (const g of groups) {
       let hits = 0;
       for (const item of g.querySelectorAll(".app-item")) {
-        const show = !q || item.dataset.name.includes(q);
+        const show = (!q || item.dataset.name.includes(q))
+          && (!only || item.querySelector('input[name="app"]').checked);
         item.hidden = !show;
         if (show) hits++;
       }
       g.hidden = hits === 0;
-      g.open = q ? hits > 0 : initiallyOpen.get(g);
+      g.open = q || only ? hits > 0 : initiallyOpen.get(g);
       any ||= hits > 0;
     }
     nomatch.hidden = any;
-  });
+  }
+
+  search.hidden = false;
+  onlyLabel.hidden = false;
+  search.addEventListener("input", applyFilter);
+  onlyAllowed.addEventListener("change", applyFilter);
 
   for (const g of groups) {
     g.querySelector(".app-bulk").hidden = false;
-    g.addEventListener("change", () => updateCount(g));
+    g.addEventListener("change", () => { updateCount(g); markDirty(); });
     for (const btn of g.querySelectorAll("[data-bulk]")) {
       btn.addEventListener("click", (ev) => {
         ev.preventDefault(); // Klick in <summary> soll die Gruppe nicht auf-/zuklappen
@@ -54,6 +65,7 @@
           if (!item.hidden) item.querySelector("input").checked = btn.dataset.bulk === "all";
         }
         updateCount(g);
+        markDirty();
       });
     }
   }

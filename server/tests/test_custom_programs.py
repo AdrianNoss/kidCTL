@@ -20,20 +20,20 @@ def test_custom_program_add_policy_and_delete(client, parent):
     cid, tok = _setup(client, parent)
     with device(client, tok, "pc", map_to=cid) as (ws, dev_id):
         _policy(ws)
-        page = client.get(f"/children/{cid}").text
+        page = client.get(f"/children/{cid}/programme").text
         assert "Programm hinzufügen" in page and 'id="add-program"' in page
 
         r = client.post(f"/children/{cid}/programs/custom", data={"csrf_token": tok, "path": "git", "name": "Git"},
                         follow_redirects=False)
         assert r.status_code == 303
         assert _policy(ws).children[0].allowed_programs == ["exe:/usr/bin/git"]
-        page = client.get(f"/children/{cid}").text
+        page = client.get(f"/children/{cid}/programme").text
         assert "Eigene Programme" in page and "Git" in page and "/usr/bin/git" in page
 
         # Abwählen in der Liste: Eintrag bleibt, Freigabe weg
         client.post(f"/children/{cid}/programs", data={"csrf_token": tok, "program_mode": "enforce"})
         assert _policy(ws).children[0].allowed_programs == []
-        assert "Eigene Programme" in client.get(f"/children/{cid}").text
+        assert "Eigene Programme" in client.get(f"/children/{cid}/programme").text
 
         # Ungültige Eingabe: Fehlermeldung im (offenen) Dialog, nichts gespeichert
         r = client.post(f"/children/{cid}/programs/custom", data={"csrf_token": tok, "path": "/usr/bin/../x"})
@@ -50,7 +50,7 @@ def test_custom_program_add_policy_and_delete(client, parent):
                         follow_redirects=False)
         assert r.status_code == 303
         assert _policy(ws).children[0].allowed_programs == []
-        assert "Eigene Programme" not in client.get(f"/children/{cid}").text
+        assert "Eigene Programme" not in client.get(f"/children/{cid}/programme").text
         assert client.post(f"/children/{cid}/programs/custom/{custom_id}/delete",
                            data={"csrf_token": tok}).status_code == 404
         # ohne CSRF abgelehnt

@@ -1,15 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ _("Statistik") }} {{ child.name }} – KidCTL{% endblock %}
 {% block content %}
-<div class="page-head">
-  <div><span class="eyebrow">{{ _("Statistik") }}</span><h1>{{ child.name }}</h1>
-    {% if playing %}<span class="pill play" title="{{ _('Spielt gerade') }}">▶ {{ _("spielt gerade: {games}").format(games=playing | join(", ")) }}</span>{% endif %}</div>
-  <div class="actions">
-    <a href="/children/{{ child.id }}" class="btn secondary">{{ _("Einstellungen") }}</a>
-    <a href="/children/{{ child.id }}/chat" class="btn secondary">{{ _("Chat") }}</a>
-    <a href="/children/{{ child.id }}/protokoll" class="btn secondary">{{ _("Protokoll") }}</a>
-  </div>
-</div>
+{% include "_child_head.html" %}
 
 <div class="tiles">
   <div class="tile"><div class="tile-label">{{ _("Diese Woche") }}</div><div class="tile-value">{{ fmt_minutes(sums.this_week) }}</div></div>

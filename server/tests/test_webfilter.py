@@ -54,7 +54,7 @@ def test_settings_to_policy(client, parent, monkeypatch):
     with device(client, tok, "pc", map_to=cid) as (ws, _):
         assert _policy(ws).children[0].web.mode == "off"
         # Vorauswahl HaGeZi Multi + NSFW, solange keine Liste gewählt ist
-        assert checked_lists(client.get(f"/children/{cid}").text) == {"hagezi-multi", "hagezi-nsfw"}
+        assert checked_lists(client.get(f"/children/{cid}/internet").text) == {"hagezi-multi", "hagezi-nsfw"}
 
         r = _save(client, cid, tok, web_mode="whitelist", safesearch="1", bundle=["wikipedia", "youtube", "x"],
                   allow="schule.de\nhttps://Lernen.example.org/x")

@@ -5,6 +5,7 @@ from __future__ import annotations
 import ntpath
 import posixpath
 import re
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -64,6 +65,7 @@ class CatalogEntry:
     custom_id: int | None = None  # eigenes Programm der Eltern (löschbar)
     game: bool = False      # zählt als Spiel (von den Eltern markiert oder Kategorie „Spiele“)
     game_auto: bool = False  # Kategorie „Spiele“ – immer Spiel, nicht abwählbar
+    note: str = ""          # unterscheidet gleichnamige Einträge einer Gruppe
 
 
 # Gruppen der Programmliste: (ID, Anzeige, freedesktop-Kategorien) – erste passende Gruppe gewinnt
@@ -82,7 +84,7 @@ GROUPS = [
 ]
 GROUP_LABELS = {gid: label for gid, label, _cats in GROUPS} | {
     "custom": N_("Eigene Programme"), "other": N_("Sonstiges"), "missing": N_("Nicht mehr installiert")}
-COLLAPSED_GROUPS = {"system"}  # standardmäßig eingeklappt
+OPEN_GROUPS = {"game", "custom"}  # aufgeklappt; die übrigen Gruppen zeigen nur ihre Zahlen
 
 
 def group_for(categories: str) -> str:
@@ -96,6 +98,11 @@ def grouped_catalog(entries: list[CatalogEntry]) -> list[tuple[str, str, list[Ca
     by_group: dict[str, list[CatalogEntry]] = {}
     for e in entries:
         by_group.setdefault("custom" if e.custom_id else "missing" if e.missing else e.group, []).append(e)
+    for group in by_group.values():
+        names = Counter(e.name for e in group)
+        for e in group:
+            if names[e.name] > 1:
+                e.note = re.split(r"[/\\_]", e.key.split(":", 1)[-1].rstrip("/\\"))[-1 if e.key.startswith("exe:") else 0]
     return [(gid, GROUP_LABELS[gid], sorted(by_group[gid], key=lambda e: e.name.lower()))
             for gid in order if gid in by_group]
 

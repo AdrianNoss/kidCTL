@@ -1,14 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ _("Protokoll") }} {{ child.name }} – KidCTL{% endblock %}
 {% block content %}
-<div class="page-head">
-  <div><span class="eyebrow">{{ _("Spiele") if games else _("Gesperrte Aktionen") }}</span><h1>{{ child.name }}</h1></div>
-  <div class="actions">
-    <a href="/children/{{ child.id }}" class="btn secondary">{{ _("Einstellungen") }}</a>
-    <a href="/children/{{ child.id }}/chat" class="btn secondary">{{ _("Chat") }}</a>
-    <a href="/children/{{ child.id }}/stats" class="btn secondary">{{ _("Statistik") }}</a>
-  </div>
-</div>
+{% include "_child_head.html" %}
 
 <section class="card log-filter">
   <div class="segmented" role="group" aria-label="{{ _('Art') }}">

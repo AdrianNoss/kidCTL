@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Internet") }} {{ child.name }} – KidCTL{% endblock %}
+{% block content %}
+{% include "_child_head.html" %}
+{% if request.query_params.get("web") %}<p class="success">{{ _("Internet-Einstellungen gespeichert.") }}</p>{% endif %}
+
+<section class="card" id="internet">
+  <form method="post" action="/children/{{ child.id }}/web" class="web-form">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>{{ _("Website-Filter") }}
+      <select name="web_mode">
+        {% for key, label in web_modes.items() %}<option value="{{ key }}"{% if child.web_mode == key %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}
+      </select>
+    </label>
+    <div class="mode-on">
+    <label class="option" style="margin-bottom:1rem"><input type="checkbox" name="safesearch" value="1"{% if child.safesearch %} checked{% endif %}>
+      <span>{{ _("Sichere Suche erzwingen") }}<small>{{ _("Google, Bing, DuckDuckGo; YouTube im eingeschränkten Modus") }}</small></span></label>
+
+    <div class="mode-whitelist">
+    <h3>{{ _("Freigegebene Dienste") }}</h3>
+    <div class="options">
+    {% for b in bundles.values() %}
+    <label class="option"><input type="checkbox" name="bundle" value="{{ b.id }}"{% if b.id in web.bundles %} checked{% endif %}>
+      <span>{{ _(b.name) }}{% if b.note %}<small>{{ _(b.note) }}</small>{% endif %}</span></label>
+    {% endfor %}
+    </div>
+    </div>
+    <label><span class="mode-whitelist">{{ _("Weitere freigegebene Domains") }}</span><span class="mode-blacklist">{{ _("Ausnahmen (trotz Sperrliste erlaubt)") }}</span>
+      <span class="field-note">{{ _("Je Zeile eine Domain, gilt inkl. Subdomains") }}</span>
+      <textarea name="allow" rows="3" placeholder="{{ _('schule.de') }}">{{ web.allow | join("\n") }}</textarea></label>
+
+    <div class="mode-blacklist">
+    <h3>{{ _("Sperrlisten") }}</h3>
+    <div class="options">
+    {% for b in blocklists.values() %}{% set st = list_states.get(b.id) %}
+    <label class="option"><input type="checkbox" name="list" value="{{ b.id }}"
+      {% if b.id in web.lists or (not web.lists and b.id in default_lists) %} checked{% endif %}>
+      <span>{{ _(b.name) }}<small>{{ _(b.description) }}{% if st and st.count %} · {{ _("{count} Domains, Stand {when}").format(count=("{:,}".format(st.count).replace(",", ".") if lang() == "de" else "{:,}".format(st.count)), when=st.fetched_at | localtime) }}{% elif st and st.error %} · {{ _("Fehler:") }} {{ st.error }}{% endif %}</small></span></label>
+    {% endfor %}
+    </div>
+    <label>{{ _("Weitere gesperrte Domains (je Zeile)") }}
+      <textarea name="deny" rows="3">{{ web.deny | join("\n") }}</textarea></label>
+    </div>
+    <details class="help"><summary>{{ _("Was ist immer gesperrt?") }}</summary>
+      <p>{{ _("Bekannte DNS-over-HTTPS-Anbieter sind immer gesperrt; verschlüsseltes DNS (Port 853) ebenso.") }}</p>
+    </details>
+    </div>
+    <div class="save-bar">
+      <button type="submit">{{ _("Internet-Einstellungen speichern") }}</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

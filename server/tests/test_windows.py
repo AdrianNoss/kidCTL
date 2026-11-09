@@ -111,7 +111,7 @@ def test_windows_programs_in_webui(client, parent):
     client.post("/children", data={"csrf_token": csrf_from(client.get("/children").text), "name": "Lisa"})
     with SessionLocal() as db:
         cid = db.scalar(select(Child.id).where(Child.name == "Lisa"))
-    page = client.get(f"/children/{cid}").text
+    page = client.get(f"/children/{cid}/programme").text
     r = client.post(f"/children/{cid}/programs", data={"csrf_token": csrf_from(page), "program_mode": "enforce",
                                                         "app": ["appx:Microsoft.WindowsCalculator_8wekyb3d8bbwe",
                                                                 r"exe:C:\Program Files\Mozilla Firefox\firefox.exe"]})
@@ -143,12 +143,12 @@ def test_game_flag_in_webui_and_policy(client, parent):
                               name="Solitaire", categories="Game")])
         db.commit()
         dev_id = dev.id
-    page = client.get(f"/children/{cid}").text
+    page = client.get(f"/children/{cid}/programme").text
     assert 'name="game" value="appx:Microsoft.MicrosoftSolitaireCollection_8wekyb3d8bbwe" checked disabled' in page
     roblox = r"exe:C:\Users\ben\AppData\Local\Roblox\Roblox.exe"
     client.post(f"/children/{cid}/programs", data={"csrf_token": csrf_from(page), "program_mode": "enforce",
                                                     "app": [roblox], "game": [roblox, "kaputt"]})
-    page = client.get(f"/children/{cid}").text
+    page = client.get(f"/children/{cid}/programme").text
     assert f'name="game" value="{roblox}" checked>' in page
     with SessionLocal() as db:
         built = pol.build_policy(db, dev_id)

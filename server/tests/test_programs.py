@@ -31,7 +31,7 @@ def test_catalog_selection_and_policy(client, parent):
         assert pol.children[0].program_mode == "off" and pol.children[0].allowed_programs == []
         ws.send_text(p.ReportApps(apps=APPS).model_dump_json())
         _sync(ws)
-        page = client.get(f"/children/{cid}").text
+        page = client.get(f"/children/{cid}/programme").text
         assert "Firefox" in page and "Tux Paint" in page and "Konsole" in page
 
         r = client.post(f"/children/{cid}/programs", data={
@@ -57,7 +57,7 @@ def test_catalog_selection_and_policy(client, parent):
         _sync(ws)
         with SessionLocal() as db:
             assert [a.key for a in db.scalars(select(DeviceApp))] == [APPS[0].key]
-        assert "nicht mehr installiert" in client.get(f"/children/{cid}").text
+        assert "nicht mehr installiert" in client.get(f"/children/{cid}/programme").text
 
 
 def test_blocked_log(client, parent):
@@ -100,8 +100,8 @@ def test_catalog_grouped_by_category(client, parent):
             ("internet", ["Firefox"]),
             ("system", ["Systemeinstellungen"]),
             ("other", ["Foo"])]
-        page = client.get(f"/children/{cid}").text
-        assert 'data-group="game" open' in page and 'data-group="system">' in page   # System eingeklappt
+        page = client.get(f"/children/{cid}/programme").text
+        assert 'data-group="game" open' in page and 'data-group="internet">' in page   # nur Spiele aufgeklappt
         assert "0 von 2 erlaubt" in page and "Programm suchen" in page
 
 
