@@ -40,17 +40,17 @@
 
 <section class="card">
   <h2>{{ _("Benutzer-Zuordnung") }}</h2>
-  <p class="muted"><small>{{ _("Nicht zugeordnete Linux-Benutzer werden nie eingeschränkt.") }}</small></p>
+  <p class="muted"><small>{{ _("Nicht zugeordnete Windows-Benutzer werden nie eingeschränkt.") if device.platform == "windows" else _("Nicht zugeordnete Linux-Benutzer werden nie eingeschränkt.") }}</small></p>
   {% if device.users %}
   <form method="post" action="/devices/{{ device.id }}/mapping">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <div class="scroll">
     <table>
-      <tr><th>{{ _("Linux-Benutzer") }}</th><th>UID</th><th>{{ _("Kind") }}</th></tr>
+      <tr><th>{{ _("Windows-Benutzer") if device.platform == "windows" else _("Linux-Benutzer") }}</th>{% if device.platform != "windows" %}<th>UID</th>{% endif %}<th>{{ _("Kind") }}</th></tr>
       {% for u in device.users %}
       <tr{% if not u.present %} class="muted"{% endif %}>
         <td>{{ u.username }}{% if u.full_name %} ({{ u.full_name }}){% endif %}{% if not u.present %} – {{ _("nicht mehr vorhanden") }}{% endif %}</td>
-        <td>{{ u.uid }}</td>
+        {% if device.platform != "windows" %}<td>{{ u.uid }}</td>{% endif %}
         <td>
           <select name="user_{{ u.id }}">
             <option value="">– {{ _("nicht eingeschränkt") }} –</option>

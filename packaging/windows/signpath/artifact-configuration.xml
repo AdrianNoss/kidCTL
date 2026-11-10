@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Artifact Configuration für SignPath (Projekt KidCTL). In SignPath unter Projekt → Artifact Configurations
+     eintragen; hier als Referenz versioniert. Das GitHub-Artefakt ist ein ZIP mit genau einem Installer.
+     Produktname ist fest (Bedingung der SignPath Foundation, siehe kidctl.iss VersionInfo*); die
+     Produktversion setzt der Installer aus agent/kidctl_agent/__init__.py. -->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <pe-file path="KidCTL-Setup-*.exe" product-name="KidCTL" max-matches="1">
+      <authenticode-sign/>
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

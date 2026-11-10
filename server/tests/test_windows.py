@@ -153,3 +153,25 @@ def test_game_flag_in_webui_and_policy(client, parent):
     with SessionLocal() as db:
         built = pol.build_policy(db, dev_id)
     assert next(c for c in built.children if c.id == cid).game_apps == [roblox]   # „kaputt“ verworfen
+
+
+def test_pair_page_and_user_mapping_name_the_platform(client, parent):
+    from app.models import DeviceUser
+    from conftest import csrf_from
+    login(client, parent)
+    page = client.post("/devices/pair", data={"name": "PC", "csrf_token": csrf_from(client.get("/devices").text)}).text
+    assert "kidctl.cmd&#34; enroll" in page or 'kidctl.cmd" enroll' in page   # Windows-Weg
+    assert "sudo kidctl enroll" in page and 'href="/repo/"' in page
+    with SessionLocal() as db:
+        win = Device(name="Win", token_hash="f" * 64, platform="windows")
+        lin = Device(name="Lin", token_hash="9" * 64, platform="linux")
+        db.add_all([win, lin])
+        db.flush()
+        db.add_all([DeviceUser(device_id=win.id, username="ben", uid=1004),
+                    DeviceUser(device_id=lin.id, username="max", uid=1001)])
+        db.commit()
+        ids = win.id, lin.id
+    page = client.get(f"/devices/{ids[0]}").text
+    assert "Windows-Benutzer" in page and "Linux-Benutzer" not in page and "<th>UID</th>" not in page
+    page = client.get(f"/devices/{ids[1]}").text
+    assert "Linux-Benutzer" in page and "<th>UID</th>" in page

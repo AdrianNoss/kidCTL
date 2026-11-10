@@ -121,14 +121,21 @@ sondern in der Test-VM ausprobieren: [`dev/vm/README.md`](dev/vm/README.md). Än
 zuerst in `spec.md` beschrieben und im Changelog datiert. Konventionen stehen in
 [`CLAUDE.md`](CLAUDE.md).
 
+## Code-Signatur
+
+Die Windows-Installer werden kostenlos signiert: Free code signing provided by
+[SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+Ablauf, Rollen und Datenschutzhinweis: [Code signing policy](docs/code-signing.md).
+
+## Datenschutz
+
+KidCTL spricht nur mit dem selbst betriebenen KidCTL-Server – keine Telemetrie, keine Verbindung zu den
+Entwicklern oder Dritten. Siehe [Datenschutzhinweis](docs/code-signing.md#privacy).
+
 ## Lizenz
 
-[PolyForm Noncommercial 1.0.0](LICENSE): Nutzung, Änderung und Weitergabe sind für
-**nicht-kommerzielle** Zwecke frei, privat ebenso wie durch Schulen, Vereine oder Behörden.
-Kommerzielle Nutzung ist nicht erlaubt. Bei jeder Weitergabe müssen die Lizenz und der Hinweis
-`Required Notice` mit dem ursprünglichen Autor erhalten bleiben.
-
-Weil kommerzielle Nutzung ausgeschlossen ist, ist KidCTL im Sinne der OSI „source-available“ und
-nicht „Open Source“.
+[GNU Affero General Public License v3.0 oder neuer](LICENSE) (AGPL-3.0-or-later). Wer einen veränderten
+Server für andere betreibt, muss ihnen den Quelltext anbieten; dazu `SOURCE_URL` auf den eigenen Fork
+setzen, dann zeigt der Link „Quellcode“ in der Weboberfläche dorthin.
 
 Copyright © 2026 Adrian Noss

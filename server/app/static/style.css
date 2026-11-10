@@ -378,3 +378,14 @@ details > summary { cursor:pointer; color:var(--ink-2); font-weight:600; font-si
   .schedule-table td[data-label]::before { content:attr(data-label); display:block; color:var(--muted); font-size:.82rem; margin-bottom:.2rem; }
   .schedule-table input[type=time] { width:100%; }
 }
+
+/* Kopplung: Windows- und Linux-Weg nebeneinander */
+.pair-ways { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap:1rem 1.5rem; margin:.5rem 0 1rem; }
+.pair-ways h2 { margin-top:0; }
+.pair-values { display:grid; gap:.4rem; margin:.5rem 0; }
+.pair-values div { display:flex; gap:.6rem; align-items:baseline; flex-wrap:wrap; }
+.pair-values dt { color:var(--muted); min-width:7.5rem; }
+.pair-values dd { margin:0; overflow-wrap:anywhere; }
+
+.site-foot { max-width:56rem; margin:-3rem auto 0; padding:0 1rem 1.5rem; font-size:.8rem; color:var(--muted); }
+.site-foot a { color:inherit; }

@@ -28,6 +28,7 @@ class Settings:
     login_user_max_failures: int = 50  # je Benutzer: hoch, sonst könnte jeder ein Elternteil aussperren
     login_window_minutes: int = 15
     pairing_code_minutes: int = 10
+    source_url: str = "https://github.com/AdrianNoss/kidCTL"   # AGPL §13: Quelltext des laufenden Servers
     vapid_private_key: str = ""   # Web Push; erzeugen mit `python -m app.cli vapid-keys`
     vapid_public_key: str = ""
     vapid_subject: str = ""       # mailto:… oder https://…
@@ -69,6 +70,7 @@ def load_settings() -> Settings:
         base_url=os.environ.get("BASE_URL", "https://kids.nossco.de").rstrip("/"),
         timezone=os.environ.get("TZ_HOME", "Europe/Berlin"),
         totp_issuer=os.environ.get("TOTP_ISSUER", "KidCTL"),
+        source_url=os.environ.get("SOURCE_URL", "https://github.com/AdrianNoss/kidCTL"),
         vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY", ""),
         vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY", ""),
         vapid_subject=os.environ.get("VAPID_SUBJECT", ""),

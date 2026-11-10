@@ -5,8 +5,25 @@
 <section class="card">
   <p>{{ _("Kopplungscode (einmalig, {minutes} Minuten gültig bis {time} Uhr):").format(minutes=minutes, time=expires_at | localtime("%H:%M")) }}</p>
   <p class="code">{{ code[:4] }}-{{ code[4:] }}</p>
-  <p>{{ _("Auf dem Kinderrechner ausführen:") }}</p>
-  <pre>sudo kidctl enroll {{ base_url }} {{ code }}</pre>
+  <div class="pair-ways">
+    <div>
+      <h2>{{ _("Windows") }}</h2>
+      <p>{{ _("Installer von der {link} als Administrator ausführen und auf der Seite „Kopplung“ eingeben:").format(link='<a href="/repo/">' ~ _("Download-Seite") ~ '</a>') | safe }}</p>
+      <dl class="pair-values">
+        <div><dt>{{ _("Server") }}</dt><dd><code>{{ base_url }}</code></dd></div>
+        <div><dt>{{ _("Kopplungscode") }}</dt><dd><code>{{ code[:4] }}-{{ code[4:] }}</code></dd></div>
+      </dl>
+      <details class="help"><summary>{{ _("KidCTL ist schon installiert?") }}</summary>
+        <p>{{ _("In einer Eingabeaufforderung als Administrator:") }}</p>
+        <pre>"C:\Program Files\KidCTL\kidctl.cmd" enroll {{ base_url }} {{ code }}</pre>
+      </details>
+    </div>
+    <div>
+      <h2>{{ _("Linux") }}</h2>
+      <p>{{ _("Nach der Installation des Pakets kidctl im Terminal ausführen:") }}</p>
+      <pre>sudo kidctl enroll {{ base_url }} {{ code }}</pre>
+    </div>
+  </div>
   <a href="/devices" class="btn secondary">{{ _("Zurück zu den Geräten") }}</a>
 </section>
 {% endblock %}

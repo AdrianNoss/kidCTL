@@ -6,6 +6,10 @@
     build.py compile [--apply]   Installer in der Windows-VM bauen (dev/vm/winvm.sh, Inno Setup), Ergebnis ins Repo
     build.py sign    [--apply]   latest.json + Signatur für den neuesten Installer schreiben, ältere bis auf einen löschen
     build.py all     [--apply]   stage + compile + sign
+    build.py ci      [--apply]   unter Windows (GitHub Actions): Inno Setup bei Bedarf installieren, stage, Installer
+                                 nach --out bauen – ohne geheimen Schlüssel, für die Signatur über SignPath
+    build.py fetch   [--apply]   signierten Installer des letzten (oder --run) GitHub-Laufs ins Repo holen;
+                                 danach „sign --apply“ für latest.json
 
 Ohne --apply nur Anzeige (Dry-Run). Veröffentlichen wie die übrigen Pakete mit
 ``packaging/repo/kidctl-repo-publish.sh --apply`` (Ordner ``windows/`` im Repo, Server: ``/repo/windows/``).
@@ -37,6 +41,9 @@ from kidctl_common import ed25519  # noqa: E402
 REPO_HOME = Path(os.environ.get("KIDCTL_REPO_HOME", Path.home() / ".local/share/kidctl-repo"))
 REPO_WIN = REPO_HOME / "repo" / "windows"
 KEY = REPO_HOME / "windows-update.key"
+UPDATE_PUB = HERE / "update-key.pub"   # öffentlicher Teil im Repo, damit auch der CI-Bau ihn einbettet
+GITHUB_REPO = "AdrianNoss/kidCTL"
+SIGNED_ARTIFACT = "KidCTL-Setup-signed"
 CACHE = Path(os.environ.get("KIDCTL_WIN_CACHE", Path.home() / ".cache/kidctl-windows"))
 STAGING = CACHE / "staging"
 WINVM = ROOT / "dev" / "vm" / "winvm.sh"
@@ -51,6 +58,7 @@ QT_DROP_DIRS = ("qml", "include", "typesystems", "glue", "scripts", "metatypes",
 
 APPLY = False
 UNBOUND: tuple[str, str] | None = None
+INNOSETUP: tuple[str, str] | None = None
 
 
 def say(msg: str) -> None:
@@ -72,7 +80,7 @@ def sha256(path: Path) -> str:
 
 def lock() -> tuple[tuple[str, str], list[tuple[str, str, str, str]]]:
     python, wheels = None, []
-    global UNBOUND
+    global UNBOUND, INNOSETUP
     for line in (HERE / "vendor.lock").read_text().splitlines():
         parts = line.split()
         if not parts or parts[0].startswith("#"):
@@ -81,6 +89,8 @@ def lock() -> tuple[tuple[str, str], list[tuple[str, str, str, str]]]:
             python = (parts[1], parts[2])
         elif parts[0] == "unbound":
             UNBOUND = (parts[1], parts[2])
+        elif parts[0] == "innosetup":
+            INNOSETUP = (parts[1], parts[2])
         elif parts[0] == "wheel":
             wheels.append(tuple(parts[1:5]))
     if python is None:
@@ -150,6 +160,17 @@ def cmd_keygen() -> None:
     say(f"Schlüssel angelegt: {KEY} – sicher aufbewahren (ohne ihn keine Updates für installierte Rechner)")
 
 
+def update_pub() -> str:
+    """Öffentlicher Update-Schlüssel: aus dem Repo, abgeglichen mit dem geheimen Schlüssel, falls vorhanden."""
+    pub = UPDATE_PUB.read_text().strip() if UPDATE_PUB.exists() else ""
+    if KEY.exists():
+        own = ed25519.public_key(secret_key()).hex()
+        if pub and pub != own:
+            sys.exit(f"{UPDATE_PUB} passt nicht zum geheimen Schlüssel {KEY}")
+        pub = own
+    return pub
+
+
 def secret_key() -> bytes:
     if not KEY.exists():
         sys.exit(f"Kein Update-Schlüssel ({KEY}) – erst „build.py keygen --apply“.")
@@ -169,7 +190,7 @@ def cmd_stage() -> None:
         cached = (CACHE / "downloads" / fn).exists()
         url = wheel_url(project, ver_, fn) if APPLY and not cached else f"PyPI: {project} {ver_}"
         paths.append((fetch(url, fn, sha), fn))
-    pub = ed25519.public_key(secret_key()).hex() if KEY.exists() else ""
+    pub = update_pub()
     if not pub:
         print("Warnung: kein Update-Schlüssel – der Agent führt keine automatischen Updates aus.")
     if not APPLY:
@@ -198,6 +219,7 @@ def cmd_stage() -> None:
     for src, pkg in PACKAGES:
         shutil.copytree(ROOT / src / pkg, lib / pkg, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "tests"))
     (lib / "kidctl_agent" / "win" / "update-key.pub").write_text(pub + "\n" if pub else "")
+    shutil.copy2(ROOT / "LICENSE", STAGING / "LICENSE.txt")
     (STAGING / "kidctl.cmd").write_text('@"%~dp0python\\python.exe" -m kidctl_agent %*\r\n')
     size = sum(f.stat().st_size for f in STAGING.rglob("*") if f.is_file())
     say(f"Staging fertig: {size / 1e6:.0f} MB")
@@ -205,6 +227,60 @@ def cmd_stage() -> None:
 
 def winvm(*args: str, check: bool = True) -> subprocess.CompletedProcess:
     return subprocess.run([str(WINVM), *args], check=check)
+
+
+def iscc_args(ver: str, staging: str, out: str) -> list[str]:
+    return ["/Q", f"/DAppVersion={ver}", f"/DStaging={staging}", f"/DOutputDir={out}", "kidctl.iss"]
+
+
+def cmd_ci(out: Path) -> None:
+    """Bau unter Windows ohne VM (GitHub Actions): Ergebnis ist der unsignierte Installer in ``out``."""
+    if sys.platform != "win32":
+        sys.exit("„ci“ läuft nur unter Windows (GitHub Actions); lokal „all“ mit der VM verwenden.")
+    lock()
+    iscc = Path(ISCC)
+    if not iscc.exists():
+        if INNOSETUP is None:
+            sys.exit("vendor.lock: Zeile „innosetup“ fehlt")
+        setup = fetch(INNOSETUP[0], INNOSETUP[0].rsplit("/", 1)[1], INNOSETUP[1])
+        say(f"Inno Setup installieren: {setup.name}")
+        if APPLY:
+            subprocess.run([str(setup), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/ALLUSERS"],
+                           check=True)
+    cmd_stage()
+    ver = version()
+    say(f"Installer {ver} bauen -> {out}")
+    if not APPLY:
+        print(f"[dry-run] ISCC {' '.join(iscc_args(ver, str(STAGING), str(out)))}")
+        return
+    out.mkdir(parents=True, exist_ok=True)
+    subprocess.run([str(iscc), *iscc_args(ver, str(STAGING), str(out.resolve()))], cwd=HERE, check=True)
+    say(f"Installer: {out / f'KidCTL-Setup-{ver}.exe'}")
+
+
+def cmd_fetch(run: str | None) -> None:
+    """Signierten Installer aus GitHub Actions ins Repo holen (gh CLI, angemeldet)."""
+    ver = version()
+    target = REPO_WIN / f"KidCTL-Setup-{ver}.exe"
+    say(f"Signierten Installer {ver} aus GitHub Actions holen ({GITHUB_REPO}, Lauf {run or 'neuester'})")
+    if not APPLY:
+        print(f"[dry-run] gh run download {run or '<neuester>'} -n {SIGNED_ARTIFACT} -> {target}")
+        return
+    if run is None:
+        run = subprocess.run(["gh", "run", "list", "-R", GITHUB_REPO, "-w", "windows.yml", "-s", "success", "-L", "1",
+                              "--json", "databaseId", "-q", ".[0].databaseId"],
+                             check=True, capture_output=True, text=True).stdout.strip()
+        if not run:
+            sys.exit("Kein erfolgreicher Lauf von windows.yml gefunden.")
+    tmp = CACHE / "fetch"
+    shutil.rmtree(tmp, ignore_errors=True)
+    subprocess.run(["gh", "run", "download", run, "-R", GITHUB_REPO, "-n", SIGNED_ARTIFACT, "-D", str(tmp)], check=True)
+    exe = tmp / target.name
+    if not exe.exists():
+        sys.exit(f"{target.name} fehlt im Artefakt von Lauf {run} – passt die Version ({ver}) zum gebauten Stand?")
+    REPO_WIN.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(exe, target)
+    say(f"Installer: {target} – jetzt „build.py sign --apply“")
 
 
 def cmd_compile() -> None:
@@ -224,7 +300,7 @@ def cmd_compile() -> None:
                  f"New-Item -ItemType Directory {VM_BUILD} | Out-Null")
     winvm("put", str(bundle), f"{VM_BUILD}/build.tar")
     winvm("ssh", f"cd {VM_BUILD}; tar -xf build.tar; "
-                 f"& '{ISCC}' /Q /DAppVersion={ver} /DStaging={VM_BUILD}/staging /DOutputDir={VM_BUILD}/out kidctl.iss; "
+                 f"& '{ISCC}' {' '.join(iscc_args(ver, f'{VM_BUILD}/staging', f'{VM_BUILD}/out'))}; "
                  f"exit $LASTEXITCODE")
     REPO_WIN.mkdir(parents=True, exist_ok=True)
     winvm("get", f"{VM_BUILD}/out/KidCTL-Setup-{ver}.exe", str(REPO_WIN / f"KidCTL-Setup-{ver}.exe"))
@@ -261,8 +337,10 @@ def cmd_sign() -> None:
 def main() -> None:
     global APPLY
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", choices=("keygen", "stage", "compile", "sign", "all"))
+    ap.add_argument("cmd", choices=("keygen", "stage", "compile", "sign", "all", "ci", "fetch"))
     ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--out", type=Path, default=ROOT / "dist", help="ci: Zielordner des Installers")
+    ap.add_argument("--run", help="fetch: Lauf-ID in GitHub Actions (Standard: neuester erfolgreicher)")
     args = ap.parse_args()
     APPLY = args.apply
     if args.cmd == "keygen":
@@ -273,6 +351,10 @@ def main() -> None:
         cmd_compile()
     if args.cmd in ("sign", "all"):
         cmd_sign()
+    if args.cmd == "ci":
+        cmd_ci(args.out)
+    if args.cmd == "fetch":
+        cmd_fetch(args.run)
     if not APPLY:
         print("Dry-Run – mit --apply ausführen.")
 

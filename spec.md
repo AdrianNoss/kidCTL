@@ -2,10 +2,9 @@
 
 Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Serverseite für Bildschirmzeit, Chat/Verlängerungen, PWA/Web Push, Policy-Verteilung und Offline-Alarm umgesetzt; Agent (Bildschirmzeit, PAM-Login-Sperre), Tray-App und Paket umgesetzt.
 Projektname: **KidCTL** (Paket, Befehle und Pfade technisch `kidctl`). Deploy unter `kids.nossco.de` (Annahme).
-Lizenz: PolyForm Noncommercial 1.0.0 (`LICENSE`) – Nutzung, Änderung und Weitergabe frei, außer zu
-kommerziellen Zwecken; der „Required Notice“ mit Adrian Noss als ursprünglichem Autor muss bei jeder
-Weitergabe erhalten bleiben. Hinweis: Wegen des Verbots kommerzieller Nutzung ist das im Sinne der
-OSI „source-available“, nicht „Open Source“.
+Lizenz: AGPL-3.0-or-later (`LICENSE`, seit 2026-11-10; vorher PolyForm Noncommercial 1.0.0) – Open Source
+nach OSI, Voraussetzung für die kostenlose Code-Signatur der Windows-Installer über die SignPath Foundation
+(`docs/code-signing.md`). Die Weboberfläche verlinkt den Quelltext (`SOURCE_URL`, AGPL §13).
 
 ## Hintergrund
 
@@ -1683,3 +1682,16 @@ Abweichungen stehen hier und unter „Restlücken“.
   und im Browser am Entwicklungsserver auf 1280 px und 375 px: alle Reiter, Filter, Suche, Änderungshinweis; Seitenhöhe mit 67 Programmen von 5152 px auf
   höchstens rund 1200 px auf den Reitern Heute, Zeiten, Internet und Programme (Handy von 8663 px auf höchstens 1900 px). Nicht im Browser getestet: Absenden der Formulare (Testserver lehnt die Herkunft
   `localhost` ab, abgedeckt durch die Server-Tests).
+- 2026-11-10: WebUI: Die Kopplungsseite zeigt beide Wege – Windows (Installer von `/repo/`, Server-Adresse und Kopplungscode auf der Seite
+  „Kopplung“ eingeben; bei vorhandener Installation `kidctl.cmd enroll`) und Linux (`sudo kidctl enroll`). Die Benutzer-Zuordnung eines Geräts
+  heißt je nach Plattform „Windows-Benutzer“ bzw. „Linux-Benutzer“, die UID-Spalte entfällt unter Windows; der Chat-Hinweis spricht von
+  „Benutzerkonto“. Getestet: Server-Tests (neu `test_pair_page_and_user_mapping_name_the_platform`).
+- 2026-11-10: Lizenz von PolyForm Noncommercial 1.0.0 auf AGPL-3.0-or-later umgestellt (`LICENSE`, PKGBUILD, READMEs), Voraussetzung für die
+  kostenlose Code-Signatur durch die SignPath Foundation. Fußzeile der WebUI mit Link „Quellcode“ (AGPL §13, `SOURCE_URL`, Standard das
+  GitHub-Repo). Vorbereitung SignPath: `docs/code-signing.md` (Code signing policy, Rollen, Datenschutz), Abschnitte in den READMEs, Link auf der
+  Download-Seite; Workflow `.github/workflows/windows.yml` baut den Installer auf `windows-2025` (`build.py ci`: Inno Setup 6.7.4 aus
+  `vendor.lock` mit SHA-256, Staging, ISCC), lädt ihn als Artefakt hoch und reicht ihn an SignPath weiter, sobald Secret/Variablen gesetzt
+  sind; `build.py fetch` holt den signierten Installer, `sign` signiert danach `latest.json` wie bisher lokal. Öffentlicher Update-Schlüssel
+  liegt jetzt in `packaging/windows/update-key.pub` (Abgleich mit dem geheimen Schlüssel). Installer mit Produktname/-version, Copyright und
+  `LICENSE.txt`. Getestet: Server-Tests; Staging + Bau in der Win10-VM in einen Testordner (VersionInfo: ProductName KidCTL, Version 0.32.7,
+  Lizenz und öffentlicher Schlüssel im Staging); Dry-Runs von `ci` und `fetch`; Workflow nur syntaktisch geprüft (Lauf auf GitHub steht aus).

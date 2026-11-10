@@ -60,6 +60,7 @@ templates.env.globals.update(_=i18n.gettext, gettext=i18n.gettext, ngettext=i18n
                              integrity_label=integrity.label_for, blocked_detail=blocklog.detail,
                              update_for=versions.update_for, fmt_datetime=i18n.fmt_datetime, fmt_size=_fmt_size,
                              today_minus=_today_minus, asset=asset)
+templates.env.globals["SOURCE_URL"] = settings.source_url
 
 
 def render(request: Request, template: str, status_code: int = 200, **ctx):

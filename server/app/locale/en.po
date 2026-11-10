@@ -57,9 +57,6 @@ msgstr "Pair device"
 msgid "Kopplungscode (einmalig, {minutes} Minuten gültig bis {time} Uhr):"
 msgstr "Pairing code (single use, valid for {minutes} minutes until {time}):"
 
-msgid "Auf dem Kinderrechner ausführen:"
-msgstr "Run on the child’s computer:"
-
 msgid "Zurück zu den Geräten"
 msgstr "Back to devices"
 
@@ -180,8 +177,8 @@ msgstr "Statistics"
 msgid "Protokoll"
 msgstr "Activity log"
 
-msgid "{name} ist noch keinem Linux-Benutzer zugeordnet – Nachrichten werden erst nach der Zuordnung zugestellt."
-msgstr "{name} is not assigned to a Linux user yet – messages will be delivered once assigned."
+msgid "{name} ist noch keinem Benutzerkonto zugeordnet – Nachrichten werden erst nach der Zuordnung zugestellt."
+msgstr "{name} is not assigned to a user account yet – messages will be delivered once assigned."
 
 msgid "Nachricht an {name}"
 msgstr "Message to {name}"
@@ -1598,8 +1595,8 @@ msgstr "Size"
 msgid "Veröffentlicht"
 msgstr "Published"
 
-msgid "Auf dem Kinderrechner als Administrator ausführen. Der Installer ist nicht signiert, Windows SmartScreen fragt deshalb beim ersten Start nach."
-msgstr "Run it as administrator on the child's computer. The installer is not signed, so Windows SmartScreen asks for confirmation on first start."
+msgid "Auf dem Kinderrechner als Administrator ausführen. Ist ein Installer nicht signiert, fragt Windows SmartScreen beim ersten Start nach."
+msgstr "Run on the child’s computer as administrator. If an installer is not signed, Windows SmartScreen asks for confirmation on first launch."
 
 msgid "Noch keine Installer veröffentlicht."
 msgstr "No installers published yet."
@@ -1720,3 +1717,39 @@ msgstr "Only allowed websites"
 
 msgid "Alle Websites außer gesperrten"
 msgstr "All websites except blocked"
+
+msgid "Windows"
+msgstr "Windows"
+
+msgid "Linux"
+msgstr "Linux"
+
+msgid "Server"
+msgstr "Server"
+
+msgid "Installer von der {link} als Administrator ausführen und auf der Seite „Kopplung“ eingeben:"
+msgstr "Run the installer from the {link} as administrator and enter on the “Pairing” page:"
+
+msgid "Download-Seite"
+msgstr "download page"
+
+msgid "KidCTL ist schon installiert?"
+msgstr "KidCTL already installed?"
+
+msgid "In einer Eingabeaufforderung als Administrator:"
+msgstr "In a command prompt as administrator:"
+
+msgid "Nach der Installation des Pakets kidctl im Terminal ausführen:"
+msgstr "After installing the kidctl package, run in a terminal:"
+
+msgid "Nicht zugeordnete Windows-Benutzer werden nie eingeschränkt."
+msgstr "Unassigned Windows users are never restricted."
+
+msgid "Windows-Benutzer"
+msgstr "Windows user"
+
+msgid "Kopplungscode"
+msgstr "Pairing code"
+
+msgid "Quellcode"
+msgstr "Source code"

@@ -46,6 +46,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # Ausgabe als SE
 | `SECRET_KEY` | Pflicht. **Nie ändern**, sonst sind alle Sessions und Geräte-Token ungültig (Geräte neu koppeln). |
 | `BASE_URL` | Öffentliche Adresse, z. B. `https://kids.example.org` |
 | `TOTP_ISSUER` | Name in der Authenticator-App (Standard `KidCTL`) |
+| `SOURCE_URL` | Link „Quellcode“ in der Fußzeile (AGPL-3.0 §13); bei eigenen Änderungen auf den eigenen Fork setzen. Standard: das KidCTL-Repo |
 | `TZ_HOME` | Zeitzone für Tageskontingente und Zeitfenster (Standard `Europe/Berlin`) |
 | `VAPID_*` | Web Push, siehe 1.4. Ohne Schlüssel gibt es keine Push-Benachrichtigungen. |
 | `SMTP_*` | E-Mail für „Passwort vergessen“, Sicherheitshinweise und Nutzungsbericht (optional), siehe 1.7 |

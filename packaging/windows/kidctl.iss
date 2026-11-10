@@ -26,6 +26,13 @@ AppName=KidCTL
 AppVersion={#AppVersion}
 AppVerName=KidCTL {#AppVersion}
 AppPublisher=KidCTL
+AppPublisherURL=https://github.com/AdrianNoss/kidCTL
+AppCopyright=Copyright (c) 2026 Adrian Noss, AGPL-3.0-or-later
+; Produktname und -version fest – SignPath prüft beides bei der Signatur
+VersionInfoProductName=KidCTL
+VersionInfoProductVersion={#AppVersion}
+VersionInfoVersion={#AppVersion}
+VersionInfoDescription=KidCTL Setup
 DefaultDirName={autopf}\KidCTL
 DisableDirPage=yes
 DisableProgramGroupPage=yes

@@ -8,7 +8,7 @@ pkgrel=1
 pkgdesc="Parental Control für Arch Linux – Agent (Bildschirmzeit, Login-Sperre) und Tray-App"
 arch=(any)
 url="https://github.com/AdrianNoss/kidCTL"
-license=(PolyForm-Noncommercial-1.0.0)
+license=(AGPL-3.0-or-later)
 source=(kidctl kidctl-main.py kidctl-agent.service kidctl-tray kidctl-tray-main.py kidctl-tray.desktop
         base-programs.txt kidctl.svg)
 sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)  # lokale Dateien aus dem Repo

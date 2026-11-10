@@ -72,10 +72,21 @@ cd agent  && python -m pytest -q tests
 cd tray   && QT_QPA_PLATFORM=offscreen python -m pytest -q tests
 ```
 
+## Code signing policy
+
+Windows installers are signed for free: Free code signing provided by
+[SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+Details, team roles and privacy statement: [Code signing policy](docs/code-signing.md).
+
+## Privacy
+
+KidCTL only talks to the KidCTL server you set up yourself – no telemetry, no connection to the
+developers or other third parties. See the [privacy statement](docs/code-signing.md#privacy).
+
 ## License
 
-[PolyForm Noncommercial 1.0.0](LICENSE): free to use, modify and share for **non-commercial**
-purposes (private use as well as schools, associations or public authorities). Commercial use is not
-permitted. KidCTL is therefore "source-available", not "open source" in the OSI sense.
+[GNU Affero General Public License v3.0 or later](LICENSE) (AGPL-3.0-or-later). If you run a modified
+server for others, you must offer them its source code; set `SOURCE_URL` to your fork so the
+"Source code" link in the web interface points there.
 
 Copyright © 2026 Adrian Noss
