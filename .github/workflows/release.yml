@@ -1,0 +1,119 @@
+# Pakete in GitHub Actions bauen: Windows-Installer (optional über SignPath signiert) und Linux-Pakete
+# (Arch .pkg.tar.zst, Debian/Ubuntu .deb). Keine Schlüssel in GitHub – signiert wird danach lokal:
+#   packaging/repo/kidctl-repo-build.sh --apply --ci      Linux-Pakete holen, mit GPG signieren, Repo aktualisieren
+#   packaging/windows/build.py fetch --apply              Installer holen
+#   packaging/windows/build.py sign --apply               latest.json mit dem Update-Schlüssel signieren
+#   packaging/repo/kidctl-repo-publish.sh --apply         auf den Server
+#
+# Auslöser: Tag „v<Version>“ (muss zu agent/kidctl_agent/__init__.py passen) oder manuell.
+# SignPath nur, wenn die Repository-Variablen SIGNPATH_* und das Secret SIGNPATH_API_TOKEN gesetzt sind.
+
+name: Pakete
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read   # SignPath liest Job-Details und lädt das Artefakt
+
+jobs:
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: Version prüfen
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          ver=$(python -c "import re;print(re.search(r'__version__ = \"([^\"]+)\"', open('agent/kidctl_agent/__init__.py').read()).group(1))")
+          test "v$ver" = "$GITHUB_REF_NAME" || { echo "Tag $GITHUB_REF_NAME passt nicht zur Version $ver"; exit 1; }
+
+      - name: Installer bauen
+        run: python packaging/windows/build.py ci --apply --out dist
+
+      - name: Unsignierten Installer hochladen
+        id: upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: KidCTL-Setup-unsigned
+          path: dist/KidCTL-Setup-*.exe
+          if-no-files-found: error
+
+      - name: Über SignPath signieren
+        if: vars.SIGNPATH_ORGANIZATION_ID != ''
+        uses: SignPath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092  # v3.0
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.upload.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 18000   # Freigabe in SignPath erfolgt von Hand (max. 5 h)
+          output-artifact-directory: signed
+
+      - name: Signierten Installer hochladen
+        if: vars.SIGNPATH_ORGANIZATION_ID != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: KidCTL-Setup-signed
+          path: signed/KidCTL-Setup-*.exe
+          if-no-files-found: error
+
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    container: archlinux:base
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Bauwerkzeuge
+        run: pacman -Syu --noconfirm --needed base-devel git python
+
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Version prüfen
+        run: |
+          ver=$(sed -n 's/^pkgver=\([^ ]*\).*/\1/p' packaging/arch/PKGBUILD)
+          agent=$(python -c "import re;print(re.search(r'__version__ = \"([^\"]+)\"', open('agent/kidctl_agent/__init__.py').read()).group(1))")
+          test "$ver" = "$agent" || { echo "PKGBUILD $ver passt nicht zum Agenten $agent"; exit 1; }
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            test "v$ver" = "$GITHUB_REF_NAME" || { echo "Tag $GITHUB_REF_NAME passt nicht zur Version $ver"; exit 1; }
+          fi
+
+      - name: Arch-Pakete bauen
+        run: |
+          # makepkg läuft nicht als root; --nodeps: reines Python (arch=any)
+          useradd -m builder
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          mkdir -p dist/arch /tmp/kb
+          chown -R builder "$GITHUB_WORKSPACE" /tmp/kb
+          cd packaging/arch
+          su builder -c "BUILDDIR=/tmp/kb SRCDEST=/tmp/kb LOGDEST=/tmp/kb PKGDEST=$GITHUB_WORKSPACE/dist/arch makepkg --force --cleanbuild --nodeps"
+
+      - name: Debian-Pakete bauen
+        run: python packaging/debian/build-deb.py dist/deb
+
+      - name: Pakete hochladen
+        uses: actions/upload-artifact@v7
+        with:
+          name: kidctl-linux
+          path: |
+            dist/arch/*.pkg.tar.zst
+            dist/deb/*.deb
+          if-no-files-found: error

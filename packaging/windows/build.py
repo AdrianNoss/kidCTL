@@ -8,7 +8,7 @@
     build.py all     [--apply]   stage + compile + sign
     build.py ci      [--apply]   unter Windows (GitHub Actions): Inno Setup bei Bedarf installieren, stage, Installer
                                  nach --out bauen – ohne geheimen Schlüssel, für die Signatur über SignPath
-    build.py fetch   [--apply]   signierten Installer des letzten (oder --run) GitHub-Laufs ins Repo holen;
+    build.py fetch   [--apply]   Installer des GitHub-Laufs zum Tag v<Version> (oder --run) ins Repo holen;
                                  danach „sign --apply“ für latest.json
 
 Ohne --apply nur Anzeige (Dry-Run). Veröffentlichen wie die übrigen Pakete mit
@@ -44,6 +44,8 @@ KEY = REPO_HOME / "windows-update.key"
 UPDATE_PUB = HERE / "update-key.pub"   # öffentlicher Teil im Repo, damit auch der CI-Bau ihn einbettet
 GITHUB_REPO = "AdrianNoss/kidCTL"
 SIGNED_ARTIFACT = "KidCTL-Setup-signed"
+UNSIGNED_ARTIFACT = "KidCTL-Setup-unsigned"
+WORKFLOW = "release.yml"
 CACHE = Path(os.environ.get("KIDCTL_WIN_CACHE", Path.home() / ".cache/kidctl-windows"))
 STAGING = CACHE / "staging"
 WINVM = ROOT / "dev" / "vm" / "winvm.sh"
@@ -258,29 +260,42 @@ def cmd_ci(out: Path) -> None:
     say(f"Installer: {out / f'KidCTL-Setup-{ver}.exe'}")
 
 
+def ci_run(ver: str) -> str:
+    """Lauf von release.yml für den Tag v<ver>, sonst der neueste erfolgreiche Lauf."""
+    def newest(*extra: str) -> str:
+        return subprocess.run(["gh", "run", "list", "-R", GITHUB_REPO, "-w", WORKFLOW, "-s", "success", "-L", "1",
+                               *extra, "--json", "databaseId", "-q", ".[0].databaseId"],
+                              check=True, capture_output=True, text=True).stdout.strip()
+    run = newest("-b", f"v{ver}") or newest()
+    if not run:
+        sys.exit(f"Kein erfolgreicher Lauf von {WORKFLOW} gefunden.")
+    return run
+
+
 def cmd_fetch(run: str | None) -> None:
-    """Signierten Installer aus GitHub Actions ins Repo holen (gh CLI, angemeldet)."""
+    """Installer aus GitHub Actions ins Repo holen (gh CLI, angemeldet): signiert, falls vorhanden, sonst unsigniert."""
     ver = version()
     target = REPO_WIN / f"KidCTL-Setup-{ver}.exe"
-    say(f"Signierten Installer {ver} aus GitHub Actions holen ({GITHUB_REPO}, Lauf {run or 'neuester'})")
+    say(f"Installer {ver} aus GitHub Actions holen ({GITHUB_REPO}, Lauf {run or f'zu v{ver} bzw. neuester'})")
     if not APPLY:
-        print(f"[dry-run] gh run download {run or '<neuester>'} -n {SIGNED_ARTIFACT} -> {target}")
+        print(f"[dry-run] gh run download <Lauf> -n {SIGNED_ARTIFACT} (sonst {UNSIGNED_ARTIFACT}) -> {target}")
         return
-    if run is None:
-        run = subprocess.run(["gh", "run", "list", "-R", GITHUB_REPO, "-w", "windows.yml", "-s", "success", "-L", "1",
-                              "--json", "databaseId", "-q", ".[0].databaseId"],
-                             check=True, capture_output=True, text=True).stdout.strip()
-        if not run:
-            sys.exit("Kein erfolgreicher Lauf von windows.yml gefunden.")
+    run = run or ci_run(ver)
     tmp = CACHE / "fetch"
-    shutil.rmtree(tmp, ignore_errors=True)
-    subprocess.run(["gh", "run", "download", run, "-R", GITHUB_REPO, "-n", SIGNED_ARTIFACT, "-D", str(tmp)], check=True)
+    for name in (SIGNED_ARTIFACT, UNSIGNED_ARTIFACT):
+        shutil.rmtree(tmp, ignore_errors=True)
+        if subprocess.run(["gh", "run", "download", run, "-R", GITHUB_REPO, "-n", name, "-D", str(tmp)],
+                          capture_output=True).returncode == 0:
+            break
+    else:
+        sys.exit(f"Lauf {run} hat keinen Installer ({SIGNED_ARTIFACT} / {UNSIGNED_ARTIFACT}).")
     exe = tmp / target.name
     if not exe.exists():
         sys.exit(f"{target.name} fehlt im Artefakt von Lauf {run} – passt die Version ({ver}) zum gebauten Stand?")
     REPO_WIN.mkdir(parents=True, exist_ok=True)
     shutil.copy2(exe, target)
-    say(f"Installer: {target} – jetzt „build.py sign --apply“")
+    say(f"Installer ({'signiert' if name == SIGNED_ARTIFACT else 'unsigniert'}, Lauf {run}): {target}"
+        " – jetzt „build.py sign --apply“")
 
 
 def cmd_compile() -> None:
@@ -340,7 +355,7 @@ def main() -> None:
     ap.add_argument("cmd", choices=("keygen", "stage", "compile", "sign", "all", "ci", "fetch"))
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--out", type=Path, default=ROOT / "dist", help="ci: Zielordner des Installers")
-    ap.add_argument("--run", help="fetch: Lauf-ID in GitHub Actions (Standard: neuester erfolgreicher)")
+    ap.add_argument("--run", help="fetch: Lauf-ID in GitHub Actions (Standard: Lauf zum Tag v<Version>, sonst neuester erfolgreicher)")
     args = ap.parse_args()
     APPLY = args.apply
     if args.cmd == "keygen":

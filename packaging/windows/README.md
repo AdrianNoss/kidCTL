@@ -30,28 +30,26 @@ packaging/repo/kidctl-repo-publish.sh --apply
 - Zwischenspeicher: `~/.cache/kidctl-windows/` (Downloads, Staging). PySide6 wird auf QtCore/Gui/Widgets/
   Network/Svg verkleinert.
 
-## Bau über GitHub Actions (Signatur über SignPath vorbereitet)
+## Bau über GitHub Actions
 
-Derzeit unsigniert: Der Antrag bei der SignPath Foundation wurde im November 2026 abgelehnt (Projekt noch
-nicht bekannt genug, siehe [`docs/code-signing.md`](../../docs/code-signing.md)). Für Releases baut [`.github/workflows/windows.yml`](../../.github/workflows/windows.yml) den Installer auf einem
-GitHub-Runner (`build.py ci`) – ausgelöst durch einen Tag `v<Version>` oder von Hand. Der Lauf lädt den
-unsignierten Installer als Artefakt hoch und reicht ihn an SignPath weiter; nach der Freigabe in SignPath
-liegt das Artefakt `KidCTL-Setup-signed` am Lauf.
+[`.github/workflows/release.yml`](../../.github/workflows/release.yml) baut den Installer auf einem
+GitHub-Runner (`build.py ci`) – ausgelöst durch einen Tag `v<Version>` oder von Hand – und lädt ihn als
+Artefakt `KidCTL-Setup-unsigned` hoch. Ablauf je Release siehe [`packaging/repo/README.md`](../repo/README.md):
 
 ```bash
-git tag v0.32.8 && git push origin v0.32.8   # oder: gh workflow run windows.yml
-packaging/windows/build.py fetch --apply      # signierten Installer des neuesten Laufs ins Repo holen
+packaging/windows/build.py fetch --apply      # Installer des Laufs zum Tag v<Version> ins Repo holen
 packaging/windows/build.py sign --apply       # latest.json mit dem Update-Schlüssel signieren
-packaging/repo/kidctl-repo-publish.sh --apply
 ```
 
 - Der geheime Update-Schlüssel bleibt auf dem Bau-Rechner; der öffentliche Teil liegt in
   `packaging/windows/update-key.pub` (`build.py` bricht ab, wenn beide nicht zusammenpassen).
-- Einrichtung in GitHub (Settings → Secrets and variables → Actions): Secret `SIGNPATH_API_TOKEN`,
-  Variablen `SIGNPATH_ORGANIZATION_ID`, `SIGNPATH_PROJECT_SLUG`, `SIGNPATH_SIGNING_POLICY_SLUG`,
-  `SIGNPATH_ARTIFACT_CONFIGURATION_SLUG`. Ohne sie endet der Lauf mit dem unsignierten Installer.
-- Artifact Configuration für SignPath: [`signpath/artifact-configuration.xml`](signpath/artifact-configuration.xml).
-- Lokaler Bau in der VM (`build.py all`) bleibt für Tests; diese Installer werden nie signiert.
+- Authenticode-Signatur über SignPath ist vorbereitet, aber derzeit nicht aktiv (Antrag bei der SignPath
+  Foundation im November 2026 abgelehnt, siehe [`docs/code-signing.md`](../../docs/code-signing.md)). Für
+  einen späteren Antrag: Secret `SIGNPATH_API_TOKEN` und Variablen `SIGNPATH_ORGANIZATION_ID`,
+  `SIGNPATH_PROJECT_SLUG`, `SIGNPATH_SIGNING_POLICY_SLUG`, `SIGNPATH_ARTIFACT_CONFIGURATION_SLUG` in GitHub
+  setzen, Vorlage [`signpath/artifact-configuration.xml`](signpath/artifact-configuration.xml); `fetch` nimmt
+  dann automatisch den signierten Installer.
+- Lokaler Bau in der Windows-VM (`build.py all --apply`) bleibt möglich, z. B. für Tests vor einem Release.
 
 ## Was der Installer einrichtet
 

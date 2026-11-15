@@ -1699,3 +1699,12 @@ Abweichungen stehen hier und unter „Restlücken“.
   `packaging/windows/README.md` sagen jetzt, dass die Windows-Installer derzeit nicht signiert sind; Bau in GitHub Actions, Releases mit SHA-256
   und Link auf den Lauf, Datenschutzhinweis und Lizenz bleiben. Workflow und `build.py ci/fetch` bleiben für einen späteren Antrag unverändert.
   Getestet: nur Doku – Verweise geprüft, keine Code-Änderung.
+- 2026-11-15: Paketbau in GitHub Actions: `.github/workflows/release.yml` (vorher `windows.yml`, Name „Pakete“) baut bei Tag `v<Version>` oder
+  von Hand neben dem Windows-Installer auch die Linux-Pakete (Job `linux` im Container `archlinux:base`: makepkg als Benutzer `builder`,
+  `build-deb.py`; Artefakt `kidctl-linux` mit `arch/` und `deb/`, Versionsprüfung PKGBUILD/Agent/Tag). Signiert wird weiter nur lokal:
+  `kidctl-repo-build.sh --apply --ci [LAUF]` holt die Pakete (Lauf zum Tag, sonst neuester erfolgreicher), signiert sie mit GPG und
+  aktualisiert pacman- und APT-Repo; `build.py fetch` nimmt den signierten Installer, sonst den unsignierten. Lokaler Bau (makepkg,
+  Windows-VM) bleibt möglich. Doku: `packaging/repo/README.md`, `docs/installation.md` 2.2, `packaging/windows/README.md`.
+  Getestet: `--ci` mit Ersatz für `gh` und lokal gebauten Paketen gegen eine Schlüsselkopie in einem Testordner (Paket-, Datenbank- und
+  InRelease-Signaturen gültig, echtes Repo unberührt); Dry-Runs von `--ci` und `fetch`; Workflow-YAML syntaktisch geprüft. Der Lauf auf
+  GitHub (Container, makepkg als `builder`) steht noch aus.

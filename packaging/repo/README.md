@@ -21,13 +21,24 @@ packaging/repo/kidctl-repo-key.sh create --apply    # fragt nach einer Passphras
 
 ## Je Release: bauen und veröffentlichen
 
+Gebaut wird in GitHub Actions (`.github/workflows/release.yml`: Arch-, Debian- und Windows-Pakete), signiert
+und veröffentlicht lokal – die Schlüssel liegen nie in GitHub:
+
 ```bash
-packaging/repo/kidctl-repo-build.sh --apply      # makepkg --sign + repo-add --sign (alte Version raus)
+git tag v0.32.8 && git push origin v0.32.8           # startet den Bau (oder: gh workflow run release.yml)
+gh run watch                                          # warten, bis der Lauf fertig ist
+packaging/repo/kidctl-repo-build.sh --apply --ci      # Linux-Pakete holen, GPG-signieren, repo-add (alte Version raus)
+packaging/windows/build.py fetch --apply              # Windows-Installer holen
+packaging/windows/build.py sign --apply               # latest.json mit dem Update-Schlüssel signieren
 KIDCTL_REPO_TARGET=user@server:/srv/kidctl/data/repo/ \
   packaging/repo/kidctl-repo-publish.sh           # Dry-Run (rsync -n)
 KIDCTL_REPO_TARGET=user@server:/srv/kidctl/data/repo/ \
   packaging/repo/kidctl-repo-publish.sh --apply
 ```
+
+`--ci` und `fetch` nehmen den Lauf zum Tag `v<Version>` (sonst den neuesten erfolgreichen; `--ci <Lauf-ID>`
+bzw. `fetch --run <Lauf-ID>` wählen einen bestimmten). Lokal bauen geht weiterhin: `kidctl-repo-build.sh
+--apply` ohne `--ci` (makepkg) und `build.py all --apply` (Windows-VM).
 
 Version vorher in `packaging/arch/PKGBUILD` (`pkgver`) und `agent/kidctl_agent/__init__.py`
 erhöhen (ein Test prüft die Übereinstimmung). Der Server liefert `./data/repo` unter

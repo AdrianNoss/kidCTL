@@ -9,7 +9,7 @@ plan to apply again later. Until then, Windows SmartScreen asks for confirmation
 ## How Windows installers are built
 
 The Windows installer `KidCTL-Setup-<version>.exe` is built from this repository by the GitHub Actions
-workflow [`.github/workflows/windows.yml`](../.github/workflows/windows.yml) on a GitHub-hosted runner
+workflow [`.github/workflows/release.yml`](../.github/workflows/release.yml) on a GitHub-hosted runner
 (`packaging/windows/build.py ci`). Each [release](https://github.com/AdrianNoss/kidCTL/releases) lists
 the installer's SHA-256 and links the build run. The workflow is prepared to submit the installer for
 signing once a signing service is available; only builds from this workflow would ever be signed.
