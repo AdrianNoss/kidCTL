@@ -60,7 +60,8 @@ import pyotp  # noqa: E402
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
-from app.db import Base, SessionLocal, engine  # noqa: E402
+from app.db import Base, engine  # noqa: E402
+from app.db import SessionLocal as _PlainSession  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import Parent  # noqa: E402
 from app.security import hash_password, new_totp_secret  # noqa: E402
@@ -79,18 +80,63 @@ def reset_database() -> None:
         conn.execute(text(f"TRUNCATE {names} RESTART IDENTITY CASCADE"))
 
 
+TEST_FAMILY = 1
+
+
+def SessionLocal():  # noqa: N802  (ersetzt app.db.SessionLocal in den Tests)
+    """Sitzung im Kontext der Testfamilie 1 – wie eine angemeldete Familie."""
+    from app.tenant import set_family
+    db = _PlainSession()
+    set_family(db, TEST_FAMILY)
+    return db
+
+
+def platform_db():
+    from app.tenant import set_platform
+    db = _PlainSession()
+    set_platform(db)
+    return db
+
+
+def add_family(name: str = "") -> int:
+    from app.models import Family
+    with platform_db() as db:
+        fam = Family(name=name)
+        db.add(fam)
+        db.commit()
+        return fam.id
+
+
+def add_parent(**fields):
+    """Weiteren Eltern-Account in der Testfamilie anlegen (mit Mitgliedschaft)."""
+    from app.models import ROLE_PARENT, Membership
+    fields.setdefault("password_hash", hash_password(PASSWORD))
+    fields.setdefault("totp_secret", new_totp_secret())
+    with SessionLocal() as db:
+        p = Parent(**fields)
+        db.add(p)
+        db.flush()
+        db.add(Membership(parent_id=p.id, role=ROLE_PARENT))
+        db.commit()
+        return p
+
+
 @pytest.fixture
 def client():
     reset_database()
+    add_family("Testfamilie")
     with TestClient(app, headers={"Accept-Language": "de-DE,de;q=0.9"}) as c:
         yield c
 
 
 @pytest.fixture
 def parent(client):
+    from app.models import ROLE_OWNER, Membership
     with SessionLocal() as db:
         p = Parent(username="mama", password_hash=hash_password(PASSWORD), totp_secret=new_totp_secret())
         db.add(p)
+        db.flush()
+        db.add(Membership(parent_id=p.id, role=ROLE_OWNER))
         db.commit()
         return p
 

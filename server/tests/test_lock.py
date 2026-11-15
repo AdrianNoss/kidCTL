@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, text
 
 from app import lock as lk
 from app import sqlite_import as migrate
-from app.db import SessionLocal
+from conftest import SessionLocal
 from app.models import Child, utcnow
 
 from test_policy import _policy, _setup, device

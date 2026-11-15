@@ -9,7 +9,7 @@ from datetime import date, datetime, time, timezone
 from sqlalchemy import (
     Boolean, Date, DateTime, ForeignKey, Integer, String, Text, Time, UniqueConstraint,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from .db import Base
 
@@ -18,8 +18,39 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+class Family(Base):
+    """Mandant: eine Familie (Haushalt). Im Einzelbetrieb gibt es genau eine."""
+    __tablename__ = "family"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(128), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class FamilyScoped:
+    """Mixin für alle Tabellen, die einer Familie gehören. Abfragen werden über den Familienkontext der Sitzung
+    automatisch gefiltert, neue Zeilen bekommen die Familie aus dem Kontext (siehe app.tenant)."""
+
+    @declared_attr
+    def family_id(cls) -> Mapped[int]:
+        return mapped_column(ForeignKey("family.id", ondelete="CASCADE"), index=True)
+
+
+ROLE_OWNER, ROLE_PARENT = "owner", "parent"
+
+
+class Membership(FamilyScoped, Base):
+    """Account <-> Familie mit Rolle. Vorerst genau eine Mitgliedschaft je Account (Unique auf parent_id)."""
+    __tablename__ = "membership"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    parent_id: Mapped[int] = mapped_column(ForeignKey("parent.id", ondelete="CASCADE"), unique=True)
+    role: Mapped[str] = mapped_column(String(16), default=ROLE_PARENT)   # owner | parent
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class Parent(Base):
-    """Eltern-Account; alle Accounts sind gleichberechtigt."""
+    """Eltern-Account; gehört über ``Membership`` zu genau einer Familie."""
     __tablename__ = "parent"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -87,12 +118,13 @@ class PushSubscription(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
-class Child(Base):
+class Child(FamilyScoped, Base):
     """Kind – zentrale Einheit, trägt alle Policies."""
     __tablename__ = "child"
+    __table_args__ = (UniqueConstraint("family_id", "name"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(64), unique=True)
+    name: Mapped[str] = mapped_column(String(64))
     weekdays_same: Mapped[bool] = mapped_column(Boolean, default=True)  # UI: Werktage/Wochenende gleich
     # Veraltet (nie benutzt, Standard war „whitelist“) – ersetzt durch web_mode
     web_filter_mode: Mapped[str] = mapped_column(String(16), default="whitelist")
@@ -109,7 +141,7 @@ class Child(Base):
         back_populates="child", cascade="all, delete-orphan", order_by="WeekdayRule.weekday")
 
 
-class WeekdayRule(Base):
+class WeekdayRule(FamilyScoped, Base):
     """Wochenvorlage: je Wochentag Kontingent + erlaubtes Zeitfenster (Europe/Berlin)."""
     __tablename__ = "weekday_rule"
     __table_args__ = (UniqueConstraint("child_id", "weekday"),)
@@ -125,7 +157,7 @@ class WeekdayRule(Base):
     child: Mapped[Child] = relationship(back_populates="rules")
 
 
-class DayException(Base):
+class DayException(FamilyScoped, Base):
     """Tagesausnahme (Verlängerung/Gutschrift), gilt nur für ``day``."""
     __tablename__ = "day_exception"
     __table_args__ = (UniqueConstraint("child_id", "day"),)
@@ -138,7 +170,7 @@ class DayException(Base):
     extra_game_minutes: Mapped[int] = mapped_column(Integer, default=0)  # Spielzeit-Gutschrift
 
 
-class Device(Base):
+class Device(FamilyScoped, Base):
     __tablename__ = "device"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -171,7 +203,7 @@ class Device(Base):
         back_populates="device", cascade="all, delete-orphan", order_by="DeviceUser.username")
 
 
-class DeviceUser(Base):
+class DeviceUser(FamilyScoped, Base):
     """Zuordnung (Gerät, Linux-User) -> Kind. ``child_id`` NULL = nicht eingeschränkt."""
     __tablename__ = "device_user"
     __table_args__ = (UniqueConstraint("device_id", "username"),)
@@ -188,7 +220,7 @@ class DeviceUser(Base):
     child: Mapped[Child | None] = relationship()
 
 
-class UsageRecord(Base):
+class UsageRecord(FamilyScoped, Base):
     """Absolute Nutzungszeit je (Gerät, Linux-User, Tag), wie vom Agenten gemeldet."""
     __tablename__ = "usage_record"
     __table_args__ = (UniqueConstraint("device_id", "username", "day"),)
@@ -204,7 +236,7 @@ class UsageRecord(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
-class DeviceApp(Base):
+class DeviceApp(FamilyScoped, Base):
     """Vom Agenten gemeldete installierte Anwendung (systemweiter .desktop-Eintrag)."""
     __tablename__ = "device_app"
     __table_args__ = (UniqueConstraint("device_id", "key"),)
@@ -225,7 +257,7 @@ class DeviceApp(Base):
         return self.name_en if current() == "en" and self.name_en else self.name
 
 
-class ChildGameApp(Base):
+class ChildGameApp(FamilyScoped, Base):
     """App, die für ein Kind als Spiel zählt (Spiele-Limit, Spielzeit), zusätzlich zur Kategorie „Spiele“
     (ergänzt 2026-11-06: Windows-Verknüpfungen haben keine Kategorien, z. B. Roblox, Minecraft-Launcher)."""
     __tablename__ = "child_game_app"
@@ -236,7 +268,7 @@ class ChildGameApp(Base):
     key: Mapped[str] = mapped_column(String(512))
 
 
-class ChildProgram(Base):
+class ChildProgram(FamilyScoped, Base):
     """Von den Eltern freigegebenes Programm (App-Schlüssel) für ein Kind."""
     __tablename__ = "child_program"
     __table_args__ = (UniqueConstraint("child_id", "key"),)
@@ -246,7 +278,7 @@ class ChildProgram(Base):
     key: Mapped[str] = mapped_column(String(512))
 
 
-class ChildCustomProgram(Base):
+class ChildCustomProgram(FamilyScoped, Base):
     """Von den Eltern selbst eingetragenes Programm (nicht im Katalog der Geräte, z. B. /usr/bin/git)."""
     __tablename__ = "child_custom_program"
     __table_args__ = (UniqueConstraint("child_id", "key"),)
@@ -257,7 +289,7 @@ class ChildCustomProgram(Base):
     name: Mapped[str] = mapped_column(String(64))
 
 
-class BlockedEvent(Base):
+class BlockedEvent(FamilyScoped, Base):
     """Protokoll gesperrter Aktionen (kein Verlauf erlaubter Aktionen)."""
     __tablename__ = "blocked_event"
 
@@ -276,7 +308,7 @@ class BlockedEvent(Base):
     detail_arg: Mapped[str] = mapped_column(String(255), default="")
 
 
-class GameSession(Base):
+class GameSession(FamilyScoped, Base):
     """Spielsitzung (aus den „spielt gerade“-Meldungen des Agenten, etwa minütlich)."""
     __tablename__ = "game_session"
 
@@ -290,7 +322,7 @@ class GameSession(Base):
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, index=True)
 
 
-class ChildTempGrant(Base):
+class ChildTempGrant(FamilyScoped, Base):
     """Freigabe „nur heute“ (Programm oder Website) aus einer Freigabe-Anfrage."""
     __tablename__ = "child_temp_grant"
 
@@ -301,7 +333,7 @@ class ChildTempGrant(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
-class ChildWebBundle(Base):
+class ChildWebBundle(FamilyScoped, Base):
     """Gewähltes Dienst-Bundle (Whitelist-Modus)."""
     __tablename__ = "child_web_bundle"
     __table_args__ = (UniqueConstraint("child_id", "bundle"),)
@@ -311,7 +343,7 @@ class ChildWebBundle(Base):
     bundle: Mapped[str] = mapped_column(String(64))
 
 
-class ChildDomain(Base):
+class ChildDomain(FamilyScoped, Base):
     """Eigene Domain-Regel: allow (Whitelist/Ausnahme) bzw. deny (Blacklist)."""
     __tablename__ = "child_domain"
     __table_args__ = (UniqueConstraint("child_id", "domain", "action"),)
@@ -322,7 +354,7 @@ class ChildDomain(Base):
     action: Mapped[str] = mapped_column(String(8))  # allow | deny
 
 
-class ChildBlocklist(Base):
+class ChildBlocklist(FamilyScoped, Base):
     """Gewählte Sperrliste (Blacklist-Modus)."""
     __tablename__ = "child_blocklist"
     __table_args__ = (UniqueConstraint("child_id", "list_id"),)
@@ -343,7 +375,7 @@ class BlocklistState(Base):
     error: Mapped[str] = mapped_column(String(255), default="")
 
 
-class AppUsage(Base):
+class AppUsage(FamilyScoped, Base):
     """Programmzeit (geöffnet während gezählter Bildschirmzeit) je (Gerät, User, Tag, App)."""
     __tablename__ = "app_usage"
     __table_args__ = (UniqueConstraint("device_id", "username", "day", "key"),)
@@ -359,7 +391,7 @@ class AppUsage(Base):
     name: Mapped[str] = mapped_column(String(255), default="")  # Spiele: Name vom Agenten
 
 
-class PairingCode(Base):
+class PairingCode(FamilyScoped, Base):
     """Einmaliger Kopplungscode (8 Zeichen, 10 min gültig). Gespeichert wird nur der Hash."""
     __tablename__ = "pairing_code"
 
@@ -373,7 +405,7 @@ class PairingCode(Base):
     device_id: Mapped[int | None] = mapped_column(ForeignKey("device.id", ondelete="SET NULL"), nullable=True)
 
 
-class Message(Base):
+class Message(FamilyScoped, Base):
     """Chat-Eintrag. ``kind='extension_request'`` = Verlängerungsanfrage."""
     __tablename__ = "message"
 
@@ -404,3 +436,7 @@ class Message(Base):
     access_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
     access_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     access_scope: Mapped[str | None] = mapped_column(String(16), nullable=True)  # permanent | today
+
+
+# Mandantentrennung registrieren (Ereignisse auf Session), sobald die Modelle vollständig sind
+from . import tenant  # noqa: E402,F401

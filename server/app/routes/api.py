@@ -15,7 +15,8 @@ from sqlalchemy.orm import Session
 from kidctl_common import protocol as p
 
 from .. import access, chat, integrity, nowplaying, policy, programs, stats, webfilter
-from ..db import SessionLocal, get_db
+from ..db import get_platform_db
+from ..tenant import family_session, platform_session, set_family
 from ..models import BlocklistState, Device, DeviceUser, PairingCode, utcnow
 from ..security import (
     client_ip, is_rate_limited, new_token, normalize_pairing_code, record_failure, token_hash,
@@ -30,7 +31,7 @@ LAST_SEEN_INTERVAL = timedelta(seconds=60)
 
 
 @router.get(p.LISTS_PATH + "/{list_id}")
-def blocklist_download(list_id: str, request: Request, db: Session = Depends(get_db)):
+def blocklist_download(list_id: str, request: Request, db: Session = Depends(get_platform_db)):
     """Sperrliste für Agenten (Geräte-Token). ETag = SHA-256, damit unveränderte Listen nicht
     erneut übertragen werden."""
     auth = request.headers.get("authorization", "")
@@ -50,7 +51,7 @@ def blocklist_download(list_id: str, request: Request, db: Session = Depends(get
 
 
 @router.post(p.ENROLL_PATH, response_model=p.EnrollResponse)
-def enroll(req: p.EnrollRequest, request: Request, db: Session = Depends(get_db)):
+def enroll(req: p.EnrollRequest, request: Request, db: Session = Depends(get_platform_db)):
     ip = client_ip(request)
     if is_rate_limited(db, "enroll", ip):
         raise HTTPException(429, "Zu viele Fehlversuche")
@@ -61,6 +62,7 @@ def enroll(req: p.EnrollRequest, request: Request, db: Session = Depends(get_db)
         record_failure(db, "enroll", ip)
         raise HTTPException(400, "Kopplungscode ungültig oder abgelaufen")
 
+    set_family(db, pc.family_id)   # das Gerät gehört zur Familie, die den Code erzeugt hat
     token = new_token()
     device = Device(name=pc.device_name, hostname=req.hostname, token_hash=token_hash(token))
     db.add(device)
@@ -88,9 +90,10 @@ async def _send(ws: WebSocket, msg) -> None:
 
 @router.websocket(p.WS_PATH)
 async def agent_ws(ws: WebSocket):
-    with SessionLocal() as db:
+    with platform_session() as db:   # Token-Prüfung über alle Familien, danach nur noch im Kontext des Geräts
         device = _device_for_token(db, ws)
         device_id = device.id if device else None
+        family_id = device.family_id if device else None
 
     # Erst annehmen, dann ggf. mit Anwendungs-Code schließen – so kann der Agent
     # "Token ungültig/widerrufen" von Netzwerkfehlern unterscheiden.
@@ -108,7 +111,7 @@ async def agent_ws(ws: WebSocket):
         return
 
     supported = hello.protocol_version in p.SUPPORTED_VERSIONS
-    with SessionLocal() as db:
+    with family_session(family_id) as db:
         dev = db.get(Device, device_id)
         dev.agent_version = hello.agent_version
         dev.hostname = hello.hostname
@@ -133,7 +136,7 @@ async def agent_ws(ws: WebSocket):
         server_time=datetime.now(timezone.utc).isoformat()))
     log.info("Gerät %s verbunden (Agent %s, Protokoll %s)",
              device_id, hello.agent_version, hello.protocol_version)
-    with SessionLocal() as db:
+    with family_session(family_id) as db:
         await policy.send_policy(db, device_id)
 
     last_seen = utcnow()
@@ -147,7 +150,7 @@ async def agent_ws(ws: WebSocket):
                 await _close(ws, p.CLOSE_PROTOCOL_ERROR)
                 return
 
-            with SessionLocal() as db:
+            with family_session(family_id) as db:
                 dev = db.get(Device, device_id)
                 if dev is None or dev.revoked_at is not None:
                     await _close(ws, p.CLOSE_REVOKED)
@@ -192,7 +195,7 @@ async def agent_ws(ws: WebSocket):
         pass
     finally:
         await manager.unregister(device_id, ws)
-        with SessionLocal() as db:
+        with family_session(family_id) as db:
             dev = db.get(Device, device_id)
             if dev is not None:
                 dev.last_seen_at = utcnow()

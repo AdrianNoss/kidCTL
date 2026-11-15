@@ -7,7 +7,7 @@ import pytest
 
 from app import mail
 from app.config import Settings
-from app.db import SessionLocal
+from conftest import SessionLocal, add_parent
 from app.models import Parent, ParentSession
 from app.security import hash_password, new_totp_secret
 from conftest import PASSWORD, csrf_from, login
@@ -91,9 +91,7 @@ def test_profile_names_and_email(client, parent, outbox):
     assert client.post("/profile", data={**data, "current_password": "falsch"}).status_code == 400
     assert client.post("/profile", data={**data, "email": "keine-mail", "current_password": PASSWORD}).status_code == 400
     assert client.post("/profile", data={**data, "username": "a b", "current_password": PASSWORD}).status_code == 400
-    with SessionLocal() as db:
-        db.add(Parent(username="papa", password_hash=hash_password(PASSWORD), totp_secret=new_totp_secret()))
-        db.commit()
+    add_parent(username="papa")
     assert client.post("/profile", data={**data, "username": "Papa", "current_password": PASSWORD}).status_code == 400
     r = client.post("/profile", data={**data, "current_password": PASSWORD}, follow_redirects=False)
     assert r.status_code == 303
@@ -135,12 +133,8 @@ def test_profile_totp_change(client, parent, outbox):
 
 
 def test_other_parent_resets_lost_authenticator(client, parent, outbox):
-    with SessionLocal() as db:
-        papa = Parent(username="papa", password_hash=hash_password(PASSWORD), totp_secret=new_totp_secret(),
-                      email="papa@example.org")
-        db.add(papa)
-        db.commit()
-        papa_id, old_secret = papa.id, papa.totp_secret
+    papa = add_parent(username="papa", email="papa@example.org")
+    papa_id, old_secret = papa.id, papa.totp_secret
     assert login(client, parent).status_code == 303
     tok = csrf_from(client.get("/parents").text)
     assert client.post(f"/parents/{parent.id}/totp-reset", data={"csrf_token": tok}).status_code == 400  # eigener

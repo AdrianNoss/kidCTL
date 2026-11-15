@@ -151,6 +151,18 @@ def import_sqlite(path: str, target: Engine, apply: bool = False) -> dict[str, i
                 data[t.name] = [dict(r) for r in conn.execute(select(*cols)).mappings()]
         src.dispose()
 
+    # Alte Installationen kennen keine Familien: alles gehört Familie 1, der älteste Account wird Inhaber
+    from .models import ROLE_OWNER, ROLE_PARENT, FamilyScoped
+    if not data["family"] and (data["parent"] or data["child"] or data["device"]):
+        data["family"] = [{"id": 1, "name": "", "created_at": None}]
+        owner = min((r["id"] for r in data["parent"]), default=None)
+        data["membership"] = [{"family_id": 1, "parent_id": r["id"], "role": ROLE_OWNER if r["id"] == owner else ROLE_PARENT}
+                              for r in data["parent"]]
+        for t in Base.metadata.sorted_tables:
+            if "family_id" in t.c and t.name != "membership":
+                for row in data[t.name]:
+                    row["family_id"] = 1
+    data["family"] = [{k: v for k, v in r.items() if v is not None} for r in data["family"]]
     counts = {name: len(rows) for name, rows in data.items()}
     problems = [msg for t in Base.metadata.sorted_tables for msg in _too_long(t, data[t.name])]
     if problems:

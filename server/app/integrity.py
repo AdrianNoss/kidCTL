@@ -31,7 +31,7 @@ def alarm(dev: Device, new: list[p.IntegrityCheck]) -> None:
     checks = [c.model_dump() for c in new]
     push.notify_parents(lambda: _("Integritätsfehler auf „{name}“").format(name=dev.name),
                         lambda: ", ".join(label_for(c) for c in checks)[:250],
-                        url=f"/devices/{dev.id}", tag=f"integrity-{dev.id}")
+                        url=f"/devices/{dev.id}", tag=f"integrity-{dev.id}", family_id=dev.family_id)
 
 
 _LIBRARIES = {"steam": N_("Steam-Bibliothek"), "heroic": N_("Heroic-Spieleordner")}

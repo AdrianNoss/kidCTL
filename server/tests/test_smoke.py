@@ -7,7 +7,7 @@ from starlette.websockets import WebSocketDisconnect
 
 from kidctl_common import protocol as p
 
-from app.db import SessionLocal
+from conftest import SessionLocal
 from app.models import Child, Device, Parent
 
 from conftest import PASSWORD, csrf_from, login, recv

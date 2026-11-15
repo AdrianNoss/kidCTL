@@ -14,7 +14,7 @@ from sqlalchemy import delete, select
 
 from . import i18n
 from .config import settings
-from .db import SessionLocal
+from .tenant import family_ids, family_session, platform_session
 from .models import Parent, PushSubscription
 
 log = logging.getLogger("kidctl.push")
@@ -49,12 +49,12 @@ def _text(value) -> str:
     return value() if callable(value) else value
 
 
-def send_to_parents_sync(title, body, url: str = "/", tag: str | None = None,
-                         parent_id: int | None = None) -> int:
-    """Sendet an alle Abos (oder nur die eines Elternteils). Gibt die Anzahl Zustellungen zurück."""
+def send_to_parents_sync(title, body, url: str = "/", tag: str | None = None, parent_id: int | None = None, *,
+                         family_id: int) -> int:
+    """Sendet an alle Abos der Eltern von ``family_id`` (oder nur eines Elternteils). Anzahl Zustellungen."""
     if not settings.push_enabled:
         return 0
-    with SessionLocal() as db:
+    with family_session(family_id) as db:
         q = select(PushSubscription)
         if parent_id is not None:
             q = q.where(PushSubscription.parent_id == parent_id)
@@ -75,11 +75,22 @@ def send_to_parents_sync(title, body, url: str = "/", tag: str | None = None,
 _tasks: set[asyncio.Task] = set()
 
 
-def notify_parents(title, body, url: str = "/", tag: str | None = None) -> None:
+def notify_parents(title, body, url: str = "/", tag: str | None = None, *, family_id: int) -> None:
     """Nicht blockierend aus async-Code: Versand läuft im Thread-Pool."""
     if not settings.push_enabled:
         return
     task = asyncio.get_running_loop().create_task(
-        asyncio.to_thread(send_to_parents_sync, title, body, url, tag))
+        asyncio.to_thread(send_to_parents_sync, title, body, url, tag, family_id=family_id))
     _tasks.add(task)
     task.add_done_callback(_tasks.discard)
+
+
+def send_platform_alert(title, body, url: str = "/", tag: str | None = None) -> int:
+    """Hinweis zum Betrieb (z. B. Backup). Einzelbetrieb: an die Eltern der einzigen Familie; mit mehreren
+    Familien nur ins Log, bis der Verwaltungsbereich des Betreibers Hinweise bekommt (Etappe 4)."""
+    with platform_session() as db:
+        families = family_ids(db)
+    if len(families) == 1:
+        return send_to_parents_sync(title, body, url, tag, family_id=families[0])
+    log.warning("Betriebshinweis (nicht an Familien gesendet): %s – %s", _text(title), _text(body))
+    return 0

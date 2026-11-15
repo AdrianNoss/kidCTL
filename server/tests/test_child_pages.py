@@ -5,7 +5,7 @@ from __future__ import annotations
 from kidctl_common import protocol as p
 
 from app import programs
-from app.db import SessionLocal
+from conftest import SessionLocal
 from test_policy import _policy, _setup, device
 from test_programs import _sync
 

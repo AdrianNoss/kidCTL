@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from kidctl_common import protocol as p
 
 from app import blocklog, nowplaying
-from app.db import SessionLocal
+from conftest import SessionLocal
 from app.models import GameSession
 from test_policy import _policy, _setup, device
 from test_programs import _sync

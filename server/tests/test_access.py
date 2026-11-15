@@ -8,7 +8,7 @@ from sqlalchemy import select
 from kidctl_common import protocol as p
 
 from app import access
-from app.db import SessionLocal
+from conftest import SessionLocal
 from app.models import ChildCustomProgram, ChildDomain, ChildProgram, ChildTempGrant, DeviceApp, Message
 from app.schedule import today_local
 

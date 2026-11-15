@@ -11,7 +11,8 @@ from fastapi.staticfiles import StaticFiles
 
 from . import alarms, backup, blocklog, i18n, policy, report, versions, webfilter
 from .config import settings
-from .db import SessionLocal, init_db
+from .db import init_db
+from .tenant import platform_session
 from .middleware import SecurityMiddleware
 from .routes import admin, api, auth, pwa
 from .security import LoginRequired
@@ -49,7 +50,7 @@ async def _prune_log_forever() -> None:
     while True:
         try:
             def run() -> int:
-                with SessionLocal() as db:
+                with platform_session() as db:   # Aufräumen über alle Familien
                     return blocklog.prune(db)
             if n := await asyncio.to_thread(run):
                 log.info("Protokoll: %d Einträge älter als %d Tage gelöscht", n, blocklog.RETENTION_DAYS)

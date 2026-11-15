@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 from app import blocklog
 from app.config import settings
-from app.db import SessionLocal
+from conftest import SessionLocal
 from app.models import BlockedEvent
 from test_policy import _setup
 

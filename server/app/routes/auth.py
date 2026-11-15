@@ -9,7 +9,8 @@ from .. import accounts
 from .. import i18n
 from ..i18n import N_, _
 from ..config import settings
-from ..db import SessionLocal, get_db
+from ..db import get_db, get_platform_db
+from ..tenant import platform_session
 from ..models import Parent, ParentSession, utcnow
 from ..security import (
     SESSION_COOKIE, client_ip, create_session, csrf_protect, csrf_protect_anon, dummy_verify,
@@ -22,7 +23,7 @@ router = APIRouter()
 
 
 @router.get("/login")
-def login_form(request: Request, db: Session = Depends(get_db)):
+def login_form(request: Request, db: Session = Depends(get_platform_db)):
     if get_session(db, request):
         return RedirectResponse("/", status_code=303)
     notice = LOGIN_NOTICES.get(request.query_params.get("msg", ""))
@@ -52,7 +53,7 @@ def login(
     username: str = Form(...),
     password: str = Form(...),
     totp: str = Form(...),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_platform_db),
 ):
     ip = client_ip(request)
     username = username.strip()
@@ -102,13 +103,13 @@ def reset_form(request: Request):
 
 
 def _send_reset(ident: str) -> None:
-    with SessionLocal() as db:
+    with platform_session() as db:
         accounts.start_password_reset(db, ident)
 
 
 @router.post("/reset", dependencies=[Depends(csrf_protect_anon)])
 def reset_request(request: Request, background: BackgroundTasks, ident: str = Form(""),
-                  db: Session = Depends(get_db)):
+                  db: Session = Depends(get_platform_db)):
     ip = client_ip(request)
     if is_rate_limited(db, "reset", ip):
         return render_anon(request, "reset_request.html", status_code=429, mail_enabled=settings.mail_enabled,
@@ -121,7 +122,7 @@ def reset_request(request: Request, background: BackgroundTasks, ident: str = Fo
 
 
 @router.get("/reset/{token}")
-def reset_password_form(token: str, request: Request, db: Session = Depends(get_db)):
+def reset_password_form(token: str, request: Request, db: Session = Depends(get_platform_db)):
     if accounts.get_token(db, token, "password_reset") is None:
         return render_anon(request, "reset_password.html", status_code=404, invalid=True)
     return render_anon(request, "reset_password.html", token=token)
@@ -129,7 +130,7 @@ def reset_password_form(token: str, request: Request, db: Session = Depends(get_
 
 @router.post("/reset/{token}", dependencies=[Depends(csrf_protect_anon)])
 def reset_password(token: str, request: Request, password: str = Form(""), repeat: str = Form(""),
-                   db: Session = Depends(get_db)):
+                   db: Session = Depends(get_platform_db)):
     t = accounts.get_token(db, token, "password_reset")
     if t is None:
         return render_anon(request, "reset_password.html", status_code=404, invalid=True)
@@ -147,7 +148,7 @@ def reset_password(token: str, request: Request, password: str = Form(""), repea
 # ---------- Authenticator einrichten (Link von einem anderen Elternteil) ----------
 
 @router.get("/totp-setup/{token}")
-def totp_setup_form(token: str, request: Request, db: Session = Depends(get_db)):
+def totp_setup_form(token: str, request: Request, db: Session = Depends(get_platform_db)):
     t = accounts.get_token(db, token, "totp_setup")
     if t is None:
         return render_anon(request, "totp_setup.html", status_code=404, invalid=True)
@@ -163,7 +164,7 @@ def _totp_setup_page(request, db, t, token, status_code=200, error=None):
 
 @router.post("/totp-setup/{token}", dependencies=[Depends(csrf_protect_anon)])
 def totp_setup(token: str, request: Request, password: str = Form(""), totp: str = Form(""),
-               db: Session = Depends(get_db)):
+               db: Session = Depends(get_platform_db)):
     t = accounts.get_token(db, token, "totp_setup")
     if t is None:
         return render_anon(request, "totp_setup.html", status_code=404, invalid=True)

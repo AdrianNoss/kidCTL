@@ -172,10 +172,16 @@ class LoginRequired(Exception):
 
 
 def require_session(request: Request, db: Session = Depends(get_db)) -> ParentSession:
-    sess = get_session(db, request)
-    if sess is None:
+    """Angemeldete Eltern: Sitzung prüfen und die Datenbanksitzung auf ihre Familie festlegen."""
+    from .tenant import family_of_parent, platform, set_family
+    with platform(db):
+        sess = get_session(db, request)
+        family_id = family_of_parent(db, sess.parent_id) if sess else None
+    if sess is None or family_id is None:
         raise LoginRequired()
+    set_family(db, family_id)
     request.state.session = sess
+    request.state.family_id = family_id
     return sess
 
 

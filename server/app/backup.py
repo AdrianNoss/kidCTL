@@ -148,7 +148,7 @@ def check_alarm(now: datetime) -> bool:
     if info is None and not state.get("error") and now.hour < BACKUP_HOUR + 1:
         return False   # frische Installation: erst den ersten Versuch abwarten
     error = state.get("error", "")
-    push.send_to_parents_sync(lambda: _("Datenbank-Backup fehlgeschlagen") if error else _("Datenbank-Backup veraltet"),
+    push.send_platform_alert(lambda: _("Datenbank-Backup fehlgeschlagen") if error else _("Datenbank-Backup veraltet"),
                               lambda: error[:250] if error else _("Seit über 2 Tagen kein neues Backup."),
                               url="/settings#backup", tag="backup")
     state["alerted"] = True

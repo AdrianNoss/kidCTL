@@ -1762,3 +1762,6 @@ msgstr "Appearance: dark"
 
 msgid "Hauptnavigation"
 msgstr "Main navigation"
+
+msgid "Inhaber"
+msgstr "Owner"

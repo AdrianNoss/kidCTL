@@ -20,9 +20,10 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from sqlalchemy import select
 
-from .db import SessionLocal, init_db
+from .db import init_db
+from .tenant import platform_session
 from .accounts import end_sessions, password_error
-from .models import Parent
+from .models import ROLE_OWNER, ROLE_PARENT, Family, Membership, Parent
 from .security import hash_password, new_totp_secret, totp_uri
 
 
@@ -39,7 +40,7 @@ def create_parent(args: argparse.Namespace) -> int:
         print("Passwort muss 12 Zeichen bis 72 Bytes lang sein.", file=sys.stderr)
         return 1
 
-    with SessionLocal() as db:
+    with platform_session() as db:
         if db.scalar(select(Parent).where(Parent.username == username)):
             print(f"Benutzer {username!r} existiert bereits.", file=sys.stderr)
             return 1
@@ -50,6 +51,16 @@ def create_parent(args: argparse.Namespace) -> int:
         parent = Parent(username=username, password_hash=hash_password(password),
                         totp_secret=new_totp_secret())
         db.add(parent)
+        db.flush()
+        # Einzelbetrieb: erste Familie anlegen bzw. die vorhandene nutzen; der erste Account wird Inhaber
+        family_id = db.scalar(select(Family.id).order_by(Family.id).limit(1))
+        if family_id is None:
+            family = Family()
+            db.add(family)
+            db.flush()
+            family_id = family.id
+        owner = db.scalar(select(Membership).where(Membership.family_id == family_id, Membership.role == ROLE_OWNER))
+        db.add(Membership(family_id=family_id, parent_id=parent.id, role=ROLE_PARENT if owner else ROLE_OWNER))
         db.commit()
         uri = totp_uri(parent)
 
@@ -80,7 +91,7 @@ def reset_password(args: argparse.Namespace) -> int:
     if err := password_error(password, getpass.getpass("Wiederholen: ")):
         print(err, file=sys.stderr)
         return 1
-    with SessionLocal() as db:
+    with platform_session() as db:
         if (parent := _parent(db, args.username)) is None:
             return 1
         parent.password_hash = hash_password(password)
@@ -93,7 +104,7 @@ def reset_password(args: argparse.Namespace) -> int:
 def reset_totp(args: argparse.Namespace) -> int:
     """Notfall: neuen Authenticator erzeugen (alter wird ungültig, alle Sitzungen enden)."""
     init_db()
-    with SessionLocal() as db:
+    with platform_session() as db:
         if (parent := _parent(db, args.username)) is None:
             return 1
         parent.totp_secret, parent.totp_last_step = new_totp_secret(), 0

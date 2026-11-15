@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from kidctl_common import protocol as p
 
-from app.db import SessionLocal
+from conftest import SessionLocal
 from app.models import BlockedEvent, DeviceApp
 
 from conftest import recv

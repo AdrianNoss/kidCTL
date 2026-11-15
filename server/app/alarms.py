@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from . import push, versions
 from .i18n import _
-from .db import SessionLocal
+from .tenant import platform_session
 from .models import Device, utcnow
 from .ws import manager
 
@@ -63,7 +63,7 @@ def due_update_alarms(db: Session, release: versions.Release | None = None,
 
 
 def check_once() -> int:
-    with SessionLocal() as db:
+    with platform_session() as db:   # über alle Familien; Push geht an die Familie des Geräts
         for dev, version in due_update_alarms(db):
             log.warning("Agent auf Gerät %s (%s) veraltet: %s, verfügbar %s", dev.id, dev.name, dev.agent_version,
                         version)
@@ -76,14 +76,14 @@ def check_once() -> int:
                 (lambda old=dev.agent_version, new=version: _(
                     "Agent {old} ist veraltet, verfügbar ist {new}. Auf dem Rechner das Systemupdate ausführen (pacman -Syu bzw. apt upgrade).").format(
                     old=old, new=new)),
-                url=f"/devices/{dev.id}", tag=f"update-{dev.id}")
+                url=f"/devices/{dev.id}", tag=f"update-{dev.id}", family_id=dev.family_id)
         db.commit()
         due = due_offline_alarms(db)
         for dev, hours in due:
             log.warning("Offline-Alarm: Gerät %s (%s) seit %d h ohne Meldung", dev.id, dev.name, hours)
             push.send_to_parents_sync(lambda name=dev.name: _("Gerät „{name}“ offline").format(name=name),
                                       lambda h=hours: _("Seit {hours} Stunden keine Meldung.").format(hours=h),
-                                      url=f"/devices/{dev.id}", tag=f"offline-{dev.id}")
+                                      url=f"/devices/{dev.id}", tag=f"offline-{dev.id}", family_id=dev.family_id)
     return len(due)
 
 

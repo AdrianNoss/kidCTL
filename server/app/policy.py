@@ -20,7 +20,7 @@ from .chat import device_ids_for_child
 from .programs import game_keys, policy_programs
 from .webfilter import web_policy
 from .config import settings
-from .db import SessionLocal
+from .tenant import platform_session
 from .models import Child, ChildBlocklist, DayException, Device, DeviceUser, UsageRecord, utcnow
 from .ws import manager
 
@@ -170,7 +170,7 @@ def day_status(db: Session, child: Child, day: date | None = None) -> DayStatus:
 
 async def push_for_lists(list_ids: set[str]) -> None:
     """Neue Sperrlisten-Versionen: Policies der Geräte betroffener Kinder neu senden."""
-    with SessionLocal() as db:
+    with platform_session() as db:   # Listen gelten über alle Familien; Policies je Gerät
         children = set(db.scalars(select(ChildBlocklist.child_id).where(ChildBlocklist.list_id.in_(list_ids))))
         devices = set()
         for cid in children:

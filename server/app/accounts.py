@@ -48,7 +48,9 @@ def password_error(pw: str, repeat: str | None = None) -> str | None:
 def username_error(db: Session, username: str, parent_id: int | None = None) -> str | None:
     if not USERNAME_RE.match(username):
         return _("Benutzername: 1–64 Zeichen, nur Buchstaben, Ziffern und . _ @ -")
-    other = db.scalar(select(Parent).where(func.lower(Parent.username) == username.lower()))
+    from .tenant import platform
+    with platform(db):   # Benutzernamen sind über alle Familien eindeutig
+        other = db.scalar(select(Parent).where(func.lower(Parent.username) == username.lower()))
     if other is not None and other.id != parent_id:
         return _("Benutzername existiert bereits.")
     return None

@@ -5,7 +5,7 @@ from sqlalchemy import select
 from kidctl_common import protocol as p
 
 from app import integrity
-from app.db import SessionLocal
+from conftest import SessionLocal
 from app.models import Device
 
 from test_policy import _policy, _setup, device
@@ -21,7 +21,7 @@ def report(**states):
 def test_alarm_only_for_new_failures(client, parent, monkeypatch):
     alarms = []
     monkeypatch.setattr(integrity.push, "notify_parents",
-                        lambda title, body, url="/", tag=None: alarms.append((title(), body(), url)))
+                        lambda title, body, url="/", tag=None, **kw: alarms.append((title(), body(), url)))
     cid, tok = _setup(client, parent)
     with device(client, tok, "Laptop Max", map_to=cid) as (ws, dev_id):
         _policy(ws)

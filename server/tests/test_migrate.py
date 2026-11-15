@@ -116,9 +116,10 @@ def _old_sqlite(tmp_path):
 def test_import_sqlite_dry_run_apply_and_sequences(client, tmp_path):
     from sqlalchemy import select
 
-    from app.db import SessionLocal, engine
-    from app.models import Device, Parent
-    from conftest import reset_database
+    from app.db import engine
+    from conftest import SessionLocal
+    from app.models import ROLE_OWNER, Device, Family, Membership, Parent
+    from conftest import platform_db, reset_database
 
     path = _old_sqlite(tmp_path)
     reset_database()
@@ -131,6 +132,9 @@ def test_import_sqlite_dry_run_apply_and_sequences(client, tmp_path):
         dev = db.get(Device, 3)
         assert dev.name == "PC" and dev.platform == "linux"       # fehlende Spalte mit Standardwert ergänzt
         assert db.get(Parent, 7).username == "mama"
+        assert db.get(Family, 1) is not None
+        assert db.scalar(select(Membership.role).where(Membership.parent_id == 7)) == ROLE_OWNER
+    with platform_db() as db:
         db.add(Parent(username="papa", password_hash="h", totp_secret="T"))
         db.commit()
         assert db.scalar(select(Parent.id).where(Parent.username == "papa")) == 8   # ID-Folge nachgezogen

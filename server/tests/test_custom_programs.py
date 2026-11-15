@@ -40,7 +40,7 @@ def test_custom_program_add_policy_and_delete(client, parent):
         assert r.status_code == 400 and "absoluten Programmpfad" in r.text and 'class="dialog" open>' in r.text
 
         # Entfernen
-        from app.db import SessionLocal
+        from conftest import SessionLocal
         from app.models import ChildCustomProgram
         with SessionLocal() as db:
             custom_id = db.query(ChildCustomProgram).one().id

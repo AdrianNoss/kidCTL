@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from app import alarms, backup, versions
 from app.config import Settings
-from app.db import SessionLocal
+from conftest import SessionLocal
 from app.models import Device, Parent, utcnow
 from conftest import csrf_from, login
 
@@ -39,7 +39,7 @@ def test_due_and_alarm(client, parent, monkeypatch):
     _clear()
     sent = []
     monkeypatch.setattr(backup.push, "send_to_parents_sync",
-                        lambda title, body, url="/", tag=None, parent_id=None: sent.append((title(), body())))
+                        lambda title, body, url="/", tag=None, parent_id=None, **kw: sent.append((title(), body())))
     now = datetime.now(TZ).replace(hour=2, minute=0)
     assert not backup.due(now) and backup.due(now.replace(hour=3))
     backup.check_alarm(now.replace(hour=3, minute=30))
@@ -55,7 +55,7 @@ def test_due_and_alarm(client, parent, monkeypatch):
     assert backup.last_error() == "" and not backup.due(now.replace(hour=6))
     os.utime(info.path, ((now - timedelta(days=3)).timestamp(),) * 2)
     monkeypatch.setattr(backup.push, "send_to_parents_sync",
-                        lambda title, body, url="/", tag=None, parent_id=None: sent.append((title(), body())))
+                        lambda title, body, url="/", tag=None, parent_id=None, **kw: sent.append((title(), body())))
     assert backup.check_alarm(now) is True and sent[-1][0] == "Datenbank-Backup veraltet"
     assert backup.check_alarm(now) is False
 

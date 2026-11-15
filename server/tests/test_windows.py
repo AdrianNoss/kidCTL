@@ -11,7 +11,7 @@ from kidctl_common import protocol as p
 
 from app import alarms, versions
 from app import sqlite_import as migrate
-from app.db import SessionLocal
+from conftest import SessionLocal
 from app.models import Device, utcnow
 from conftest import login, recv
 from test_smoke import _pair

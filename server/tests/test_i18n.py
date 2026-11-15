@@ -6,7 +6,7 @@ from pathlib import Path
 from kidctl_common import i18n as core
 from kidctl_common.i18n_check import extract_jinja, extract_python, problems, unused
 
-from app.db import SessionLocal
+from conftest import SessionLocal
 from app.models import Parent
 from conftest import csrf_from, login
 
@@ -140,5 +140,5 @@ def test_mail_and_push_in_parent_language(client, parent, monkeypatch):
     with SessionLocal() as db:
         db.add(PushSubscription(parent_id=parent.id, endpoint="https://push.example/1", p256dh="x", auth="y"))
         db.commit()
-    assert push.send_to_parents_sync(lambda: core.gettext("Gerät „{name}“ offline").format(name="PC"), "x") == 1
+    assert push.send_to_parents_sync(lambda: core.gettext("Gerät „{name}“ offline").format(name="PC"), "x", family_id=1) == 1
     assert '"title": "Device \\u201cPC\\u201d offline"' in payloads[0]

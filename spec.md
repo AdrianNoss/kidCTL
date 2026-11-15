@@ -1931,5 +1931,18 @@ News-Bereich hat, den Claude Code pflegt.
   Server-Tests gegen PostgreSQL (Testdatenbank `kidctl_test`, Leeren per `TRUNCATE`), neuer Test für die Übernahme (Probelauf,
   fehlende Spalten, ID-Folgen, Abbruch bei vollem Ziel), Backup-Tests mit `pg_dump`/`pg_restore` im Container, `alembic check`
   ohne Abweichung; Übernahme der Entwicklungsdaten (317 Zeilen) und WebUI darauf geprüft; Server-Image mit `pg_dump` gebaut.
+- 2026-11-15: Etappe 1.2/1.3 Multi-Tenant: Familien und Pflicht-Filterung. Neue Tabellen `family` und `membership` (Rolle owner/parent,
+  vorerst eine Mitgliedschaft je Account), `family_id` an 19 familienbezogenen Tabellen (Mixin `FamilyScoped`), Kindernamen nur je
+  Familie eindeutig; Alembic-Revision `0002` ordnet bestehende Daten Familie 1 zu, ältester Account wird Inhaber (ebenso
+  `import-sqlite`). `app/tenant.py`: jede Datenbanksitzung hat den Kontext Familie oder Plattform; Abfragen auf Familientabellen,
+  Accounts, Sitzungen, Tokens und Push-Abos werden automatisch gefiltert (`with_loader_criteria`), ohne Kontext gibt es `TenantError`;
+  neue Zeilen bekommen die Familie aus dem Kontext, Schreiben in eine fremde Familie wird abgelehnt. Kontext: angemeldete Eltern nach
+  der Sitzungsprüfung, Geräte nach der Token-Prüfung (Kopplungscode bestimmt die Familie des neuen Geräts), anonyme Abläufe und
+  Hintergrundaufgaben ausdrücklich als Plattform bzw. je Familie. Push geht nur noch an die Eltern der betroffenen Familie (vorher an alle
+  Abos); Betriebshinweise (Backup) nur bei genau einer Familie an Eltern, sonst ins Log. Eltern anlegen/entfernen nur durch den Inhaber,
+  Inhaber nicht löschbar, Rolle auf der Elternseite sichtbar. Getestet: alle Server-Tests im Familienkontext; neu `test_tenant.py`:
+  Listen, alle Seiten (404) und alle Aktionen (404, nichts geändert) mit IDs einer zweiten Familie, Zuordnung zu fremdem Kind,
+  Kopplungscode einer anderen Familie, Abfrage ohne Kontext, Schreiben in fremde Familie, gleicher Kindername in zwei Familien,
+  Push-Trennung, Rollen; Migration 0002 auf den Entwicklungsdaten mit `alembic check` ohne Abweichung.
 - 2026-11-16: Anforderungen Projekthomepage per /grill-me abgestimmt (Abschnitt „Projekthomepage“). Noch keine
   Umsetzung. README (DE/EN) nennt Windows 10/11 noch nicht als Plattform – wird mit Etappe 1 nachgezogen.

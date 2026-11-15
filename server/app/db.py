@@ -29,6 +29,17 @@ def get_db() -> Iterator[Session]:
         db.close()
 
 
+def get_platform_db() -> Iterator[Session]:
+    """Für Abläufe ohne Familienkontext (Anmeldung, Passwort zurücksetzen, Geräte-Kopplung): keine Filterung."""
+    from .tenant import set_platform
+    db = SessionLocal()
+    set_platform(db)
+    try:
+        yield db
+    finally:
+        db.close()
+
+
 def alembic_config(url: str | None = None):
     from alembic.config import Config
 

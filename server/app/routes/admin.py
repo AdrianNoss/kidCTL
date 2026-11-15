@@ -16,8 +16,8 @@ from kidctl_common.protocol import CLOSE_REVOKED, MAX_BODY, SUPPORTED_VERSIONS
 from ..config import settings
 from ..db import get_db
 from ..models import (
-    BlocklistState, Child, DayException, Device, Message, PairingCode, Parent, ParentSession, WeekdayRule,
-    utcnow,
+    ROLE_OWNER, ROLE_PARENT, BlocklistState, Child, DayException, Device, Membership, Message, PairingCode, Parent, ParentSession,
+    WeekdayRule, utcnow,
 )
 from .. import access, accounts, blocklog, chat, i18n, nowplaying, policy, programs, report, stats, webfilter
 from .. import lock as lk
@@ -490,23 +490,41 @@ async def device_revoke(device_id: int, db: Session = Depends(get_db)):
 
 @router.get("/parents")
 def parents_list(request: Request, db: Session = Depends(get_db)):
-    parents = db.scalars(select(Parent).order_by(Parent.username)).all()
-    return render(request, "parents.html", parents=parents)
+    return render(request, "parents.html", **_parents_ctx(db, request.state.session))
 
 
-@router.post("/parents", dependencies=[Depends(csrf_protect)])
+def _parents_ctx(db: Session, sess: ParentSession) -> dict:
+    roles = {pid: role for pid, role in db.execute(select(Membership.parent_id, Membership.role))}
+    return {"parents": db.scalars(select(Parent).order_by(Parent.username)).all(), "roles": roles,
+            "is_owner": roles.get(sess.parent_id) == ROLE_OWNER}
+
+
+def _role(db: Session, parent_id: int) -> str | None:
+    return db.scalar(select(Membership.role).where(Membership.parent_id == parent_id))
+
+
+def _require_owner(db: Session, sess: ParentSession) -> None:
+    """Eltern einladen/entfernen, Abo, Export und Löschen der Familie: nur der Inhaber."""
+    if _role(db, sess.parent_id) != ROLE_OWNER:
+        raise HTTPException(403, "Nur der Inhaber der Familie")
+
+
+@router.post("/parents")
 def parent_create(request: Request, username: str = Form(...), display_name: str = Form(""),
-                  email: str = Form(""), password: str = Form(...), db: Session = Depends(get_db)):
+                  email: str = Form(""), password: str = Form(...), sess: ParentSession = Depends(csrf_protect),
+                  db: Session = Depends(get_db)):
+    _require_owner(db, sess)
     username, email = username.strip(), email.strip()
     error = (accounts.username_error(db, username) or accounts.email_error(email)
              or accounts.password_error(password))
     if error:
-        parents = db.scalars(select(Parent).order_by(Parent.username)).all()
-        return render(request, "parents.html", status_code=400, parents=parents, error=error)
+        return render(request, "parents.html", status_code=400, error=error, **_parents_ctx(db, sess))
 
     parent = Parent(username=username, display_name=display_name.strip()[:128], email=email[:255],
                     password_hash=hash_password(password), totp_secret=new_totp_secret())
     db.add(parent)
+    db.flush()
+    db.add(Membership(parent_id=parent.id, role=ROLE_PARENT))   # Familie aus dem Kontext
     db.commit()
     uri = totp_uri(parent)
     return render(request, "parent_created.html", parent=parent, uri=uri, qr_svg=totp_qr_svg(uri),
@@ -537,11 +555,13 @@ def parent_totp_reset(parent_id: int, request: Request, sess: ParentSession = De
 @router.post("/parents/{parent_id}/delete")
 def parent_delete(parent_id: int, sess: ParentSession = Depends(csrf_protect),
                   db: Session = Depends(get_db)):
+    target = _get_or_404(db, Parent, parent_id)   # zuerst: fremde Accounts gibt es hier nicht
+    _require_owner(db, sess)
     if parent_id == sess.parent_id:
         raise HTTPException(400, "Eigenen Account nicht löschbar")
-    if db.scalar(select(func.count()).select_from(Parent)) <= 1:
-        raise HTTPException(400, "Letzter Account nicht löschbar")
-    db.delete(_get_or_404(db, Parent, parent_id))
+    if _role(db, parent_id) == ROLE_OWNER:
+        raise HTTPException(400, "Inhaber nicht löschbar")
+    db.delete(target)
     db.commit()
     return _redirect("/parents")
 

@@ -111,7 +111,7 @@ def notify_parents_new(db: Session, msg: Message) -> None:
                     else _("Anfrage für das Programm {name}"))
             return text.format(name=m.access_name)
         return m.body
-    push.notify_parents(title, body, url=f"/children/{msg.child_id}/chat#m{msg.id}",
+    push.notify_parents(title, body, family_id=msg.family_id, url=f"/children/{msg.child_id}/chat#m{msg.id}",
                         tag=f"chat-{msg.child_id}")
 
 

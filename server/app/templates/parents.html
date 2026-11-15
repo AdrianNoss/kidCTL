@@ -7,6 +7,7 @@
     {% for p in parents %}
     <tr>
       <td><strong>{{ p.username }}</strong>{% if p.display_name %} <span class="muted">{{ p.display_name }}</span>{% endif %}
+        {% if roles.get(p.id) == "owner" %} <span class="pill play">{{ _("Inhaber") }}</span>{% endif %}
         <br><small class="muted">{{ p.email or _("keine E-Mail hinterlegt") }}</small></td>
       <td class="right"><div class="actions">
         {% if p.id != current_parent.id %}
@@ -15,17 +16,20 @@
           <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
           <button type="submit" class="secondary small">{{ _("Authenticator zurücksetzen") }}</button>
         </form>
+        {% if is_owner and roles.get(p.id) != "owner" %}
         <form method="post" action="/parents/{{ p.id }}/delete" class="inline"
               data-confirm="{{ _('Account löschen?') }}">
           <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
           <button type="submit" class="danger small">{{ _("Löschen") }}</button>
         </form>
+        {% endif %}
         {% else %}<span class="pill ok">{{ _("angemeldet") }}</span> <a href="/profile" class="btn secondary small">{{ _("Profil") }}</a>{% endif %}
       </div></td>
     </tr>
     {% endfor %}
   </table>
 </section>
+{% if is_owner %}
 <form method="post" action="/parents" class="card">
   <h2>{{ _("Account hinzufügen") }}</h2>
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
@@ -35,4 +39,5 @@
   <label>{{ _("Passwort (min. 12 Zeichen)") }} <input type="password" name="password" minlength="12" required autocomplete="new-password"></label>
   <button type="submit">{{ _("Anlegen") }}</button>
 </form>
+{% endif %}
 {% endblock %}

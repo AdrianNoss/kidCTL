@@ -24,7 +24,7 @@ from . import i18n, mail, policy, stats
 from . import schedule as sch
 from .i18n import N_, _
 from .config import settings
-from .db import SessionLocal
+from .tenant import family_of, family_of_parent, family_session, platform_session
 from .models import BlockedEvent, Child, DayException, GameSession, Message, Parent
 from .web import templates
 
@@ -199,8 +199,13 @@ def _short(minutes: int) -> str:
     return f"{h}:{m:02d}"
 
 
-def render(db: Session, parent: Parent, p: Period) -> tuple[str, str, str]:
-    """(Betreff, Text, HTML) in der Sprache des Empfängers."""
+def render(db: Session | None, parent: Parent, p: Period) -> tuple[str, str, str]:
+    """(Betreff, Text, HTML) in der Sprache des Empfängers – immer im Kontext der Familie des Empfängers."""
+    if db is None or family_of(db) is None:
+        with platform_session() as pdb:
+            family_id = family_of_parent(pdb, parent.id)
+        with family_session(family_id) as fdb:
+            return render(fdb, parent, p)
     with i18n.use(i18n.parent_language(parent)):
         reports = build(db, p)
         subject = f"KidCTL: {p.title} {p.label}"
@@ -211,7 +216,7 @@ def render(db: Session, parent: Parent, p: Period) -> tuple[str, str, str]:
     return subject, text, html
 
 
-def send(db: Session, parent: Parent, p: Period) -> bool:
+def send(db: Session | None, parent: Parent, p: Period) -> bool:
     subject, text, html = render(db, parent, p)
     return mail.send(parent.email, subject, text, html)
 
@@ -229,7 +234,7 @@ def send_due(db: Session, now_local: datetime | None = None) -> int:
         p = due(parent, now_local)
         if p is None or _time.monotonic() - _failed.get(parent.id, -RETRY_SECONDS) < RETRY_SECONDS:
             continue
-        if send(db, parent, p):
+        if send(None, parent, p):
             parent.report_sent = p.key
             db.commit()
             _failed.pop(parent.id, None)
@@ -244,7 +249,7 @@ async def run_forever() -> None:
         if settings.mail_enabled:
             try:
                 def run() -> int:
-                    with SessionLocal() as db:
+                    with platform_session() as db:   # Empfänger über alle Familien, Inhalt je Familie
                         return send_due(db)
                 if n := await asyncio.to_thread(run):
                     log.info("Nutzungsbericht: %d Mail(s) gesendet", n)

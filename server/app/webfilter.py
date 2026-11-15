@@ -18,6 +18,7 @@ from kidctl_common import protocol as p
 
 from .config import settings
 from .db import SessionLocal
+from .tenant import platform_session
 from .i18n import N_
 from .models import BlocklistState, Child, ChildBlocklist, ChildDomain, ChildWebBundle, utcnow
 
@@ -202,7 +203,7 @@ async def fetch_list(list_id: str, client: httpx.AsyncClient) -> bool:
 
 async def refresh_lists(only: set[str] | None = None) -> set[str]:
     """Benutzte (oder angegebene) Listen aktualisieren. Gibt geänderte IDs zurück."""
-    with SessionLocal() as db:
+    with platform_session() as db:   # benutzte Listen über alle Familien
         ids = (only if only is not None else lists_in_use(db)) & BLOCKLISTS.keys()
     changed = set()
     async with httpx.AsyncClient(headers={"User-Agent": "kidctl"}) as client:

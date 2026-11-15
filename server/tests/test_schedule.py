@@ -4,7 +4,7 @@ from datetime import time, timedelta
 
 from sqlalchemy import select
 
-from app.db import SessionLocal
+from conftest import SessionLocal
 from app.models import Child, DayException
 from app.schedule import today_local
 

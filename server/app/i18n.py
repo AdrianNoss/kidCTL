@@ -17,7 +17,6 @@ from kidctl_common.i18n import (  # noqa: F401 – Weitergabe an die Module des 
 )
 from kidctl_common.i18n import current, install
 
-from .db import SessionLocal
 from .models import Parent, ParentSession
 from .security import SESSION_COOKIE, token_hash
 
@@ -38,7 +37,8 @@ def request_language(request: Request) -> str:
     """Sprache dieser Anfrage (mit Blick auf die Profileinstellung eines angemeldeten Elternteils)."""
     token = request.cookies.get(SESSION_COOKIE)
     if token:
-        with SessionLocal() as db:
+        from .tenant import platform_session
+        with platform_session() as db:   # vor der Anmeldeprüfung: Sitzung über ihr Token
             lang = db.scalar(select(Parent.language).join(ParentSession, ParentSession.parent_id == Parent.id)
                              .where(ParentSession.token_hash == token_hash(token)))
         if lang in LANGS:

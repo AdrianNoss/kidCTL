@@ -7,7 +7,7 @@ import pytest
 
 from app import mail, report
 from app.config import Settings
-from app.db import SessionLocal
+from conftest import SessionLocal
 from app.models import (
     AppUsage, BlockedEvent, Child, DayException, Device, GameSession, Message, Parent, UsageRecord, WeekdayRule,
 )
