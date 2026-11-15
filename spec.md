@@ -1731,3 +1731,6 @@ Abweichungen stehen hier und unter „Restlücken“.
   Mailprogramme mit `prefers-color-scheme` (z. B. Apple Mail) über `k-…`-Klassen und `<style>`; alle anderen zeigen weiter das helle Schema
   aus Inline-Styles. Getestet: Server-Tests (u. a. `test_report.py`, `test_i18n.py`); Vorschau des Wochenberichts aus den
   Entwicklungsdaten auf 375 px in Hell und Dunkel.
+- 2026-11-15: Fix Statistik: Der Tooltip der Tagesbalken wurde halb abgeschnitten, weil das seitlich scrollbare Diagramm (`overflow-x:auto`)
+  auch oben abschneidet. Diagramm mit 2,6em Platz über den Balken, Tooltips der ersten und letzten drei Balken bündig nach innen.
+  Getestet: im Browser (1280 px) Maus über mittlerem, erstem und letztem Balken – Tooltip jeweils vollständig sichtbar.
