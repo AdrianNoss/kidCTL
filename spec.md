@@ -859,6 +859,107 @@ Abweichungen stehen hier und unter „Restlücken“.
 - Protokollversion im WebSocket-Handshake; Server unterstützt mindestens eine ältere Version.
   Zu alter Agent → Hinweis im WebUI, Durchsetzung läuft mit letzter Policy weiter.
 
+## Multi-Tenant / SaaS (entschieden 2026-11-15 per /grill-me, noch nicht umgesetzt)
+
+Ziel: KidCTL als gehosteter Dienst (Software as a Service) für viele Familien, später mit Abrechnung.
+Self-Hosting bleibt erhalten.
+
+### Grundmodell
+- **Eine Codebasis, zwei Betriebsarten:** `KIDCTL_MODE=single|saas`. Selbst gehostet = genau ein Mandant;
+  Registrierung, Verwaltungsbereich, Abo und Support-Freigabe sind dort aus.
+- **Mandant = Familie (Haushalt)**, Zielgruppe Privatkunden. Organisationen (Schulen, Einrichtungen) als Ebene über
+  Familien sind bewusst nicht vorgesehen, aber nachrüstbar.
+- **Mitgliedschaft:** Tabelle Account ↔ Familie ↔ Rolle. Vorerst gehört ein Account genau einer Familie
+  (Mehrfach-Mitgliedschaft später ohne Datenmigration möglich).
+- **Rollen:** *Inhaber* (genau einer: Abo, Familie löschen, Export/Import, Support-Zugang freigeben, Eltern
+  einladen/entfernen, Inhaberschaft übertragen) und *Elternteil* (Kinder, Geräte, Regeln, Chat, Berichte). Neue Eltern
+  per Einladungslink an ihre E-Mail; Passwort und Authenticator legen sie selbst fest. Rolle „nur lesen“ später.
+- **Anmeldung mit E-Mail-Adresse** (systemweit eindeutig, Pflicht, mit Bestätigungslink); TOTP bleibt Pflicht.
+  Benutzernamen entfallen, Anzeigename bleibt. Bestehende Accounts ohne E-Mail melden sich bis zum Nachtragen mit dem
+  Benutzernamen an; im Einzelbetrieb bleibt die E-Mail optional. Kinder- und Gerätenamen sind nur innerhalb der Familie
+  eindeutig.
+
+### Datentrennung und Verschlüsselung
+- **Eine Datenbank, `family_id` an allen familienbezogenen Tabellen.** Zentrale Pflicht-Filterung über den
+  Sitzungs- bzw. Aufgabenkontext (eine Abfrage ohne Familienkontext schlägt fehl), dazu Tests, die über jede Route
+  gezielt fremde Daten abzurufen versuchen. Row-Level Security in PostgreSQL als mögliche dritte Schicht.
+- **Feldverschlüsselung je Familie:** eigener Datenschlüssel je Familie, gesichert mit einem Hauptschlüssel aus der
+  Umgebung (später Schlüsseldienst). AES-GCM mit `family_id`, Tabelle und Spalte als zusätzlichen Prüfdaten.
+  Entschlüsselt wird immer mit dem Schlüssel des aktuellen Kontexts, nie mit dem der gelesenen Zeile – ein Programmfehler,
+  der eine fremde Zeile lädt, führt zu „Entschlüsselung fehlgeschlagen“ statt zur Anzeige fremder Daten.
+  Verschlüsselt: Chat, Namen von Kindern/Geräten/Benutzern, Programm- und Website-Namen in Protokoll und Statistik,
+  E-Mail-Adressen der Eltern. Unverschlüsselt: Zahlen, Zeitstempel, IDs; öffentliche Sperrlisten.
+  Folgen: Suche, Filter und Sortierung über verschlüsselte Felder laufen im Server über die Daten einer Familie.
+- **Grenzen:** Der Server muss ohne angemeldete Eltern arbeiten (Policy, Alarme, Berichte, Push) und hält daher alle
+  Schlüssel – kein Schutz gegen den Betreiber oder einen übernommenen Server, wohl aber gegen versehentliche
+  Fremdanzeige und gestohlene Datenbank-Kopien.
+- **Löschen per Schlüssel:** Familie löschen = Datenschlüssel verwerfen; damit sind ihre Daten auch in alten Backups
+  unlesbar. Der Hauptschlüssel ist das kritischste Geheimnis und wird getrennt gesichert.
+
+### Datenbank und Größe
+- **PostgreSQL in beiden Betriebsarten**, Migrationen mit Alembic statt `app/migrate.py` (CLAUDE.md wird angepasst;
+  Migrationen weiterhin gegen eine Alt-Schema-Datenbank testen). Einmaliges Übernahmeskript SQLite → PostgreSQL.
+- Ausgelegt auf etwa 5.000 Familien / 20.000 Geräte mit einem Server-Prozess; mehrere Prozesse (gemeinsamer
+  Nachrichtenkanal für WebSockets) erst bei Bedarf.
+- Plattformweit einmal: Server-Adresse, Paket-Repo, GPG- und Windows-Update-Schlüssel, VAPID, Mailversand,
+  Sperrlisten. Der Kopplungscode ordnet ein Gerät seiner Familie zu.
+
+### Registrierung und Betreiber
+- **Registrierung:** `REGISTRATION=open|invite|closed`, SaaS-Start auf `invite`, Einzelbetrieb `closed` (erster
+  Account per CLI wie heute). Ablauf: E-Mail → Bestätigung → Passwort + Authenticator → Familie → erstes Kind →
+  Kopplungscode. Begrenzung je IP; CAPTCHA erst bei Spam und ohne Dienste von Dritten.
+- **Verwaltungsbereich des Betreibers:** eigene Rolle, getrennt von Familien-Accounts, TOTP-Pflicht, optional
+  IP-Beschränkung. Nur Metadaten (Familien, Anzahl Kinder/Geräte, Agent-Versionen, letzte Aktivität, Abo-Status,
+  Fehler) – ohne Familienkontext und damit ohne Entschlüsselung.
+- **Support-Freigabe:** Eltern (Inhaber) geben Einsicht zeitlich begrenzt (z. B. 24 h) frei, jederzeit widerrufbar;
+  jeder Zugriff wird protokolliert und ist für die Familie sichtbar.
+
+### Abrechnung (Vorbereitung)
+- Später pauschal pro Familie mit Stufen nach Kinderzahl, Testphase (z. B. 30 Tage), Jahresabo mit Rabatt.
+- Jetzt nur: Tarif, Abo-Status, Testphase je Familie, Grenzprüfung beim Anlegen eines Kindes, neutrales Feld für
+  Zahlungsanbieter und Kundennummer. Anbindung später über einen Webhook „aktiv/gekündigt/überfällig“; Anbieter offen
+  (voraussichtlich Merchant of Record, nach Klärung mit dem Steuerberater). Im Einzelbetrieb keine Grenzen.
+- **Ablauf von Testphase oder Abo:** 14 Tage Schonfrist mit Hinweisen (Mail, Push, Banner). Danach Ruhemodus: WebUI
+  nur Abo, Export, Löschung; Agenten erhalten den Zustand „pausiert“ und heben alle Einschränkungen auf, Tray zeigt
+  „KidCTL pausiert“; nach erneuter Zahlung gelten die Regeln sofort wieder. Nach weiteren 90 Tagen ohne Abo Löschung
+  der Familie mit Vorwarnung. Kinder werden nie ohne ansprechbare Eltern eingeschränkt.
+
+### Missbrauch
+- Nur offener Betrieb: Tray-Symbol auf jedem verwalteten Account sichtbar, Hinweis beim ersten Anmelden nach der
+  Zuordnung („Dieser Account wird von KidCTL verwaltet. Erfasst wird: …“), unter Windows Eintrag als installiertes
+  Programm – nicht abschaltbar; kein verdeckter Modus. Nutzungsbedingungen: nur für eigene bzw. sorgeberechtigte
+  minderjährige Kinder; Verstoß → Sperre der Familie. AGB, Datenschutzerklärung und Impressum anwaltlich prüfen.
+
+### Datenschutz, Backup, Aufbewahrung
+- **Export/Import je Familie** (Inhaber): ZIP mit JSON/CSV in versioniertem Format, entschlüsselt mit dem
+  Familienschlüssel; Import auch für den Wechsel zwischen Self-Hosting und SaaS. Der heutige Backup-Download der ganzen
+  Datenbank für Eltern entfällt im SaaS (enthält alle Familien) und bleibt nur im Einzelbetrieb.
+- **Plattform-Backup:** `pg_dump` täglich, verschlüsselt, an einen zweiten Ort; Hauptschlüssel getrennt gesichert;
+  Status im Verwaltungsbereich ohne Download. Wiederherstellung einzelner Familien per Betreiber-Skript.
+- **Aufbewahrung (fest, per Umgebung änderbar):** Protokoll gesperrter Aktionen 90 Tage; Spielsitzungen und
+  Programmnutzung 90 Tage; Bildschirmzeit je Tag 13 Monate; Chat 12 Monate (Eltern können ihn jederzeit leeren);
+  Anmeldeversuche 30 Tage; abgelaufene Sitzungen/Tokens 30 Tage; Protokoll der Support-Zugriffe 2 Jahre; gelöschte
+  Familien sofort (Schlüssel verworfen).
+
+### Hosting und Umzug
+- Start auf srv02 unter `kids.nossco.de`; die bestehende Installation wird erster Mandant (bisherige Eltern:
+  der erste Account Inhaber, weitere Elternteile). Erste Familien: Freunde und Verwandte. Umzug auf eigenen Server und
+  Produkt-Domain später.
+- **Umzugsnachricht im Protokoll** (jetzt einbauen): Der Server teilt dem Agenten eine neue Adresse mit; der Agent
+  übernimmt sie nur, wenn er sich dort mit seinem Geräte-Token erfolgreich anmeldet, sonst bleibt er beim alten.
+
+### Etappen
+1. **Fundament:** PostgreSQL + Alembic, Familie/Mitgliedschaft/Rollen, `family_id` mit Pflicht-Filterung und
+   Isolationstests, E-Mail-Anmeldung, `KIDCTL_MODE`, Übernahme der bestehenden Installation.
+2. **Verschlüsselung und Fristen:** Datenschlüssel je Familie, Feldverschlüsselung, Löschen per Schlüssel, Suche und
+   Sortierung im Server, Aufbewahrungsfristen, „Chat leeren“.
+3. **Agent-Version:** Umzugsnachricht, Zustand „pausiert“, Hinweis beim ersten Anmelden.
+4. **SaaS-Betrieb:** Registrierung (`invite`), Einladungen, Verwaltungsbereich mit Support-Freigabe, Export/Import,
+   Backup-Seite aufgeteilt.
+5. **Abo-Vorbereitung:** Tarife, Testphase, Grenzen, Schonfrist/Ruhemodus/Löschung, Feld für Zahlungsanbieter.
+
+Regel: Keine fremde Familie auf dem Server vor Abschluss von Etappe 4.
+
 ## Bewusst nicht umgesetzt / Restlücken
 
 - Kein Schutz gegen physischen Zugriff (nur Härtungs-Anleitung `docs/haertung.md`).
@@ -1734,3 +1835,8 @@ Abweichungen stehen hier und unter „Restlücken“.
 - 2026-11-15: Fix Statistik: Der Tooltip der Tagesbalken wurde halb abgeschnitten, weil das seitlich scrollbare Diagramm (`overflow-x:auto`)
   auch oben abschneidet. Diagramm mit 2,6em Platz über den Balken, Tooltips der ersten und letzten drei Balken bündig nach innen.
   Getestet: im Browser (1280 px) Maus über mittlerem, erstem und letztem Balken – Tooltip jeweils vollständig sichtbar.
+- 2026-11-15: Anforderungen Multi-Tenant/SaaS per /grill-me abgestimmt (20 Entscheidungen, Abschnitt „Multi-Tenant / SaaS“):
+  Mandant = Familie, eine Codebasis mit `KIDCTL_MODE=single|saas`, PostgreSQL + Alembic, `family_id` mit Pflicht-Filterung,
+  Feldverschlüsselung je Familie mit Kontextbindung, E-Mail-Anmeldung, Rollen Inhaber/Elternteil, Registrierung mit Schalter,
+  Betreiber nur mit Metadaten und Support-Freigabe, Abo-Vorbereitung mit Schonfrist und Ruhemodus, offener Betrieb gegen Missbrauch,
+  Export/Import, feste Aufbewahrungsfristen, Umzugsnachricht im Protokoll, fünf Etappen. Noch nicht umgesetzt.
