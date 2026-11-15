@@ -30,13 +30,16 @@ CLAUDE.md
 
 ## Server
 
-- Python 3, FastAPI, SQLAlchemy, SQLite, Jinja2 (serverseitig gerendert), wenig JavaScript.
+- Python 3, FastAPI, SQLAlchemy, PostgreSQL (psycopg 3), Jinja2 (serverseitig gerendert), wenig JavaScript.
 - `bcrypt==4.0.1` pinnen (passlib[bcrypt] ist mit bcrypt 5.x inkompatibel:
   „password cannot be longer than 72 bytes“).
-- Schemaänderungen über `app/migrate.py` (aufgerufen in `init_db()` vor `create_all()`):
-  Spalte/Tabelle per `PRAGMA table_info` prüfen → `ALTER TABLE` → nach dem Commit verifizieren →
-  bei Fehlschlag hart mit `RuntimeError` abbrechen. Diagnose-Logs mit DB-Pfad und Spalten
-  vor/nach der Migration. `create_all()` allein ändert bestehende Tabellen nicht.
+- Schemaänderungen nur über Alembic-Migrationen in `server/app/alembic/versions/` (`init_db()` führt beim Start
+  `upgrade head` aus): Modell ändern → Revision erzeugen (`command.revision(alembic_config(), autogenerate=True)`),
+  prüfen und von Hand nachbessern (Standardwerte bestehender Zeilen, Datenmigration) → `alembic check` muss „keine
+  Änderungen“ melden. Kein `create_all()` im Betrieb. SQLite nur noch als Quelle der einmaligen Übernahme
+  (`app/sqlite_import.py`, `cli import-sqlite`).
+- Tests laufen gegen PostgreSQL (Entwicklung: Podman-Container `kidctl-pg` auf 127.0.0.1:55432, Datenbank
+  `kidctl_test`, wird bei Bedarf angelegt; `dev/devserver.sh` startet den Container).
 - Sicherheit (öffentlich erreichbar): TOTP-Pflicht, Login-Rate-Limiting, CSRF-Schutz auf allen
   Formularen/Aktionen, 30-Tage-Sessions, `SECRET_KEY` nur aus `.env` (kein Default in Produktion).
 - Konfiguration ausschließlich über Env-Variablen in `.env`.

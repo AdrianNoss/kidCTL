@@ -1,6 +1,7 @@
-"""Datenbank-Backup: täglich ab ``BACKUP_HOUR`` Uhr ein konsistenter SQLite-Schnappschuss (Backup-API, auch
-während der Server schreibt), geprüft (``integrity_check``), gzip-komprimiert nach ``<data>/backups``. Die
-neuesten ``KEEP`` bleiben. Alarm per Push, wenn das letzte Backup älter als ``ALERT_AFTER`` ist oder ein
+"""Datenbank-Backup: täglich ab ``BACKUP_HOUR`` Uhr ein konsistenter PostgreSQL-Dump (``pg_dump``, komprimiertes
+Custom-Format, auch während der Server schreibt), geprüft (``pg_restore --list``), nach ``<data>/backups``. Die
+neuesten ``KEEP`` bleiben. Wiederherstellen: ``pg_restore --clean --if-exists -d <db> <datei>``.
+Programme per ``KIDCTL_PG_DUMP`` / ``KIDCTL_PG_RESTORE`` änderbar (Tests: Aufruf im Datenbank-Container). Alarm per Push, wenn das letzte Backup älter als ``ALERT_AFTER`` ist oder ein
 Versuch fehlschlägt – einmal je Störung, erneut erst nach einem erfolgreichen Backup.
 
 Das externe Backup des Hosts sichert ``./data`` und damit auch diese Schnappschüsse.
@@ -9,12 +10,11 @@ Das externe Backup des Hosts sichert ``./data`` und damit auch diese Schnappsch�
 from __future__ import annotations
 
 import asyncio
-import gzip
 import json
 import logging
 import os
-import shutil
-import sqlite3
+import shlex
+import subprocess
 import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -23,7 +23,6 @@ from zoneinfo import ZoneInfo
 
 from . import push
 from .config import settings
-from .db import engine
 from .i18n import _
 
 log = logging.getLogger("kidctl.backup")
@@ -32,7 +31,8 @@ BACKUP_HOUR = 3
 KEEP = 14
 ALERT_AFTER = timedelta(days=2)
 CHECK_SECONDS = 600
-PREFIX, SUFFIX = "kidctl-", ".db.gz"
+PREFIX, SUFFIX = "kidctl-", ".dump"
+DUMP_TIMEOUT = 900
 STATE_FILE = "state.json"
 
 
@@ -90,22 +90,15 @@ def run(now: datetime | None = None) -> BackupInfo:
     target = backup_dir() / f"{PREFIX}{now:%Y-%m-%d-%H%M}{SUFFIX}"
     try:
         with tempfile.TemporaryDirectory(dir=backup_dir()) as tmp:
-            copy = Path(tmp) / "snapshot.db"
-            src = sqlite3.connect(engine.url.database)
-            dst = sqlite3.connect(copy)
-            try:
-                src.backup(dst)
-                ok = dst.execute("PRAGMA integrity_check").fetchone()[0]
-            finally:
-                dst.close()
-                src.close()
-            if ok != "ok":
-                raise RuntimeError(f"integrity_check: {ok}")
-            packed = Path(tmp) / "snapshot.db.gz"
-            with copy.open("rb") as fin, gzip.open(packed, "wb", compresslevel=6) as fout:
-                shutil.copyfileobj(fin, fout)
-            os.chmod(packed, 0o600)
-            os.replace(packed, target)
+            dump = Path(tmp) / "snapshot.dump"
+            with dump.open("wb") as out:
+                _run(_tool("KIDCTL_PG_DUMP", "pg_dump") + ["--format=custom", "--no-owner", "--no-privileges"], stdout=out)
+            with dump.open("rb") as inp:
+                listing = _run(_tool("KIDCTL_PG_RESTORE", "pg_restore") + ["--list"], stdin=inp).stdout
+            if b"TABLE DATA public parent" not in listing:
+                raise RuntimeError("Dump unvollständig (Tabelle parent fehlt)")
+            os.chmod(dump, 0o600)
+            os.replace(dump, target)
     except Exception as e:
         state = _state()
         state["error"] = f"{now:%Y-%m-%d %H:%M}: {e}"
@@ -117,6 +110,24 @@ def run(now: datetime | None = None) -> BackupInfo:
     info = latest()
     log.info("Backup erstellt: %s (%d Bytes)", info.path.name, info.size)
     return info
+
+
+def _tool(env: str, default: str) -> list[str]:
+    return shlex.split(os.environ.get(env, default))
+
+
+def _run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
+    """pg_dump/pg_restore mit den Verbindungsdaten als Umgebung (Passwort nie in der Befehlszeile)."""
+    from sqlalchemy.engine import make_url
+
+    url = make_url(settings.database_url)
+    env = {**os.environ, "PGHOST": url.host or "", "PGPORT": str(url.port or 5432), "PGUSER": url.username or "",
+           "PGPASSWORD": url.password or "", "PGDATABASE": url.database or ""}
+    kw.setdefault("stdout", subprocess.PIPE)
+    res = subprocess.run(cmd, env=env, stderr=subprocess.PIPE, timeout=DUMP_TIMEOUT, **kw)
+    if res.returncode:
+        raise RuntimeError(f"{cmd[0]} fehlgeschlagen: {res.stderr.decode(errors='replace').strip()[:300]}")
+    return res
 
 
 def due(now: datetime) -> bool:

@@ -9,7 +9,8 @@ from sqlalchemy import create_engine, select, text
 
 from kidctl_common import protocol as p
 
-from app import alarms, migrate, versions
+from app import alarms, versions
+from app import sqlite_import as migrate
 from app.db import SessionLocal
 from app.models import Device, utcnow
 from conftest import login, recv
@@ -21,7 +22,7 @@ def test_device_platform_migrated_on_old_schema(tmp_path):
     with eng.begin() as c:
         c.execute(text("CREATE TABLE device (id INTEGER PRIMARY KEY, name VARCHAR(128))"))
         c.execute(text("INSERT INTO device (name) VALUES ('alt')"))
-    migrate.run_migrations(eng)
+    migrate.upgrade_legacy(eng)
     with eng.connect() as c:
         assert c.execute(text("SELECT platform FROM device")).scalar() == "linux"
 

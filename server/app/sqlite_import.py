@@ -1,10 +1,12 @@
-"""Leichtgewichtige Schema-Migrationen.
+"""Übernahme einer alten SQLite-Datenbank (bis 0.32.x) nach PostgreSQL.
 
-Muster: Spalte/Tabelle per ``PRAGMA table_info`` prüfen -> ``ALTER TABLE`` -> nach dem Commit
-verifizieren -> bei Fehlschlag ``RuntimeError``. Wird in ``init_db()`` vor ``create_all()``
-aufgerufen; ``create_all()`` legt nur fehlende Tabellen an, ändert bestehende aber nicht.
+    python -m app.cli import-sqlite /data/kidctl.db           Probelauf: zeigt, was übernommen würde
+    python -m app.cli import-sqlite /data/kidctl.db --apply   übernimmt (Ziel muss leer sein)
 
-Neue Spalten in ``COLUMN_MIGRATIONS`` eintragen: (Tabelle, Spalte, DDL-Typ inkl. Default).
+Gearbeitet wird auf einer Kopie der SQLite-Datei: Zuerst zieht ``upgrade_legacy`` sie mit den früheren
+Spaltenmigrationen auf den letzten SQLite-Stand (Muster: Spalte per ``PRAGMA table_info`` prüfen -> ``ALTER TABLE`` ->
+verifizieren -> bei Fehlschlag ``RuntimeError``), fehlende Tabellen legt ``create_all`` an. Dann werden alle Tabellen
+in Abhängigkeitsreihenfolge in einer Transaktion kopiert und die ID-Folgen in PostgreSQL nachgezogen.
 """
 
 from __future__ import annotations
@@ -13,7 +15,7 @@ import logging
 
 from sqlalchemy import Engine, text
 
-log = logging.getLogger("kidctl.migrate")
+log = logging.getLogger("kidctl.sqlite_import")
 
 # (Tabelle, Spalte, DDL), z. B. ("device", "alert_hours", "INTEGER NOT NULL DEFAULT 48")
 COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
@@ -95,8 +97,78 @@ def ensure_column(engine: Engine, table: str, column: str, ddl: str) -> bool:
     return True
 
 
-def run_migrations(engine: Engine) -> None:
+def upgrade_legacy(engine: Engine) -> None:
+    """Alte SQLite-Datenbank auf den letzten SQLite-Spaltenstand bringen."""
     if engine.url.get_backend_name() != "sqlite":
-        raise RuntimeError("migrate.py unterstützt nur SQLite")
+        raise RuntimeError("upgrade_legacy unterstützt nur SQLite")
     for table, column, ddl in COLUMN_MIGRATIONS:
         ensure_column(engine, table, column, ddl)
+
+
+def _too_long(table, rows) -> list[str]:
+    """Werte, die in PostgreSQL nicht in die VARCHAR-Länge passen (SQLite prüft Längen nicht)."""
+    out = []
+    for col in table.columns:
+        length = getattr(col.type, "length", None)
+        if not length:
+            continue
+        for row in rows:
+            value = row[col.name]
+            if isinstance(value, str) and len(value) > length:
+                out.append(f"{table.name}.{col.name} (id {row.get('id', '?')}): {len(value)} > {length} Zeichen")
+    return out
+
+
+def import_sqlite(path: str, target: Engine, apply: bool = False) -> dict[str, int]:
+    """Alle Tabellen aus ``path`` nach ``target`` kopieren. Gibt die Zeilenzahl je Tabelle zurück."""
+    import shutil
+    import tempfile
+    from pathlib import Path
+
+    from alembic import command
+    from sqlalchemy import create_engine, func, insert, select
+
+    from . import models  # noqa: F401  (Tabellen registrieren)
+    from .db import Base, alembic_config
+
+    src_file = Path(path)
+    if not src_file.is_file():
+        raise RuntimeError(f"SQLite-Datei nicht gefunden: {src_file}")
+    with tempfile.TemporaryDirectory() as tmp:
+        copy = Path(tmp) / "kidctl.db"
+        shutil.copy2(src_file, copy)
+        for suffix in ("-wal", "-shm"):   # offene WAL-Dateien mitnehmen, sonst fehlen die letzten Schreibvorgänge
+            if Path(f"{src_file}{suffix}").exists():
+                shutil.copy2(f"{src_file}{suffix}", f"{copy}{suffix}")
+        src = create_engine(f"sqlite:///{copy}")
+        upgrade_legacy(src)
+        Base.metadata.create_all(src)
+        with src.connect() as conn:
+            data = {}
+            for t in Base.metadata.sorted_tables:   # nur vorhandene Spalten lesen, fehlende bekommen den Standardwert
+                present = set(_columns(conn, t.name))
+                cols = [c for c in t.columns if c.name in present]
+                data[t.name] = [dict(r) for r in conn.execute(select(*cols)).mappings()]
+        src.dispose()
+
+    counts = {name: len(rows) for name, rows in data.items()}
+    problems = [msg for t in Base.metadata.sorted_tables for msg in _too_long(t, data[t.name])]
+    if problems:
+        raise RuntimeError("Werte zu lang für PostgreSQL:\n  " + "\n  ".join(problems))
+    if not apply:
+        return counts
+
+    command.upgrade(alembic_config(target.url.render_as_string(hide_password=False)), "head")
+    with target.begin() as conn:
+        filled = [t.name for t in Base.metadata.sorted_tables if conn.execute(select(func.count()).select_from(t)).scalar()]
+        if filled:
+            raise RuntimeError(f"Ziel-Datenbank ist nicht leer ({', '.join(filled)}) – Übernahme abgebrochen.")
+        for table in Base.metadata.sorted_tables:
+            rows = data[table.name]
+            for i in range(0, len(rows), 1000):
+                conn.execute(insert(table), rows[i:i + 1000])
+            if "id" in table.c and rows:
+                conn.execute(text(f"SELECT setval(pg_get_serial_sequence('\"{table.name}\"', 'id'), "
+                                  f"(SELECT max(id) FROM \"{table.name}\"))"))
+    log.warning("SQLite-Übernahme aus %s: %d Zeilen in %d Tabellen", src_file, sum(counts.values()), len(counts))
+    return counts

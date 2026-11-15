@@ -114,12 +114,12 @@ def test_group_for_mapping():
 
 def test_device_app_categories_migrated(tmp_path):
     from sqlalchemy import create_engine, text
-    from app import migrate
+    from app import sqlite_import as migrate
     eng = create_engine(f"sqlite:///{tmp_path}/alt.db")
     with eng.begin() as c:
         c.execute(text("CREATE TABLE device_app (id INTEGER PRIMARY KEY, name VARCHAR(255))"))
         c.execute(text("INSERT INTO device_app (name) VALUES ('alt')"))
-    migrate.run_migrations(eng)
+    migrate.upgrade_legacy(eng)
     with eng.connect() as c:
         assert c.execute(text("SELECT categories FROM device_app")).scalar() == ""
 

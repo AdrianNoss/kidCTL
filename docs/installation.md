@@ -31,8 +31,9 @@ mkdir -p data
 sudo chown 10001:10001 data     # der Container läuft als Benutzer 10001
 ```
 
-`./data` enthält die SQLite-Datenbank, Sperrlisten und das Paket-Repository (Pacman und APT). **Den Ordner extern
-sichern.**
+`./data` enthält die Datenbankdateien von PostgreSQL (`data/postgres`, gehören dem Datenbank-Container), die
+täglichen Datenbank-Backups, Sperrlisten und das Paket-Repository (Pacman und APT). **Den Ordner extern sichern** –
+für die Datenbank zählen dabei die Backups in `data/backups`, nicht die laufenden Dateien in `data/postgres`.
 
 ### 1.2 Konfiguration (`.env`)
 
@@ -44,6 +45,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # Ausgabe als SE
 | Variable | Bedeutung |
 |---|---|
 | `SECRET_KEY` | Pflicht. **Nie ändern**, sonst sind alle Sessions und Geräte-Token ungültig (Geräte neu koppeln). |
+| `POSTGRES_PASSWORD` | Pflicht. Passwort der Datenbank, nur Buchstaben, Ziffern, `-` und `_` (z. B. `secrets.token_urlsafe(32)`). Die Datenbank läuft im Container `kidctl-db` und ist nur für den Server erreichbar. |
 | `BASE_URL` | Öffentliche Adresse, z. B. `https://kids.example.org` |
 | `TOTP_ISSUER` | Name in der Authenticator-App (Standard `KidCTL`) |
 | `SOURCE_URL` | Link „Quellcode“ in der Fußzeile (AGPL-3.0 §13); bei eigenen Änderungen auf den eigenen Fork setzen. Standard: das KidCTL-Repo |
@@ -406,7 +408,8 @@ root sperren und Firmware- sowie Bootloader-Passwort setzen: [`docs/haertung.md`
 
 | Was | Wie |
 |---|---|
-| Server | `git pull && docker compose up -d --build`. Datenbank-Migrationen laufen beim Start automatisch. |
+| Server | `git pull && docker compose up -d --build`. Datenbank-Migrationen (Alembic) laufen beim Start automatisch. |
+| Umstieg SQLite → PostgreSQL (einmalig, Server bis 0.32.x) | Siehe unten „Umstieg auf PostgreSQL“. |
 | Client-Pakete | `pkgver` in `packaging/arch/PKGBUILD` und `agent/kidctl_agent/__init__.py` erhöhen, committen und auf main pushen, dann `kidctl-release.sh --apply` (2.2) (Arch-, `.deb`- und Windows-Pakete aus derselben Version). Die Kinderrechner bekommen das Update mit `sudo pacman -Syu` bzw. `sudo apt upgrade`; Windows-Rechner installieren es selbst. |
 | Ab 0.27.0 | Das SDDM-Theme steckt jetzt im Paket `kidctl-plasma`. Auf bestehenden Plasma-Rechnern einmalig `sudo pacman -Syu kidctl-plasma`, sonst fehlt der Hinweis im Anmeldebildschirm. |
 
@@ -417,23 +420,41 @@ Ist im Repository eine neuere Agent-Version als auf einem Rechner, zeigen Übers
 Geräteseite „Update: alt → neu“. Ist das Paket seit einem Tag veröffentlicht und der Rechner immer noch
 nicht aktualisiert, kommt einmalig eine Push-Nachricht.
 
+## Umstieg auf PostgreSQL (einmalig)
+
+Bis 0.32.x lag die Datenbank in `data/kidctl.db` (SQLite). Neuere Server brauchen PostgreSQL und starten mit einer
+SQLite-Adresse nicht. Ablauf:
+
+```bash
+docker compose stop kidctl                         # nichts schreibt mehr in die SQLite-Datei
+cp data/kidctl.db data/kidctl.db.vorher            # Sicherung aufheben
+git pull                                           # neue docker-compose.yml mit Datenbank-Container
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"   # als POSTGRES_PASSWORD in .env eintragen
+docker compose up -d db
+docker compose run --rm kidctl python -m app.cli import-sqlite /data/kidctl.db            # Probelauf
+docker compose run --rm kidctl python -m app.cli import-sqlite /data/kidctl.db --apply    # übernehmen
+docker compose up -d --build
+```
+
+Die Übernahme arbeitet auf einer Kopie, die SQLite-Datei bleibt unverändert; sie bricht ab, wenn die
+PostgreSQL-Datenbank nicht leer ist. Geräte, Sitzungen und Kopplungen bleiben gültig (gleicher `SECRET_KEY`).
+Zurück: `docker compose down`, alte Version auschecken, `data/kidctl.db.vorher` zurückkopieren.
+
 ## Backup und Wiederherstellung
 
-Der Server legt täglich ab 3 Uhr einen geprüften Schnappschuss der Datenbank an:
-`data/backups/kidctl-JJJJ-MM-TT-HHMM.db.gz`. Die letzten 14 bleiben erhalten. Zeitpunkt und Größe des
+Der Server legt täglich ab 3 Uhr einen geprüften Dump der Datenbank an (`pg_dump`, komprimiert):
+`data/backups/kidctl-JJJJ-MM-TT-HHMM.dump`. Die letzten 14 bleiben erhalten. Zeitpunkt und Größe des
 letzten Backups stehen im WebUI unter **Einstellungen**, dort gibt es auch „Jetzt sichern“. Schlägt ein
 Backup fehl oder gibt es seit 2 Tagen keines, kommt eine Push-Nachricht. Per Kommandozeile:
 `docker compose exec kidctl python -m app.cli backup`.
 
-Das externe Backup des Servers sollte `./data` mitsichern, dann sind die Schnappschüsse dabei.
+Das externe Backup des Servers sollte `./data` mitsichern, dann sind die Dumps dabei.
 
 Wiederherstellen:
 
 ```bash
 docker compose stop kidctl
-cp data/kidctl.db data/kidctl.db.vorher            # aktuellen Stand aufheben
-gunzip -c data/backups/kidctl-2026-10-21-0300.db.gz > data/kidctl.db
-rm -f data/kidctl.db-wal data/kidctl.db-shm
+docker compose exec -T db pg_restore --clean --if-exists -U kidctl -d kidctl < data/backups/kidctl-2026-11-16-0300.dump
 docker compose start kidctl
 ```
 

@@ -21,8 +21,31 @@ def _vapid_env() -> dict:
     }
 
 
+# Tests laufen gegen eine eigene PostgreSQL-Datenbank (Entwicklung: Container kidctl-pg, siehe dev/README.md)
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL",
+                                   "postgresql+psycopg://kidctl:kidctl-dev@127.0.0.1:55432/kidctl_test")
+
+
+def _create_test_database(url: str) -> None:
+    import psycopg
+
+    base, name = url.replace("postgresql+psycopg://", "postgresql://").rsplit("/", 1)
+    with psycopg.connect(base + "/postgres", autocommit=True) as conn:
+        if not conn.execute("SELECT 1 FROM pg_database WHERE datname = %s", (name,)).fetchone():
+            conn.execute(f'CREATE DATABASE "{name}"')
+
+
+_create_test_database(TEST_DATABASE_URL)
+# Backups: ohne lokale PostgreSQL-Programme pg_dump/pg_restore im Container aufrufen
+import shutil  # noqa: E402
+
+if not shutil.which("pg_dump"):
+    _wrapper = Path(__file__).with_name("podman_pg.sh")
+    os.environ.setdefault("KIDCTL_PG_DUMP", f"{_wrapper} pg_dump")
+    os.environ.setdefault("KIDCTL_PG_RESTORE", f"{_wrapper} pg_restore")
 os.environ.update(_vapid_env())
 os.environ.update({
+    "DATABASE_URL": TEST_DATABASE_URL,
     "KIDCTL_DEV": "1",
     "SECRET_KEY": "test-secret",
     "KIDCTL_DATA_DIR": _tmp,
@@ -45,9 +68,20 @@ from app.security import hash_password, new_totp_secret  # noqa: E402
 PASSWORD = "correct horse battery"
 
 
+def reset_database() -> None:
+    """Schema auf Alembic-Stand bringen und alle Tabellen leeren (schneller als neu anlegen)."""
+    from sqlalchemy import text
+
+    from app.db import init_db
+    init_db()
+    names = ", ".join(f'"{t.name}"' for t in Base.metadata.sorted_tables)
+    with engine.begin() as conn:
+        conn.execute(text(f"TRUNCATE {names} RESTART IDENTITY CASCADE"))
+
+
 @pytest.fixture
 def client():
-    Base.metadata.drop_all(engine)
+    reset_database()
     with TestClient(app, headers={"Accept-Language": "de-DE,de;q=0.9"}) as c:
         yield c
 

@@ -1,35 +1,23 @@
 from __future__ import annotations
 
 import logging
-import os
 from collections.abc import Iterator
+from pathlib import Path
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from .config import settings
 
 log = logging.getLogger("kidctl.db")
+ALEMBIC_DIR = Path(__file__).parent / "alembic"
 
 
 class Base(DeclarativeBase):
     pass
 
 
-def _make_engine(url: str):
-    connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
-    eng = create_engine(url, connect_args=connect_args)
-    if url.startswith("sqlite"):
-        @event.listens_for(eng, "connect")
-        def _pragmas(dbapi_conn, _rec):  # noqa: ANN001
-            cur = dbapi_conn.cursor()
-            cur.execute("PRAGMA foreign_keys=ON")
-            cur.execute("PRAGMA journal_mode=WAL")
-            cur.close()
-    return eng
-
-
-engine = _make_engine(settings.database_url)
+engine = create_engine(settings.database_url, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 
@@ -41,11 +29,19 @@ def get_db() -> Iterator[Session]:
         db.close()
 
 
-def init_db() -> None:
-    from . import models  # noqa: F401  (Tabellen registrieren)
-    from .migrate import run_migrations
+def alembic_config(url: str | None = None):
+    from alembic.config import Config
 
-    if settings.database_url.startswith("sqlite:///"):
-        os.makedirs(os.path.dirname(settings.database_url.removeprefix("sqlite:///")) or ".", exist_ok=True)
-    run_migrations(engine)
-    Base.metadata.create_all(engine)
+    cfg = Config()
+    cfg.set_main_option("script_location", str(ALEMBIC_DIR))
+    cfg.set_main_option("sqlalchemy.url", (url or settings.database_url).replace("%", "%%"))
+    return cfg
+
+
+def init_db() -> None:
+    """Schema auf den neuesten Stand bringen (Alembic ``upgrade head``)."""
+    from alembic import command
+
+    from . import models  # noqa: F401  (Tabellen registrieren)
+
+    command.upgrade(alembic_config(), "head")

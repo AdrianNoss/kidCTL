@@ -1,4 +1,23 @@
 services:
+  db:
+    image: postgres:17
+    container_name: kidctl-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kidctl
+      POSTGRES_DB: kidctl
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD in .env setzen}
+    volumes:
+      # Datenbankdateien; gesichert wird über die täglichen Dumps in ./data/backups (nicht dieses Verzeichnis)
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "kidctl", "-d", "kidctl"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   kidctl:
     build:
       context: .
@@ -6,6 +25,11 @@ services:
     container_name: kidctl
     restart: unless-stopped
     env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://kidctl:${POSTGRES_PASSWORD}@kidctl-db:5432/kidctl
+    depends_on:
+      db:
+        condition: service_healthy
     mem_limit: 1g
     cap_drop:
       - ALL
@@ -15,6 +39,7 @@ services:
       - ./data:/data
     networks:
       - traefik
+      - internal
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik
@@ -30,3 +55,6 @@ networks:
     # An den tatsächlichen Namen des Traefik-Netzwerks anpassen (docker network ls)
     name: traefik
     external: true
+  internal:
+    # nur Server <-> Datenbank, ohne Zugang von außen
+    internal: true

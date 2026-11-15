@@ -50,6 +50,22 @@ class Settings:
         return bool(self.smtp_host and self.smtp_from)
 
 
+DEV_DATABASE_URL = "postgresql+psycopg://kidctl:kidctl-dev@127.0.0.1:55432/kidctl"
+
+
+def _database_url(dev: bool) -> str:
+    """PostgreSQL (seit 2026-11, Etappe 1 Multi-Tenant). SQLite wird nur noch per ``cli import-sqlite`` gelesen."""
+    url = os.environ.get("DATABASE_URL", "") or (DEV_DATABASE_URL if dev else "")
+    if not url:
+        raise RuntimeError("DATABASE_URL fehlt (in .env setzen, z. B. postgresql+psycopg://kidctl:…@db:5432/kidctl).")
+    if url.startswith("sqlite"):
+        raise RuntimeError("SQLite wird nicht mehr unterstützt. Daten übernehmen: python -m app.cli import-sqlite "
+                           "<pfad/kidctl.db> --apply (siehe docs/installation.md, Umstieg auf PostgreSQL).")
+    if url.startswith("postgresql://"):
+        url = "postgresql+psycopg://" + url.removeprefix("postgresql://")
+    return url
+
+
 def load_settings() -> Settings:
     dev = _bool("KIDCTL_DEV", False)
     secret = os.environ.get("SECRET_KEY", "")
@@ -64,7 +80,7 @@ def load_settings() -> Settings:
     data_dir = os.environ.get("KIDCTL_DATA_DIR", "/data")
     return Settings(
         secret_key=secret,
-        database_url=os.environ.get("DATABASE_URL", f"sqlite:///{data_dir}/kidctl.db"),
+        database_url=_database_url(dev),
         data_dir=data_dir,
         cookie_secure=_bool("COOKIE_SECURE", not dev),
         base_url=os.environ.get("BASE_URL", "https://kids.nossco.de").rstrip("/"),

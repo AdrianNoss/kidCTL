@@ -41,13 +41,13 @@ Daten bleiben auf dem eigenen Server, es gibt keine Cloud und kein Konto bei Dri
  ┌──────────────────────┐   WebSocket      │  Zeit · PAM · Prozesse ·     │
  │ Server (FastAPI)     │◄─────────────────┤  Unbound/nftables · noexec   │
  │ Docker hinter Traefik│   (ausgehend)    └──────────────┬───────────────┘
- │ SQLite · Web Push    │                                 │ Unix-Socket
+ │ PostgreSQL · Web Push    │                                 │ Unix-Socket
  │ /repo (Pacman-Repo)  │                  ┌──────────────┴───────────────┐
  └──────────────────────┘                  │ Tray-App (PySide6, Kind)     │
                                            └──────────────────────────────┘
 ```
 
-- **Server**: Python/FastAPI, SQLAlchemy/SQLite, Jinja2. Er liefert auch das signierte
+- **Server**: Python/FastAPI, SQLAlchemy/PostgreSQL, Jinja2. Er liefert auch das signierte
   Pacman-Repository aus.
 - **Agent**: Python/asyncio als root.
   - Hält als Einziger das Geräte-Token.

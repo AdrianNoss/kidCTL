@@ -1919,5 +1919,17 @@ News-Bereich hat, den Claude Code pflegt.
   Feldverschlüsselung je Familie mit Kontextbindung, E-Mail-Anmeldung, Rollen Inhaber/Elternteil, Registrierung mit Schalter,
   Betreiber nur mit Metadaten und Support-Freigabe, Abo-Vorbereitung mit Schonfrist und Ruhemodus, offener Betrieb gegen Missbrauch,
   Export/Import, feste Aufbewahrungsfristen, Umzugsnachricht im Protokoll, fünf Etappen. Noch nicht umgesetzt.
+- 2026-11-15: Etappe 1.1 Multi-Tenant: Server auf PostgreSQL umgestellt. Verbindung nur über `DATABASE_URL` (Entwicklung:
+  Podman-Container `kidctl-pg` auf 127.0.0.1:55432); SQLite-Adressen brechen den Start mit Hinweis ab. Migrationen mit Alembic
+  (`server/app/alembic`, Ausgangsrevision `0001` = Schema 0.32.7), `init_db()` führt `upgrade head` aus; `app/migrate.py` wird
+  zu `app/sqlite_import.py`: `cli import-sqlite <kidctl.db> [--apply]` zieht eine Kopie der SQLite-Datei mit den früheren
+  Spaltenmigrationen nach, liest nur vorhandene Spalten, prüft VARCHAR-Längen, kopiert alle Tabellen in einer Transaktion
+  (Abbruch bei nicht leerem Ziel) und zieht die ID-Folgen nach. Backup per `pg_dump --format=custom` (`.dump`), geprüft mit
+  `pg_restore --list`; Dockerfile installiert `postgresql-client-17` aus dem PGDG-Repo. `docker-compose.yml` mit Dienst `db`
+  (postgres:17, `./data/postgres`, internes Netz, Healthcheck), `POSTGRES_PASSWORD` in `.env`. Doku: Umstieg und
+  Wiederherstellung in `docs/installation.md`; CLAUDE.md-Regeln zu Datenbank und Migrationen angepasst. Getestet: alle
+  Server-Tests gegen PostgreSQL (Testdatenbank `kidctl_test`, Leeren per `TRUNCATE`), neuer Test für die Übernahme (Probelauf,
+  fehlende Spalten, ID-Folgen, Abbruch bei vollem Ziel), Backup-Tests mit `pg_dump`/`pg_restore` im Container, `alembic check`
+  ohne Abweichung; Übernahme der Entwicklungsdaten (317 Zeilen) und WebUI darauf geprüft; Server-Image mit `pg_dump` gebaut.
 - 2026-11-16: Anforderungen Projekthomepage per /grill-me abgestimmt (Abschnitt „Projekthomepage“). Noch keine
   Umsetzung. README (DE/EN) nennt Windows 10/11 noch nicht als Plattform – wird mit Etappe 1 nachgezogen.

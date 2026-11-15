@@ -1,8 +1,6 @@
 """Datenbank-Backup (Schnappschuss, Aufbewahrung, Fälligkeit, Alarm) und Hinweis auf veraltete Agenten."""
 
-import gzip
 import os
-import sqlite3
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -29,13 +27,11 @@ def test_snapshot_is_valid_and_pruned(client, parent):
         info = backup.run(base + timedelta(days=i))
         os.utime(info.path, (info.at.timestamp(), (base + timedelta(days=i)).timestamp()))
     found = backup.backups()
-    assert len(found) == backup.KEEP and found[0].path.name == "kidctl-2026-10-17-0305.db.gz"
-    raw = backup.backup_dir() / "check.db"
-    raw.write_bytes(gzip.decompress(found[0].path.read_bytes()))
-    with sqlite3.connect(raw) as db:
-        assert db.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
-        assert db.execute("SELECT username FROM parent").fetchall() == [("mama",)]
-    raw.unlink()
+    assert len(found) == backup.KEEP and found[0].path.name == "kidctl-2026-10-17-0305.dump"
+    assert found[0].path.read_bytes()[:5] == b"PGDMP"                       # Custom-Format von pg_dump
+    with found[0].path.open("rb") as f:
+        listing = backup._run(backup._tool("KIDCTL_PG_RESTORE", "pg_restore") + ["--list"], stdin=f).stdout
+    assert b"TABLE DATA public parent" in listing and b"TABLE DATA public device" in listing
     assert oct(found[0].path.stat().st_mode & 0o777) == "0o600"
 
 
@@ -48,7 +44,7 @@ def test_due_and_alarm(client, parent, monkeypatch):
     assert not backup.due(now) and backup.due(now.replace(hour=3))
     backup.check_alarm(now.replace(hour=3, minute=30))
     assert sent == []                                              # erster Versuch steht noch aus
-    monkeypatch.setattr(backup, "engine", type("E", (), {"url": type("U", (), {"database": "/nicht/da/x.db"})()})())
+    monkeypatch.setenv("KIDCTL_PG_DUMP", "false")                    # pg_dump schlägt fehl
     backup.check_once(now.replace(hour=4))
     assert backup.last_error()                                     # Fehler vermerkt
     assert sent and sent[0][0] == "Datenbank-Backup fehlgeschlagen"
@@ -131,7 +127,7 @@ def test_download_requires_password(client, parent):
     assert r.status_code == 400 and "Backup nicht gefunden." in r.text
     from conftest import PASSWORD
     r = client.post("/settings/backup/download", data={"csrf_token": tok, "name": info.path.name, "current_password": PASSWORD})
-    assert r.status_code == 200 and gzip.decompress(r.content)[:15] == b"SQLite format 3"
+    assert r.status_code == 200 and r.content[:5] == b"PGDMP"
 
 
 def test_latest_version_from_apt_pool(tmp_path):

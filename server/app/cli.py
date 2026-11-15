@@ -4,6 +4,7 @@ Interaktiv:   python -m app.cli create-parent
 Per Env-Var:  KIDCTL_BOOTSTRAP_USER=… KIDCTL_BOOTSTRAP_PASSWORD=… python -m app.cli create-parent
 Notfall:      python -m app.cli reset-password <benutzer> | reset-totp <benutzer>
 VAPID:        python -m app.cli vapid-keys >> .env
+Umstieg:      python -m app.cli import-sqlite /data/kidctl.db [--apply]   (SQLite bis 0.32.x -> PostgreSQL)
 """
 
 from __future__ import annotations
@@ -126,6 +127,26 @@ def backup(_args: argparse.Namespace) -> int:
     return 0
 
 
+def import_sqlite(args: argparse.Namespace) -> int:
+    """Alte SQLite-Datenbank nach PostgreSQL übernehmen (ohne --apply nur Probelauf)."""
+    from .db import engine
+    from .sqlite_import import import_sqlite as run
+
+    try:
+        counts = run(args.path, engine, apply=args.apply)
+    except RuntimeError as e:
+        print(f"Fehler: {e}", file=sys.stderr)
+        return 1
+    for name, n in counts.items():
+        if n:
+            print(f"  {name:<22} {n:>7}")
+    total = sum(counts.values())
+    print(f"{'Übernommen' if args.apply else '[dry-run] Würde übernehmen'}: {total} Zeilen aus {args.path}")
+    if not args.apply:
+        print("Mit --apply ausführen. Die SQLite-Datei bleibt unverändert.")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(prog="kidctl-server")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -142,6 +163,10 @@ def main() -> int:
     vk.set_defaults(func=vapid_keys)
     bp = sub.add_parser("backup", help="Datenbank-Backup jetzt erstellen (nach <data>/backups)")
     bp.set_defaults(func=backup)
+    ip = sub.add_parser("import-sqlite", help="SQLite-Datenbank (bis 0.32.x) nach PostgreSQL übernehmen")
+    ip.add_argument("path", help="Pfad zur kidctl.db")
+    ip.add_argument("--apply", action="store_true", help="wirklich übernehmen (sonst Probelauf)")
+    ip.set_defaults(func=import_sqlite)
     args = ap.parse_args()
     return args.func(args)
 

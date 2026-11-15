@@ -66,7 +66,7 @@ def backup_download(request: Request, name: str = Form(""), current_password: st
         db.commit()   # Fehlversuch zählt
         return _settings(request, db, sess, 400, download_error=error)
     log.warning("Backup %s heruntergeladen von %s", info.path.name, parent.username)
-    return FileResponse(info.path, media_type="application/gzip", filename=info.path.name,
+    return FileResponse(info.path, media_type="application/octet-stream", filename=info.path.name,
                         headers={"Cache-Control": "no-store"})
 
 

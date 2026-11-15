@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine, text
 
 from app import lock as lk
-from app import migrate
+from app import sqlite_import as migrate
 from app.db import SessionLocal
 from app.models import Child, utcnow
 
@@ -72,7 +72,7 @@ def test_child_lock_columns_migrated(tmp_path):
     with eng.begin() as c:
         c.execute(text("CREATE TABLE child (id INTEGER PRIMARY KEY, name VARCHAR(64))"))
         c.execute(text("INSERT INTO child (name) VALUES ('Max')"))
-    migrate.run_migrations(eng)
+    migrate.upgrade_legacy(eng)
     with eng.connect() as c:
         assert c.execute(text("SELECT locked, locked_until FROM child")).one() == (0, None)
 
@@ -103,6 +103,6 @@ def test_lock_grace_column_migrated(tmp_path):
     with eng.begin() as c:
         c.execute(text("CREATE TABLE child (id INTEGER PRIMARY KEY, name VARCHAR(64), locked BOOLEAN)"))
         c.execute(text("INSERT INTO child (name) VALUES ('Max')"))
-    migrate.run_migrations(eng)
+    migrate.upgrade_legacy(eng)
     with eng.connect() as c:
         assert c.execute(text("SELECT lock_grace_minutes FROM child")).scalar() == 1
