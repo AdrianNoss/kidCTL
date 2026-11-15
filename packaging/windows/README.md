@@ -30,10 +30,10 @@ packaging/repo/kidctl-repo-publish.sh --apply
 - Zwischenspeicher: `~/.cache/kidctl-windows/` (Downloads, Staging). PySide6 wird auf QtCore/Gui/Widgets/
   Network/Svg verkleinert.
 
-## Signierter Bau über GitHub Actions und SignPath
+## Bau über GitHub Actions (Signatur über SignPath vorbereitet)
 
-Für die Authenticode-Signatur (SignPath Foundation, siehe [`docs/code-signing.md`](../../docs/code-signing.md))
-baut [`.github/workflows/windows.yml`](../../.github/workflows/windows.yml) den Installer auf einem
+Derzeit unsigniert: Der Antrag bei der SignPath Foundation wurde im November 2026 abgelehnt (Projekt noch
+nicht bekannt genug, siehe [`docs/code-signing.md`](../../docs/code-signing.md)). Für Releases baut [`.github/workflows/windows.yml`](../../.github/workflows/windows.yml) den Installer auf einem
 GitHub-Runner (`build.py ci`) – ausgelöst durch einen Tag `v<Version>` oder von Hand. Der Lauf lädt den
 unsignierten Installer als Artefakt hoch und reicht ihn an SignPath weiter; nach der Freigabe in SignPath
 liegt das Artefakt `KidCTL-Setup-signed` am Lauf.

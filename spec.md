@@ -3,8 +3,8 @@
 Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Serverseite für Bildschirmzeit, Chat/Verlängerungen, PWA/Web Push, Policy-Verteilung und Offline-Alarm umgesetzt; Agent (Bildschirmzeit, PAM-Login-Sperre), Tray-App und Paket umgesetzt.
 Projektname: **KidCTL** (Paket, Befehle und Pfade technisch `kidctl`). Deploy unter `kids.nossco.de` (Annahme).
 Lizenz: AGPL-3.0-or-later (`LICENSE`, seit 2026-11-10; vorher PolyForm Noncommercial 1.0.0) – Open Source
-nach OSI, Voraussetzung für die kostenlose Code-Signatur der Windows-Installer über die SignPath Foundation
-(`docs/code-signing.md`). Die Weboberfläche verlinkt den Quelltext (`SOURCE_URL`, AGPL §13).
+nach OSI, Voraussetzung für eine kostenlose Code-Signatur über die SignPath Foundation (Antrag 2026-11
+wegen zu geringer Bekanntheit abgelehnt, Installer vorerst unsigniert; `docs/code-signing.md`). Die Weboberfläche verlinkt den Quelltext (`SOURCE_URL`, AGPL §13).
 
 ## Hintergrund
 
@@ -1695,3 +1695,7 @@ Abweichungen stehen hier und unter „Restlücken“.
   liegt jetzt in `packaging/windows/update-key.pub` (Abgleich mit dem geheimen Schlüssel). Installer mit Produktname/-version, Copyright und
   `LICENSE.txt`. Getestet: Server-Tests; Staging + Bau in der Win10-VM in einen Testordner (VersionInfo: ProductName KidCTL, Version 0.32.7,
   Lizenz und öffentlicher Schlüssel im Staging); Dry-Runs von `ci` und `fetch`; Workflow nur syntaktisch geprüft (Lauf auf GitHub steht aus).
+- 2026-11-15: SignPath Foundation hat den Antrag abgelehnt (Projekt noch nicht bekannt genug). READMEs, `docs/code-signing.md`, spec-Kopf und
+  `packaging/windows/README.md` sagen jetzt, dass die Windows-Installer derzeit nicht signiert sind; Bau in GitHub Actions, Releases mit SHA-256
+  und Link auf den Lauf, Datenschutzhinweis und Lizenz bleiben. Workflow und `build.py ci/fetch` bleiben für einen späteren Antrag unverändert.
+  Getestet: nur Doku – Verweise geprüft, keine Code-Änderung.

@@ -2,15 +2,17 @@
 
 **English** · [Deutsch](#deutsch)
 
-Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by
-[SignPath Foundation](https://signpath.org/).
+**Status:** The Windows installers are currently **not code-signed** (Authenticode). An application to
+the SignPath Foundation was declined in November 2026 because the project is not yet well known; we
+plan to apply again later. Until then, Windows SmartScreen asks for confirmation on first launch.
 
-## What is signed
+## How Windows installers are built
 
-Only the Windows installer `KidCTL-Setup-<version>.exe`. It is built from this repository by the
-GitHub Actions workflow [`.github/workflows/windows.yml`](../.github/workflows/windows.yml) on a
-GitHub-hosted runner (`packaging/windows/build.py ci`) and submitted to SignPath from there. Builds from
-other machines are never signed.
+The Windows installer `KidCTL-Setup-<version>.exe` is built from this repository by the GitHub Actions
+workflow [`.github/workflows/windows.yml`](../.github/workflows/windows.yml) on a GitHub-hosted runner
+(`packaging/windows/build.py ci`). Each [release](https://github.com/AdrianNoss/kidCTL/releases) lists
+the installer's SHA-256 and links the build run. The workflow is prepared to submit the installer for
+signing once a signing service is available; only builds from this workflow would ever be signed.
 
 The installer bundles third-party components unchanged and unsigned by us: the embeddable Python
 distribution (signed by the Python Software Foundation), Python wheels from PyPI and Unbound from
@@ -26,9 +28,9 @@ auto-updates are additionally verified by the agent with an Ed25519 signature of
 | Committers and reviewers | [Adrian Noss](https://github.com/AdrianNoss) |
 | Approvers | [Adrian Noss](https://github.com/AdrianNoss) |
 
-Changes from anyone outside the team (pull requests) are reviewed by a committer before merging. Every
-signing request is approved manually in SignPath. All team members use multi-factor authentication for
-GitHub and SignPath.
+Changes from anyone outside the team (pull requests) are reviewed by a committer before merging.
+Releases are approved manually by an approver. All team members use multi-factor authentication for
+GitHub.
 
 ## Privacy
 
@@ -46,19 +48,18 @@ locked and removes the service, firewall rules and data.
 
 ## Reporting
 
-Security issues or misuse of the signing certificate: please open an issue on
+Security issues: please open an issue on
 [GitHub](https://github.com/AdrianNoss/kidCTL/issues) or contact the maintainer listed above.
 
 ---
 
 ## Deutsch
 
-Kostenlose Code-Signatur durch [SignPath.io](https://about.signpath.io/), Zertifikat von der
-[SignPath Foundation](https://signpath.org/).
-
-- **Signiert wird** nur der Windows-Installer, gebaut in GitHub Actions aus diesem Repository und von
-  dort an SignPath übergeben; jede Signatur wird von Hand freigegeben.
-- **Team:** Adrian Noss (Committer, Reviewer, Freigabe); alle mit Zwei-Faktor-Anmeldung bei GitHub und
-  SignPath.
+- **Stand:** Die Windows-Installer sind derzeit **nicht signiert**. Ein Antrag bei der SignPath Foundation
+  wurde im November 2026 abgelehnt, weil das Projekt noch nicht bekannt genug ist; ein neuer Antrag ist
+  für später geplant. Bis dahin fragt Windows SmartScreen beim ersten Start nach.
+- **Bau:** Der Windows-Installer entsteht in GitHub Actions aus diesem Repository; jedes Release nennt die
+  SHA-256 und verlinkt den Bau-Lauf.
+- **Team:** Adrian Noss (Committer, Reviewer, Freigabe); alle mit Zwei-Faktor-Anmeldung bei GitHub.
 - **Datenschutz:** KidCTL überträgt Daten ausschließlich an den KidCTL-Server, den die Eltern bei der
   Installation angeben (eigener Server). Keine Telemetrie, keine Verbindung zu den Entwicklern.

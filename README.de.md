@@ -123,9 +123,9 @@ zuerst in `spec.md` beschrieben und im Changelog datiert. Konventionen stehen in
 
 ## Code-Signatur
 
-Die Windows-Installer werden kostenlos signiert: Free code signing provided by
-[SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
-Ablauf, Rollen und Datenschutzhinweis: [Code signing policy](docs/code-signing.md).
+Die Windows-Installer sind derzeit **nicht signiert**, Windows SmartScreen fragt deshalb beim ersten
+Start nach. Sie werden von GitHub Actions aus diesem Repository gebaut; jedes Release nennt die SHA-256
+des Installers und verlinkt den Bau-Lauf. Ablauf und Verantwortliche: [Code signing policy](docs/code-signing.md).
 
 ## Datenschutz
 

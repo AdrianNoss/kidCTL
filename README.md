@@ -74,9 +74,10 @@ cd tray   && QT_QPA_PLATFORM=offscreen python -m pytest -q tests
 
 ## Code signing policy
 
-Windows installers are signed for free: Free code signing provided by
-[SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
-Details, team roles and privacy statement: [Code signing policy](docs/code-signing.md).
+The Windows installers are currently **not code-signed**, so Windows SmartScreen asks for
+confirmation on first launch. They are built from this repository by GitHub Actions; each release lists
+the SHA-256 of the installer and links the build run. How releases are built and who is responsible:
+[Code signing policy](docs/code-signing.md).
 
 ## Privacy
 
