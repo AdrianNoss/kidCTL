@@ -5,17 +5,17 @@
 <section class="card">
   {% if devices %}
   <div class="scroll">
-  <table>
+  <table class="responsive">
     <tr><th>{{ _("Gerät") }}</th><th>{{ _("Host") }}</th><th>{{ _("Status") }}</th><th>{{ _("Zuletzt gesehen") }}</th></tr>
     {% for d in devices %}
     <tr{% if d.revoked_at %} class="muted"{% endif %}>
       <td><a href="/devices/{{ d.id }}" class="entity">{{ d.name }}</a></td>
-      <td>{{ d.hostname }}</td>
+      <td data-label="{{ _('Host') }}">{{ d.hostname }}</td>
       <td>{% if d.revoked_at %}<span class="pill danger">{{ _("widerrufen") }}</span>{% elif online(d.id) %}<span class="pill ok">online</span>{% else %}<span class="pill">offline</span>{% endif %}
           {% if d.integrity_failed %}<span class="pill warn">{{ _("Integritätsfehler") }}</span>{% endif %}
           {% if d.protocol_unsupported and not d.revoked_at %}<span class="pill warn">{{ _("Agent veraltet") }}</span>
           {% elif not d.revoked_at and update_for(d.agent_version, platform=d.platform) %}<span class="pill warn" title="{{ (_('Wird automatisch installiert; klappt das nicht, den Installer auf dem Rechner erneut ausführen') if d.platform == 'windows' else _('Auf dem Rechner das Systemupdate ausführen (pacman -Syu bzw. apt upgrade)')) }}">{{ _("Update: {old} → {new}").format(old=d.agent_version, new=update_for(d.agent_version, platform=d.platform)) }}</span>{% endif %}</td>
-      <td class="num">{{ d.last_seen_at | localtime }}</td>
+      <td class="num" data-label="{{ _('Zuletzt gesehen') }}">{{ d.last_seen_at | localtime }}</td>
     </tr>
     {% endfor %}
   </table>

@@ -4,7 +4,7 @@
 <div class="page-head"><h1>{{ _("Kinder") }}</h1></div>
 <section class="card">
   {% if children %}
-  <table>
+  <table class="responsive">
     {% for c in children %}
     <tr>
       <td><a href="/children/{{ c.id }}" class="entity">{{ c.name }}</a></td>

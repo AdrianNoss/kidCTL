@@ -1716,3 +1716,18 @@ Abweichungen stehen hier und unter „Restlücken“.
   `~/.local/share/kidctl-repo/publish-target`. Getestet: Dry-Run von `kidctl-release.sh` mit Lauf 43747182262 bis einschließlich
   Signier-Schritten; Fehlermeldungen ohne Tag/Lauf; Workflow-YAML syntaktisch geprüft. Nicht getestet: Auto-Tag auf GitHub (erst bei der
   nächsten Versionserhöhung), `rsync` zu srv02 (SSH-Anmeldung nur aus dem eigenen Terminal).
+- 2026-11-15: WebUI-Design auf Material Design 3 umgestellt, mobile first: Farbrollen aus Grundfarbe Blau (`#3B5BA9`) für Hell und Dunkel
+  inkl. Erfolgs-/Warnfarben, M3-Typoskala (Roboto/Systemschrift, keine Webfonts), umrandete Textfelder, Pill-Buttons (filled/outlined/text/
+  tonal), Chips, Dialoge, lineare Fortschrittsbalken, primäre Reiter. Navigation: obere App-Leiste (Darstellung, Profil, Abmelden als
+  Symbol-Knöpfe), unten eine Navigationsleiste mit eigenen Symbolen (`_icons.html`), ab 840 px als Leiste links. Darstellung automatisch nach
+  System oder fest hell/dunkel: Knopf in der App-Leiste schaltet Auto → Hell → Dunkel, Cookie `kidctl_theme`, der Server setzt
+  `data-theme`, `color-scheme` und `theme-color` (kein Aufblitzen; ohne JavaScript gilt das System). Übersicht: eine Karte je Kind mit
+  Restzeit, Fortschritt und Aktionen statt Tabelle; Tabellen (Geräte, Kinder, Eltern, Gutschriften) werden auf dem Handy zu Listen
+  (`table.responsive`, `data-label`). Heute-Bereich als farbige Fläche mit großer Restzeit. Manifest-Farben angepasst. Getestet: Server-Tests
+  (neu `test_theme_cookie_sets_appearance_and_navigation`); im Browser auf 375 px und 1280 px in Hell und Dunkel: Übersicht, alle Reiter
+  eines Kindes, Geräte, Gerät, Eltern, Einstellungen, Profil, Anmeldung – kein seitliches Scrollen, Umschalter samt Cookie und Neuladen.
+- 2026-11-15: Nutzungsbericht-Mail (`mail/report.html`) im Stil der neuen WebUI: Material-3-Farben (Blau, Warnton für Tage über dem Limit),
+  Roboto/Systemschrift statt Serif, keine Großbuchstaben-Labels, Karten mit 16 px und Kacheln mit 12 px Radius. Dunkles Schema für
+  Mailprogramme mit `prefers-color-scheme` (z. B. Apple Mail) über `k-…`-Klassen und `<style>`; alle anderen zeigen weiter das helle Schema
+  aus Inline-Styles. Getestet: Server-Tests (u. a. `test_report.py`, `test_i18n.py`); Vorschau des Wochenberichts aus den
+  Entwicklungsdaten auf 375 px in Hell und Dunkel.

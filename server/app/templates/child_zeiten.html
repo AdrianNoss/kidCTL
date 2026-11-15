@@ -50,14 +50,14 @@
   <h2>{{ _("Geplante Gutschriften") }}</h2>
   {% if exceptions %}
   <div class="scroll">
-  <table>
+  <table class="responsive">
     <tr><th>{{ _("Datum") }}</th><th>{{ _("Zusätzlich") }}</th><th>{{ _("Erlaubt bis") }}</th><th>{{ _("Spielzeit") }}</th><th></th></tr>
     {% for e in exceptions %}
     <tr>
       <td>{{ fmt_date(e.day, with_weekday=True) }}{% if e.day == today %} ({{ _("heute") }}){% endif %}</td>
-      <td>{{ fmt_minutes(e.extra_minutes) if e.extra_minutes else "–" }}</td>
-      <td>{{ e.window_end_override.strftime("%H:%M") if e.window_end_override else "–" }}</td>
-      <td>{{ "+" ~ fmt_minutes(e.extra_game_minutes) if e.extra_game_minutes else "–" }}</td>
+      <td data-label="{{ _('Zusätzlich') }}">{{ fmt_minutes(e.extra_minutes) if e.extra_minutes else "–" }}</td>
+      <td data-label="{{ _('Erlaubt bis') }}">{{ e.window_end_override.strftime("%H:%M") if e.window_end_override else "–" }}</td>
+      <td data-label="{{ _('Spielzeit') }}">{{ "+" ~ fmt_minutes(e.extra_game_minutes) if e.extra_game_minutes else "–" }}</td>
       <td class="right">
         <form method="post" action="/children/{{ child.id }}/exceptions/{{ e.id }}/delete" class="inline">
           <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">

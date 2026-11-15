@@ -297,14 +297,10 @@ msgstr "Add"
 msgid "Kind"
 msgstr "Child"
 
-msgid "Heute genutzt"
-msgstr "Used today"
 
 msgid "Rest"
 msgstr "Left"
 
-msgid "Fenster"
-msgstr "Hours"
 
 msgid "Spielt gerade"
 msgstr "Playing now"
@@ -315,8 +311,6 @@ msgstr "locked until {time}"
 msgid "gesperrt"
 msgstr "locked"
 
-msgid "von {total}"
-msgstr "of {total}"
 
 msgid "überzogen um {n} min"
 msgstr "over by {n} min"
@@ -1753,3 +1747,18 @@ msgstr "Pairing code"
 
 msgid "Quellcode"
 msgstr "Source code"
+
+msgid "Darstellung wechseln"
+msgstr "Change appearance"
+
+msgid "Darstellung: automatisch (wie das System)"
+msgstr "Appearance: automatic (follows the system)"
+
+msgid "Darstellung: hell"
+msgstr "Appearance: light"
+
+msgid "Darstellung: dunkel"
+msgstr "Appearance: dark"
+
+msgid "Hauptnavigation"
+msgstr "Main navigation"

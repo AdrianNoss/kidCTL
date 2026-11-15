@@ -65,3 +65,15 @@ def test_same_name_entries_can_be_told_apart(client, parent):
     with SessionLocal() as db:
         rows = programs.grouped_catalog(programs.catalog_for_child(db, cid))[0][2]
     assert [(e.name, e.note) for e in rows] == [("Foo", ""), ("Xbox", "Microsoft.GamingApp"), ("Xbox", "Microsoft.XboxApp")]
+
+
+def test_theme_cookie_sets_appearance_and_navigation(client, parent):
+    _setup(client, parent)
+    page = client.get("/").text
+    assert 'data-theme="auto"' in page and 'media="(prefers-color-scheme: dark)"' in page
+    assert 'class="navbar"' in page and 'aria-current="page"' in page
+    client.cookies.set("kidctl_theme", "dark")
+    page = client.get("/").text
+    assert 'data-theme="dark"' in page and 'content="dark"' in page and "#f3f3fa" not in page
+    client.cookies.set("kidctl_theme", "<script>")   # unbekannte Werte -> automatisch
+    assert 'data-theme="auto"' in client.get("/").text

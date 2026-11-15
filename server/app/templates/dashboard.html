@@ -1,43 +1,51 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="page-head"><h1>{{ _("Übersicht") }}</h1></div>
-<section class="card">
-  <div class="card-head"><h2>{{ _("Kinder") }}</h2></div>
-  {% if children %}
-  <div class="scroll">
-  <table>
-    <tr><th>{{ _("Kind") }}</th><th>{{ _("Heute genutzt") }}</th><th>{{ _("Rest") }}</th><th>{{ _("Fenster") }}</th><th></th></tr>
-    {% for c in children %}{% set st = status[c.id] %}
-    <tr>
-      <td><a href="/children/{{ c.id }}" class="entity">{{ c.name }}</a>
-        {% if playing.get(c.id) %}<br><span class="pill play" title="{{ _('Spielt gerade') }}">▶ {{ playing[c.id] | join(", ") }}</span>{% endif %}
-        {% if is_locked(c) %}<br><span class="pill danger">{% if c.locked_until %}{{ _("gesperrt bis {time}").format(time=c.locked_until | localtime("%H:%M")) }}{% else %}{{ _("gesperrt") }}{% endif %}</span>{% endif %}</td>
-      <td class="num">{{ fmt_minutes(st.used_seconds // 60) }} <span class="muted">{{ _("von {total}").format(total=fmt_minutes(st.allowed_minutes)) }}</span></td>
-      <td class="num">{% if st.overrun_minutes %}<span class="pill warn">{{ _("überzogen um {n} min").format(n=st.overrun_minutes) }}</span>
-          {% else %}{{ fmt_minutes(st.remaining_minutes) }}{% endif %}</td>
-      <td class="num">{% if st.window_start %}{{ st.window_start.strftime("%H:%M") }}–{{ st.window_end.strftime("%H:%M") }}{% endif %}</td>
-      <td class="right"><div class="actions">
-        <form method="post" action="/children/{{ c.id }}/{{ 'unlock' if is_locked(c) else 'lock' }}" class="inline">
-          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-          <input type="hidden" name="back" value="dashboard">
-          {% if is_locked(c) %}<button type="submit" class="small">{{ _("Freigeben") }}</button>
-          {% else %}<button type="submit" class="small danger" title="{{ _('Sperrt alle Rechner von {name} bis zur Freigabe (Abmeldung nach 1 Minute Vorwarnung)').format(name=c.name) }}">{{ _("Jetzt sperren") }}</button>{% endif %}
-        </form>
-        <a href="/children/{{ c.id }}/stats" class="btn secondary small">{{ _("Statistik") }}</a>
-        <a href="/children/{{ c.id }}/chat" class="btn secondary small">{{ _("Chat") }}{% if pending.get(c.id) %} <span class="count" title="{{ _('offene Anfragen') }}">{{ pending[c.id] }}</span>{% endif %}</a>
-      </div></td>
-    </tr>
-    {% endfor %}
-  </table>
-  </div>
-  <p class="muted"><small>{{ _("Summe über alle Geräte, Stand der letzten Meldungen. Überziehung durch gleichzeitige Offline-Nutzung wird nur angezeigt, nicht verrechnet.") }}</small></p>
-  {% else %}<p class="muted">{{ _("Noch keine Kinder angelegt.") }}</p><a href="/children" class="btn">{{ _("Kind anlegen") }}</a>{% endif %}
-</section>
+<h2 class="section-title" style="margin-top:0">{{ _("Kinder") }}</h2>
+{% if children %}
+<div class="kids">
+  {% for c in children %}{% set st = status[c.id] %}{% set locked = is_locked(c) %}
+  <article class="kid{% if locked %} is-locked{% endif %}">
+    <div class="kid-top">
+      <div>
+        <a href="/children/{{ c.id }}" class="kid-name">{{ c.name }}</a>
+        <div class="kid-meta">
+          {% if locked %}<span class="pill danger">{% if c.locked_until %}{{ _("gesperrt bis {time}").format(time=c.locked_until | localtime("%H:%M")) }}{% else %}{{ _("gesperrt") }}{% endif %}</span>{% endif %}
+          {% if playing.get(c.id) %}<span class="pill play" title="{{ _('Spielt gerade') }}">▶ {{ playing[c.id] | join(", ") }}</span>{% endif %}
+          {% if st.window_start %}<span>{{ _("Erlaubt") }} {{ st.window_start.strftime("%H:%M") }}–{{ st.window_end.strftime("%H:%M") }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="kid-left">
+        {% if st.overrun_minutes %}<strong>0:00 h</strong><span class="pill warn">{{ _("überzogen um {n} min").format(n=st.overrun_minutes) }}</span>
+        {% else %}<strong>{{ fmt_minutes(st.remaining_minutes) }}</strong><span>{{ _("Rest") }}</span>{% endif %}
+      </div>
+    </div>
+    <div>
+      <progress max="{{ st.allowed_minutes or 1 }}" value="{{ [st.used_seconds // 60, st.allowed_minutes] | min }}" aria-label="{{ _('Genutzte Zeit') }}"></progress>
+      <div class="kid-meta" style="margin-top:.375rem"><span class="num">{{ _("{used} von {total} genutzt").format(used=fmt_minutes(st.used_seconds // 60), total=fmt_minutes(st.allowed_minutes)) }}</span></div>
+    </div>
+    <div class="actions">
+      <form method="post" action="/children/{{ c.id }}/{{ 'unlock' if locked else 'lock' }}" class="inline">
+        <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+        <input type="hidden" name="back" value="dashboard">
+        {% if locked %}<button type="submit" class="small">{{ _("Freigeben") }}</button>
+        {% else %}<button type="submit" class="small danger" title="{{ _('Sperrt alle Rechner von {name} bis zur Freigabe (Abmeldung nach 1 Minute Vorwarnung)').format(name=c.name) }}">{{ _("Jetzt sperren") }}</button>{% endif %}
+      </form>
+      <a href="/children/{{ c.id }}/chat" class="btn tonal small">{{ _("Chat") }}{% if pending.get(c.id) %} <span class="count" title="{{ _('offene Anfragen') }}">{{ pending[c.id] }}</span>{% endif %}</a>
+      <a href="/children/{{ c.id }}/stats" class="btn ghost small">{{ _("Statistik") }}</a>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+<p class="muted"><small>{{ _("Summe über alle Geräte, Stand der letzten Meldungen. Überziehung durch gleichzeitige Offline-Nutzung wird nur angezeigt, nicht verrechnet.") }}</small></p>
+{% else %}
+<section class="card"><p class="muted">{{ _("Noch keine Kinder angelegt.") }}</p><a href="/children" class="btn">{{ _("Kind anlegen") }}</a></section>
+{% endif %}
 <section class="card">
   <div class="card-head"><h2>{{ _("Geräte") }}</h2></div>
   {% if devices %}
   <div class="scroll">
-  <table>
+  <table class="responsive">
     <tr><th>{{ _("Gerät") }}</th><th>{{ _("Status") }}</th><th>{{ _("Zuletzt gesehen") }}</th></tr>
     {% for d in devices %}
     <tr>
@@ -46,7 +54,7 @@
           {% if d.integrity_failed %}<span class="pill warn">{{ _("Integritätsfehler") }}</span>{% endif %}
           {% if d.protocol_unsupported %}<span class="pill warn">{{ _("Agent veraltet") }}</span>
           {% elif update_for(d.agent_version, platform=d.platform) %}<span class="pill warn" title="{{ (_('Wird automatisch installiert; klappt das nicht, den Installer auf dem Rechner erneut ausführen') if d.platform == 'windows' else _('Auf dem Rechner das Systemupdate ausführen (pacman -Syu bzw. apt upgrade)')) }}">{{ _("Update: {old} → {new}").format(old=d.agent_version, new=update_for(d.agent_version, platform=d.platform)) }}</span>{% endif %}</td>
-      <td class="num">{{ d.last_seen_at | localtime }}</td>
+      <td class="num" data-label="{{ _('Zuletzt gesehen') }}">{{ d.last_seen_at | localtime }}</td>
     </tr>
     {% endfor %}
   </table>

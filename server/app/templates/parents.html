@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-head"><h1>{{ _("Eltern-Accounts") }}</h1></div>
 <section class="card">
-  <table>
+  <table class="responsive">
     {% for p in parents %}
     <tr>
       <td><strong>{{ p.username }}</strong>{% if p.display_name %} <span class="muted">{{ p.display_name }}</span>{% endif %}
