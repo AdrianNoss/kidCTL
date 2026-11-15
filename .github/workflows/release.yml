@@ -1,11 +1,11 @@
 # Pakete in GitHub Actions bauen: Windows-Installer (optional über SignPath signiert) und Linux-Pakete
-# (Arch .pkg.tar.zst, Debian/Ubuntu .deb). Keine Schlüssel in GitHub – signiert wird danach lokal:
-#   packaging/repo/kidctl-repo-build.sh --apply --ci      Linux-Pakete holen, mit GPG signieren, Repo aktualisieren
-#   packaging/windows/build.py fetch --apply              Installer holen
-#   packaging/windows/build.py sign --apply               latest.json mit dem Update-Schlüssel signieren
-#   packaging/repo/kidctl-repo-publish.sh --apply         auf den Server
+# (Arch .pkg.tar.zst, Debian/Ubuntu .deb). Keine Schlüssel in GitHub – signiert und veröffentlicht wird danach
+# lokal mit einem Befehl: packaging/repo/kidctl-release.sh --apply
 #
-# Auslöser: Tag „v<Version>“ (muss zu agent/kidctl_agent/__init__.py passen) oder manuell.
+# Auslöser:
+# - Push auf main, der die Version ändert (agent/kidctl_agent/__init__.py, PKGBUILD): Job „version“ legt das
+#   Tag v<Version> an und startet den Bau; gibt es das Tag schon, wird nichts gebaut.
+# - Tag „v<Version>“ von Hand oder Start von Hand: immer bauen.
 # SignPath nur, wenn die Repository-Variablen SIGNPATH_* und das Secret SIGNPATH_API_TOKEN gesetzt sind.
 
 name: Pakete
@@ -13,6 +13,8 @@ name: Pakete
 on:
   push:
     tags: ["v*"]
+    branches: [main]
+    paths: ["agent/kidctl_agent/__init__.py", "packaging/arch/PKGBUILD"]
   workflow_dispatch:
 
 permissions:
@@ -20,7 +22,40 @@ permissions:
   actions: read   # SignPath liest Job-Details und lädt das Artefakt
 
 jobs:
+  version:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write   # Tag anlegen
+    outputs:
+      build: ${{ steps.v.outputs.build }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Version prüfen, Tag anlegen
+        id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ver=$(sed -n 's/^pkgver=\([^ ]*\).*/\1/p' packaging/arch/PKGBUILD)
+          agent=$(python3 -c "import re;print(re.search(r'__version__ = \"([^\"]+)\"', open('agent/kidctl_agent/__init__.py').read()).group(1))")
+          test "$ver" = "$agent" || { echo "::error::PKGBUILD $ver passt nicht zum Agenten $agent"; exit 1; }
+          if [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/* ]]; then
+            if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v$ver" > /dev/null 2>&1; then
+              echo "Tag v$ver gibt es schon – Version unverändert, kein Bau."
+              echo "build=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/v$ver" -f sha="$GITHUB_SHA" > /dev/null
+            echo "Tag v$ver auf $GITHUB_SHA angelegt."
+          fi
+          echo "build=true" >> "$GITHUB_OUTPUT"
+
   windows:
+    needs: version
+    if: needs.version.outputs.build == 'true'
     runs-on: windows-2025
     timeout-minutes: 360
     steps:
@@ -73,6 +108,8 @@ jobs:
           if-no-files-found: error
 
   linux:
+    needs: version
+    if: needs.version.outputs.build == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     container: archlinux:base

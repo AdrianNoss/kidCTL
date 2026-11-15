@@ -24,21 +24,22 @@ packaging/repo/kidctl-repo-key.sh create --apply    # fragt nach einer Passphras
 Gebaut wird in GitHub Actions (`.github/workflows/release.yml`: Arch-, Debian- und Windows-Pakete), signiert
 und veröffentlicht lokal – die Schlüssel liegen nie in GitHub:
 
+1. Version in `agent/kidctl_agent/__init__.py` und `packaging/arch/PKGBUILD` erhöhen, committen, auf main
+   pushen. Der Workflow legt das Tag `v<Version>` an und baut (ohne Versionsänderung baut er nichts).
+2. Lokal: **`packaging/repo/kidctl-release.sh --apply`** –
+   wartet auf den Lauf, holt die Pakete, signiert sie (GPG, `latest.json`) und veröffentlicht.
+
+Ziel der Veröffentlichung einmalig festlegen (oder `KIDCTL_REPO_TARGET` setzen):
+
 ```bash
-git tag v0.32.8 && git push origin v0.32.8           # startet den Bau (oder: gh workflow run release.yml)
-gh run watch                                          # warten, bis der Lauf fertig ist
-packaging/repo/kidctl-repo-build.sh --apply --ci      # Linux-Pakete holen, GPG-signieren, repo-add (alte Version raus)
-packaging/windows/build.py fetch --apply              # Windows-Installer holen
-packaging/windows/build.py sign --apply               # latest.json mit dem Update-Schlüssel signieren
-KIDCTL_REPO_TARGET=user@server:/srv/kidctl/data/repo/ \
-  packaging/repo/kidctl-repo-publish.sh           # Dry-Run (rsync -n)
-KIDCTL_REPO_TARGET=user@server:/srv/kidctl/data/repo/ \
-  packaging/repo/kidctl-repo-publish.sh --apply
+echo "user@server:/srv/kidctl/data/repo/" > ~/.local/share/kidctl-repo/publish-target
+packaging/repo/kidctl-release.sh            # Dry-Run: zeigt Lauf und alle Schritte
+packaging/repo/kidctl-release.sh --apply
 ```
 
-`--ci` und `fetch` nehmen den Lauf zum Tag `v<Version>` (sonst den neuesten erfolgreichen; `--ci <Lauf-ID>`
-bzw. `fetch --run <Lauf-ID>` wählen einen bestimmten). Lokal bauen geht weiterhin: `kidctl-repo-build.sh
---apply` ohne `--ci` (makepkg) und `build.py all --apply` (Windows-VM).
+Einzelschritte, falls nötig: `kidctl-repo-build.sh --apply --ci [LAUF]`, `packaging/windows/build.py fetch
+--apply [--run LAUF]`, `build.py sign --apply`, `kidctl-repo-publish.sh --apply`. Lokal bauen geht weiterhin:
+`kidctl-repo-build.sh --apply` ohne `--ci` (makepkg) und `build.py all --apply` (Windows-VM).
 
 Version vorher in `packaging/arch/PKGBUILD` (`pkgver`) und `agent/kidctl_agent/__init__.py`
 erhöhen (ein Test prüft die Übereinstimmung). Der Server liefert `./data/repo` unter

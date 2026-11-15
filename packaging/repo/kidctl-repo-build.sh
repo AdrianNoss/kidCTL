@@ -37,7 +37,8 @@ run mkdir -p "$REPO_DIR"
 if (( CI )); then
   if [[ -z "$CI_RUN" ]]; then
     newest() { gh run list -R "$GITHUB_REPO" -w release.yml -s success -L 1 "$@" --json databaseId -q '.[0].databaseId' 2>/dev/null || true; }
-    CI_RUN="$(newest -b "v$ver")"; [[ -n "$CI_RUN" ]] || CI_RUN="$(newest)"
+    tag="$(gh api "repos/$GITHUB_REPO/commits/v$ver" --jq .sha 2>/dev/null || true)"
+    [[ -n "$tag" ]] && CI_RUN="$(newest -c "$tag")"; [[ -n "$CI_RUN" ]] || CI_RUN="$(newest)"
     [[ -n "$CI_RUN" ]] || die "kein erfolgreicher Lauf von release.yml"
   fi
   echo "Hole $names $ver-$rel aus GitHub Actions (Lauf $CI_RUN), signiert mit $fpr"

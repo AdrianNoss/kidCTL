@@ -261,12 +261,14 @@ def cmd_ci(out: Path) -> None:
 
 
 def ci_run(ver: str) -> str:
-    """Lauf von release.yml für den Tag v<ver>, sonst der neueste erfolgreiche Lauf."""
+    """Erfolgreicher Lauf von release.yml für den Commit des Tags v<ver>, sonst der neueste erfolgreiche."""
     def newest(*extra: str) -> str:
         return subprocess.run(["gh", "run", "list", "-R", GITHUB_REPO, "-w", WORKFLOW, "-s", "success", "-L", "1",
                                *extra, "--json", "databaseId", "-q", ".[0].databaseId"],
                               check=True, capture_output=True, text=True).stdout.strip()
-    run = newest("-b", f"v{ver}") or newest()
+    tag = subprocess.run(["gh", "api", f"repos/{GITHUB_REPO}/commits/v{ver}", "--jq", ".sha"],
+                         capture_output=True, text=True).stdout.strip()
+    run = (newest("-c", tag) if tag else "") or newest()
     if not run:
         sys.exit(f"Kein erfolgreicher Lauf von {WORKFLOW} gefunden.")
     return run

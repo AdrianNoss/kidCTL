@@ -34,7 +34,8 @@ packaging/repo/kidctl-repo-publish.sh --apply
 
 [`.github/workflows/release.yml`](../../.github/workflows/release.yml) baut den Installer auf einem
 GitHub-Runner (`build.py ci`) – ausgelöst durch einen Tag `v<Version>` oder von Hand – und lädt ihn als
-Artefakt `KidCTL-Setup-unsigned` hoch. Ablauf je Release siehe [`packaging/repo/README.md`](../repo/README.md):
+Artefakt `KidCTL-Setup-unsigned` hoch. Je Release erledigt `packaging/repo/kidctl-release.sh --apply` Holen, Signieren
+und Veröffentlichen ([`packaging/repo/README.md`](../repo/README.md)); einzeln:
 
 ```bash
 packaging/windows/build.py fetch --apply      # Installer des Laufs zum Tag v<Version> ins Repo holen

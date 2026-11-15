@@ -1708,3 +1708,11 @@ Abweichungen stehen hier und unter „Restlücken“.
   Getestet: `--ci` mit Ersatz für `gh` und lokal gebauten Paketen gegen eine Schlüsselkopie in einem Testordner (Paket-, Datenbank- und
   InRelease-Signaturen gültig, echtes Repo unberührt); Dry-Runs von `--ci` und `fetch`; Workflow-YAML syntaktisch geprüft. Der Lauf auf
   GitHub (Container, makepkg als `builder`) steht noch aus.
+- 2026-11-15: Release-Ablauf automatisiert (Schlüssel bleiben lokal): `release.yml` startet auch bei Push auf main, wenn
+  `agent/kidctl_agent/__init__.py` oder PKGBUILD geändert sind; Job `version` prüft PKGBUILD/Agent, legt das Tag `v<Version>` per API an
+  und gibt den Bau frei – gibt es das Tag schon, wird nichts gebaut. Neues `packaging/repo/kidctl-release.sh [--apply] [LAUF]`: wartet auf
+  Tag und Lauf (bis 10 min, dann `gh run watch`), ruft `kidctl-repo-build.sh --ci`, `build.py fetch`/`sign` und `kidctl-repo-publish.sh`
+  auf. Lauf-Suche in allen Skripten über den Commit des Tags (`gh run list -c`). `kidctl-repo-publish.sh` liest das Ziel auch aus
+  `~/.local/share/kidctl-repo/publish-target`. Getestet: Dry-Run von `kidctl-release.sh` mit Lauf 43747182262 bis einschließlich
+  Signier-Schritten; Fehlermeldungen ohne Tag/Lauf; Workflow-YAML syntaktisch geprüft. Nicht getestet: Auto-Tag auf GitHub (erst bei der
+  nächsten Versionserhöhung), `rsync` zu srv02 (SSH-Anmeldung nur aus dem eigenen Terminal).

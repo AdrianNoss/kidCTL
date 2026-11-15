@@ -146,19 +146,18 @@ packaging/repo/kidctl-repo-key.sh create --apply
 
 ### 2.2 Bauen und veröffentlichen
 
-Die Pakete baut GitHub Actions beim Push eines Tags `v<Version>`; signiert und veröffentlicht wird lokal
-(braucht die [gh CLI](https://cli.github.com/), angemeldet):
+Die Pakete baut GitHub Actions, sobald ein Commit mit neuer Version auf main landet (der Workflow setzt das
+Tag `v<Version>`); signiert und veröffentlicht wird lokal mit einem Befehl (braucht die
+[gh CLI](https://cli.github.com/), angemeldet):
 
 ```bash
-git tag v<Version> && git push origin v<Version>
-gh run watch
-packaging/repo/kidctl-repo-build.sh --apply --ci
-packaging/windows/build.py fetch --apply && packaging/windows/build.py sign --apply
-KIDCTL_REPO_TARGET=user@server:/srv/kidctl/data/repo/ packaging/repo/kidctl-repo-publish.sh --apply
+echo "user@server:/srv/kidctl/data/repo/" > ~/.local/share/kidctl-repo/publish-target   # einmalig
+packaging/repo/kidctl-release.sh --apply
 ```
 
-Ohne GitHub: `kidctl-repo-build.sh --apply` (ohne `--ci`) baut die Linux-Pakete lokal, den Windows-Installer
-`packaging/windows/build.py all --apply` in der Windows-VM.
+Das Skript wartet auf den Bau, holt Linux-Pakete und Windows-Installer, signiert sie und überträgt das Repo.
+Ohne GitHub: `kidctl-repo-build.sh --apply` baut die Linux-Pakete lokal, `packaging/windows/build.py all
+--apply` den Windows-Installer in der Windows-VM, danach `kidctl-repo-publish.sh --apply`.
 
 Der SSH-Benutzer braucht Schreibrechte auf `data/repo`, und die Dateien müssen für den Container
 lesbar sein (z. B. `chown <user> data/repo`, Rechte `755`/`644`). Test:
@@ -408,7 +407,7 @@ root sperren und Firmware- sowie Bootloader-Passwort setzen: [`docs/haertung.md`
 | Was | Wie |
 |---|---|
 | Server | `git pull && docker compose up -d --build`. Datenbank-Migrationen laufen beim Start automatisch. |
-| Client-Pakete | `pkgver` in `packaging/arch/PKGBUILD` und `agent/kidctl_agent/__init__.py` erhöhen, committen, dann 2.2 ausführen (Arch-, `.deb`- und Windows-Pakete aus derselben Version). Die Kinderrechner bekommen das Update mit `sudo pacman -Syu` bzw. `sudo apt upgrade`; Windows-Rechner installieren es selbst. |
+| Client-Pakete | `pkgver` in `packaging/arch/PKGBUILD` und `agent/kidctl_agent/__init__.py` erhöhen, committen und auf main pushen, dann `kidctl-release.sh --apply` (2.2) (Arch-, `.deb`- und Windows-Pakete aus derselben Version). Die Kinderrechner bekommen das Update mit `sudo pacman -Syu` bzw. `sudo apt upgrade`; Windows-Rechner installieren es selbst. |
 | Ab 0.27.0 | Das SDDM-Theme steckt jetzt im Paket `kidctl-plasma`. Auf bestehenden Plasma-Rechnern einmalig `sudo pacman -Syu kidctl-plasma`, sonst fehlt der Hinweis im Anmeldebildschirm. |
 
 Ein Server-Update vor den Agenten ist unproblematisch, weil der Server auch die vorherige

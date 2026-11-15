@@ -3,13 +3,16 @@
 #
 #   KIDCTL_REPO_TARGET=user@server:/pfad/zum/stack/data/repo/ kidctl-repo-publish.sh [--apply]
 #
+# Statt der Variable geht auch eine Zeile in ${KIDCTL_REPO_HOME:-~/.local/share/kidctl-repo}/publish-target.
+#
 # Ohne --apply zeigt rsync nur, was übertragen würde. Der Server liefert das Verzeichnis unter
 # <BASE_URL>/repo/ aus.
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 target="${KIDCTL_REPO_TARGET:-}"
-[[ -n "$target" ]] || die "KIDCTL_REPO_TARGET setzen, z. B. user@server:/srv/kidctl/data/repo/"
+[[ -z "$target" && -f "$REPO_HOME/publish-target" ]] && target="$(head -n1 "$REPO_HOME/publish-target")"
+[[ -n "$target" ]] || die "KIDCTL_REPO_TARGET setzen (oder $REPO_HOME/publish-target), z. B. user@server:/srv/kidctl/data/repo/"
 [[ -f "$REPO_DIR/$REPO_NAME.db.tar.zst" ]] || die "kein Repo in $REPO_DIR – erst kidctl-repo-build.sh --apply"
 opts=(-av --delete --links)
 (( APPLY )) || opts+=(--dry-run)
