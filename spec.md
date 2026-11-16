@@ -2193,6 +2193,12 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
   Accounts samt Sitzungen/Tokens/Push-Abos und alle Familiendaten gelöscht (CASCADE). Bedienung im WebUI folgt mit Etappe 4/5.
   Getestet: alle Server-Tests, neu: Geheimtext aus „altem Backup“ nach dem Löschen nicht mehr zu öffnen, alles der Familie entfernt,
   andere Familie unberührt.
+- 2026-11-16: Etappe 2.5 Multi-Tenant: Aufbewahrungsfristen (`app/retention.py`, alle 6 Stunden im Plattformkontext, nur nach
+  Zeitstempeln): Protokoll, Spielsitzungen, Programmnutzung 90 Tage; Bildschirmzeit je Tag 395 Tage; Chat 365 Tage; Anmeldeversuche 30
+  Tage; abgelaufene Sitzungen/Links 30 Tage nach Ablauf; je Datenart per `KIDCTL_KEEP_<NAME>_DAYS` änderbar (ersetzt das bisherige
+  Aufräumen des Protokolls). „Chat leeren“ je Kind (Knopf auf der Chatseite mit Rückfrage). Doku: Aufbewahrung, Familie löschen, Update-
+  Hinweis zum Hauptschlüssel. Getestet: alle Server-Tests, neu `test_retention.py` (Fristen je Datenart, Grenze 13 Monate, Änderung per
+  Umgebung, Chat leeren nur für das gewählte Kind). Protokoll der Support-Zugriffe (2 Jahre) folgt mit Etappe 4.
 - 2026-11-17: Anforderungen Wiki per /grill-me abgestimmt (Abschnitt „Projekthomepage“ → „Wiki“): `docs/` als
   Wiki auf der Projektseite, DE/EN mit Paritäts-Check, Aufteilung in Themenseiten, Pagefind-Suche. Noch keine
   Umsetzung.

@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import alarms, backup, blocklog, i18n, policy, report, versions, webfilter
+from . import alarms, backup, blocklog, i18n, policy, report, versions, webfilter, retention
 from .config import settings
 from .db import init_db
 from .tenant import platform_session
@@ -45,18 +45,17 @@ async def _refresh_lists_forever() -> None:
 
 
 async def _prune_log_forever() -> None:
-    """Protokoll gesperrter Aktionen: Einträge nach 90 Tagen löschen (beim Start, dann alle 6 Stunden)."""
-    log = logging.getLogger("kidctl.blocklog")
+    """Aufbewahrungsfristen durchsetzen (app.retention): beim Start, dann alle 6 Stunden."""
+    log = logging.getLogger("kidctl.retention")
     while True:
         try:
-            def run() -> int:
-                with platform_session() as db:   # Aufräumen über alle Familien
-                    return blocklog.prune(db)
-            if n := await asyncio.to_thread(run):
-                log.info("Protokoll: %d Einträge älter als %d Tage gelöscht", n, blocklog.RETENTION_DAYS)
+            def run() -> dict:
+                with platform_session() as db:   # Aufräumen über alle Familien, nur nach Zeitstempeln
+                    return retention.prune_all(db)
+            await asyncio.to_thread(run)
         except Exception:
-            log.exception("Protokoll nicht aufräumbar")
-        await asyncio.sleep(blocklog.PRUNE_INTERVAL)
+            log.exception("Aufräumen nach Aufbewahrungsfristen fehlgeschlagen")
+        await asyncio.sleep(retention.PRUNE_INTERVAL)
 
 
 app = FastAPI(title="KidCTL", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)

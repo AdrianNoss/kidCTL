@@ -415,6 +415,7 @@ root sperren und Firmware- sowie Bootloader-Passwort setzen: [`docs/haertung.md`
 |---|---|
 | Server | `git pull && docker compose up -d --build`. Datenbank-Migrationen (Alembic) laufen beim Start automatisch. |
 | Umstieg SQLite → PostgreSQL (einmalig, Server bis 0.32.x) | Siehe unten „Umstieg auf PostgreSQL“. |
+| Verschlüsselung je Familie (einmalig) | **Vor** `git pull && docker compose up -d --build`: Hauptschlüssel erzeugen (`docker compose run --rm kidctl python -m app.cli master-key`, mit dem alten Image geht es auch per `python3 -c "import base64,os;print(base64.urlsafe_b64encode(os.urandom(32)).decode().rstrip('='))"`), als `KIDCTL_MASTER_KEY=…` in `.env` eintragen und **getrennt sichern**. Beim Start verschlüsseln die Migrationen vorhandene Namen, Chats, Protokoll, Statistik und E-Mail-Adressen. Ohne Schlüssel startet der Server nicht. |
 | Client-Pakete | `pkgver` in `packaging/arch/PKGBUILD` und `agent/kidctl_agent/__init__.py` erhöhen, committen und auf main pushen, dann `kidctl-release.sh --apply` (2.2) (Arch-, `.deb`- und Windows-Pakete aus derselben Version). Die Kinderrechner bekommen das Update mit `sudo pacman -Syu` bzw. `sudo apt upgrade`; Windows-Rechner installieren es selbst. |
 | Ab 0.27.0 | Das SDDM-Theme steckt jetzt im Paket `kidctl-plasma`. Auf bestehenden Plasma-Rechnern einmalig `sudo pacman -Syu kidctl-plasma`, sonst fehlt der Hinweis im Anmeldebildschirm. |
 
@@ -445,6 +446,24 @@ docker compose up -d
 Die Übernahme arbeitet auf einer Kopie, die SQLite-Datei bleibt unverändert; sie bricht ab, wenn die
 PostgreSQL-Datenbank nicht leer ist. Geräte, Sitzungen und Kopplungen bleiben gültig (gleicher `SECRET_KEY`).
 Zurück: `docker compose down`, alte Version auschecken, `data/kidctl.db.vorher` zurückkopieren.
+
+## Aufbewahrung
+
+Der Server löscht alle 6 Stunden, was älter ist als:
+
+| Daten | Frist | Variable |
+|---|---|---|
+| Protokoll gesperrter Aktionen | 90 Tage | `KIDCTL_KEEP_LOG_DAYS` |
+| Spielsitzungen | 90 Tage | `KIDCTL_KEEP_GAMES_DAYS` |
+| Programmnutzung je Programm | 90 Tage | `KIDCTL_KEEP_APPS_DAYS` |
+| Bildschirmzeit je Tag | 13 Monate (395 Tage) | `KIDCTL_KEEP_USAGE_DAYS` |
+| Chat | 12 Monate (365 Tage) | `KIDCTL_KEEP_CHAT_DAYS` |
+| Anmeldeversuche | 30 Tage | `KIDCTL_KEEP_LOGINS_DAYS` |
+| Abgelaufene Sitzungen und Links | 30 Tage nach Ablauf | `KIDCTL_KEEP_SESSIONS_DAYS`, `KIDCTL_KEEP_TOKENS_DAYS` |
+
+Den Chat eines Kindes können Eltern jederzeit unter **Chat → Chat leeren** löschen. Eine Familie endgültig löschen
+(Schlüssel verwerfen, dann alle Daten): `docker compose exec kidctl python -m app.cli delete-family <id>` (Probelauf),
+dann mit `--apply`.
 
 ## Backup und Wiederherstellung
 

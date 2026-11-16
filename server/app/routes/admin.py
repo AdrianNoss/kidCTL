@@ -7,7 +7,7 @@ from datetime import date, time, timedelta
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -362,6 +362,15 @@ def _chat_ctx(db: Session, child: Child) -> dict:
 def child_chat(child_id: int, request: Request, db: Session = Depends(get_db)):
     child = _get_or_404(db, Child, child_id)
     return render(request, "chat.html", tab="chat", **_child_head(db, child), **_chat_ctx(db, child))
+
+
+@router.post("/children/{child_id}/chat/clear", dependencies=[Depends(csrf_protect)])
+async def child_chat_clear(child_id: int, db: Session = Depends(get_db)):
+    """Chat eines Kindes leeren (Datensparsamkeit). Offene Anfragen verfallen mit."""
+    child = _get_or_404(db, Child, child_id)
+    db.execute(delete(Message).where(Message.child_id == child.id))
+    db.commit()
+    return _redirect(f"/children/{child.id}/chat?cleared=1")
 
 
 @router.get("/children/{child_id}/chat/messages")

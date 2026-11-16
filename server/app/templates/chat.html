@@ -2,6 +2,7 @@
 {% block title %}{{ _("Chat") }} {{ child.name }} – KidCTL{% endblock %}
 {% block content %}
 {% include "_child_head.html" %}
+{% if request.query_params.get("cleared") %}<p class="success">{{ _("Chat geleert.") }}</p>{% endif %}
 {% if not has_device %}<p class="warn">{{ _("{name} ist noch keinem Benutzerkonto zugeordnet – Nachrichten werden erst nach der Zuordnung zugestellt.").format(name=child.name) }}</p>{% endif %}
 <section class="card chat" id="chat" data-src="/children/{{ child.id }}/chat/messages">
 {% include "_messages.html" %}
@@ -10,6 +11,12 @@
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
   <textarea name="body" rows="2" maxlength="2000" required placeholder="{{ _('Nachricht an {name}').format(name=child.name) }}"></textarea>
   <button type="submit">{{ _("Senden") }}</button>
+</form>
+<form method="post" action="/children/{{ child.id }}/chat/clear" class="row" style="justify-content:flex-end"
+      data-confirm="{{ _('Den ganzen Chat mit {name} löschen? Das lässt sich nicht rückgängig machen.').format(name=child.name) }}">
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <small class="muted">{{ _("Nachrichten werden nach 12 Monaten automatisch gelöscht.") }}</small>
+  <button type="submit" class="ghost small">{{ _("Chat leeren") }}</button>
 </form>
 <script src="/static/chat.js" defer></script>
 {% endblock %}

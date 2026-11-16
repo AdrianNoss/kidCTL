@@ -1806,3 +1806,15 @@ msgstr "optional, for sign-in and “Forgot password”"
 
 msgid "E-Mail-Adresse oder Benutzername"
 msgstr "Email address or username"
+
+msgid "Den ganzen Chat mit {name} löschen? Das lässt sich nicht rückgängig machen."
+msgstr "Delete the entire chat with {name}? This cannot be undone."
+
+msgid "Nachrichten werden nach 12 Monaten automatisch gelöscht."
+msgstr "Messages are deleted automatically after 12 months."
+
+msgid "Chat leeren"
+msgstr "Clear chat"
+
+msgid "Chat geleert."
+msgstr "Chat cleared."
