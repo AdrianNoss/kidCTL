@@ -5,6 +5,7 @@ Per Env-Var:  KIDCTL_BOOTSTRAP_USER=… [KIDCTL_BOOTSTRAP_EMAIL=…] KIDCTL_BOOT
               (im SaaS-Betrieb ist die E-Mail Pflicht und ersetzt den Benutzernamen)
 Notfall:      python -m app.cli reset-password <benutzer> | reset-totp <benutzer>
 VAPID:        python -m app.cli vapid-keys >> .env
+Hauptschlüssel: python -m app.cli master-key >> .env   (einmalig; getrennt sichern!)
 Umstieg:      python -m app.cli import-sqlite /data/kidctl.db [--apply]   (SQLite bis 0.32.x -> PostgreSQL)
 """
 
@@ -148,6 +149,14 @@ def backup(_args: argparse.Namespace) -> int:
     return 0
 
 
+def master_key(_args: argparse.Namespace) -> int:
+    """Neuen Hauptschlüssel für .env ausgeben (verschlüsselt die Schlüssel der Familien)."""
+    from .crypto import new_master_key
+    print(f"KIDCTL_MASTER_KEY={new_master_key()}")
+    print("Getrennt sichern (z. B. Passwortmanager) – ohne ihn sind die verschlüsselten Daten verloren.", file=sys.stderr)
+    return 0
+
+
 def import_sqlite(args: argparse.Namespace) -> int:
     """Alte SQLite-Datenbank nach PostgreSQL übernehmen (ohne --apply nur Probelauf)."""
     from .db import engine
@@ -184,6 +193,8 @@ def main() -> int:
     vk.set_defaults(func=vapid_keys)
     bp = sub.add_parser("backup", help="Datenbank-Backup jetzt erstellen (nach <data>/backups)")
     bp.set_defaults(func=backup)
+    mk = sub.add_parser("master-key", help="Hauptschlüssel für die Verschlüsselung erzeugen (für .env)")
+    mk.set_defaults(func=master_key)
     ip = sub.add_parser("import-sqlite", help="SQLite-Datenbank (bis 0.32.x) nach PostgreSQL übernehmen")
     ip.add_argument("path", help="Pfad zur kidctl.db")
     ip.add_argument("--apply", action="store_true", help="wirklich übernehmen (sonst Probelauf)")

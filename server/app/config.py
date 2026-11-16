@@ -41,6 +41,7 @@ class Settings:
     smtp_security: str = "starttls"   # starttls | ssl | none
     dev: bool = False
     mode: str = "single"   # single = eine Familie (Self-Hosting) | saas = viele Familien
+    master_key: str = ""   # KIDCTL_MASTER_KEY: verschlüsselt die Schlüssel der Familien (app.crypto)
 
     @property
     def saas(self) -> bool:
@@ -69,6 +70,17 @@ def _database_url(dev: bool) -> str:
     if url.startswith("postgresql://"):
         url = "postgresql+psycopg://" + url.removeprefix("postgresql://")
     return url
+
+
+DEV_MASTER_KEY = "ZGV2LW51ci1sb2thbC1rZWluLWVjaHRlci1zY2hsdWU"   # nur Entwicklung/Tests (32 Byte)
+
+
+def _master_key(dev: bool) -> str:
+    key = os.environ.get("KIDCTL_MASTER_KEY", "").strip()
+    if not key and not dev:
+        raise RuntimeError("KIDCTL_MASTER_KEY fehlt (in .env setzen; erzeugen mit `python -m app.cli master-key`). "
+                           "Ohne ihn sind die verschlüsselten Daten nicht lesbar – getrennt sichern!")
+    return key or DEV_MASTER_KEY
 
 
 def _mode() -> str:
@@ -100,6 +112,7 @@ def load_settings() -> Settings:
         totp_issuer=os.environ.get("TOTP_ISSUER", "KidCTL"),
         source_url=os.environ.get("SOURCE_URL", "https://github.com/AdrianNoss/kidCTL"),
         mode=_mode(),
+        master_key=_master_key(dev),
         vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY", ""),
         vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY", ""),
         vapid_subject=os.environ.get("VAPID_SUBJECT", ""),

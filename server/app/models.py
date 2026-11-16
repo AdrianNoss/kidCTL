@@ -7,7 +7,8 @@ import json
 from datetime import date, datetime, time, timezone
 
 from sqlalchemy import (
-    Boolean, Date, DateTime, ForeignKey, Index, Integer, String, Text, Time, UniqueConstraint, func, text,
+    Boolean, Date, DateTime, ForeignKey, Index, Integer, LargeBinary, String, Text, Time, UniqueConstraint, func,
+    text,
 )
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -25,6 +26,8 @@ class Family(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(128), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    # Datenschlüssel der Familie, mit dem Hauptschlüssel eingepackt (app.crypto); NULL = gelöscht/unlesbar
+    wrapped_key: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
 
 
 class FamilyScoped:

@@ -20,6 +20,7 @@ from contextlib import contextmanager
 from sqlalchemy import event, select
 from sqlalchemy.orm import ORMExecuteState, Session, with_loader_criteria
 
+from . import crypto
 from .db import SessionLocal
 from .models import Family, FamilyScoped, Membership, Parent, ParentSession, ParentToken, PushSubscription
 
@@ -95,6 +96,7 @@ def _scope(state: ORMExecuteState) -> None:
     if not (state.is_select or state.is_update or state.is_delete):
         return
     db = state.session
+    crypto.set_current(db.info.get(FAMILY))   # Schlüssel für Bind-Parameter und Ergebnisse dieser Abfrage
     if db.info.get(PLATFORM):
         return
     fid = db.info.get(FAMILY)
@@ -112,9 +114,23 @@ def _scope(state: ORMExecuteState) -> None:
     )
 
 
+@event.listens_for(Family, "after_insert")
+def _family_key(_mapper, connection, target: Family) -> None:
+    """Jede neue Familie bekommt sofort ihren eigenen Datenschlüssel."""
+    import os
+    from sqlalchemy import update
+    if target.wrapped_key is None:
+        dek = os.urandom(64)
+        wrapped = crypto.wrap_family_key(target.id, dek)
+        connection.execute(update(Family.__table__).where(Family.__table__.c.id == target.id).values(wrapped_key=wrapped))
+        target.wrapped_key = wrapped
+        crypto.remember(target.id, dek)
+
+
 @event.listens_for(Session, "before_flush")
 def _assign(db: Session, _ctx, _instances) -> None:
     fid = db.info.get(FAMILY)
+    crypto.set_current(fid)
     for obj in db.new:
         if not isinstance(obj, FamilyScoped):
             continue

@@ -2161,6 +2161,15 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
   VM-Build vom 2026-11-08 (`d8e2…`, vor Einführung des CI-Baus, von `latest.json` signiert). Kein Fehler, ab dem
   nächsten Release kommen beide aus demselben CI-Lauf. Getestet: `hugo --minify --panicOnWarning`, Prüfsummen von
   Release-Asset und CI-Artefakt verglichen.
+- 2026-11-16: Etappe 2.1 Multi-Tenant: Verschlüsselungskern (`app/crypto.py`). Hauptschlüssel `KIDCTL_MASTER_KEY` (32 Byte Base64,
+  außerhalb der Entwicklung Pflicht, `cli master-key` erzeugt ihn), daraus per HKDF Schlüssel zum Einpacken und für Suchwerte.
+  Jede Familie bekommt beim Anlegen einen eigenen 64-Byte-Datenschlüssel, eingepackt in `family.wrapped_key` (Alembic `0004`
+  erzeugt ihn für bestehende Familien). Spaltentypen `Sealed` (AES-256-GCM, zufällig) und `Matchable` (AES-256-SIV,
+  deterministisch für Gleichheit/Eindeutigkeit/Gruppieren), Prüfdaten Familie + Tabelle.Spalte; `tenant.py` setzt den Schlüssel-
+  kontext bei jeder Abfrage und jedem Speichern auf die Familie der Sitzung (Plattform/kein Kontext = kein Schlüssel). Entscheidung
+  2026-11-16: Programm-/Website-Schlüssel deterministisch verschlüsseln. Noch keine Spalte umgestellt. Getestet: alle Server-Tests,
+  neu `test_crypto.py` (eigener Schlüssel je Familie, Bindung an Familie/Spalte, deterministisch vs. zufällig, ohne Kontext Fehler,
+  E-Mail-Suchwert, Hauptschlüssel Pflicht); Migration 0004 auf den Entwicklungsdaten, `alembic check` ohne Abweichung.
 - 2026-11-17: Anforderungen Wiki per /grill-me abgestimmt (Abschnitt „Projekthomepage“ → „Wiki“): `docs/` als
   Wiki auf der Projektseite, DE/EN mit Paritäts-Check, Aufteilung in Themenseiten, Pagefind-Suche. Noch keine
   Umsetzung.
