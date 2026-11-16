@@ -2,7 +2,8 @@
 
 [English](README.md) · **Deutsch**
 
-Selbst gehostete Kindersicherung für **Arch Linux, Debian und Ubuntu** (auch Mint, Pop!_OS) **mit KDE Plasma oder GNOME (Wayland)**. Ein zentraler Server
+Selbst gehostete Kindersicherung für **Windows 10 (22H2) und Windows 11 (ab 23H2)** (x64, Home und Pro) sowie
+**Arch Linux, Debian und Ubuntu** (auch Mint, Pop!_OS) **mit KDE Plasma oder GNOME (Wayland)**. Ein zentraler Server
 mit Eltern-WebUI (auch als App aufs Handy) steuert einen Root-Agenten auf jedem Kinderrechner. Alle
 Daten bleiben auf dem eigenen Server, es gibt keine Cloud und kein Konto bei Dritten.
 
@@ -10,14 +11,15 @@ Daten bleiben auf dem eigenen Server, es gibt keine Cloud und kein Konto bei Dri
 
 - **Bildschirmzeit**:
   - Tageskontingent und Zeitfenster je Wochentag, Zählung über alle Rechner eines Kindes.
-  - Warnungen vor Ablauf, danach Abmeldung und Login-Sperre (SDDM, GDM und TTY).
+  - Warnungen vor Ablauf, danach Abmeldung und Login-Sperre (SDDM, GDM und TTY; Windows: Konto des Kindes
+    wird deaktiviert).
   - Funktioniert auch offline mit der zuletzt bekannten Regel.
 - **Verlängerungen und Chat**: Das Kind fragt in der Tray-App nach mehr Zeit oder schreibt eine
   Nachricht, die Eltern antworten per Push auf dem Handy.
 - **Programm-Whitelist**:
   - Modi „Nur protokollieren“ oder „Sperren“.
-  - Katalog der installierten Apps, Flatpak (systemweit) und Steam.
-  - Eigene Programme im Home sind durch noexec blockiert.
+  - Katalog der installierten Apps, Flatpak (systemweit) und Steam, unter Windows Startmenü und Store-Apps.
+  - Eigene Programme im Home sind durch noexec blockiert (Windows: Ausführverbot im Benutzerprofil).
 - **Website-Filter** (DNS):
   - Whitelist mit Dienst-Bundles (YouTube, Wikipedia, Lern-Apps, Microsoft 365) oder Blacklist mit
     Sperrlisten (HaGeZi, OISD, StevenBlack).
@@ -30,7 +32,8 @@ Daten bleiben auf dem eigenen Server, es gibt keine Cloud und kein Konto bei Dri
   - Schutzmaßnahme manipuliert, z. B. PAM, nftables oder noexec.
 - **Sicherheit**:
   - Eltern-Login nur mit TOTP, Rate-Limiting, CSRF-Schutz.
-  - Signiertes Paket-Repository für Updates (Pacman und APT).
+  - Signiertes Paket-Repository für Updates (Pacman und APT); der Windows-Agent aktualisiert sich selbst
+    (Ed25519-signiert).
 
 ## Architektur
 
@@ -56,7 +59,9 @@ Daten bleiben auf dem eigenen Server, es gibt keine Cloud und kein Konto bei Dri
 - **Tray-App**: zeigt Restzeit und Chat an. Sie ist rein kosmetisch, ihr Beenden ändert nichts an
   der Durchsetzung.
 
-Grundregel: root und Accounts in `wheel`/`sudo`/`admin` werden **nie** eingeschränkt.
+Unter Windows läuft der Agent als Windows-Dienst (`LocalSystem`), die Tray-App spricht über eine Named Pipe mit ihm.
+
+Grundregel: root, Accounts in `wheel`/`sudo`/`admin` und Windows-Administratoren werden **nie** eingeschränkt.
 
 ## Installation
 
@@ -78,15 +83,29 @@ sudo kidctl enroll https://kids.example.org <KOPPLUNGSCODE>
 sudo systemctl enable --now kidctl-agent.service
 ```
 
+Windows-Kinderrechner (als Administrator): `KidCTL-Setup-<Version>.exe` von `https://kids.example.org/repo/windows/`
+oder aus den [GitHub-Releases](https://github.com/AdrianNoss/kidCTL/releases) herunterladen, ausführen,
+Server-Adresse und Kopplungscode eintragen. Der Installer ist noch nicht signiert, SmartScreen fragt einmal nach
+(„Weitere Informationen“ → „Trotzdem ausführen“). Details: [docs/installation.md, 3.6](docs/installation.md#36-windows).
+
 Danach die Rechner gegen physischen Zugriff härten: **[docs/haertung.md](docs/haertung.md)**.
 
 ## Grenzen
 
-- Nur KDE Plasma und GNOME auf Wayland. Andere Desktops und X11 werden nicht unterstützt.
+- Linux: nur KDE Plasma und GNOME auf Wayland. Andere Desktops und X11 werden nicht unterstützt.
+  Debian/Ubuntu nur amd64.
 - Unter GNOME keine automatische Anmeldung (GDM) für Kinder – bei Login-Sperre bliebe der Bildschirm schwarz.
 - Kein Schutz gegen physischen Zugriff ohne Härtung, also gegen Live-USB oder Bootmenü.
 - Keine Leerlauferkennung. Kein `flatpak --user`. Steam ist nur als Ganzes steuerbar.
 - VPNs werden nicht aktiv erkannt.
+- Windows:
+  - Nur x64 (kein ARM).
+  - Kein eigener Hinweis auf dem Anmeldebildschirm – Windows blendet das deaktivierte Konto aus.
+  - Der Website-Filter gilt für den ganzen Rechner und folgt dem Kind, das vorne angemeldet ist (auch für Dienste
+    und andere Benutzer im Hintergrund). Windows-Infrastruktur (Update, Defender, SmartScreen …) ist immer erlaubt.
+  - Vorwarn-Fenster erscheinen nicht über Spielen im exklusiven Vollbild (die Abmeldung erfolgt trotzdem).
+  - Bei aktiver Programmkontrolle kann das Kind nichts selbst installieren.
+  - Installer ohne Code-Signatur: SmartScreen-Warnung, mögliche Fehlalarme in Defender.
 
 Die vollständige Liste steht in [`spec.md`](spec.md) unter „Bewusst nicht umgesetzt / Restlücken“.
 

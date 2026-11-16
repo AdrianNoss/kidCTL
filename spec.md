@@ -1966,3 +1966,11 @@ News-Bereich hat, den Claude Code pflegt.
   (ohne Push/Mail): Übersicht, alle Reiter des Kindes, Geräte (Linux 0.26.2, Windows 0.32.7), Eltern, Einstellungen, Profil ohne
   Fehler, 27 Chatnachrichten, 17 freigegebene Programme, 316 Protokolleinträge. Probedaten danach gelöscht. Getestet zusätzlich:
   `test_migrate.py` um Text-Schlüssel, bestätigte und doppelte E-Mail-Adressen erweitert; alle Server-Tests.
+- 2026-11-16: Projekthomepage Etappe 1: README/README.de nennen Windows 10 (22H2) und 11 (ab 23H2), x64, Home und Pro
+  in Einleitung, Funktionen und Architektur, Installations-Kurzfassung mit Windows-Installer, Grenzen um die
+  Windows-Einschränkungen ergänzt. `kidctl-release.sh` legt als Schritt 5 das GitHub-Release `v<Version>` an
+  (`gh release create --verify-tag`, Installer als Asset, SHA-256, Link zum Lauf, Kurztext aus `--notes DATEI`,
+  `packaging/repo/notes/v<Version>.md` oder den ersten Sätzen der Changelog-Einträge mit der Version); vorhandenes
+  Release wird übersprungen, ohne `--apply` wird der Text nur angezeigt. Getestet: Probelauf mit Lauf 42863441320
+  (0.32.7, Publish-Ziel lokal umgebogen) – Befehl und Text korrekt, Hinweis auf bestehendes Release; ein echtes
+  Release erst beim nächsten Versionssprung.
