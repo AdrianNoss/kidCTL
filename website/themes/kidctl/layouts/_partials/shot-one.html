@@ -8,7 +8,7 @@
     <a href="{{ $light | relURL }}" data-lightbox{{ if $hasDark }} data-dark="{{ $dark | relURL }}"{{ end }}>
       <picture>
         {{- if $hasDark }}<source srcset="{{ $dark | relURL }}" media="(prefers-color-scheme: dark)">{{ end }}
-        <img src="{{ $light | relURL }}" alt="{{ .alt }}" loading="lazy" decoding="async"{{ if eq .size "mobile" }} width="390" height="844"{{ else }} width="1280" height="800"{{ end }}>
+        <img src="{{ $light | relURL }}" alt="{{ .alt }}" loading="{{ if .eager }}eager{{ else }}lazy{{ end }}" decoding="async"{{ if eq .size "mobile" }} width="390" height="844"{{ else }} width="1280" height="800"{{ end }}>
       </picture>
     </a>
   {{- else }}

@@ -20,3 +20,11 @@ hugo --minify --panicOnWarning  # vor dem Commit
 | `content/legal/` | Impressum (`TODO-IMPRESSUM` blockiert den Deploy) und Datenschutz |
 | `static/img/screenshots/` | WebUI-Screenshots aus `dev/screenshots.py` |
 | `static/img/client/` | Client-Screenshots aus der Test-VM (von Hand): `tray`, `warning`, `lock`, `request`, `windows` (`.webp`, optional `-de`/`-en`) |
+
+WebUI-Screenshots neu erzeugen (fiktive Demo-Daten, eigener Server auf Port 8010, eigenes Datenverzeichnis):
+
+```bash
+~/.local/share/kidctl-dev/venv/bin/pip install playwright pillow
+~/.local/share/kidctl-dev/venv/bin/python -m playwright install chromium
+~/.local/share/kidctl-dev/venv/bin/python dev/screenshots.py            # alle; --only stats,chat --lang de
+```

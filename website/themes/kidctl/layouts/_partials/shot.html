@@ -5,11 +5,12 @@
 {{- $variant := .variant | default "desktop" }}
 {{- $alt := .alt }}
 {{- $name := .name }}
+{{- $eager := .eager | default false }}
 {{- if eq $variant "pair" }}
 <div class="shot-pair">
-  {{ partial "shot-one.html" (dict "lang" $lang "name" $name "size" "desktop" "alt" $alt) }}
-  {{ partial "shot-one.html" (dict "lang" $lang "name" $name "size" "mobile" "alt" $alt) }}
+  {{ partial "shot-one.html" (dict "lang" $lang "name" $name "size" "desktop" "alt" $alt "eager" $eager) }}
+  {{ partial "shot-one.html" (dict "lang" $lang "name" $name "size" "mobile" "alt" $alt "eager" $eager) }}
 </div>
 {{- else }}
-  {{ partial "shot-one.html" (dict "lang" $lang "name" $name "size" $variant "alt" $alt) }}
+  {{ partial "shot-one.html" (dict "lang" $lang "name" $name "size" $variant "alt" $alt "eager" $eager) }}
 {{- end }}

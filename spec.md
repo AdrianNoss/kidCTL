@@ -1985,3 +1985,15 @@ News-Bereich hat, den Claude Code pflegt.
   ohne Warnungen; Playwright-Durchlauf über Start-, News-, Release-, Impressum- und Datenschutzseite in 390×844 und
   1280×800, hell/dunkel, DE/EN: kein horizontaler Überlauf, keine externen Requests, keine Konsolenfehler.
   Pages-Workflow selbst noch nicht gelaufen (erst nach Merge auf main).
+- 2026-11-16: Projekthomepage Etappe 3 (Screenshots): `dev/demo_seed.py` legt fiktive Demo-Daten nur über echte
+  Schnittstellen an – Eltern-Aktionen als HTTP-Formulare, Rechner als simulierte Agenten (Kopplung + WebSocket,
+  bleiben verbunden: „online“, „spielt gerade“); nur Nutzung älter als 7 Tage direkt in SQLite. Inhalt: Lena und Max,
+  Linux-Laptop und Windows-Familien-PC, 14 Tage Nutzung mit Spielen, Programme, Website-Filter, gesperrte Aktionen,
+  Chat, eine genehmigte und drei offene Anfragen; Texte je Sprache. `dev/screenshots.py` startet je Sprache einen
+  frischen Server (Temp-Verzeichnis, Port 8010), seedet, meldet sich per Session an und fotografiert mit Playwright
+  9 Seiten (Übersicht, Kind Heute/Zeiten/Programme/Internet, Statistik, Chat, Protokoll, Geräte; Liste mit Adrian
+  abgestimmt) mobil 390×844 und Desktop 1280×800 × hell/dunkel × DE/EN → 72 WebP (1,5-fach, zusammen 2,6 MB).
+  Startseite: Handy-Bild der Übersicht im Hero (sofort geladen), Funktionen mit Bild passend zum Farbschema,
+  Client-Screenshots (`static/img/client/`) als Platzhalter bis zur Lieferung aus der VM. Getestet: kompletter Lauf
+  DE+EN, Sichtprüfung der Bilder, `hugo --minify --panicOnWarning` ohne Warnungen, Playwright-Check der Seite ohne
+  Überlauf und ohne externe Requests.
