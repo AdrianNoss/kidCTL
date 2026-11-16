@@ -960,6 +960,85 @@ Self-Hosting bleibt erhalten.
 
 Regel: Keine fremde Familie auf dem Server vor Abschluss von Etappe 4.
 
+## Projekthomepage (entschieden 2026-11-16 per /grill-me, noch nicht umgesetzt)
+
+Ziel: kleine Projektseite, die kidCTL vorstellt, die Funktionen mit Screenshots zeigt und einen Roadmap- und
+News-Bereich hat, den Claude Code pflegt.
+
+### Zielgruppe und Ort
+- **Zielgruppe jetzt:** Self-Hoster und Technikaffine. Struktur lässt Platz für spätere SaaS-Bereiche
+  („Gehostet nutzen“, Preise), die erst nach SaaS-Etappe 4 kommen.
+- **Hosting:** GitHub Pages, Quellcode in `website/` im kidCTL-Repo.
+- **Adresse:** Produkt-Domain (`kidctl.*`), sobald gesichert; bis dahin `https://adriannoss.github.io/kidCTL/`.
+  Wechsel nur über `baseURL` in der Hugo-Konfiguration und eine `CNAME`-Datei. SaaS später unter `app.`/`my.`
+  derselben Domain.
+- **Sprache:** Deutsch und Englisch mit Umschalter; Englisch Standard (`/`), Deutsch unter `/de/`.
+
+### Technik und Design
+- **Hugo** (Extended nicht nötig), eigenes schlankes Theme in `website/themes/kidctl/` (kein Fremd-Theme,
+  kein Node/npm). Mehrsprachigkeit und RSS über Hugo-Bordmittel.
+- **Design im Material-3-Stil der WebUI:** Farben, Schrift, Radien aus `server/app/static/style.css`
+  übernommen; mobile first; hell/dunkel automatisch über `prefers-color-scheme`. JavaScript nur für
+  Screenshot-Galerie (Lightbox) und ggf. Sprachweiche – Seite funktioniert ohne JS.
+- **Kein Tracking, keine externen Requests:** keine Analytics, keine Cookies, Schriften und Icons selbst gehostet,
+  kein CDN. Grobe Zahlen über GitHub-Traffic und Release-Downloads.
+
+### Aufbau
+- **Startseite (One-Pager):** Hero (Claim, „deine Daten auf deinem Server“, Buttons *Installieren* und *GitHub*) →
+  Plattformen (Arch, Debian/Ubuntu mit KDE Plasma/GNOME Wayland; Windows 10 22H2 und 11 ab 23H2, x64) →
+  Funktionen mit Screenshots → So funktioniert's (Server, Agent, Tray als einfaches Schema) → Datenschutz &
+  Sicherheit → Roadmap (kompakt) → letzte 3 News.
+- **Schnellstart** (Abschnitt bzw. Anker *Installieren*): Kurzfassung wie im README, DE/EN; für Details Link auf
+  `docs/installation.md` und `docs/haertung.md` bei GitHub. `docs/` wird nicht in die Seite eingebunden, solange
+  es nur auf Deutsch vorliegt.
+- **News:** Archivseite mit RSS-Feed je Sprache, eigene Seite je News.
+- **Releases:** automatisch erzeugte Liste aller Versionen (siehe unten).
+- **Impressum / Datenschutz:** Datenschutz beschränkt sich auf Server-Logs von GitHub Pages. Impressum mit
+  Platzhaltern (`TODO-IMPRESSUM`); ein Build-Check lässt den Deploy fehlschlagen, solange ein Platzhalter enthalten
+  ist. Adresse klärt Adrian beim Domain-Kauf; bei SaaS ein Impressum-/Adressdienst.
+
+### News
+- Eine News je **Minor-Version** (x.Y.0), je **sicherheitsrelevantem Patch** und auf ausdrücklichen Wunsch
+  (Meilensteine ohne Release, z. B. „SaaS-Etappe 1 abgeschlossen“). Normale Patches nur in der Release-Liste.
+- Format: `website/content/news/YYYY-MM-DD-<slug>.de.md` und `.en.md`, Frontmatter `title`, `date`, optional
+  `version`, `summary`. Für Nutzer geschrieben (was ist neu, was bringt es), nicht wie der technische Changelog;
+  3–8 Sätze, ggf. Screenshot.
+- **Start:** 4–6 nachträgliche Meilenstein-News mit echtem Datum aus dem Changelog (z. B. erster lauffähiger Stand,
+  Debian/Ubuntu + GNOME, Spiele-Limit, Windows-Unterstützung, WebUI im Material-3-Stil) plus „Projektseite online“.
+  Auswahl vor dem Schreiben mit Adrian abstimmen.
+
+### Roadmap
+- Quelle: `website/data/roadmap.yaml`; je Eintrag `id`, `title` und `text` je Sprache (`de`/`en`), `status`
+  (`planned` | `in_progress` | `done`), optional `version`. Keine Termine.
+- Gepflegt von Claude Code, sobald in `spec.md` ein Feature entschieden, begonnen oder abgeschlossen wird. Nur
+  öffentlich Sinnvolles: keine Abrechnungs-, Missbrauchs- oder Rechtsdetails.
+- **SaaS:** ein Eintrag „Gehostete Variante für Familien“ (`planned`), ohne Termine und Preise, mit dem Satz
+  „Self-Hosting bleibt vollständig und kostenlos (AGPL-3.0)“.
+
+### Screenshots
+- **WebUI automatisch:** `dev/screenshots.py` – legt mit einem Seed-Skript fiktive Demo-Daten an (Kinder z. B.
+  „Lena“ und „Max“, Geräte Linux/Windows, Statistik über 14 Tage, Spiele, Chat, gesperrte Aktionen, Anfragen),
+  startet den Dev-Server mit eigenem Datenverzeichnis (nicht `~/.local/share/kidctl-dev`), meldet sich wie
+  `dev/webctl.py` mit TOTP an und fotografiert per Playwright die wichtigsten Seiten:
+  mobil (z. B. 390×844) und Desktop (1280×800) × hell/dunkel × DE/EN.
+  Ausgabe nach `website/static/img/screenshots/<lang>/<theme>/<name>-<mobile|desktop>.webp`.
+  Keine echten Daten, keine echten Namen/Domains.
+- **Client-Seite einmalig von Hand** aus den Test-VMs: Tray-App, Warnung vor Zeitende, Sperrbildschirm,
+  Anfrage-Dialog, Windows. Ablage `website/static/img/client/`.
+- Die Seite zeigt Screenshots passend zum Farbschema (`<picture>` mit `media="(prefers-color-scheme: dark)"`).
+
+### Releases
+- `packaging/repo/kidctl-release.sh --apply` legt als letzten Schritt das **GitHub-Release** `v<Version>` an
+  (`gh release create`): Windows-Installer als Asset, SHA-256 des Installers, Link zum Build-Lauf, Kurztext aus dem
+  Changelog. Dry-Run zeigt den Befehl nur an. Damit stimmt auch die Aussage im README (Code signing policy).
+- Der Pages-Build liest die Releases per GitHub-API (`gh api repos/AdrianNoss/kidCTL/releases`) in
+  `website/data/releases.json` und rendert daraus die Release-Liste.
+
+### Veröffentlichung
+- Workflow `.github/workflows/pages.yml`: baut und veröffentlicht bei Push auf `main` mit Änderungen unter
+  `website/**`, bei `release: published` und von Hand (`workflow_dispatch`). Hugo-Version im Workflow fest
+  gepinnt. Schritte: Releases holen → Platzhalter-Check (Impressum) → `hugo --minify` → Deploy auf Pages.
+
 ## Bewusst nicht umgesetzt / Restlücken
 
 - Kein Schutz gegen physischen Zugriff (nur Härtungs-Anleitung `docs/haertung.md`).
@@ -1840,3 +1919,5 @@ Regel: Keine fremde Familie auf dem Server vor Abschluss von Etappe 4.
   Feldverschlüsselung je Familie mit Kontextbindung, E-Mail-Anmeldung, Rollen Inhaber/Elternteil, Registrierung mit Schalter,
   Betreiber nur mit Metadaten und Support-Freigabe, Abo-Vorbereitung mit Schonfrist und Ruhemodus, offener Betrieb gegen Missbrauch,
   Export/Import, feste Aufbewahrungsfristen, Umzugsnachricht im Protokoll, fünf Etappen. Noch nicht umgesetzt.
+- 2026-11-16: Anforderungen Projekthomepage per /grill-me abgestimmt (Abschnitt „Projekthomepage“). Noch keine
+  Umsetzung. README (DE/EN) nennt Windows 10/11 noch nicht als Plattform – wird mit Etappe 1 nachgezogen.

@@ -71,6 +71,21 @@ CLAUDE.md
 - Gemeinsame Nachrichtenformate in `common/`, versioniert.
 - Protokollversion im WebSocket-Handshake; Server unterstützt mindestens eine ältere Version.
 
+## Website (`website/`)
+
+- Hugo, eigenes Theme, kein Node. Inhalte immer **zweisprachig** (`.de.md` / `.en.md`, YAML-Felder `de`/`en`).
+- **News:** Bei jeder Versionsänderung prüfen: neue Minor-Version (x.Y.0) oder sicherheitsrelevanter Patch →
+  im selben Commit eine News unter `website/content/news/` anlegen (DE+EN, für Nutzer formuliert, nicht der
+  technische Changelog). Normale Patches: keine News. Meilenstein-News nur auf ausdrücklichen Wunsch.
+- **Roadmap:** Wird in `spec.md` ein Feature entschieden, begonnen oder abgeschlossen, `website/data/roadmap.yaml`
+  anpassen (Status, ggf. Version). Keine Termine, keine Abrechnungs-/Rechtsdetails.
+- **Feature-Texte und README:** Neue Plattform oder neues bzw. geändertes nutzersichtbares Feature → README.md,
+  README.de.md und die Funktionsliste der Website im selben Commit nachziehen.
+- **Screenshots:** Sichtbare Änderung an der Eltern-WebUI → `dev/screenshots.py` laufen lassen und die geänderten
+  Bilder mit committen. Client-Screenshots nur auf Anweisung.
+- Kein Tracking, keine externen Ressourcen (Schriften/Icons lokal).
+- Lokal prüfen: `cd website && hugo server` – vor dem Commit einmal `hugo --minify` ohne Fehler.
+
 ## Tests & Verifikation
 
 - Jede Funktion vor Auslieferung end-to-end smoke-testen und im Changelog vermerken, was getestet
