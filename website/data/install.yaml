@@ -1,0 +1,33 @@
+# Schnellstart (Kurzfassung wie im README). code: gleich für beide Sprachen oder je Sprache.
+- title: { de: "Server starten", en: "Start the server" }
+  text:
+    de: "Docker Compose hinter Traefik; `SECRET_KEY` und `BASE_URL` in `.env` setzen, dann das erste Eltern-Konto anlegen."
+    en: "Docker Compose behind Traefik; set `SECRET_KEY` and `BASE_URL` in `.env`, then create the first parent account."
+  code: |-
+    git clone https://github.com/AdrianNoss/kidCTL.git && cd kidCTL
+    cp .env.example .env
+    docker compose up -d --build
+    docker compose exec kidctl python -m app.cli create-parent
+- title: { de: "Linux-Kinderrechner", en: "Linux child's computer" }
+  text:
+    de: "Paket-Repository deines Servers einrichten (siehe Anleitung), Paket installieren und mit dem Kopplungscode aus der WebUI verbinden."
+    en: "Set up your server's package repository (see guide), install the package and pair it with the code from the web interface."
+  code:
+    de: |-
+      sudo pacman -S kidctl kidctl-plasma    # Arch (bzw. kidctl-gnome)
+      sudo apt install kidctl kidctl-gnome   # Debian/Ubuntu (bzw. kidctl-plasma)
+      sudo kidctl enroll https://kids.example.org <KOPPLUNGSCODE>
+      sudo systemctl enable --now kidctl-agent.service
+    en: |-
+      sudo pacman -S kidctl kidctl-plasma    # Arch (or kidctl-gnome)
+      sudo apt install kidctl kidctl-gnome   # Debian/Ubuntu (or kidctl-plasma)
+      sudo kidctl enroll https://kids.example.org <PAIRING-CODE>
+      sudo systemctl enable --now kidctl-agent.service
+- title: { de: "Windows-Kinderrechner", en: "Windows child's computer" }
+  text:
+    de: "`KidCTL-Setup-<Version>.exe` von deinem Server (`/repo/windows/`) oder aus den Releases als Administrator ausführen, Server-Adresse und Kopplungscode eintragen. Der Installer ist noch nicht signiert: SmartScreen fragt einmal nach („Weitere Informationen“ → „Trotzdem ausführen“)."
+    en: "Run `KidCTL-Setup-<version>.exe` from your server (`/repo/windows/`) or from the releases as administrator and enter the server address and pairing code. The installer is not code-signed yet: SmartScreen asks once (“More info” → “Run anyway”)."
+- title: { de: "Kind zuordnen und Regeln setzen", en: "Assign the child and set rules" }
+  text:
+    de: "In der WebUI das Benutzerkonto des Rechners einem Kind zuordnen, Zeiten, Programme und Website-Filter festlegen. Danach den Rechner gegen physischen Zugriff härten."
+    en: "In the web interface, assign the computer's user account to a child and set times, apps and web filter. Then harden the computer against physical access."

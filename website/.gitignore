@@ -1,5 +1,7 @@
 public/
 resources/
 .hugo_build.lock
+# data/ ist im Wurzel-.gitignore ausgeschlossen (Server-Daten) – hier gehören die Inhalte der Seite hinein
+!data/
 # vom Pages-Workflow per GitHub-API erzeugt (lokal: siehe README.md)
 data/releases.json

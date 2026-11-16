@@ -2012,3 +2012,8 @@ News-Bereich hat, den Claude Code pflegt.
   Entwicklungsdatenbank) und setzt bei den älteren Nutzungszeiten `family_id` vom Gerät. Getestet: Lauf DE für
   Übersicht, Statistik, Chat, Geräte – optisch gleich den committeten Bildern, Datenbank danach entfernt,
   Entwicklungsdatenbank unberührt.
+- 2026-11-16: Fix Projektseite: `website/data/*.yaml` (Funktionen, Plattformen, Schnellstart, Datenschutz-Punkte,
+  Roadmap) fehlten im Repo, weil das Wurzel-`.gitignore` jedes `data/` ausschließt – der erste Pages-Lauf scheiterte
+  beim Schreiben von `website/data/releases.json`. `website/.gitignore` nimmt `data/` wieder auf (`releases.json`
+  bleibt ignoriert). Getestet: sauberer Export von HEAD (`git archive`) + Releases per `gh api` + `hugo --minify
+  --panicOnWarning` ohne Warnungen, Startseite enthält Funktionen und Roadmap.

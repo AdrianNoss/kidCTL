@@ -1,0 +1,16 @@
+# Plattformen auf der Startseite (Felder je Sprache de/en).
+- icon: linux
+  name: { de: "Arch Linux", en: "Arch Linux" }
+  text:
+    de: "KDE Plasma oder GNOME unter Wayland. Pakete aus deinem signierten Pacman-Repository."
+    en: "KDE Plasma or GNOME on Wayland. Packages from your own signed pacman repository."
+- icon: linux
+  name: { de: "Debian und Ubuntu", en: "Debian and Ubuntu" }
+  text:
+    de: "Debian 13, Ubuntu 24.04/26.04 und darauf aufbauend (Kubuntu, Mint, Pop!_OS) mit GNOME oder Plasma unter Wayland, amd64."
+    en: "Debian 13, Ubuntu 24.04/26.04 and derivatives (Kubuntu, Mint, Pop!_OS) with GNOME or Plasma on Wayland, amd64."
+- icon: windows
+  name: { de: "Windows 10 und 11", en: "Windows 10 and 11" }
+  text:
+    de: "Windows 10 22H2 und Windows 11 ab 23H2, x64, Home und Pro. Installer mit automatischen Updates."
+    en: "Windows 10 22H2 and Windows 11 23H2 or later, x64, Home and Pro. Installer with automatic updates."

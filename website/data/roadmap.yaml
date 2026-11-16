@@ -1,0 +1,70 @@
+# Roadmap der Projektseite. Pflege: Claude Code, sobald in spec.md ein Feature entschieden (planned), begonnen
+# (in_progress) oder abgeschlossen (done) wird. Keine Termine, keine Abrechnungs-, Missbrauchs- oder Rechtsdetails.
+# Felder: id, status (planned | in_progress | done), optional version, title/text je Sprache (de/en).
+# Reihenfolge: älteste zuerst; die Startseite zeigt von „done“ die letzten vier.
+
+- id: linux-plasma
+  status: done
+  version: "0.8"
+  title: { de: "Linux mit KDE Plasma", en: "Linux with KDE Plasma" }
+  text:
+    de: "Bildschirmzeit, Programm-Whitelist, Website-Filter und signiertes Pacman-Repository für Arch Linux."
+    en: "Screen time, app allow list, web filter and a signed pacman repository for Arch Linux."
+- id: games
+  status: done
+  version: "0.25"
+  title: { de: "Spiele-Limit", en: "Game limit" }
+  text:
+    de: "Eigenes Tageskontingent für Spiele (Steam, Heroic), Spielzeit je Spiel."
+    en: "Separate daily limit for games (Steam, Heroic), play time per game."
+- id: i18n
+  status: done
+  version: "0.26"
+  title: { de: "Deutsch und Englisch", en: "English and German" }
+  text:
+    de: "WebUI, Mails, Push und alles, was das Kind sieht, in beiden Sprachen."
+    en: "Web interface, emails, push and everything the child sees in both languages."
+- id: gnome-debian
+  status: done
+  version: "0.28"
+  title: { de: "GNOME, Debian und Ubuntu", en: "GNOME, Debian and Ubuntu" }
+  text:
+    de: "GNOME (Wayland) neben Plasma, Pakete für Debian 13 und Ubuntu 24.04/26.04 über ein signiertes APT-Repository."
+    en: "GNOME (Wayland) next to Plasma, packages for Debian 13 and Ubuntu 24.04/26.04 from a signed APT repository."
+- id: windows
+  status: done
+  version: "0.32"
+  title: { de: "Windows 10 und 11", en: "Windows 10 and 11" }
+  text:
+    de: "Bildschirmzeit, Programmkontrolle, Website-Filter und Spiele auf Windows (Home und Pro), mit automatischen Updates."
+    en: "Screen time, app control, web filter and games on Windows (Home and Pro), with automatic updates."
+- id: material3
+  status: done
+  title: { de: "Neue WebUI im Material-3-Stil", en: "New web interface in Material 3 style" }
+  text:
+    de: "Für das Handy gebaut, mit hellem und dunklem Modus."
+    en: "Built for the phone, with light and dark mode."
+- id: website
+  status: done
+  title: { de: "Projektseite", en: "Project website" }
+  text:
+    de: "Diese Seite: Funktionen, Schnellstart, News und Releases auf Deutsch und Englisch."
+    en: "This site: features, quick start, news and releases in English and German."
+- id: saas
+  status: planned
+  title: { de: "Gehostete Variante für Familien", en: "Hosted version for families" }
+  text:
+    de: "KidCTL nutzen, ohne einen eigenen Server zu betreiben. Self-Hosting bleibt vollständig und kostenlos (AGPL-3.0)."
+    en: "Use KidCTL without running your own server. Self-hosting stays complete and free of charge (AGPL-3.0)."
+- id: desktops
+  status: planned
+  title: { de: "Weitere Linux-Desktops", en: "More Linux desktops" }
+  text:
+    de: "Cinnamon und COSMIC."
+    en: "Cinnamon and COSMIC."
+- id: codesign
+  status: planned
+  title: { de: "Signierter Windows-Installer", en: "Code-signed Windows installer" }
+  text:
+    de: "Damit entfällt die SmartScreen-Rückfrage bei der Installation."
+    en: "No more SmartScreen prompt when installing."
