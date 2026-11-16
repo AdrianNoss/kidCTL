@@ -2181,6 +2181,13 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
   Übernahme mit Schlüssel aus der Datenbank, gleicher Kindername in zwei Familien mit verschiedenem Geheimtext, Plattform liest keine
   Namen); Migration 0005 auf den Entwicklungsdaten (`alembic check` ohne Abweichung, Datenbank enthält nur Geheimtext); WebUI auf den
   verschlüsselten Daten: alle Seiten ohne Fehler und ohne Geheimtext, Sortierung, Protokollsuche.
+- 2026-11-16: Etappe 2.3 Multi-Tenant: E-Mail-Adressen der Eltern verschlüsselt (`Sealed`, Schlüssel der Familie des Accounts);
+  Anmeldung und Eindeutigkeit über den Suchwert `parent.email_index` = HMAC(abgeleiteter Hauptschlüssel, lower(E-Mail)), eindeutiger
+  Teilindex ersetzt `lower(email)` (Alembic `0006` verschlüsselt vorhandene Adressen). Ein Ereignis hält den Suchwert bei jeder Änderung
+  aktuell. Anonyme Abläufe (Login, Passwort zurücksetzen, Bestätigungs- und Authenticator-Links) suchen nur über unverschlüsselte
+  Spalten und wechseln vor dem Laden in den Kontext der Familie des Accounts (`tenant.load_parent`); Nutzungsbericht je Empfänger im
+  Familienkontext; `cli create-parent` legt erst die Familie an. Getestet: alle Server-Tests, neu: E-Mail nur als Geheimtext in der
+  Datenbank, Anmeldung über Suchwert ohne Groß/klein; Migration 0006 auf den Entwicklungsdaten, `alembic check` ohne Abweichung.
 - 2026-11-17: Anforderungen Wiki per /grill-me abgestimmt (Abschnitt „Projekthomepage“ → „Wiki“): `docs/` als
   Wiki auf der Projektseite, DE/EN mit Paritäts-Check, Aufteilung in Themenseiten, Pagefind-Suche. Noch keine
   Umsetzung.

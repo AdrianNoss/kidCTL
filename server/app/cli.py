@@ -23,7 +23,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from sqlalchemy import select
 
 from .db import init_db
-from .tenant import platform_session
+from .tenant import platform_session, set_family
 from .accounts import end_sessions, password_error
 from .models import ROLE_OWNER, ROLE_PARENT, Family, Membership, Parent, utcnow
 from .security import hash_password, new_totp_secret, totp_uri
@@ -48,10 +48,10 @@ def create_parent(args: argparse.Namespace) -> int:
         return 1
 
     with platform_session() as db:
-        if db.scalar(select(Parent).where(Parent.username == username)):
+        if db.scalar(select(Parent.id).where(Parent.username == username)):
             print(f"Benutzer {username!r} existiert bereits.", file=sys.stderr)
             return 1
-        if db.scalar(select(Parent).limit(1)) and not args.force:
+        if db.scalar(select(Parent.id).limit(1)) and not args.force:
             print("Es existiert bereits ein Eltern-Account. Weitere im WebUI anlegen "
                   "(oder --force).", file=sys.stderr)
             return 1
@@ -59,10 +59,6 @@ def create_parent(args: argparse.Namespace) -> int:
         if err := email_error(email, db):
             print(err, file=sys.stderr)
             return 1
-        parent = Parent(username=username, password_hash=hash_password(password), totp_secret=new_totp_secret(),
-                        email=email, email_verified_at=utcnow() if email else None)   # vom Betreiber angelegt
-        db.add(parent)
-        db.flush()
         # Einzelbetrieb: erste Familie anlegen bzw. die vorhandene nutzen; der erste Account wird Inhaber
         family_id = db.scalar(select(Family.id).order_by(Family.id).limit(1))
         if family_id is None:
@@ -70,8 +66,13 @@ def create_parent(args: argparse.Namespace) -> int:
             db.add(family)
             db.flush()
             family_id = family.id
-        owner = db.scalar(select(Membership).where(Membership.family_id == family_id, Membership.role == ROLE_OWNER))
-        db.add(Membership(family_id=family_id, parent_id=parent.id, role=ROLE_PARENT if owner else ROLE_OWNER))
+        owner = db.scalar(select(Membership.id).where(Membership.family_id == family_id, Membership.role == ROLE_OWNER))
+        set_family(db, family_id)   # E-Mail wird mit dem Schlüssel der Familie verschlüsselt
+        parent = Parent(username=username, password_hash=hash_password(password), totp_secret=new_totp_secret(),
+                        email=email, email_verified_at=utcnow() if email else None)   # vom Betreiber angelegt
+        db.add(parent)
+        db.flush()
+        db.add(Membership(parent_id=parent.id, role=ROLE_PARENT if owner else ROLE_OWNER))
         db.commit()
         uri = totp_uri(parent)
 
@@ -89,7 +90,9 @@ def _print_totp(uri: str, secret: str) -> None:
 
 
 def _parent(db, username: str) -> Parent | None:
-    parent = db.scalar(select(Parent).where(Parent.username == username))
+    from .tenant import load_parent
+    pid = db.scalar(select(Parent.id).where(Parent.username == username))
+    parent = load_parent(db, pid) if pid is not None else None
     if parent is None:
         print(f"Benutzer {username!r} gibt es nicht.", file=sys.stderr)
     return parent

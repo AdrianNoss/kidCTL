@@ -22,7 +22,9 @@ from . import i18n
 from .i18n import _
 from . import mail
 from .config import settings
+from . import crypto
 from .models import Parent, ParentSession, ParentToken, utcnow
+from .tenant import load_parent, platform
 from .security import new_token, new_totp_secret, token_hash
 
 RESET_MINUTES = 30
@@ -49,10 +51,9 @@ def password_error(pw: str, repeat: str | None = None) -> str | None:
 def username_error(db: Session, username: str, parent_id: int | None = None) -> str | None:
     if not USERNAME_RE.match(username):
         return _("Benutzername: 1–64 Zeichen, nur Buchstaben, Ziffern und . _ @ -")
-    from .tenant import platform
     with platform(db):   # Benutzernamen sind über alle Familien eindeutig
-        other = db.scalar(select(Parent).where(func.lower(Parent.username) == username.lower()))
-    if other is not None and other.id != parent_id:
+        other = db.scalar(select(Parent.id).where(func.lower(Parent.username) == username.lower()))
+    if other is not None and other != parent_id:
         return _("Benutzername existiert bereits.")
     return None
 
@@ -64,9 +65,8 @@ def email_error(email: str, db: Session | None = None, parent_id: int | None = N
     if not EMAIL_RE.match(email):
         return _("Ungültige E-Mail-Adresse.")
     if db is not None:
-        from .tenant import platform
         with platform(db):
-            other = db.scalar(select(Parent.id).where(func.lower(Parent.email) == email.lower()))
+            other = db.scalar(select(Parent.id).where(Parent.email_index == crypto.email_index(email)))
         if other is not None and other != parent_id:
             return _("Diese E-Mail-Adresse wird schon verwendet.")
     return None
@@ -74,7 +74,6 @@ def email_error(email: str, db: Session | None = None, parent_id: int | None = N
 
 def username_from_email(db: Session, email: str) -> str:
     """SaaS: Anmeldung per E-Mail; der (intern weiter eindeutige) Benutzername wird daraus abgeleitet."""
-    from .tenant import platform
     base = re.sub(r"[^A-Za-z0-9._-]", "", email.split("@")[0])[:56] or "eltern"
     name, n = base, 1
     with platform(db):
@@ -116,7 +115,7 @@ def confirm_email(db: Session, raw: str) -> Parent | None:
     t = get_token(db, raw, "email_verify")
     if t is None:
         return None
-    parent = db.get(Parent, t.parent_id)
+    parent = load_parent(db, t.parent_id)
     t.used_at = utcnow()
     parent.email_verified_at = utcnow()
     db.commit()
@@ -128,11 +127,16 @@ def find_by_login(db: Session, ident: str) -> Parent | None:
     ident = ident.strip()
     if not ident:
         return None
-    if "@" in ident:   # E-Mail ist systemweit eindeutig
-        p = db.scalar(select(Parent).where(func.lower(Parent.email) == ident.lower(), Parent.email != ""))
-        if p is not None and email_usable(p):   # erst nach Bestätigung zum Anmelden
-            return p
-    return db.scalar(select(Parent).where(Parent.username == ident))   # bisherige Accounts ohne E-Mail
+    with platform(db):   # nur unverschlüsselte Spalten: Suchwert, Bestätigung, Benutzername
+        pid = None
+        if "@" in ident:   # E-Mail ist systemweit eindeutig
+            row = db.execute(select(Parent.id, Parent.email_verified_at).where(
+                Parent.email_index == crypto.email_index(ident), Parent.email_index != "")).first()
+            if row is not None and (row.email_verified_at is not None or not settings.mail_enabled):
+                pid = row.id   # erst nach Bestätigung zum Anmelden
+        if pid is None:
+            pid = db.scalar(select(Parent.id).where(Parent.username == ident))   # bisherige Accounts ohne E-Mail
+    return load_parent(db, pid) if pid is not None else None
 
 
 def check_password(db: Session, request, parent: Parent, password: str) -> str | None:

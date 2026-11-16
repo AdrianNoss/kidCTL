@@ -24,7 +24,7 @@ from . import i18n, mail, policy, stats
 from . import schedule as sch
 from .i18n import N_, _
 from .config import settings
-from .tenant import family_of, family_of_parent, family_session, platform_session
+from .tenant import family_of, family_of_parent, family_session, load_parent, platform_session
 from .models import BlockedEvent, Child, DayException, GameSession, Message, Parent
 from .web import templates
 
@@ -233,8 +233,12 @@ def send_due(db: Session, now_local: datetime | None = None) -> int:
     """Fällige Berichte senden; Anzahl gesendeter Mails."""
     now_local = now_local or datetime.now(ZoneInfo(settings.timezone))
     sent = 0
-    for parent in db.scalars(select(Parent).where(Parent.report_interval != "", Parent.email != "",
-                                                  Parent.email_verified_at.is_not(None))):
+    due_ids = list(db.scalars(select(Parent.id).where(Parent.report_interval != "", Parent.email_index != "",
+                                                      Parent.email_verified_at.is_not(None))))
+    for pid in due_ids:   # je Empfänger im Kontext seiner Familie (E-Mail und Kinderdaten verschlüsselt)
+        parent = load_parent(db, pid)
+        if parent is None:
+            continue
         p = due(parent, now_local)
         if p is None or _time.monotonic() - _failed.get(parent.id, -RETRY_SECONDS) < RETRY_SECONDS:
             continue

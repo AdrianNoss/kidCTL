@@ -178,8 +178,10 @@ def import_sqlite(path: str, target: Engine, apply: bool = False) -> dict[str, i
     # Wie Migration 0003: vorhandene Adressen gelten als bestätigt; jede Adresse nur einmal (ohne Groß/klein)
     from .models import utcnow
     seen: dict[str, str] = {}
+    from .crypto import email_index
     for row in data["parent"]:
         mail = (row.get("email") or "").strip()
+        row["email_index"] = email_index(mail)   # Suchwert für die Anmeldung (Core-Insert: kein Ereignis)
         if not mail:
             continue
         if mail.lower() in seen:

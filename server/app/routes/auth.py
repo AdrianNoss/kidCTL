@@ -10,7 +10,7 @@ from .. import i18n
 from ..i18n import N_, _
 from ..config import settings
 from ..db import get_db, get_platform_db
-from ..tenant import platform_session
+from ..tenant import load_parent, platform_session
 from ..models import Parent, ParentSession, utcnow
 from ..security import (
     SESSION_COOKIE, client_ip, create_session, csrf_protect, csrf_protect_anon, dummy_verify,
@@ -145,7 +145,7 @@ def reset_password(token: str, request: Request, password: str = Form(""), repea
         return render_anon(request, "reset_password.html", status_code=404, invalid=True)
     if err := accounts.password_error(password, repeat):
         return render_anon(request, "reset_password.html", status_code=400, token=token, error=err)
-    parent = db.get(Parent, t.parent_id)
+    parent = load_parent(db, t.parent_id)   # E-Mail mit dem Schlüssel seiner Familie
     parent.password_hash = hash_password(password)
     t.used_at = utcnow()
     accounts.end_sessions(db, parent.id)
@@ -165,7 +165,7 @@ def totp_setup_form(token: str, request: Request, db: Session = Depends(get_plat
 
 
 def _totp_setup_page(request, db, t, token, status_code=200, error=None):
-    parent = db.get(Parent, t.parent_id)
+    parent = load_parent(db, t.parent_id)   # E-Mail mit dem Schlüssel seiner Familie
     uri = accounts.totp_uri_for(t.secret, parent.username)
     return render_anon(request, "totp_setup.html", status_code=status_code, token=token, username=parent.username,
                        qr_svg=totp_qr_svg(uri), secret=t.secret, error=error)
@@ -177,7 +177,7 @@ def totp_setup(token: str, request: Request, password: str = Form(""), totp: str
     t = accounts.get_token(db, token, "totp_setup")
     if t is None:
         return render_anon(request, "totp_setup.html", status_code=404, invalid=True)
-    parent = db.get(Parent, t.parent_id)
+    parent = load_parent(db, t.parent_id)   # E-Mail mit dem Schlüssel seiner Familie
     ip = client_ip(request)
     if is_rate_limited(db, "login", ip, parent.username):
         return _totp_setup_page(request, db, t, token, 429, _("Zu viele Fehlversuche. Bitte später erneut versuchen."))

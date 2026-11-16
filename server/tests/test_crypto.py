@@ -47,3 +47,20 @@ def test_master_key_required_outside_dev(monkeypatch):
         config._master_key(dev=False)
     assert config._master_key(dev=True) == config.DEV_MASTER_KEY
     assert len(crypto.new_master_key()) == 43
+
+
+def test_email_is_stored_encrypted_and_found_by_index(client, parent):
+    from sqlalchemy import Text, select, type_coerce
+
+    from app import accounts
+    from app.models import Parent, utcnow
+    from conftest import SessionLocal
+    with SessionLocal() as db:
+        p = db.get(Parent, parent.id)
+        p.email, p.email_verified_at = "Mama@Example.org", utcnow()
+        db.commit()
+    with platform_db() as db:
+        raw, idx = db.execute(select(type_coerce(Parent.email, Text), Parent.email_index)).one()
+        assert "Mama" not in raw and raw.startswith("g1:") and idx == crypto.email_index("mama@example.org")
+        found = accounts.find_by_login(db, "MAMA@example.org")         # Plattform -> Familie des Accounts
+        assert found.id == parent.id and found.email == "Mama@Example.org"

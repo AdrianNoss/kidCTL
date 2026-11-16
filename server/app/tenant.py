@@ -87,6 +87,16 @@ def family_of_parent(db: Session, parent_id: int) -> int | None:
         return db.scalar(select(Membership.family_id).where(Membership.parent_id == parent_id))
 
 
+def load_parent(db: Session, parent_id: int) -> Parent | None:
+    """Für Abläufe ohne Anmeldung (Login, Links aus Mails): in den Kontext der Familie des Accounts wechseln und ihn
+    laden – seine E-Mail ist mit dem Schlüssel dieser Familie verschlüsselt."""
+    family_id = family_of_parent(db, parent_id)
+    if family_id is None:
+        return None
+    set_family(db, family_id)
+    return db.get(Parent, parent_id)
+
+
 def _protected(state: ORMExecuteState) -> bool:
     return any(issubclass(m.class_, FamilyScoped) or m.class_ in PROTECTED for m in state.all_mappers)
 

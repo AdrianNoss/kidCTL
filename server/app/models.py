@@ -10,6 +10,7 @@ from sqlalchemy import (
     Boolean, Date, DateTime, ForeignKey, Index, Integer, LargeBinary, String, Text, Time, UniqueConstraint, func,
     text,
 )
+from sqlalchemy import event
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from .crypto import Matchable, Sealed
@@ -56,9 +57,9 @@ class Membership(FamilyScoped, Base):
 class Parent(Base):
     """Eltern-Account; gehört über ``Membership`` zu genau einer Familie."""
     __tablename__ = "parent"
-    # E-Mail systemweit eindeutig (ohne Groß/klein); leere Adressen (Einzelbetrieb) sind erlaubt
-    __table_args__ = (Index("ix_parent_email_lower", func.lower(text("email")), unique=True,
-                            postgresql_where=text("email <> ''")),)
+    # E-Mail verschlüsselt (Schlüssel der Familie); Anmeldung und Eindeutigkeit über den Suchwert email_index
+    __table_args__ = (Index("ix_parent_email_index", "email_index", unique=True,
+                            postgresql_where=text("email_index <> ''")),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(String(64), unique=True)
@@ -67,7 +68,8 @@ class Parent(Base):
     totp_secret: Mapped[str] = mapped_column(String(64))
     totp_last_step: Mapped[int] = mapped_column(Integer, default=0)  # Replay-Schutz
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    email: Mapped[str] = mapped_column(String(255), default="")  # Anmeldung, „Passwort vergessen“; SaaS: Pflicht
+    email: Mapped[str] = mapped_column(Sealed("parent.email"), default="")  # Anmeldung, „Passwort vergessen“; SaaS: Pflicht
+    email_index: Mapped[str] = mapped_column(String(64), default="")   # HMAC(lower(email)), app.crypto.email_index
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)   # Bestätigungslink
     report_interval: Mapped[str] = mapped_column(String(16), default="")  # Nutzungsbericht: "" | weekly | monthly
     report_sent: Mapped[str] = mapped_column(String(16), default="")      # zuletzt gesendeter Zeitraum (Schlüssel)
@@ -444,6 +446,13 @@ class Message(FamilyScoped, Base):
     access_key: Mapped[str | None] = mapped_column(Matchable("message.access_key"), nullable=True)
     access_name: Mapped[str | None] = mapped_column(Sealed("message.access_name"), nullable=True)
     access_scope: Mapped[str | None] = mapped_column(String(16), nullable=True)  # permanent | today
+
+
+@event.listens_for(Parent.email, "set")
+def _email_index(target: Parent, value, _old, _initiator) -> None:
+    """Suchwert immer passend zur Adresse (auch beim Anlegen per Konstruktor)."""
+    from .crypto import email_index
+    target.email_index = email_index(value or "")
 
 
 # Mandantentrennung registrieren (Ereignisse auf Session), sobald die Modelle vollständig sind

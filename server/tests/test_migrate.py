@@ -143,9 +143,10 @@ def test_import_sqlite_dry_run_apply_and_sequences(client, tmp_path):
     with SessionLocal() as db:
         assert db.get(Device, 3).name == "PC"
         assert db.scalar(select(Membership.role).where(Membership.parent_id == 7)) == ROLE_OWNER
-    with platform_db() as db:
+    with SessionLocal() as db:   # Familie 1: die (leere) E-Mail wird mit deren Schlüssel verschlüsselt
         db.add(Parent(username="papa", password_hash="h", totp_secret="T"))
         db.commit()
+    with platform_db() as db:   # ohne Mitgliedschaft nur im Plattformkontext sichtbar
         assert db.scalar(select(Parent.id).where(Parent.username == "papa")) == 8   # ID-Folge nachgezogen
     with pytest.raises(RuntimeError, match="nicht leer"):
         migrate.import_sqlite(str(path), engine, apply=True)
