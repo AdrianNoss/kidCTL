@@ -1957,3 +1957,12 @@ News-Bereich hat, den Claude Code pflegt.
   neu `test_email_login.py` (Bestätigung vor Login, Link einmalig, Groß/klein, Benutzername weiter, Eindeutigkeit über Familien,
   ohne SMTP sofort bestätigt, SaaS: Pflicht und abgeleiteter Benutzername, `KIDCTL_MODE`); Migration 0003 auf den
   Entwicklungsdaten mit `alembic check` ohne Abweichung; Login und Profil im Browser.
+- 2026-11-16: Etappe 1.5 Multi-Tenant: Probelauf der Übernahme mit einer Kopie der echten srv02-Datenbank (SQLite inkl. WAL) in eine
+  eigene Probedatenbank. Gefunden und behoben: (1) Nachziehen der ID-Folgen scheiterte an `blocklist_state` (Text-Schlüssel, keine
+  Folge) – die Übernahme lief vollständig zurück (eine Transaktion), jetzt nur noch für Integer-Schlüssel; (2) die Übernahme schreibt
+  direkt ins neueste Schema und umging Migration 0003, vorhandene E-Mail-Adressen wären unbestätigt gewesen – jetzt wie 0003 als
+  bestätigt übernommen, doppelte Adressen brechen mit Liste ab. Ergebnis: 579 Zeilen, Familie 1 mit dem bisherigen Account als
+  Inhaber, alle Familientabellen mit `family_id` 1, ID-Folgen korrekt, `alembic check` ohne Abweichung; WebUI gegen die Probedatenbank
+  (ohne Push/Mail): Übersicht, alle Reiter des Kindes, Geräte (Linux 0.26.2, Windows 0.32.7), Eltern, Einstellungen, Profil ohne
+  Fehler, 27 Chatnachrichten, 17 freigegebene Programme, 316 Protokolleinträge. Probedaten danach gelöscht. Getestet zusätzlich:
+  `test_migrate.py` um Text-Schlüssel, bestätigte und doppelte E-Mail-Adressen erweitert; alle Server-Tests.

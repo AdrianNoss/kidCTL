@@ -103,12 +103,16 @@ def _old_sqlite(tmp_path):
         c.execute(text("CREATE TABLE parent (id INTEGER PRIMARY KEY, username VARCHAR(64) UNIQUE, "
                        "password_hash VARCHAR(255), totp_secret VARCHAR(64), display_name VARCHAR(128) DEFAULT '', "
                        "created_at DATETIME)"))
-        c.execute(text("INSERT INTO parent (id, username, password_hash, totp_secret, created_at) "
-                       "VALUES (7, 'mama', 'h', 'S', '2026-10-13 10:00:00')"))
+        c.execute(text("ALTER TABLE parent ADD COLUMN email VARCHAR(255) DEFAULT ''"))
+        c.execute(text("INSERT INTO parent (id, username, password_hash, totp_secret, created_at, email) "
+                       "VALUES (7, 'mama', 'h', 'S', '2026-10-13 10:00:00', 'Mama@Example.org')"))
         c.execute(text("CREATE TABLE device (id INTEGER PRIMARY KEY, name VARCHAR(128), hostname VARCHAR(255) DEFAULT '', "
                        "token_hash VARCHAR(64) UNIQUE, created_at DATETIME, alert_after_hours INTEGER DEFAULT 48, "
                        "protocol_unsupported BOOLEAN DEFAULT 0, agent_version VARCHAR(32) DEFAULT '')"))
         c.execute(text("INSERT INTO device (id, name, token_hash, created_at) VALUES (3, 'PC', 'abc', '2026-10-14 08:00:00')"))
+        c.execute(text("CREATE TABLE blocklist_state (id VARCHAR(64) PRIMARY KEY, sha256 VARCHAR(64) DEFAULT '', "
+                       "count INTEGER DEFAULT 0, fetched_at DATETIME, error VARCHAR(255) DEFAULT '')"))
+        c.execute(text("INSERT INTO blocklist_state (id, count) VALUES ('hagezi-light', 1000)"))   # Text-Schlüssel
     eng.dispose()
     return tmp_path / "kidctl.db"
 
@@ -132,6 +136,7 @@ def test_import_sqlite_dry_run_apply_and_sequences(client, tmp_path):
         dev = db.get(Device, 3)
         assert dev.name == "PC" and dev.platform == "linux"       # fehlende Spalte mit Standardwert ergänzt
         assert db.get(Parent, 7).username == "mama"
+        assert db.get(Parent, 7).email_verified_at is not None                   # wie Migration 0003
         assert db.get(Family, 1) is not None
         assert db.scalar(select(Membership.role).where(Membership.parent_id == 7)) == ROLE_OWNER
     with platform_db() as db:
@@ -140,3 +145,15 @@ def test_import_sqlite_dry_run_apply_and_sequences(client, tmp_path):
         assert db.scalar(select(Parent.id).where(Parent.username == "papa")) == 8   # ID-Folge nachgezogen
     with pytest.raises(RuntimeError, match="nicht leer"):
         migrate.import_sqlite(str(path), engine, apply=True)
+
+
+def test_import_sqlite_rejects_duplicate_emails(client, tmp_path):
+    from app.db import engine
+    path = _old_sqlite(tmp_path)
+    eng = create_engine(f"sqlite:///{path}")
+    with eng.begin() as c:
+        c.execute(text("INSERT INTO parent (id, username, password_hash, totp_secret, created_at, email) "
+                       "VALUES (8, 'papa', 'h', 'T', '2026-10-13 10:00:00', 'mama@example.org')"))
+    eng.dispose()
+    with pytest.raises(RuntimeError, match="mehrfach"):
+        migrate.import_sqlite(str(path), engine)

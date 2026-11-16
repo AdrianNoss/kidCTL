@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 
-from sqlalchemy import Engine, text
+from sqlalchemy import Engine, Integer, text
 
 log = logging.getLogger("kidctl.sqlite_import")
 
@@ -163,6 +163,19 @@ def import_sqlite(path: str, target: Engine, apply: bool = False) -> dict[str, i
                 for row in data[t.name]:
                     row["family_id"] = 1
     data["family"] = [{k: v for k, v in r.items() if v is not None} for r in data["family"]]
+    # Wie Migration 0003: vorhandene Adressen gelten als bestätigt; jede Adresse nur einmal (ohne Groß/klein)
+    from .models import utcnow
+    seen: dict[str, str] = {}
+    for row in data["parent"]:
+        mail = (row.get("email") or "").strip()
+        if not mail:
+            continue
+        if mail.lower() in seen:
+            raise RuntimeError(f"E-Mail-Adresse {mail} mehrfach vergeben ({seen[mail.lower()]}, {row['username']}) – "
+                               "erst im alten System ändern.")
+        seen[mail.lower()] = row["username"]
+        row.setdefault("email_verified_at", None)
+        row["email_verified_at"] = row["email_verified_at"] or utcnow()
     counts = {name: len(rows) for name, rows in data.items()}
     problems = [msg for t in Base.metadata.sorted_tables for msg in _too_long(t, data[t.name])]
     if problems:
@@ -179,7 +192,7 @@ def import_sqlite(path: str, target: Engine, apply: bool = False) -> dict[str, i
             rows = data[table.name]
             for i in range(0, len(rows), 1000):
                 conn.execute(insert(table), rows[i:i + 1000])
-            if "id" in table.c and rows:
+            if "id" in table.c and rows and isinstance(table.c.id.type, Integer):   # Text-Schlüssel: keine Folge
                 conn.execute(text(f"SELECT setval(pg_get_serial_sequence('\"{table.name}\"', 'id'), "
                                   f"(SELECT max(id) FROM \"{table.name}\"))"))
     log.warning("SQLite-Übernahme aus %s: %d Zeilen in %d Tabellen", src_file, sum(counts.values()), len(counts))
