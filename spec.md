@@ -2170,6 +2170,17 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
   2026-11-16: Programm-/Website-Schlüssel deterministisch verschlüsseln. Noch keine Spalte umgestellt. Getestet: alle Server-Tests,
   neu `test_crypto.py` (eigener Schlüssel je Familie, Bindung an Familie/Spalte, deterministisch vs. zufällig, ohne Kontext Fehler,
   E-Mail-Suchwert, Hauptschlüssel Pflicht); Migration 0004 auf den Entwicklungsdaten, `alembic check` ohne Abweichung.
+- 2026-11-16: Etappe 2.2 Multi-Tenant: sensible Felder verschlüsselt (Alembic `0005` stellt auf TEXT um und verschlüsselt vorhandene
+  Werte mit dem Schlüssel der Familie der Zeile). Zufällig (`Sealed`): Chat-Text, Namen von Programmen/Websites/Spielen in Protokoll und
+  Statistik, Details im Protokoll, Gerätename und Hostname, voller Name der Benutzer auf Geräten. Deterministisch (`Matchable`):
+  Kindername, Benutzernamen auf Geräten (Zuordnung, Nutzungszeiten, Protokoll, Statistik, Spielsitzungen), Programm-/Website-Schlüssel in
+  Protokoll, Statistik, Spielsitzungen und Freigabe-Anfragen. Katalog, Freigaben und eigene Domain-Regeln bleiben unverschlüsselt.
+  Folgen: Freitextsuche im Protokoll und Namen in Statistik/Bericht/„Häufigste“ im Server statt per SQL; Listen von Kindern und Geräten
+  im Server sortiert; Alarme und Sperrlisten-Push laufen je Familie; Token-Prüfung im Plattformkontext liest nur unverschlüsselte
+  Spalten; `import-sqlite` liest roh, verschlüsselt mit Familie 1 und legt deren Schlüssel selbst an. Getestet: alle Server-Tests (u. a.
+  Übernahme mit Schlüssel aus der Datenbank, gleicher Kindername in zwei Familien mit verschiedenem Geheimtext, Plattform liest keine
+  Namen); Migration 0005 auf den Entwicklungsdaten (`alembic check` ohne Abweichung, Datenbank enthält nur Geheimtext); WebUI auf den
+  verschlüsselten Daten: alle Seiten ohne Fehler und ohne Geheimtext, Sortierung, Protokollsuche.
 - 2026-11-17: Anforderungen Wiki per /grill-me abgestimmt (Abschnitt „Projekthomepage“ → „Wiki“): `docs/` als
   Wiki auf der Projektseite, DE/EN mit Paritäts-Check, Aufteilung in Themenseiten, Pagefind-Suche. Noch keine
   Umsetzung.

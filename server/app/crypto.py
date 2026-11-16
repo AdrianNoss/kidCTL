@@ -187,11 +187,13 @@ class _Encrypted(TypeDecorator):
 
 class Sealed(_Encrypted):
     """Freitext, zufällig verschlüsselt (AES-GCM). Nicht durchsuchbar, nicht sortierbar."""
+    cache_ok = True   # Ver-/Entschlüsselung erst beim Ausführen (Kontext), nicht beim Kompilieren
     _encrypt = staticmethod(seal)
 
 
 class Matchable(_Encrypted):
     """Deterministisch verschlüsselt (AES-SIV): Gleichheit, Eindeutigkeit und Gruppieren in der Datenbank."""
+    cache_ok = True   # Ver-/Entschlüsselung erst beim Ausführen (Kontext), nicht beim Kompilieren
     _encrypt = staticmethod(match)
 
 

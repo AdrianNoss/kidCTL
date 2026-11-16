@@ -9,7 +9,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import delete, func, or_, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from .config import settings
@@ -103,13 +103,10 @@ def _since(f: LogFilter, today: date) -> datetime | None:
     return start.astimezone(timezone.utc).replace(tzinfo=None)
 
 
-def _escape_like(s: str) -> str:
-    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-
-
-def _search(f: LogFilter, *cols):
-    pat = f"%{_escape_like(f.q.lower())}%"
-    return or_(*(func.lower(c).like(pat, escape="\\") for c in cols))
+def _hit(f: LogFilter, *values: str | None) -> bool:
+    """Freitextsuche im Server: Namen, Schlüssel und Details sind verschlüsselt (nicht per SQL durchsuchbar)."""
+    q = f.q.lower()
+    return any(q in (v or "").lower() for v in values)
 
 
 def _where(child_id: int, f: LogFilter, today: date) -> list:
@@ -122,17 +119,19 @@ def _where(child_id: int, f: LogFilter, today: date) -> list:
         cond.append(BlockedEvent.username == f.user)
     if (since := _since(f, today)) is not None:
         cond.append(BlockedEvent.at >= since)
-    if f.q:
-        cond.append(_search(f, BlockedEvent.name, BlockedEvent.key, BlockedEvent.detail))
     return cond
 
 
 def events(db: Session, child_id: int, f: LogFilter, today: date) -> tuple[list[BlockedEvent], int]:
     """(Einträge bis ``f.limit``, Gesamtzahl der Treffer)."""
     cond = _where(child_id, f, today)
-    total = db.scalar(select(func.count()).select_from(BlockedEvent).where(*cond)) or 0
     order = (BlockedEvent.at.desc(), BlockedEvent.id.desc()) if f.order == "new" else (
         BlockedEvent.at.asc(), BlockedEvent.id.asc())
+    if f.q:
+        hits = [e for e in db.scalars(select(BlockedEvent).where(*cond).order_by(*order))
+                if _hit(f, e.name, e.key, e.detail)]
+        return hits[:f.limit], len(hits)
+    total = db.scalar(select(func.count()).select_from(BlockedEvent).where(*cond)) or 0
     rows = list(db.scalars(select(BlockedEvent).where(*cond).order_by(*order).limit(f.limit)))
     return rows, total
 
@@ -148,12 +147,24 @@ class TopEntry:
 
 def top(db: Session, child_id: int, f: LogFilter, today: date, n: int = TOP) -> list[TopEntry]:
     """Häufigste Einträge im gefilterten Zeitraum."""
-    rows = db.execute(select(BlockedEvent.key, func.max(BlockedEvent.name), BlockedEvent.kind,
+    if f.q:
+        groups: dict[tuple[str, str], TopEntry] = {}
+        for e in db.scalars(select(BlockedEvent).where(*_where(child_id, f, today))):
+            if not _hit(f, e.name, e.key, e.detail):
+                continue
+            g = groups.setdefault((e.key, e.kind), TopEntry(e.key, e.name, e.kind, 0, e.at))
+            g.count += 1
+            if e.at >= g.last:
+                g.last, g.name = e.at, e.name
+        return sorted(groups.values(), key=lambda g: (-g.count, -g.last.timestamp()))[:n]
+    names = {e.key: e.name for e in db.scalars(select(BlockedEvent).where(*_where(child_id, f, today))
+                                               .order_by(BlockedEvent.at))}   # Name verschlüsselt: neuester
+    rows = db.execute(select(BlockedEvent.key, BlockedEvent.key, BlockedEvent.kind,
                              func.count(), func.max(BlockedEvent.at))
                       .where(*_where(child_id, f, today))
                       .group_by(BlockedEvent.key, BlockedEvent.kind)
                       .order_by(func.count().desc(), func.max(BlockedEvent.at).desc()).limit(n)).all()
-    return [TopEntry(*r) for r in rows]
+    return [TopEntry(key, names.get(key, key), kind, count, last) for key, _k, kind, count, last in rows]
 
 
 def prune(db: Session, now: datetime | None = None) -> int:
@@ -174,16 +185,17 @@ def _game_where(child_id: int, f: LogFilter, today: date) -> list:
         cond.append(GameSession.username == f.user)
     if (since := _since(f, today)) is not None:
         cond.append(GameSession.last_seen_at >= since)   # auch über Mitternacht laufende Sitzungen
-    if f.q:
-        cond.append(_search(f, GameSession.name, GameSession.key))
     return cond
 
 
 def sessions(db: Session, child_id: int, f: LogFilter, today: date) -> tuple[list[GameSession], int]:
     cond = _game_where(child_id, f, today)
-    total = db.scalar(select(func.count()).select_from(GameSession).where(*cond)) or 0
     order = (GameSession.started_at.desc(), GameSession.id.desc()) if f.order == "new" else (
         GameSession.started_at.asc(), GameSession.id.asc())
+    if f.q:
+        hits = [g for g in db.scalars(select(GameSession).where(*cond).order_by(*order)) if _hit(f, g.name, g.key)]
+        return hits[:f.limit], len(hits)
+    total = db.scalar(select(func.count()).select_from(GameSession).where(*cond)) or 0
     return list(db.scalars(select(GameSession).where(*cond).order_by(*order).limit(f.limit))), total
 
 

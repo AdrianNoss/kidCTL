@@ -110,7 +110,7 @@ def test_update_hint_and_alarm_once(client, parent, tmp_path, monkeypatch):
     assert "Update: 0.26.1 → 0.26.2" in client.get("/devices").text
     assert "Update: 0.26.1 → 0.26.2" in client.get("/").text
     with SessionLocal() as db:
-        dev_id = db.scalar(select(Device.id).where(Device.name == "PC"))
+        dev_id = db.scalar(select(Device.id).where(Device.token_hash == "a" * 64))   # Name ist verschlüsselt
     assert "Update verfügbar: 0.26.2" in client.get(f"/devices/{dev_id}").text
 
 

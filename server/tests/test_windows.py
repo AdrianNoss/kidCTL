@@ -81,7 +81,7 @@ def test_update_hints_per_platform(client, parent, monkeypatch):
         due = alarms.due_update_alarms(db)
         assert [(d.name, v) for d, v in due] == [("Win", "0.29.0")]   # Linux ist aktuell
         db.commit()
-        win_id = db.scalar(select(Device.id).where(Device.name == "Win"))
+        win_id = db.scalar(select(Device.id).where(Device.token_hash == "d" * 64))   # Name ist verschlüsselt
     login(client, parent)
     page = client.get(f"/devices/{win_id}").text
     assert "Update verfügbar: 0.29.0. Wird automatisch installiert" in page and "pacman" not in page

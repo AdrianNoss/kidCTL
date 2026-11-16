@@ -12,6 +12,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
+from .crypto import Matchable, Sealed
 from .db import Base
 
 
@@ -131,7 +132,7 @@ class Child(FamilyScoped, Base):
     __table_args__ = (UniqueConstraint("family_id", "name"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(64))
+    name: Mapped[str] = mapped_column(Matchable("child.name"))
     weekdays_same: Mapped[bool] = mapped_column(Boolean, default=True)  # UI: Werktage/Wochenende gleich
     # Veraltet (nie benutzt, Standard war „whitelist“) – ersetzt durch web_mode
     web_filter_mode: Mapped[str] = mapped_column(String(16), default="whitelist")
@@ -181,8 +182,8 @@ class Device(FamilyScoped, Base):
     __tablename__ = "device"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(128))
-    hostname: Mapped[str] = mapped_column(String(255), default="")
+    name: Mapped[str] = mapped_column(Sealed("device.name"))
+    hostname: Mapped[str] = mapped_column(Sealed("device.hostname"), default="")
     platform: Mapped[str] = mapped_column(String(16), default="linux")   # linux | windows (aus hello)
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
@@ -207,7 +208,7 @@ class Device(FamilyScoped, Base):
         return [c for c in self.integrity_checks if not c.get("ok")]
 
     users: Mapped[list[DeviceUser]] = relationship(
-        back_populates="device", cascade="all, delete-orphan", order_by="DeviceUser.username")
+        back_populates="device", cascade="all, delete-orphan", order_by="DeviceUser.id")
 
 
 class DeviceUser(FamilyScoped, Base):
@@ -217,9 +218,9 @@ class DeviceUser(FamilyScoped, Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     device_id: Mapped[int] = mapped_column(ForeignKey("device.id", ondelete="CASCADE"), index=True)
-    username: Mapped[str] = mapped_column(String(64))
+    username: Mapped[str] = mapped_column(Matchable("device_user.username"))
     uid: Mapped[int] = mapped_column(Integer)
-    full_name: Mapped[str] = mapped_column(String(255), default="")
+    full_name: Mapped[str] = mapped_column(Sealed("device_user.full_name"), default="")
     present: Mapped[bool] = mapped_column(Boolean, default=True)  # zuletzt vom Agenten gemeldet
     child_id: Mapped[int | None] = mapped_column(ForeignKey("child.id", ondelete="SET NULL"), nullable=True)
 
@@ -234,7 +235,7 @@ class UsageRecord(FamilyScoped, Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     device_id: Mapped[int] = mapped_column(ForeignKey("device.id", ondelete="CASCADE"))
-    username: Mapped[str] = mapped_column(String(64))
+    username: Mapped[str] = mapped_column(Matchable("usage_record.username"))
     day: Mapped[date] = mapped_column(Date, index=True)
     child_id: Mapped[int | None] = mapped_column(
         ForeignKey("child.id", ondelete="CASCADE"), nullable=True, index=True)
@@ -304,15 +305,15 @@ class BlockedEvent(FamilyScoped, Base):
     child_id: Mapped[int | None] = mapped_column(
         ForeignKey("child.id", ondelete="CASCADE"), nullable=True, index=True)
     device_id: Mapped[int | None] = mapped_column(ForeignKey("device.id", ondelete="SET NULL"), nullable=True)
-    username: Mapped[str] = mapped_column(String(64))
+    username: Mapped[str] = mapped_column(Matchable("blocked_event.username"))
     at: Mapped[datetime] = mapped_column(DateTime, index=True)
     kind: Mapped[str] = mapped_column(String(16), default="program")
-    key: Mapped[str] = mapped_column(String(512))
-    name: Mapped[str] = mapped_column(String(255))
-    detail: Mapped[str] = mapped_column(String(255), default="")
+    key: Mapped[str] = mapped_column(Matchable("blocked_event.key"))
+    name: Mapped[str] = mapped_column(Sealed("blocked_event.name"))
+    detail: Mapped[str] = mapped_column(Sealed("blocked_event.detail"), default="")
     audit: Mapped[bool] = mapped_column(Boolean, default=False)
     detail_code: Mapped[str] = mapped_column(String(32), default="")   # sprachneutral (Agent ab 0.26)
-    detail_arg: Mapped[str] = mapped_column(String(255), default="")
+    detail_arg: Mapped[str] = mapped_column(Sealed("blocked_event.detail_arg"), default="")
 
 
 class GameSession(FamilyScoped, Base):
@@ -322,9 +323,9 @@ class GameSession(FamilyScoped, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     child_id: Mapped[int] = mapped_column(ForeignKey("child.id", ondelete="CASCADE"), index=True)
     device_id: Mapped[int | None] = mapped_column(ForeignKey("device.id", ondelete="SET NULL"), nullable=True)
-    username: Mapped[str] = mapped_column(String(64))
-    key: Mapped[str] = mapped_column(String(512))      # game:steam:<id> / game:heroic:<quelle>:<id>
-    name: Mapped[str] = mapped_column(String(255))
+    username: Mapped[str] = mapped_column(Matchable("game_session.username"))
+    key: Mapped[str] = mapped_column(Matchable("game_session.key"))      # game:steam:<id> / game:heroic:<quelle>:<id>
+    name: Mapped[str] = mapped_column(Sealed("game_session.name"))
     started_at: Mapped[datetime] = mapped_column(DateTime, index=True)   # UTC
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, index=True)
 
@@ -389,13 +390,13 @@ class AppUsage(FamilyScoped, Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     device_id: Mapped[int] = mapped_column(ForeignKey("device.id", ondelete="CASCADE"))
-    username: Mapped[str] = mapped_column(String(64))
+    username: Mapped[str] = mapped_column(Matchable("app_usage.username"))
     day: Mapped[date] = mapped_column(Date, index=True)
-    key: Mapped[str] = mapped_column(String(512))
+    key: Mapped[str] = mapped_column(Matchable("app_usage.key"))
     child_id: Mapped[int | None] = mapped_column(
         ForeignKey("child.id", ondelete="CASCADE"), nullable=True, index=True)
     seconds: Mapped[int] = mapped_column(Integer, default=0)
-    name: Mapped[str] = mapped_column(String(255), default="")  # Spiele: Name vom Agenten
+    name: Mapped[str] = mapped_column(Sealed("app_usage.name"), default="")  # Spiele: Name vom Agenten
 
 
 class PairingCode(FamilyScoped, Base):
@@ -422,7 +423,7 @@ class Message(FamilyScoped, Base):
     sender_parent_id: Mapped[int | None] = mapped_column(
         ForeignKey("parent.id", ondelete="SET NULL"), nullable=True)
     kind: Mapped[str] = mapped_column(String(32), default="text")  # text | extension_request
-    body: Mapped[str] = mapped_column(Text, default="")
+    body: Mapped[str] = mapped_column(Sealed("message.body"), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
     # Nur für extension_request:
     requested_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -440,8 +441,8 @@ class Message(FamilyScoped, Base):
     client_msg_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     # Nur für access_request (Freigabe-Anfrage für Programm/Website):
     access_kind: Mapped[str | None] = mapped_column(String(16), nullable=True)   # program | domain
-    access_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
-    access_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    access_key: Mapped[str | None] = mapped_column(Matchable("message.access_key"), nullable=True)
+    access_name: Mapped[str | None] = mapped_column(Sealed("message.access_name"), nullable=True)
     access_scope: Mapped[str | None] = mapped_column(String(16), nullable=True)  # permanent | today
 
 

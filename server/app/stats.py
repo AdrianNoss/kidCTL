@@ -97,10 +97,10 @@ def apps_between(db: Session, child: Child, start: date, end: date) -> list[AppR
                       .where(AppUsage.child_id == child.id, AppUsage.day >= start, AppUsage.day <= end)
                       .group_by(AppUsage.key)).all()
     names = {a.key: a.label for a in db.scalars(select(DeviceApp))}
-    names |= {k: n for k, n in db.execute(
-        select(AppUsage.key, func.max(AppUsage.name)).where(
-            AppUsage.child_id == child.id, AppUsage.key.startswith(GAME_PREFIX), AppUsage.name != "")
-        .group_by(AppUsage.key)).all()}
+    # Spielnamen: Schlüssel und Namen sind verschlüsselt – Auswahl im Server (nicht leer, Spiele)
+    for k, n in db.execute(select(AppUsage.key, AppUsage.name).where(AppUsage.child_id == child.id)):
+        if n and k.startswith(GAME_PREFIX):
+            names[k] = n
     out = []
     for k, s in rows:
         if k.startswith(GAME_PREFIX):

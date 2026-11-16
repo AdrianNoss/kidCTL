@@ -102,8 +102,8 @@ def test_pairing_code_of_other_family_creates_device_there(client, parent, other
     from kidctl_common import protocol as p
     r = client.post(p.ENROLL_PATH, json={"code": "ABCD-EFGH", "hostname": "fremd-pc"})
     assert r.status_code == 200
-    with platform_db() as db:
-        assert db.get(Device, r.json()["device_id"]).family_id == other["family"]
+    with platform_db() as db:   # Plattform: nur unverschlüsselte Spalten
+        assert db.scalar(select(Device.family_id).where(Device.id == r.json()["device_id"])) == other["family"]
     login(client, parent)
     assert "Fremd-PC" not in client.get("/devices").text
 
@@ -117,16 +117,24 @@ def test_queries_without_context_fail_and_foreign_writes_are_rejected(client, pa
         with pytest.raises(TenantError):
             db.flush()
         db.rollback()
-    with platform_db() as db:
-        assert db.scalar(select(Child.id).where(Child.name == "Eingeschleust")) is None
+    for fid in (1, other["family"]):
+        with family_session(fid) as db:
+            assert db.scalar(select(Child.id).where(Child.name == "Eingeschleust")) is None
+    with platform_db() as db, pytest.raises(Exception, match="ohne Familienkontext"):
+        db.scalars(select(Child)).all()                                    # Plattform sieht keine Namen
 
 
 def test_same_child_name_allowed_in_two_families(client, parent, other):
     login(client, parent)
     tok = csrf_from(client.get("/children").text)
     assert client.post("/children", data={"csrf_token": tok, "name": "Fremdkind"}).status_code in (200, 303)
-    with platform_db() as db:
-        assert len(db.scalars(select(Child).where(Child.name == "Fremdkind")).all()) == 2
+    for fid in (1, other["family"]):
+        with family_session(fid) as db:
+            assert db.scalar(select(Child.id).where(Child.name == "Fremdkind")) is not None
+    with platform_db() as db:   # verschieden verschlüsselt: gleicher Name, anderer Geheimtext
+        from sqlalchemy import Text, type_coerce
+        raw = db.scalars(select(type_coerce(Child.name, Text))).all()
+        assert len(raw) == 2 and raw[0] != raw[1] and not any("Fremdkind" in r for r in raw)
 
 
 def test_push_goes_only_to_own_family(client, parent, other, monkeypatch):

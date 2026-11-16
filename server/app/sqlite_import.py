@@ -126,7 +126,9 @@ def import_sqlite(path: str, target: Engine, apply: bool = False) -> dict[str, i
     from pathlib import Path
 
     from alembic import command
-    from sqlalchemy import create_engine, func, insert, select
+    from sqlalchemy import Text, create_engine, func, insert, select, type_coerce
+
+    from .crypto import _Encrypted, family as crypto_family
 
     from . import models  # noqa: F401  (Tabellen registrieren)
     from .db import Base, alembic_config
@@ -147,7 +149,9 @@ def import_sqlite(path: str, target: Engine, apply: bool = False) -> dict[str, i
             data = {}
             for t in Base.metadata.sorted_tables:   # nur vorhandene Spalten lesen, fehlende bekommen den Standardwert
                 present = set(_columns(conn, t.name))
-                cols = [c for c in t.columns if c.name in present]
+                # verschlüsselte Spalten roh lesen (in SQLite steht Klartext), alle anderen mit ihrem Typ
+                cols = [type_coerce(c, Text).label(c.name) if isinstance(c.type, _Encrypted) else c
+                        for c in t.columns if c.name in present]
                 data[t.name] = [dict(r) for r in conn.execute(select(*cols)).mappings()]
         src.dispose()
 
@@ -163,6 +167,14 @@ def import_sqlite(path: str, target: Engine, apply: bool = False) -> dict[str, i
                 for row in data[t.name]:
                     row["family_id"] = 1
     data["family"] = [{k: v for k, v in r.items() if v is not None} for r in data["family"]]
+    import os
+    from . import crypto
+    for fam in data["family"]:   # Core-Insert: das Ereignis „neue Familie bekommt Schlüssel“ läuft hier nicht
+        if not fam.get("wrapped_key"):
+            dek = os.urandom(64)
+            fam["wrapped_key"] = crypto.wrap_family_key(fam["id"], dek)
+            if apply:
+                crypto.remember(fam["id"], dek)
     # Wie Migration 0003: vorhandene Adressen gelten als bestätigt; jede Adresse nur einmal (ohne Groß/klein)
     from .models import utcnow
     seen: dict[str, str] = {}
@@ -190,8 +202,9 @@ def import_sqlite(path: str, target: Engine, apply: bool = False) -> dict[str, i
             raise RuntimeError(f"Ziel-Datenbank ist nicht leer ({', '.join(filled)}) – Übernahme abgebrochen.")
         for table in Base.metadata.sorted_tables:
             rows = data[table.name]
-            for i in range(0, len(rows), 1000):
-                conn.execute(insert(table), rows[i:i + 1000])
+            with crypto_family(1):   # alte Installationen: alles Familie 1, verschlüsselt mit deren Schlüssel
+                for i in range(0, len(rows), 1000):
+                    conn.execute(insert(table), rows[i:i + 1000])
             if "id" in table.c and rows and isinstance(table.c.id.type, Integer):   # Text-Schlüssel: keine Folge
                 conn.execute(text(f"SELECT setval(pg_get_serial_sequence('\"{table.name}\"', 'id'), "
                                   f"(SELECT max(id) FROM \"{table.name}\"))"))

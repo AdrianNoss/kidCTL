@@ -47,7 +47,7 @@
     <div class="scroll">
     <table>
       <tr><th>{{ _("Windows-Benutzer") if device.platform == "windows" else _("Linux-Benutzer") }}</th>{% if device.platform != "windows" %}<th>UID</th>{% endif %}<th>{{ _("Kind") }}</th></tr>
-      {% for u in device.users %}
+      {% for u in device.users | sort(attribute="username") %}
       <tr{% if not u.present %} class="muted"{% endif %}>
         <td>{{ u.username }}{% if u.full_name %} ({{ u.full_name }}){% endif %}{% if not u.present %} – {{ _("nicht mehr vorhanden") }}{% endif %}</td>
         {% if device.platform != "windows" %}<td>{{ u.uid }}</td>{% endif %}

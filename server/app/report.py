@@ -166,9 +166,12 @@ def child_report(db: Session, child: Child, p: Period) -> ChildReport:
     lo, hi = _utc_bounds(p)
     blocked_where = (BlockedEvent.child_id == child.id, BlockedEvent.at >= lo, BlockedEvent.at < hi,
                      BlockedEvent.audit.is_(False))
-    blocked_top = [(k, n, c) for k, n, c in db.execute(
-        select(BlockedEvent.kind, func.max(BlockedEvent.name), func.count()).where(*blocked_where)
-        .group_by(BlockedEvent.kind, BlockedEvent.key).order_by(func.count().desc()).limit(TOP)).all()]
+    counts = {(k, key): c for k, key, c in db.execute(
+        select(BlockedEvent.kind, BlockedEvent.key, func.count()).where(*blocked_where)
+        .group_by(BlockedEvent.kind, BlockedEvent.key).order_by(func.count().desc()).limit(TOP))}
+    names = {(e.kind, e.key): e.name for e in db.scalars(select(BlockedEvent).where(*blocked_where)
+                                                          .order_by(BlockedEvent.at))}   # Name verschlüsselt
+    blocked_top = [(kind, names.get((kind, key), key), c) for (kind, key), c in counts.items()]
     requests = list(db.scalars(select(Message.status).where(
         Message.child_id == child.id, Message.kind == "extension_request",
         Message.created_at >= lo, Message.created_at < hi)))
@@ -186,7 +189,7 @@ def child_report(db: Session, child: Child, p: Period) -> ChildReport:
 
 
 def build(db: Session, p: Period) -> list[ChildReport]:
-    return [child_report(db, c, p) for c in db.scalars(select(Child).order_by(Child.name))]
+    return [child_report(db, c, p) for c in sorted(db.scalars(select(Child)), key=lambda c: c.name.casefold())]
 
 
 # ---------- Darstellung ----------

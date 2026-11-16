@@ -37,7 +37,8 @@ def blocklist_download(list_id: str, request: Request, db: Session = Depends(get
     auth = request.headers.get("authorization", "")
     dev = None
     if auth.lower().startswith("bearer "):
-        dev = db.scalar(select(Device).where(Device.token_hash == token_hash(auth[7:].strip())))
+        dev = db.execute(select(Device.id, Device.revoked_at)   # Plattform: nur unverschlüsselte Spalten
+                         .where(Device.token_hash == token_hash(auth[7:].strip()))).first()
     if dev is None or dev.revoked_at is not None:
         raise HTTPException(401, "Geräte-Token ungültig")
     state = db.get(BlocklistState, list_id)
@@ -74,11 +75,13 @@ def enroll(req: p.EnrollRequest, request: Request, db: Session = Depends(get_pla
     return p.EnrollResponse(device_id=device.id, token=token)
 
 
-def _device_for_token(db: Session, ws: WebSocket) -> Device | None:
+def _device_for_token(db: Session, ws: WebSocket):
+    """(id, family_id) des Geräts zum Token – im Plattformkontext nur unverschlüsselte Spalten."""
     auth = ws.headers.get("authorization", "")
     if not auth.lower().startswith("bearer "):
         return None
-    dev = db.scalar(select(Device).where(Device.token_hash == token_hash(auth[7:].strip())))
+    dev = db.execute(select(Device.id, Device.family_id, Device.revoked_at)
+                     .where(Device.token_hash == token_hash(auth[7:].strip()))).first()
     if dev is None or dev.revoked_at is not None:
         return None
     return dev

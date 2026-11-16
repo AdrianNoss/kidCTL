@@ -138,6 +138,10 @@ def test_import_sqlite_dry_run_apply_and_sequences(client, tmp_path):
         assert db.get(Parent, 7).username == "mama"
         assert db.get(Parent, 7).email_verified_at is not None                   # wie Migration 0003
         assert db.get(Family, 1) is not None
+    from app import crypto
+    crypto.forget(1)                                   # Schlüssel muss aus der Datenbank kommen, nicht aus dem Speicher
+    with SessionLocal() as db:
+        assert db.get(Device, 3).name == "PC"
         assert db.scalar(select(Membership.role).where(Membership.parent_id == 7)) == ROLE_OWNER
     with platform_db() as db:
         db.add(Parent(username="papa", password_hash="h", totp_secret="T"))

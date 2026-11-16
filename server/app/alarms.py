@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from . import push, versions
 from .i18n import _
-from .tenant import platform_session
+from .tenant import family_ids, family_session, platform_session
 from .models import Device, utcnow
 from .ws import manager
 
@@ -63,7 +63,18 @@ def due_update_alarms(db: Session, release: versions.Release | None = None,
 
 
 def check_once() -> int:
-    with platform_session() as db:   # über alle Familien; Push geht an die Familie des Geräts
+    """Alarme je Familie prüfen – Gerätenamen sind mit dem Schlüssel der Familie verschlüsselt."""
+    with platform_session() as db:
+        families = family_ids(db)
+    total = 0
+    for fid in families:
+        with family_session(fid) as db:
+            total += _check_family(db)
+    return total
+
+
+def _check_family(db: Session) -> int:
+    if True:
         for dev, version in due_update_alarms(db):
             log.warning("Agent auf Gerät %s (%s) veraltet: %s, verfügbar %s", dev.id, dev.name, dev.agent_version,
                         version)

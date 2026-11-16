@@ -46,10 +46,15 @@ def _get_or_404(db: Session, model, obj_id: int):
 
 # ---------- Übersicht ----------
 
+def _by_name(rows) -> list:
+    """Namen sind verschlüsselt (Reihenfolge in der Datenbank zufällig): im Server sortieren."""
+    return sorted(rows, key=lambda r: (r.name or "").casefold())
+
+
 @router.get("/")
 def dashboard(request: Request, db: Session = Depends(get_db)):
-    children = db.scalars(select(Child).order_by(Child.name)).all()
-    devices = db.scalars(select(Device).where(Device.revoked_at.is_(None)).order_by(Device.name)).all()
+    children = _by_name(db.scalars(select(Child)))
+    devices = _by_name(db.scalars(select(Device).where(Device.revoked_at.is_(None))))
     chat.expire_stale_requests(db)
     return render(request, "dashboard.html", children=children, devices=devices, online=manager.is_online,
                   pending=chat.pending_count(db), status={c.id: policy.day_status(db, c) for c in children},
@@ -60,7 +65,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/children")
 def children_list(request: Request, db: Session = Depends(get_db)):
-    children = db.scalars(select(Child).order_by(Child.name)).all()
+    children = _by_name(db.scalars(select(Child)))
     chat.expire_stale_requests(db)
     return render(request, "children.html", children=children, pending=chat.pending_count(db))
 
@@ -79,7 +84,7 @@ def child_create(request: Request, name: str = Form(...), db: Session = Depends(
         db.commit()
     except IntegrityError:
         db.rollback()
-        children = db.scalars(select(Child).order_by(Child.name)).all()
+        children = _by_name(db.scalars(select(Child)))
         return render(request, "children.html", status_code=400, children=children,
                       error=_("Ein Kind namens „{name}“ existiert bereits.").format(name=name))
     return _redirect("/children")
@@ -429,7 +434,7 @@ async def child_access_decide(child_id: int, msg_id: int, request: Request, acti
 
 @router.get("/devices")
 def devices_list(request: Request, db: Session = Depends(get_db)):
-    devices = db.scalars(select(Device).order_by(Device.revoked_at.is_not(None), Device.name)).all()
+    devices = sorted(_by_name(db.scalars(select(Device))), key=lambda d: d.revoked_at is not None)
     return render(request, "devices.html", devices=devices, online=manager.is_online)
 
 
@@ -449,7 +454,7 @@ def device_pair(request: Request, name: str = Form(...),
 @router.get("/devices/{device_id}")
 def device_detail(device_id: int, request: Request, db: Session = Depends(get_db)):
     device = _get_or_404(db, Device, device_id)
-    children = db.scalars(select(Child).order_by(Child.name)).all()
+    children = _by_name(db.scalars(select(Child)))
     return render(request, "device.html", device=device, children=children,
                   online=manager.is_online(device.id), supported=sorted(SUPPORTED_VERSIONS),
                   policy_current=policy.policy_current(db, device))
