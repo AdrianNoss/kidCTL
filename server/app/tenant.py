@@ -87,6 +87,26 @@ def family_of_parent(db: Session, parent_id: int) -> int | None:
         return db.scalar(select(Membership.family_id).where(Membership.parent_id == parent_id))
 
 
+def delete_family(db: Session, family_id: int) -> dict[str, int]:
+    """Familie endgültig löschen (Plattformkontext): zuerst ihren Schlüssel verwerfen und speichern – damit sind ihre
+    Daten sofort unlesbar, auch in älteren Backups –, dann Accounts und alle Familiendaten löschen (CASCADE)."""
+    from sqlalchemy import delete, func, update
+    with platform(db):
+        parent_ids = list(db.scalars(select(Membership.parent_id).where(Membership.family_id == family_id)))
+        from .models import Child, Device
+        counts = {"parents": len(parent_ids),
+                  "children": db.scalar(select(func.count(Child.id)).where(Child.family_id == family_id)) or 0,
+                  "devices": db.scalar(select(func.count(Device.id)).where(Device.family_id == family_id)) or 0}
+        db.execute(update(Family).where(Family.id == family_id).values(wrapped_key=None))
+        db.commit()
+        crypto.forget(family_id)
+        if parent_ids:
+            db.execute(delete(Parent).where(Parent.id.in_(parent_ids)))
+        db.execute(delete(Family).where(Family.id == family_id))
+        db.commit()
+    return counts
+
+
 def load_parent(db: Session, parent_id: int) -> Parent | None:
     """Für Abläufe ohne Anmeldung (Login, Links aus Mails): in den Kontext der Familie des Accounts wechseln und ihn
     laden – seine E-Mail ist mit dem Schlüssel dieser Familie verschlüsselt."""

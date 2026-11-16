@@ -64,3 +64,33 @@ def test_email_is_stored_encrypted_and_found_by_index(client, parent):
         assert "Mama" not in raw and raw.startswith("g1:") and idx == crypto.email_index("mama@example.org")
         found = accounts.find_by_login(db, "MAMA@example.org")         # Plattform -> Familie des Accounts
         assert found.id == parent.id and found.email == "Mama@Example.org"
+
+
+def test_delete_family_shreds_key_first_and_removes_everything(client, parent):
+    from sqlalchemy import Text, select, type_coerce
+
+    from app.models import Child, Membership, Message, Parent, PushSubscription
+    from app.tenant import delete_family, family_session
+    fid = add_family("Weg")
+    with family_session(fid) as db:
+        p = Parent(username="weg", password_hash="h", totp_secret="T", email="weg@example.org")
+        db.add(p)
+        db.flush()
+        db.add(Membership(parent_id=p.id, role="owner"))
+        c = Child(name="Geheimkind")
+        db.add(c)
+        db.flush()
+        db.add_all([Message(child_id=c.id, from_child=True, body="streng geheim"),
+                    PushSubscription(parent_id=p.id, endpoint="https://push.example/weg", p256dh="x", auth="y")])
+        db.commit()
+        pid = p.id
+    with platform_db() as db:   # „altes Backup“: Geheimtexte vor dem Löschen
+        backup = db.scalars(select(type_coerce(Message.body, Text)).where(Message.family_id == fid)).all()
+        assert delete_family(db, fid) == {"parents": 1, "children": 1, "devices": 0}
+        assert db.get(Family, fid) is None and db.scalar(select(Parent.id).where(Parent.id == pid)) is None
+        assert db.scalars(select(Child.id).where(Child.family_id == fid)).all() == []
+        assert db.scalars(select(PushSubscription.id).where(PushSubscription.parent_id == pid)).all() == []
+    with pytest.raises(crypto.CryptoError):        # Schlüssel weg: auch das Backup ist unlesbar
+        crypto.open_(backup[0], "message.body", family_id=fid)
+    with platform_db() as db:                      # andere Familie unberührt
+        assert db.get(Family, 1).wrapped_key and db.scalar(select(Parent.id).where(Parent.id == parent.id))

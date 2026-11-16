@@ -160,6 +160,27 @@ def master_key(_args: argparse.Namespace) -> int:
     return 0
 
 
+def delete_family(args: argparse.Namespace) -> int:
+    """Familie endgültig löschen: Schlüssel verwerfen, dann Accounts und Daten (ohne --apply nur anzeigen)."""
+    from sqlalchemy import func
+    from .models import Child, Device
+    from .tenant import delete_family as run
+    with platform_session() as db:
+        if db.get(Family, args.family_id) is None:
+            print(f"Familie {args.family_id} gibt es nicht.", file=sys.stderr)
+            return 1
+        parents = db.scalar(select(func.count()).select_from(Membership).where(Membership.family_id == args.family_id))
+        children = db.scalar(select(func.count(Child.id)).where(Child.family_id == args.family_id))
+        devices = db.scalar(select(func.count(Device.id)).where(Device.family_id == args.family_id))
+        print(f"Familie {args.family_id}: {parents} Eltern-Account(s), {children} Kind(er), {devices} Gerät(e)")
+        if not args.apply:
+            print("[dry-run] Mit --apply löschen. Nicht umkehrbar – auch Backups sind danach für diese Familie unlesbar.")
+            return 0
+        run(db, args.family_id)
+    print("Gelöscht: Schlüssel verworfen, Accounts und Daten entfernt.")
+    return 0
+
+
 def import_sqlite(args: argparse.Namespace) -> int:
     """Alte SQLite-Datenbank nach PostgreSQL übernehmen (ohne --apply nur Probelauf)."""
     from .db import engine
@@ -198,6 +219,10 @@ def main() -> int:
     bp.set_defaults(func=backup)
     mk = sub.add_parser("master-key", help="Hauptschlüssel für die Verschlüsselung erzeugen (für .env)")
     mk.set_defaults(func=master_key)
+    df = sub.add_parser("delete-family", help="Familie endgültig löschen (Schlüssel verwerfen, Daten löschen)")
+    df.add_argument("family_id", type=int)
+    df.add_argument("--apply", action="store_true", help="wirklich löschen (sonst nur anzeigen)")
+    df.set_defaults(func=delete_family)
     ip = sub.add_parser("import-sqlite", help="SQLite-Datenbank (bis 0.32.x) nach PostgreSQL übernehmen")
     ip.add_argument("path", help="Pfad zur kidctl.db")
     ip.add_argument("--apply", action="store_true", help="wirklich übernehmen (sonst Probelauf)")

@@ -2188,6 +2188,11 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
   Spalten und wechseln vor dem Laden in den Kontext der Familie des Accounts (`tenant.load_parent`); Nutzungsbericht je Empfänger im
   Familienkontext; `cli create-parent` legt erst die Familie an. Getestet: alle Server-Tests, neu: E-Mail nur als Geheimtext in der
   Datenbank, Anmeldung über Suchwert ohne Groß/klein; Migration 0006 auf den Entwicklungsdaten, `alembic check` ohne Abweichung.
+- 2026-11-16: Etappe 2.4 Multi-Tenant: Familie löschen per Schlüssel (`tenant.delete_family`, `cli delete-family <id> [--apply]`, ohne
+  `--apply` nur Anzeige): zuerst wird der Datenschlüssel verworfen und gespeichert (Daten sofort unlesbar, auch in älteren Backups), dann
+  Accounts samt Sitzungen/Tokens/Push-Abos und alle Familiendaten gelöscht (CASCADE). Bedienung im WebUI folgt mit Etappe 4/5.
+  Getestet: alle Server-Tests, neu: Geheimtext aus „altem Backup“ nach dem Löschen nicht mehr zu öffnen, alles der Familie entfernt,
+  andere Familie unberührt.
 - 2026-11-17: Anforderungen Wiki per /grill-me abgestimmt (Abschnitt „Projekthomepage“ → „Wiki“): `docs/` als
   Wiki auf der Projektseite, DE/EN mit Paritäts-Check, Aufteilung in Themenseiten, Pagefind-Suche. Noch keine
   Umsetzung.
