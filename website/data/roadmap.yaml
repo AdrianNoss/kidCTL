@@ -51,7 +51,7 @@
     de: "Diese Seite: Funktionen, Schnellstart, News und Releases auf Deutsch und Englisch."
     en: "This site: features, quick start, news and releases in English and German."
 - id: saas
-  status: planned
+  status: in_progress
   title: { de: "Gehostete Variante für Familien", en: "Hosted version for families" }
   text:
     de: "KidCTL nutzen, ohne einen eigenen Server zu betreiben. Self-Hosting bleibt vollständig und kostenlos (AGPL-3.0)."

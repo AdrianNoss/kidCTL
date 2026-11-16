@@ -2021,3 +2021,5 @@ News-Bereich hat, den Claude Code pflegt.
   Server läuft, Anmeldeseite mit „E-Mail-Adresse oder Benutzername“ von außen geprüft. Anleitung „Umstieg auf PostgreSQL“ in
   `docs/installation.md` korrigiert: vor der Übernahme `docker compose build kidctl` (sonst läuft der Befehl im alten Image ohne
   PostgreSQL-Treiber und bricht mit `No module named 'psycopg'` ab, ohne etwas zu ändern).
+- 2026-11-16: Roadmap der Projektseite: „Gehostete Variante für Familien“ auf „in Arbeit“ (SaaS-Etappe 1 abgeschlossen). Getestet:
+  `hugo --minify` ohne Fehler.
