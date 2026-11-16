@@ -2023,3 +2023,9 @@ News-Bereich hat, den Claude Code pflegt.
   PostgreSQL-Treiber und bricht mit `No module named 'psycopg'` ab, ohne etwas zu ändern).
 - 2026-11-16: Roadmap der Projektseite: „Gehostete Variante für Familien“ auf „in Arbeit“ (SaaS-Etappe 1 abgeschlossen). Getestet:
   `hugo --minify` ohne Fehler.
+- 2026-11-16: Impressum: Anschrift „folgt“ (bis Adrian sie festlegt), Kontakt `info@nossco.de`; damit besteht der
+  Platzhalter-Check im Pages-Workflow. Prüfsumme 0.32.7 geklärt: Das GitHub-Release enthält den CI-Build aus Lauf
+  42863441320 (2026-11-10, `0e9a…`, identisch mit dem Artefakt), im lokalen bzw. veröffentlichten Repo liegt noch der
+  VM-Build vom 2026-11-08 (`d8e2…`, vor Einführung des CI-Baus, von `latest.json` signiert). Kein Fehler, ab dem
+  nächsten Release kommen beide aus demselben CI-Lauf. Getestet: `hugo --minify --panicOnWarning`, Prüfsummen von
+  Release-Asset und CI-Artefakt verglichen.

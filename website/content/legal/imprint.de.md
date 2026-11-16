@@ -7,13 +7,11 @@ translationKey: "imprint"
 ## Angaben gemäß § 5 DDG
 
 Adrian Noss  
-TODO-IMPRESSUM Straße und Hausnummer  
-TODO-IMPRESSUM PLZ Ort  
-Deutschland
+Anschrift folgt
 
 ## Kontakt
 
-E-Mail: TODO-IMPRESSUM
+E-Mail: <info@nossco.de>
 
 ## Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV
 

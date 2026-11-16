@@ -9,13 +9,11 @@ Legal notice required by German law (§ 5 DDG).
 ## Provider
 
 Adrian Noss  
-TODO-IMPRESSUM street and number  
-TODO-IMPRESSUM postcode, city  
-Germany
+Address to follow
 
 ## Contact
 
-Email: TODO-IMPRESSUM
+Email: <info@nossco.de>
 
 ## Responsible for content (§ 18 (2) MStV)
 
