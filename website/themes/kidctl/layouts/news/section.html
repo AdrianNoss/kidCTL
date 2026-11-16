@@ -1,0 +1,14 @@
+{{ define "main" }}
+<div class="page"><div class="wrap">
+  <div class="section-head">
+    <h1>{{ .Title }}</h1>
+    {{- with .Content }}<div class="lead">{{ . }}</div>{{ end }}
+    <p><a class="btn secondary" href="{{ (.OutputFormats.Get "rss").RelPermalink }}">{{ partial "icon.html" "rss" }}{{ T "news_rss" }}</a></p>
+  </div>
+  {{- with .RegularPages.ByDate.Reverse }}
+  {{ partial "newslist.html" . }}
+  {{- else }}
+  <p class="muted">{{ T "news_empty" }}</p>
+  {{- end }}
+</div></div>
+{{ end }}

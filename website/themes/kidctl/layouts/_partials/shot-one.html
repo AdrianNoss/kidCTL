@@ -1,0 +1,17 @@
+{{- /* Ein Screenshot (hell/dunkel), aufgerufen von shot.html. */ -}}
+  {{- $base := printf "img/screenshots/%s/%%s/%s-%s.webp" .lang .name .size }}
+  {{- $light := printf $base "light" }}
+  {{- $dark := printf $base "dark" }}
+  <figure class="shot{{ if eq .size "mobile" }} phone{{ end }}">
+  {{- if fileExists (printf "static/%s" $light) }}
+    {{- $hasDark := fileExists (printf "static/%s" $dark) }}
+    <a href="{{ $light | relURL }}" data-lightbox{{ if $hasDark }} data-dark="{{ $dark | relURL }}"{{ end }}>
+      <picture>
+        {{- if $hasDark }}<source srcset="{{ $dark | relURL }}" media="(prefers-color-scheme: dark)">{{ end }}
+        <img src="{{ $light | relURL }}" alt="{{ .alt }}" loading="lazy" decoding="async"{{ if eq .size "mobile" }} width="390" height="844"{{ else }} width="1280" height="800"{{ end }}>
+      </picture>
+    </a>
+  {{- else }}
+    <div class="shot-missing" role="img" aria-label="{{ .alt }}">{{ .alt }}</div>
+  {{- end }}
+  </figure>

@@ -1,0 +1,10 @@
+{{- /* Link auf dieselbe Seite in der anderen Sprache, sonst auf deren Startseite. Ohne JS. */ -}}
+{{- $page := . }}
+{{- range hugo.Sites }}
+  {{- if ne .Language.Lang site.Language.Lang }}
+    {{- $lang := .Language.Lang }}
+    {{- $target := .Home.RelPermalink }}
+    {{- range $page.Translations }}{{ if eq .Language.Lang $lang }}{{ $target = .RelPermalink }}{{ end }}{{ end }}
+    <a class="lang" href="{{ $target }}" hreflang="{{ .Language.Locale }}" lang="{{ .Language.Locale }}">{{ partial "icon.html" "language" }}{{ .Language.Label }}</a>
+  {{- end }}
+{{- end }}

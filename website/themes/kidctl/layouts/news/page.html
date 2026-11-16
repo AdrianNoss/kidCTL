@@ -1,0 +1,13 @@
+{{ define "main" }}
+<div class="page"><div class="wrap">
+  <article class="prose">
+    {{- with .Parent }}<a class="backlink" href="{{ .RelPermalink }}">{{ partial "icon.html" "back" }}{{ .Title }}</a>{{ end }}
+    <p class="meta">{{ .Date | time.Format ":date_long" }}{{ with .Params.version }} · {{ T "version" }} {{ . }}{{ end }}</p>
+    <h1>{{ .Title }}</h1>
+    {{ .Content }}
+    {{- with .Params.version }}
+    <p><a href="{{ site.Params.github }}/releases/tag/v{{ . }}">{{ T "release_on_github" }}</a></p>
+    {{- end }}
+  </article>
+</div></div>
+{{ end }}

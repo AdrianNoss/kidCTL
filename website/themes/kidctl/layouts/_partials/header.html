@@ -1,0 +1,15 @@
+{{- $home := site.Home.RelPermalink }}
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="{{ $home }}"><span class="mark" aria-hidden="true"></span>KidCTL</a>
+    <nav class="topnav" aria-label="{{ T "nav_label" }}">
+      <a href="{{ $home }}#features">{{ T "nav_features" }}</a>
+      <a href="{{ $home }}#install">{{ T "nav_install" }}</a>
+      <a href="{{ $home }}#roadmap">{{ T "nav_roadmap" }}</a>
+      {{- with site.GetPage "/news" }}<a href="{{ .RelPermalink }}"{{ if eq $.Section "news" }} class="active"{{ end }}>{{ T "nav_news" }}</a>{{ end }}
+      {{- with site.GetPage "/releases" }}<a href="{{ .RelPermalink }}"{{ if eq $.Section "releases" }} class="active"{{ end }}>{{ T "nav_releases" }}</a>{{ end }}
+      <a href="{{ site.Params.github }}">GitHub</a>
+      {{ partial "langswitch.html" . }}
+    </nav>
+  </div>
+</header>

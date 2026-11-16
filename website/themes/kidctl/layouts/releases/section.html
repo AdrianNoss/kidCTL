@@ -1,0 +1,37 @@
+{{ define "main" }}
+{{- /* data/releases.json kommt im Pages-Workflow aus der GitHub-API (gh api repos/AdrianNoss/kidCTL/releases). */ -}}
+{{- $releases := hugo.Data.releases | default slice }}
+<div class="page"><div class="wrap">
+  <div class="section-head">
+    <h1>{{ .Title }}</h1>
+    {{- with .Content }}<div class="lead">{{ . }}</div>{{ end }}
+  </div>
+  {{- $first := true }}
+  {{- range $releases }}
+    {{- if not .draft }}
+    <article class="card release">
+      <header>
+        <h2>{{ .name | default .tag_name }}</h2>
+        {{- if .prerelease }}<span class="chip">{{ T "prerelease" }}</span>{{ else if $first }}<span class="chip latest-chip">{{ T "latest" }}</span>{{ $first = false }}{{ end }}
+        <span class="meta">{{ time.AsTime .published_at | time.Format ":date_long" }}</span>
+      </header>
+      <ul class="assets">
+      {{- range .assets }}
+        <li><a class="btn secondary" href="{{ .browser_download_url }}">{{ partial "icon.html" "download" }}{{ .name }} <span class="muted">({{ div (float .size) 1048576 | lang.FormatNumber 1 }} MB)</span></a></li>
+      {{- end }}
+        <li><a class="btn secondary" href="{{ .html_url }}">{{ partial "icon.html" "github" }}{{ T "release_on_github" }}</a></li>
+      </ul>
+      {{- with .body }}
+      <details>
+        <summary>{{ T "release_notes" }}</summary>
+        <div class="body prose">{{ . | markdownify }}</div>
+      </details>
+      {{- end }}
+    </article>
+    {{- end }}
+  {{- else }}
+  <p class="muted">{{ T "releases_empty" (dict "url" (printf "%s/releases" site.Params.github)) | safeHTML }}</p>
+  {{- end }}
+  <p class="muted">{{ T "releases_linux" | markdownify }}</p>
+</div></div>
+{{ end }}

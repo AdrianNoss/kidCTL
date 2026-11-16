@@ -1,0 +1,13 @@
+{{- /* Client-Screenshot aus der Test-VM (von Hand): static/img/client/<name>.webp, optional <name>-<lang>.webp. */ -}}
+{{- $lang := site.Language.Lang }}
+{{- $file := "" }}
+{{- range slice (printf "img/client/%s-%s.webp" .name $lang) (printf "img/client/%s.webp" .name) (printf "img/client/%s.png" .name) }}
+  {{- if and (not $file) (fileExists (printf "static/%s" .)) }}{{ $file = . }}{{ end }}
+{{- end }}
+<figure class="shot">
+{{- with $file }}
+  <a href="{{ . | relURL }}" data-lightbox><img src="{{ . | relURL }}" alt="{{ $.alt }}" loading="lazy" decoding="async"></a>
+{{- else }}
+  <div class="shot-missing" role="img" aria-label="{{ .alt }}">{{ .alt }}</div>
+{{- end }}
+</figure>

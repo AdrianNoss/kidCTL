@@ -1,0 +1,45 @@
+# kidCTL-Projektseite (Hugo, eigenes Theme, kein Node). Domain-Wechsel: baseURL ändern + static/CNAME anlegen.
+baseURL = "https://adriannoss.github.io/kidCTL/"
+title = "KidCTL"
+theme = "kidctl"
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir = false
+enableRobotsTXT = true
+disableKinds = ["taxonomy", "term"]
+
+[params]
+  github = "https://github.com/AdrianNoss/kidCTL"
+  docs = "https://github.com/AdrianNoss/kidCTL/blob/main/docs"
+  license = "AGPL-3.0-or-later"
+
+[languages]
+  [languages.en]
+    label = "English"
+    locale = "en"
+    weight = 1
+  [languages.de]
+    label = "Deutsch"
+    locale = "de"
+    weight = 2
+
+[outputs]
+  home = ["html"]
+  section = ["html", "rss"]
+
+[markup.goldmark.renderer]
+  unsafe = false
+
+[markup.highlight]
+  noClasses = false
+  codeFences = false
+
+[privacy]
+  [privacy.youTube]
+    disable = true
+  [privacy.vimeo]
+    disable = true
+  [privacy.x]
+    disable = true
+
+[services.rss]
+  limit = 20

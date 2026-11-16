@@ -1974,3 +1974,14 @@ News-Bereich hat, den Claude Code pflegt.
   Release wird übersprungen, ohne `--apply` wird der Text nur angezeigt. Getestet: Probelauf mit Lauf 42863441320
   (0.32.7, Publish-Ziel lokal umgebogen) – Befehl und Text korrekt, Hinweis auf bestehendes Release; ein echtes
   Release erst beim nächsten Versionssprung.
+- 2026-11-16: Projekthomepage Etappe 2 (Gerüst): `website/` mit Hugo 0.170 (Englisch unter `/`, Deutsch unter `/de/`,
+  `baseURL` GitHub Pages), eigenes Theme `themes/kidctl` im Material-3-Stil (Farbrollen der WebUI, Systemschriften,
+  Inline-SVG-Symbole, hell/dunkel über `prefers-color-scheme`, JS nur für die Screenshot-Lightbox). Seiten: Startseite
+  (Hero, Plattformen, Funktionen mit Screenshot-Platzhaltern, So funktioniert's, Datenschutz & Sicherheit,
+  Schnellstart, Roadmap, letzte News), News mit RSS je Sprache, Releases aus `data/releases.json`, Impressum mit
+  `TODO-IMPRESSUM`, Datenschutz (GitHub-Pages-Logs). Inhalte in `data/*.yaml` (Felder `de`/`en`), `roadmap.yaml` mit
+  erstem Stand inkl. SaaS. Workflow `pages.yml` (Hugo 0.170.0 gepinnt, mit SHA-256-Prüfung; Releases per `gh api` →
+  Platzhalter-Check → `hugo --minify --panicOnWarning` → Deploy). Getestet: `hugo --minify --gc --panicOnWarning`
+  ohne Warnungen; Playwright-Durchlauf über Start-, News-, Release-, Impressum- und Datenschutzseite in 390×844 und
+  1280×800, hell/dunkel, DE/EN: kein horizontaler Überlauf, keine externen Requests, keine Konsolenfehler.
+  Pages-Workflow selbst noch nicht gelaufen (erst nach Merge auf main).

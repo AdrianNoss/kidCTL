@@ -1,0 +1,176 @@
+{{ define "main" }}
+{{- $lang := site.Language.Lang }}
+{{- $docs := site.Params.docs }}
+
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">{{ T "hero_eyebrow" }}</span>
+      <h1>{{ T "claim" }}</h1>
+      <p class="lead">{{ T "hero_lead" }}</p>
+      <ul class="badges">
+        <li class="badge">{{ partial "icon.html" "cloud-off" }}{{ T "badge_selfhosted" }}</li>
+        <li class="badge">{{ partial "icon.html" "eye-off" }}{{ T "badge_notelemetry" }}</li>
+        <li class="badge">{{ partial "icon.html" "code" }}{{ T "badge_opensource" }}</li>
+      </ul>
+      <div class="actions">
+        <a class="btn" href="#install">{{ partial "icon.html" "download" }}{{ T "btn_install" }}</a>
+        <a class="btn secondary" href="{{ site.Params.github }}">{{ partial "icon.html" "github" }}GitHub</a>
+      </div>
+    </div>
+    <div class="hero-shot">
+      {{ partial "shot.html" (dict "name" "dashboard" "variant" "pair" "alt" (T "shot_dashboard")) }}
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="platforms">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">{{ T "platforms_eyebrow" }}</span>
+      <h2>{{ T "platforms_title" }}</h2>
+      <p class="lead">{{ T "platforms_lead" }}</p>
+    </div>
+    <div class="grid three">
+    {{- range hugo.Data.platforms }}
+      <div class="card platform">
+        <span class="ico-tile">{{ partial "icon.html" .icon }}</span>
+        <div>
+          <h3>{{ partial "tr.html" .name }}</h3>
+          <p class="muted">{{ partial "tr.html" .text | markdownify }}</p>
+        </div>
+      </div>
+    {{- end }}
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">{{ T "features_eyebrow" }}</span>
+      <h2>{{ T "features_title" }}</h2>
+      <p class="lead">{{ T "features_lead" }}</p>
+    </div>
+    <div class="features">
+    {{- range where hugo.Data.features "small" "!=" true }}
+      <article class="feature" id="{{ .id }}">
+        <div class="feature-text">
+          <span class="ico-tile">{{ partial "icon.html" .icon }}</span>
+          <h3 style="margin-top:.75rem">{{ partial "tr.html" .title }}</h3>
+          <p>{{ partial "tr.html" .text | markdownify }}</p>
+          {{- with .points }}
+          <ul>{{ range partial "tr.html" . }}<li>{{ . | markdownify }}</li>{{ end }}</ul>
+          {{- end }}
+        </div>
+        <div>
+          {{- if .client }}
+            {{ partial "clientshot.html" (dict "name" .client "alt" (partial "tr.html" .shot_alt)) }}
+          {{- else }}
+            {{ partial "shot.html" (dict "name" .shot "variant" (.variant | default "desktop") "alt" (partial "tr.html" .shot_alt)) }}
+          {{- end }}
+        </div>
+      </article>
+    {{- end }}
+    </div>
+    <div class="more-features grid three">
+    {{- range where hugo.Data.features "small" true }}
+      <div class="card">
+        <h3><span class="ico-tile">{{ partial "icon.html" .icon }}</span>{{ partial "tr.html" .title }}</h3>
+        <p class="muted">{{ partial "tr.html" .text | markdownify }}</p>
+      </div>
+    {{- end }}
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">{{ T "how_eyebrow" }}</span>
+      <h2>{{ T "how_title" }}</h2>
+      <p class="lead">{{ T "how_lead" }}</p>
+    </div>
+    <div class="flow">
+      <div class="node">
+        <h3><span class="ico-tile">{{ partial "icon.html" "phone" }}</span>{{ T "how_parents" }}</h3>
+        <p class="muted">{{ T "how_parents_text" }}</p>
+      </div>
+      <div class="arrow" aria-hidden="true">{{ partial "icon.html" "arrow" }}HTTPS</div>
+      <div class="node server">
+        <h3><span class="ico-tile">{{ partial "icon.html" "server" }}</span>{{ T "how_server" }}</h3>
+        <p class="muted">{{ T "how_server_text" }}</p>
+      </div>
+      <div class="arrow" aria-hidden="true">{{ partial "icon.html" "arrow" }}{{ T "how_ws" }}</div>
+      <div class="node">
+        <h3><span class="ico-tile">{{ partial "icon.html" "laptop" }}</span>{{ T "how_client" }}</h3>
+        <p class="muted">{{ T "how_client_text" }}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="privacy">
+  <div class="wrap grid two">
+    <div class="section-head">
+      <span class="eyebrow">{{ T "trust_eyebrow" }}</span>
+      <h2>{{ T "trust_title" }}</h2>
+      <p class="lead">{{ T "trust_lead" }}</p>
+    </div>
+    <ul class="checklist">
+    {{- range hugo.Data.trust }}
+      <li>{{ partial "icon.html" "check" }}<span>{{ partial "tr.html" . | markdownify }}</span></li>
+    {{- end }}
+    </ul>
+  </div>
+</section>
+
+<section class="alt" id="install">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">{{ T "install_eyebrow" }}</span>
+      <h2>{{ T "install_title" }}</h2>
+      <p class="lead">{{ T "install_lead" }}</p>
+    </div>
+    <div class="steps">
+    {{- range hugo.Data.install }}
+      <div class="card">
+        <h3>{{ partial "tr.html" .title }}</h3>
+        {{- with .text }}<p class="muted">{{ partial "tr.html" . | markdownify }}</p>{{ end }}
+        {{- with .code }}<pre><code>{{ partial "tr.html" . }}</code></pre>{{ end }}
+      </div>
+    {{- end }}
+    </div>
+    <p style="margin-top:1.5rem">{{ T "install_more" (dict "install" (printf "%s/installation.md" $docs) "harden" (printf "%s/haertung.md" $docs)) | safeHTML }}</p>
+  </div>
+</section>
+
+<section id="roadmap">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">{{ T "roadmap_eyebrow" }}</span>
+      <h2>{{ T "roadmap_title" }}</h2>
+      <p class="lead">{{ T "roadmap_lead" }}</p>
+    </div>
+    {{ partial "roadmap.html" (dict "doneLimit" 4) }}
+  </div>
+</section>
+
+{{- with site.GetPage "/news" }}
+{{- $news := first 3 .RegularPages.ByDate.Reverse }}
+<section class="alt" id="news">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">{{ T "news_eyebrow" }}</span>
+      <h2>{{ T "news_title" }}</h2>
+    </div>
+    {{- if $news }}
+    {{ partial "newslist.html" $news }}
+    {{- else }}
+    <p class="muted">{{ T "news_empty" }}</p>
+    {{- end }}
+    <p style="margin-top:1.5rem"><a href="{{ .RelPermalink }}">{{ T "news_all" }}</a> · <a href="{{ (.OutputFormats.Get "rss").RelPermalink }}">RSS</a></p>
+  </div>
+</section>
+{{- end }}
+{{ end }}

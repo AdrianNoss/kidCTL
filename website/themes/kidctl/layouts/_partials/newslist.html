@@ -1,0 +1,10 @@
+{{- /* Liste von News-Seiten als Karten. Kontext: Seitenliste */ -}}
+<ul class="news-list">
+{{- range . }}
+  <li class="card"><a class="news-item" href="{{ .RelPermalink }}">
+    <span class="meta">{{ .Date | time.Format ":date_long" }}{{ with .Params.version }} · {{ T "version" }} {{ . }}{{ end }}</span>
+    <h3>{{ .Title }}</h3>
+    <p class="muted">{{ with .Params.summary }}{{ . }}{{ else }}{{ .Summary | plainify | truncate 220 }}{{ end }}</p>
+  </a></li>
+{{- end }}
+</ul>

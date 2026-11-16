@@ -1,0 +1,4 @@
+{{- /* Feld je Sprache aus Daten-YAML ({de: …, en: …}); Rückfall Englisch. Aufruf: partial "tr.html" .title */ -}}
+{{- $v := "" }}
+{{- if reflect.IsMap . }}{{ $v = index . site.Language.Lang | default (index . "en") }}{{ else }}{{ $v = . }}{{ end }}
+{{- return $v }}

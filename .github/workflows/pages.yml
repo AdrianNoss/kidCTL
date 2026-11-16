@@ -1,0 +1,81 @@
+# Projektseite (website/, Hugo) bauen und auf GitHub Pages veröffentlichen.
+# Auslöser: Push auf main mit Änderungen unter website/**, veröffentlichtes Release (Release-Liste), von Hand.
+# Einmalig in den Repo-Einstellungen: Settings → Pages → Source „GitHub Actions“.
+# Schritte: Releases holen → Platzhalter-Check (Impressum) → hugo --minify → Deploy.
+
+name: Projektseite
+
+on:
+  push:
+    branches: [main]
+    paths: ["website/**", ".github/workflows/pages.yml"]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  HUGO_VERSION: "0.170.0"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Hugo installieren
+        run: |
+          deb="hugo_${HUGO_VERSION}_linux-amd64.deb"
+          curl -fsSLO "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/${deb}"
+          curl -fsSL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_checksums.txt" \
+            | grep " ${deb}\$" | sha256sum -c -
+          sudo dpkg -i "$deb"
+          hugo version
+
+      - name: Releases holen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
+            --jq '[.[] | {tag_name, name, draft, prerelease, published_at, html_url, body,
+                   assets: [.assets[] | {name, size, browser_download_url}]}]' \
+            | jq -s 'add // []' > website/data/releases.json
+          jq length website/data/releases.json
+
+      - name: Platzhalter-Check (Impressum)
+        run: |
+          if grep -rn "TODO-IMPRESSUM" website/content website/data website/i18n website/themes; then
+            echo "::error::Platzhalter TODO-IMPRESSUM noch enthalten – Impressum ausfüllen, dann erneut veröffentlichen."
+            exit 1
+          fi
+
+      - name: Bauen
+        working-directory: website
+        run: hugo --minify --gc --panicOnWarning
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: website/public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v5

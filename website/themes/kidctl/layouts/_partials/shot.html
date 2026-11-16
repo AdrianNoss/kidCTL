@@ -1,0 +1,15 @@
+{{- /* WebUI-Screenshot passend zum Farbschema. dict "name" "children" "alt" "…" "variant" "desktop|mobile|pair"
+       Dateien: static/img/screenshots/<lang>/<light|dark>/<name>-<desktop|mobile>.webp (dev/screenshots.py).
+       Fehlt ein Bild, erscheint ein Platzhalter. */ -}}
+{{- $lang := site.Language.Lang }}
+{{- $variant := .variant | default "desktop" }}
+{{- $alt := .alt }}
+{{- $name := .name }}
+{{- if eq $variant "pair" }}
+<div class="shot-pair">
+  {{ partial "shot-one.html" (dict "lang" $lang "name" $name "size" "desktop" "alt" $alt) }}
+  {{ partial "shot-one.html" (dict "lang" $lang "name" $name "size" "mobile" "alt" $alt) }}
+</div>
+{{- else }}
+  {{ partial "shot-one.html" (dict "lang" $lang "name" $name "size" $variant "alt" $alt) }}
+{{- end }}

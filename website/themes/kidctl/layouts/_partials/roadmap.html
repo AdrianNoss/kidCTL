@@ -1,0 +1,23 @@
+{{- /* Roadmap aus data/roadmap.yaml, gruppiert nach Status. Aufruf: partial "roadmap.html" (dict "doneLimit" 4) */ -}}
+{{- $items := hugo.Data.roadmap }}
+{{- $limit := .doneLimit | default 100 }}
+<div class="roadmap">
+{{- range slice "in_progress" "planned" "done" }}
+  {{- $status := . }}
+  {{- $list := where $items "status" $status }}
+  {{- if eq $status "done" }}{{ $list = first $limit ($list | collections.Reverse) }}{{ end }}
+  <div class="status-{{ $status }}">
+    <h3><span class="status-dot" aria-hidden="true"></span>{{ T (printf "roadmap_%s" $status) }}</h3>
+    <ul>
+    {{- range $list }}
+      <li>
+        <strong>{{ partial "tr.html" .title }}{{ with .version }} <span class="chip">{{ . }}</span>{{ end }}</strong>
+        {{- with .text }}<p>{{ partial "tr.html" . | markdownify }}</p>{{ end }}
+      </li>
+    {{- else }}
+      <li class="muted">–</li>
+    {{- end }}
+    </ul>
+  </div>
+{{- end }}
+</div>
