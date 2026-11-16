@@ -28,7 +28,8 @@ from .security import new_token, new_totp_secret, token_hash
 RESET_MINUTES = 30
 TOTP_SETUP_HOURS = 24
 TOTP_CHANGE_MINUTES = 15
-PURPOSES = {"password_reset", "totp_setup", "totp_change"}
+PURPOSES = {"password_reset", "totp_setup", "totp_change", "email_verify"}
+EMAIL_VERIFY_HOURS = 48
 USERNAME_RE = re.compile(r"^[A-Za-z0-9._@-]{1,64}$")
 EMAIL_RE = re.compile(r"^[^@\s<>\"',;]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$")
 
@@ -56,10 +57,70 @@ def username_error(db: Session, username: str, parent_id: int | None = None) -> 
     return None
 
 
-def email_error(email: str) -> str | None:
-    if email and not EMAIL_RE.match(email):
+def email_error(email: str, db: Session | None = None, parent_id: int | None = None) -> str | None:
+    """Format; im SaaS Pflicht; mit ``db`` auch Eindeutigkeit über alle Familien (ohne Groß/klein)."""
+    if not email:
+        return _("Bitte eine E-Mail-Adresse angeben.") if settings.saas else None
+    if not EMAIL_RE.match(email):
         return _("Ungültige E-Mail-Adresse.")
+    if db is not None:
+        from .tenant import platform
+        with platform(db):
+            other = db.scalar(select(Parent.id).where(func.lower(Parent.email) == email.lower()))
+        if other is not None and other != parent_id:
+            return _("Diese E-Mail-Adresse wird schon verwendet.")
     return None
+
+
+def username_from_email(db: Session, email: str) -> str:
+    """SaaS: Anmeldung per E-Mail; der (intern weiter eindeutige) Benutzername wird daraus abgeleitet."""
+    from .tenant import platform
+    base = re.sub(r"[^A-Za-z0-9._-]", "", email.split("@")[0])[:56] or "eltern"
+    name, n = base, 1
+    with platform(db):
+        while db.scalar(select(Parent.id).where(func.lower(Parent.username) == name.lower())) is not None:
+            n += 1
+            name = f"{base}{n}"
+    return name
+
+
+def email_usable(parent: Parent) -> bool:
+    """An diese Adresse darf gesendet werden: bestätigt (ohne SMTP lässt sich nichts bestätigen)."""
+    return bool(parent.email) and (parent.email_verified_at is not None or not settings.mail_enabled)
+
+
+def set_email(db: Session, parent: Parent, email: str) -> None:
+    """Neue Adresse speichern; mit SMTP erst nach Klick auf den Bestätigungslink nutzbar."""
+    if email == parent.email:
+        return
+    parent.email = email[:255]
+    parent.email_verified_at = None if (email and settings.mail_enabled) else (utcnow() if email else None)
+    if email and settings.mail_enabled:
+        send_email_verification(db, parent)
+
+
+def send_email_verification(db: Session, parent: Parent) -> bool:
+    raw = create_token(db, parent, "email_verify", timedelta(hours=EMAIL_VERIFY_HOURS))
+    db.commit()
+    link = f"{settings.base_url}/email/verify/{raw}"
+    with i18n.use(i18n.parent_language(parent)):
+        return mail.send(parent.email, _("KidCTL: E-Mail-Adresse bestätigen"),
+                         _("Hallo {name},").format(name=parent.display_name or parent.username) + "\n\n"
+                         + _("bitte bestätige diese Adresse für deinen KidCTL-Account. Der Link gilt {hours} Stunden:").format(
+                             hours=EMAIL_VERIFY_HOURS) + f"\n\n{link}\n\n"
+                         + _("Danach kannst du dich mit ihr anmelden und bekommst Hinweise und Berichte.") + "\n"
+                         + _("Falls du das nicht warst, kannst du diese Mail ignorieren.") + "\n")
+
+
+def confirm_email(db: Session, raw: str) -> Parent | None:
+    t = get_token(db, raw, "email_verify")
+    if t is None:
+        return None
+    parent = db.get(Parent, t.parent_id)
+    t.used_at = utcnow()
+    parent.email_verified_at = utcnow()
+    db.commit()
+    return parent
 
 
 def find_by_login(db: Session, ident: str) -> Parent | None:
@@ -67,11 +128,11 @@ def find_by_login(db: Session, ident: str) -> Parent | None:
     ident = ident.strip()
     if not ident:
         return None
-    p = db.scalar(select(Parent).where(Parent.username == ident))
-    if p is not None:
-        return p
-    matches = db.scalars(select(Parent).where(func.lower(Parent.email) == ident.lower(), Parent.email != "")).all()
-    return matches[0] if len(matches) == 1 else None
+    if "@" in ident:   # E-Mail ist systemweit eindeutig
+        p = db.scalar(select(Parent).where(func.lower(Parent.email) == ident.lower(), Parent.email != ""))
+        if p is not None and email_usable(p):   # erst nach Bestätigung zum Anmelden
+            return p
+    return db.scalar(select(Parent).where(Parent.username == ident))   # bisherige Accounts ohne E-Mail
 
 
 def check_password(db: Session, request, parent: Parent, password: str) -> str | None:
@@ -145,7 +206,7 @@ def start_password_reset(db: Session, ident: str) -> bool:
     Aufrufer zeigt immer dieselbe Antwort (keine Auskunft, ob ein Account existiert)."""
     prune_tokens(db)
     parent = find_by_login(db, ident)
-    if parent is None or not parent.email:
+    if parent is None or not email_usable(parent):
         db.commit()
         return False
     raw = create_token(db, parent, "password_reset", timedelta(minutes=RESET_MINUTES))
@@ -165,7 +226,7 @@ def start_password_reset(db: Session, ident: str) -> bool:
 def notify(parent: Parent, subject: str, text: str, **fmt) -> None:
     """Sicherheitshinweis an die hinterlegte Adresse (falls vorhanden). ``subject``/``text`` sind mit ``N_``
     markierte Texte und werden in der Sprache des Elternteils gesendet."""
-    if parent.email:
+    if email_usable(parent):
         with i18n.use(i18n.parent_language(parent)):
             mail.send(parent.email, f"KidCTL: {_(subject)}",
                       _("Hallo {name},").format(name=parent.display_name or parent.username) + f"\n\n{_(text).format(**fmt)}\n\n"

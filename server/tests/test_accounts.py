@@ -8,7 +8,7 @@ import pytest
 from app import mail
 from app.config import Settings
 from conftest import SessionLocal, add_parent
-from app.models import Parent, ParentSession
+from app.models import Parent, ParentSession, utcnow
 from app.security import hash_password, new_totp_secret
 from conftest import PASSWORD, csrf_from, login
 
@@ -47,7 +47,7 @@ def _login_as(client, p: Parent, password=PASSWORD, secret=None):
 
 
 def test_password_reset_by_mail(client, parent, outbox):
-    _set(parent, email="Mama@Example.org")
+    _set(parent, email_verified_at=utcnow(), email="Mama@Example.org")
     r = _anon_post(client, "/reset", {"ident": "unbekannt"})
     assert r.status_code == 200 and "Falls ein Account" in r.text and outbox == []
     r = _anon_post(client, "/reset", {"ident": "mama@example.org"})       # E-Mail, ohne Groß/klein

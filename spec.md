@@ -1946,3 +1946,14 @@ News-Bereich hat, den Claude Code pflegt.
   Push-Trennung, Rollen; Migration 0002 auf den Entwicklungsdaten mit `alembic check` ohne Abweichung.
 - 2026-11-16: Anforderungen Projekthomepage per /grill-me abgestimmt (Abschnitt „Projekthomepage“). Noch keine
   Umsetzung. README (DE/EN) nennt Windows 10/11 noch nicht als Plattform – wird mit Etappe 1 nachgezogen.
+- 2026-11-16: Etappe 1.4 Multi-Tenant: Anmeldung per E-Mail und Betriebsart. `KIDCTL_MODE=single|saas` (Standard `single`, ungültige
+  Werte brechen den Start ab). E-Mail-Adressen systemweit eindeutig ohne Groß/klein (Alembic `0003`, partieller Unique-Index auf
+  `lower(email)`; Abbruch mit Liste bei vorhandenen Dubletten); neue Spalte `email_verified_at`, bestehende Adressen gelten als
+  bestätigt. Neue/geänderte Adresse: mit SMTP Bestätigungslink (48 h, `/email/verify/<token>`, einmalig, „erneut senden“ im Profil);
+  ohne SMTP sofort bestätigt. Erst bestätigte Adressen dienen zum Anmelden und bekommen Mails (Passwort zurücksetzen, Hinweise,
+  Nutzungsbericht). Login-Feld „E-Mail-Adresse“ (Einzelbetrieb: „… oder Benutzername“), der Benutzername funktioniert weiter. Im SaaS ist die E-Mail
+  Pflicht, das Benutzernamen-Feld entfällt (aus der Adresse abgeleitet, eindeutig); `cli create-parent` nimmt
+  `KIDCTL_BOOTSTRAP_EMAIL` (im SaaS Pflicht) und legt die erste Familie mit dem Account als Inhaber an. Getestet: alle Server-Tests;
+  neu `test_email_login.py` (Bestätigung vor Login, Link einmalig, Groß/klein, Benutzername weiter, Eindeutigkeit über Familien,
+  ohne SMTP sofort bestätigt, SaaS: Pflicht und abgeleiteter Benutzername, `KIDCTL_MODE`); Migration 0003 auf den
+  Entwicklungsdaten mit `alembic check` ohne Abweichung; Login und Profil im Browser.

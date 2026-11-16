@@ -230,7 +230,8 @@ def send_due(db: Session, now_local: datetime | None = None) -> int:
     """Fällige Berichte senden; Anzahl gesendeter Mails."""
     now_local = now_local or datetime.now(ZoneInfo(settings.timezone))
     sent = 0
-    for parent in db.scalars(select(Parent).where(Parent.report_interval != "", Parent.email != "")):
+    for parent in db.scalars(select(Parent).where(Parent.report_interval != "", Parent.email != "",
+                                                  Parent.email_verified_at.is_not(None))):
         p = due(parent, now_local)
         if p is None or _time.monotonic() - _failed.get(parent.id, -RETRY_SECONDS) < RETRY_SECONDS:
             continue

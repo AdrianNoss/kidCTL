@@ -40,6 +40,11 @@ class Settings:
     smtp_from: str = ""
     smtp_security: str = "starttls"   # starttls | ssl | none
     dev: bool = False
+    mode: str = "single"   # single = eine Familie (Self-Hosting) | saas = viele Familien
+
+    @property
+    def saas(self) -> bool:
+        return self.mode == "saas"
 
     @property
     def push_enabled(self) -> bool:
@@ -66,6 +71,13 @@ def _database_url(dev: bool) -> str:
     return url
 
 
+def _mode() -> str:
+    mode = os.environ.get("KIDCTL_MODE", "single").strip().lower() or "single"
+    if mode not in ("single", "saas"):
+        raise RuntimeError(f"KIDCTL_MODE={mode!r} – erlaubt sind single und saas.")
+    return mode
+
+
 def load_settings() -> Settings:
     dev = _bool("KIDCTL_DEV", False)
     secret = os.environ.get("SECRET_KEY", "")
@@ -87,6 +99,7 @@ def load_settings() -> Settings:
         timezone=os.environ.get("TZ_HOME", "Europe/Berlin"),
         totp_issuer=os.environ.get("TOTP_ISSUER", "KidCTL"),
         source_url=os.environ.get("SOURCE_URL", "https://github.com/AdrianNoss/kidCTL"),
+        mode=_mode(),
         vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY", ""),
         vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY", ""),
         vapid_subject=os.environ.get("VAPID_SUBJECT", ""),

@@ -112,6 +112,9 @@ def add_parent(**fields):
     from app.models import ROLE_PARENT, Membership
     fields.setdefault("password_hash", hash_password(PASSWORD))
     fields.setdefault("totp_secret", new_totp_secret())
+    if fields.get("email"):
+        from app.models import utcnow
+        fields.setdefault("email_verified_at", utcnow())
     with SessionLocal() as db:
         p = Parent(**fields)
         db.add(p)

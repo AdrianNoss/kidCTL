@@ -9,7 +9,7 @@ from app import mail, report
 from app.config import Settings
 from conftest import SessionLocal
 from app.models import (
-    AppUsage, BlockedEvent, Child, DayException, Device, GameSession, Message, Parent, UsageRecord, WeekdayRule,
+    AppUsage, BlockedEvent, Child, DayException, Device, GameSession, Message, Parent, UsageRecord, WeekdayRule, utcnow,
 )
 from conftest import csrf_from, login
 
@@ -125,7 +125,7 @@ def test_content(client, parent):
 
 def test_send_due_once(client, parent, outbox):
     _seed()
-    _set(parent, email="mama@example.org", report_interval="weekly", report_sent="")
+    _set(parent, email_verified_at=utcnow(), email="mama@example.org", report_interval="weekly", report_sent="")
     now = datetime(2026, 10, 19, 7, 10, tzinfo=TZ)
     with SessionLocal() as db:
         assert report.send_due(db, now) == 1
@@ -139,7 +139,7 @@ def test_send_failure_retries_later(client, parent, monkeypatch):
     calls = []
     monkeypatch.setattr(report, "send", lambda db, p, period: calls.append(period) or False)
     report._failed.clear()
-    _set(parent, email="mama@example.org", report_interval="weekly", report_sent="")
+    _set(parent, email_verified_at=utcnow(), email="mama@example.org", report_interval="weekly", report_sent="")
     now = datetime(2026, 10, 19, 8, tzinfo=TZ)
     with SessionLocal() as db:
         assert report.send_due(db, now) == 0 and report.send_due(db, now) == 0
@@ -156,7 +156,7 @@ def test_profile_settings(client, parent, outbox):
     token = csrf_from(page.text)
     r = client.post("/profile/report", data={"csrf_token": token, "interval": "weekly"}, follow_redirects=False)
     assert r.status_code == 400 and "E-Mail-Adresse" in r.text                   # erst Adresse eintragen
-    _set(parent, email="mama@example.org")
+    _set(parent, email_verified_at=utcnow(), email="mama@example.org")
     assert client.post("/profile/report", data={"csrf_token": token, "interval": "quarterly"}).status_code == 400
     r = client.post("/profile/report", data={"csrf_token": token, "interval": "monthly"}, follow_redirects=False)
     assert r.status_code == 303

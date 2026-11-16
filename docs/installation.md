@@ -47,6 +47,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # Ausgabe als SE
 | `SECRET_KEY` | Pflicht. **Nie ändern**, sonst sind alle Sessions und Geräte-Token ungültig (Geräte neu koppeln). |
 | `POSTGRES_PASSWORD` | Pflicht. Passwort der Datenbank, nur Buchstaben, Ziffern, `-` und `_` (z. B. `secrets.token_urlsafe(32)`). Die Datenbank läuft im Container `kidctl-db` und ist nur für den Server erreichbar. |
 | `BASE_URL` | Öffentliche Adresse, z. B. `https://kids.example.org` |
+| `KIDCTL_MODE` | `single` (Standard, eine Familie) oder `saas` (viele Familien; E-Mail ist Pflicht und ersetzt den Benutzernamen) |
 | `TOTP_ISSUER` | Name in der Authenticator-App (Standard `KidCTL`) |
 | `SOURCE_URL` | Link „Quellcode“ in der Fußzeile (AGPL-3.0 §13); bei eigenen Änderungen auf den eigenen Fork setzen. Standard: das KidCTL-Repo |
 | `TZ_HOME` | Zeitzone für Tageskontingente und Zeitfenster (Standard `Europe/Berlin`) |
@@ -85,8 +86,9 @@ Die Ausgabe in `.env` eintragen, `VAPID_SUBJECT=mailto:<eigene Adresse>` setzen,
 docker compose exec kidctl python -m app.cli create-parent
 ```
 
-Benutzername und Passwort eingeben, dann den angezeigten QR-Code mit der Authenticator-App
-scannen. Weitere Eltern-Accounts legt man danach im WebUI unter „Eltern“ an.
+Benutzername (bzw. mit `KIDCTL_MODE=saas` die E-Mail-Adresse) und Passwort eingeben, dann den angezeigten
+QR-Code mit der Authenticator-App scannen. Dieser erste Account ist **Inhaber** der Familie: Nur er legt weitere
+Eltern-Accounts im WebUI unter „Eltern“ an oder entfernt sie.
 
 ### 1.6 Handy einrichten
 
@@ -106,9 +108,11 @@ In `.env` (danach `docker compose up -d`):
 | `SMTP_USER`, `SMTP_PASSWORD` | Zugangsdaten, leer lassen ohne Anmeldung |
 | `SMTP_FROM` | Absender, z. B. `KidCTL <kidctl@example.org>` |
 
-Jedes Elternteil trägt unter **Profil** (Klick auf den eigenen Namen oben rechts) seine E-Mail-Adresse
-ein und wählt dort die Sprache (Automatisch nach Browser, Deutsch oder English) für WebUI, Mails und
-Push. Dort lassen sich auch Benutzername, Anzeigename, Passwort und der Authenticator ändern.
+Jedes Elternteil trägt unter **Profil** (Symbol oben rechts) seine E-Mail-Adresse ein und wählt dort die
+Sprache (Automatisch nach Browser, Deutsch oder English) für WebUI, Mails und Push. Mit SMTP kommt ein
+Bestätigungslink (48 Stunden gültig); erst danach meldet man sich mit der Adresse an und bekommt Hinweise,
+Berichte und „Passwort vergessen“. Jede Adresse kann nur einmal verwendet werden. Der Benutzername bleibt zum
+Anmelden erhalten. Im Profil lassen sich auch Anzeigename, Passwort und der Authenticator ändern.
 
 | Problem | Lösung |
 |---|---|

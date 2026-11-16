@@ -33,7 +33,16 @@ def login_form(request: Request, db: Session = Depends(get_platform_db)):
 LOGIN_NOTICES = {
     "reset": N_("Passwort geändert. Bitte mit dem neuen Passwort und dem Authenticator-Code anmelden."),
     "totp": N_("Authenticator eingerichtet. Bitte mit Passwort und dem neuen Code anmelden."),
+    "email": N_("E-Mail-Adresse bestätigt. Du kannst dich jetzt mit ihr anmelden."),
+    "email_invalid": N_("Der Bestätigungslink ist ungültig oder abgelaufen. Im Profil kannst du einen neuen anfordern."),
 }
+
+
+@router.get("/email/verify/{token}")
+def email_verify(token: str, db: Session = Depends(get_platform_db)):
+    """Bestätigungslink aus der Mail; funktioniert auch ohne Anmeldung (z. B. auf dem Handy)."""
+    parent = accounts.confirm_email(db, token)
+    return RedirectResponse("/login?msg=email" if parent else "/login?msg=email_invalid", status_code=303)
 
 
 @router.get("/lang/{code}")
@@ -61,7 +70,7 @@ def login(
         return render_anon(request, "login.html", status_code=429, username=username,
                            error=_("Zu viele Fehlversuche. Bitte später erneut versuchen."))
 
-    parent = db.scalar(select(Parent).where(Parent.username == username))
+    parent = accounts.find_by_login(db, username)   # E-Mail-Adresse oder (bisherige Accounts) Benutzername
     ok = False
     if parent is None:
         dummy_verify()

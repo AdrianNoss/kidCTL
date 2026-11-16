@@ -7,7 +7,7 @@ import json
 from datetime import date, datetime, time, timezone
 
 from sqlalchemy import (
-    Boolean, Date, DateTime, ForeignKey, Integer, String, Text, Time, UniqueConstraint,
+    Boolean, Date, DateTime, ForeignKey, Index, Integer, String, Text, Time, UniqueConstraint, func, text,
 )
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -52,6 +52,9 @@ class Membership(FamilyScoped, Base):
 class Parent(Base):
     """Eltern-Account; gehört über ``Membership`` zu genau einer Familie."""
     __tablename__ = "parent"
+    # E-Mail systemweit eindeutig (ohne Groß/klein); leere Adressen (Einzelbetrieb) sind erlaubt
+    __table_args__ = (Index("ix_parent_email_lower", func.lower(text("email")), unique=True,
+                            postgresql_where=text("email <> ''")),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(String(64), unique=True)
@@ -60,7 +63,8 @@ class Parent(Base):
     totp_secret: Mapped[str] = mapped_column(String(64))
     totp_last_step: Mapped[int] = mapped_column(Integer, default=0)  # Replay-Schutz
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    email: Mapped[str] = mapped_column(String(255), default="")  # für „Passwort vergessen“ (optional)
+    email: Mapped[str] = mapped_column(String(255), default="")  # Anmeldung, „Passwort vergessen“; SaaS: Pflicht
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)   # Bestätigungslink
     report_interval: Mapped[str] = mapped_column(String(16), default="")  # Nutzungsbericht: "" | weekly | monthly
     report_sent: Mapped[str] = mapped_column(String(16), default="")      # zuletzt gesendeter Zeitraum (Schlüssel)
     language: Mapped[str] = mapped_column(String(8), default="")           # "" = automatisch (Browser) | de | en

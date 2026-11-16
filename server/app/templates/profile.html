@@ -9,8 +9,11 @@
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
   <div class="form-grid">
     <label>{{ _("Anzeigename") }} <input name="display_name" maxlength="128" value="{{ f.display_name }}"></label>
-    <label>{{ _("Benutzername (Anmeldung)") }} <input name="username" required maxlength="64" value="{{ f.username }}" autocomplete="username"></label>
-    <label>{{ _("E-Mail") }} <input type="email" name="email" maxlength="255" value="{{ f.email }}" autocomplete="email" placeholder="{{ _('für „Passwort vergessen“') }}"></label>
+    <label><span>{{ _("E-Mail-Adresse (Anmeldung)") }}
+        {% if parent.email and parent.email_verified_at is none and mail_enabled %}<span class="pill warn">{{ _("nicht bestätigt") }}</span>{% endif %}</span>
+      <input type="email" name="email" maxlength="255" value="{{ f.email }}" autocomplete="email"{% if SAAS %} required{% endif %}></label>
+    {% if not SAAS %}<label>{{ _("Benutzername") }} <span class="field-note">{{ _("Anmeldung ohne E-Mail-Adresse") }}</span>
+      <input name="username" required maxlength="64" value="{{ f.username }}" autocomplete="username"></label>{% endif %}
     <label>{{ _("Sprache") }}
       <select name="language">
         {% for code, label in LANGUAGE_CHOICES.items() %}<option value="{{ code }}"{% if (f.language or "") == code %} selected{% endif %}{% if code %} lang="{{ code }}"{% endif %}>{{ _(label) if not code else label }}</option>{% endfor %}
@@ -23,6 +26,13 @@
   {% if not mail_enabled %}<p class="muted"><small>{{ _("Auf diesem Server ist kein E-Mail-Versand eingerichtet (SMTP in .env) – „Passwort vergessen“ ist dann nicht verfügbar.") }}</small></p>{% endif %}
   <button type="submit">{{ _("Speichern") }}</button>
 </form>
+  {% if parent.email and parent.email_verified_at is none and mail_enabled %}
+  <form method="post" action="/profile/email/verify" class="row" style="margin-top:.75rem">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <small class="muted">{{ _("Die Adresse ist noch nicht bestätigt – bis dahin gehen keine Mails an sie und die Anmeldung mit ihr ist noch nicht möglich.") }}</small>
+    <button type="submit" class="secondary small">{{ _("Bestätigungslink erneut senden") }}</button>
+  </form>
+  {% endif %}
 
 <section class="card">
   <h2>{{ _("Nutzungsbericht per E-Mail") }}</h2>

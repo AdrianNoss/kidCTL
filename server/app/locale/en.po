@@ -351,8 +351,6 @@ msgstr "Add account"
 msgid "Anzeigename"
 msgstr "Display name"
 
-msgid "E-Mail (optional, für „Passwort vergessen“)"
-msgstr "Email (optional, for “Forgot password”)"
 
 msgid "Passwort (min. 12 Zeichen)"
 msgstr "Password (min. 12 characters)"
@@ -360,14 +358,8 @@ msgstr "Password (min. 12 characters)"
 msgid "Angaben"
 msgstr "Details"
 
-msgid "Benutzername (Anmeldung)"
-msgstr "Username (sign-in)"
 
-msgid "E-Mail"
-msgstr "Email"
 
-msgid "für „Passwort vergessen“"
-msgstr "for “Forgot password”"
 
 msgid "Sprache"
 msgstr "Language"
@@ -753,8 +745,6 @@ msgstr "Access request:"
 msgid "Freigegebene Dienste"
 msgstr "Allowed services"
 
-msgid "Für den Nutzungsbericht zuerst eine E-Mail-Adresse eintragen."
-msgstr "Enter an email address first to receive the usage report."
 
 msgid "Für diesen Tag ist kein Spiele-Limit eingestellt – Spielzeit-Gutschrift nicht nötig."
 msgstr "No game limit is set for this day – bonus game time is not needed."
@@ -1765,3 +1755,54 @@ msgstr "Main navigation"
 
 msgid "Inhaber"
 msgstr "Owner"
+
+msgid "Anmeldung ohne E-Mail-Adresse"
+msgstr "Sign-in without an email address"
+
+msgid "Bestätigungslink erneut senden"
+msgstr "Resend confirmation link"
+
+msgid "Bestätigungslink gesendet – bitte das Postfach prüfen."
+msgstr "Confirmation link sent – please check your inbox."
+
+msgid "Bitte eine E-Mail-Adresse angeben."
+msgstr "Please enter an email address."
+
+msgid "Danach kannst du dich mit ihr anmelden und bekommst Hinweise und Berichte."
+msgstr "After that you can sign in with it and receive notices and reports."
+
+msgid "Der Bestätigungslink ist ungültig oder abgelaufen. Im Profil kannst du einen neuen anfordern."
+msgstr "The confirmation link is invalid or has expired. You can request a new one in your profile."
+
+msgid "Die Adresse ist noch nicht bestätigt – bis dahin gehen keine Mails an sie und die Anmeldung mit ihr ist noch nicht möglich."
+msgstr "This address is not confirmed yet – until then no emails are sent to it and you cannot sign in with it."
+
+msgid "Diese E-Mail-Adresse wird schon verwendet."
+msgstr "This email address is already in use."
+
+msgid "E-Mail-Adresse"
+msgstr "Email address"
+
+msgid "E-Mail-Adresse (Anmeldung)"
+msgstr "Email address (sign-in)"
+
+msgid "E-Mail-Adresse bestätigt. Du kannst dich jetzt mit ihr anmelden."
+msgstr "Email address confirmed. You can now sign in with it."
+
+msgid "Für den Nutzungsbericht zuerst eine E-Mail-Adresse eintragen und bestätigen."
+msgstr "To receive the usage report, first enter and confirm an email address."
+
+msgid "KidCTL: E-Mail-Adresse bestätigen"
+msgstr "KidCTL: confirm your email address"
+
+msgid "bitte bestätige diese Adresse für deinen KidCTL-Account. Der Link gilt {hours} Stunden:"
+msgstr "please confirm this address for your KidCTL account. The link is valid for {hours} hours:"
+
+msgid "nicht bestätigt"
+msgstr "not confirmed"
+
+msgid "optional, für Anmeldung und „Passwort vergessen“"
+msgstr "optional, for sign-in and “Forgot password”"
+
+msgid "E-Mail-Adresse oder Benutzername"
+msgstr "Email address or username"

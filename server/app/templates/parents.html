@@ -33,9 +33,10 @@
 <form method="post" action="/parents" class="card">
   <h2>{{ _("Account hinzufügen") }}</h2>
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-  <label>{{ _("Benutzername") }} <input name="username" required maxlength="64" autocomplete="off"></label>
+  <label>{{ _("E-Mail-Adresse") }}{% if not SAAS %} <span class="field-note">{{ _("optional, für Anmeldung und „Passwort vergessen“") }}</span>{% endif %}
+    <input type="email" name="email" maxlength="255"{% if SAAS %} required{% endif %}></label>
+  {% if not SAAS %}<label>{{ _("Benutzername") }} <input name="username" required maxlength="64" autocomplete="off"></label>{% endif %}
   <label>{{ _("Anzeigename") }} <input name="display_name" maxlength="128"></label>
-  <label>{{ _("E-Mail (optional, für „Passwort vergessen“)") }} <input type="email" name="email" maxlength="255"></label>
   <label>{{ _("Passwort (min. 12 Zeichen)") }} <input type="password" name="password" minlength="12" required autocomplete="new-password"></label>
   <button type="submit">{{ _("Anlegen") }}</button>
 </form>

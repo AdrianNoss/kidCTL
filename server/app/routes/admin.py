@@ -510,20 +510,23 @@ def _require_owner(db: Session, sess: ParentSession) -> None:
 
 
 @router.post("/parents")
-def parent_create(request: Request, username: str = Form(...), display_name: str = Form(""),
+def parent_create(request: Request, username: str = Form(""), display_name: str = Form(""),
                   email: str = Form(""), password: str = Form(...), sess: ParentSession = Depends(csrf_protect),
                   db: Session = Depends(get_db)):
     _require_owner(db, sess)
     username, email = username.strip(), email.strip()
-    error = (accounts.username_error(db, username) or accounts.email_error(email)
+    if settings.saas and not username and email:
+        username = accounts.username_from_email(db, email)
+    error = (accounts.email_error(email, db) or accounts.username_error(db, username)
              or accounts.password_error(password))
     if error:
         return render(request, "parents.html", status_code=400, error=error, **_parents_ctx(db, sess))
 
-    parent = Parent(username=username, display_name=display_name.strip()[:128], email=email[:255],
+    parent = Parent(username=username, display_name=display_name.strip()[:128],
                     password_hash=hash_password(password), totp_secret=new_totp_secret())
     db.add(parent)
     db.flush()
+    accounts.set_email(db, parent, email)
     db.add(Membership(parent_id=parent.id, role=ROLE_PARENT))   # Familie aus dem Kontext
     db.commit()
     uri = totp_uri(parent)
@@ -576,7 +579,8 @@ def _profile(request: Request, parent: Parent, status_code: int = 200, **ctx):
 _check_password = accounts.check_password
 
 
-PROFILE_NOTICES = {"saved": N_("Profil gespeichert."), "password": N_("Passwort geändert. Andere Sitzungen wurden abgemeldet."),
+PROFILE_NOTICES = {"saved": N_("Profil gespeichert."),
+                   "email_sent": N_("Bestätigungslink gesendet – bitte das Postfach prüfen."), "password": N_("Passwort geändert. Andere Sitzungen wurden abgemeldet."),
                    "totp": N_("Neuer Authenticator eingerichtet. Andere Sitzungen wurden abgemeldet."),
                    "report": N_("Nutzungsbericht gespeichert."), "report_sent": N_("Nutzungsbericht gesendet.")}
 
@@ -594,16 +598,19 @@ def profile_save(request: Request, username: str = Form(""), display_name: str =
     parent = db.get(Parent, sess.parent_id)
     username, email = username.strip(), email.strip()
     language = language if language in i18n.LANGS else ""
-    error = accounts.username_error(db, username, parent.id) or accounts.email_error(email)
-    sensitive = username != parent.username or email != parent.email
+    if settings.saas and not username:
+        username = parent.username   # im SaaS kein eigenes Feld: Anmeldung per E-Mail
+    error = accounts.username_error(db, username, parent.id) or accounts.email_error(email, db, parent.id)
+    sensitive = username != parent.username or email.lower() != parent.email.lower()
     if not error and sensitive:
         error = _check_password(db, request, parent, current_password)
     if error:
         return _profile(request, parent, 400, error=error, form={"username": username, "display_name": display_name,
                                                                    "email": email, "language": language})
     old_email = parent.email
-    parent.username, parent.display_name, parent.email = username, display_name.strip()[:128], email[:255]
+    parent.username, parent.display_name = username, display_name.strip()[:128]
     parent.language = language
+    accounts.set_email(db, parent, email)   # neue Adresse: Bestätigungslink (mit SMTP)
     db.commit()
     if old_email and old_email != email:
         with i18n.use(i18n.parent_language(parent)):
@@ -614,14 +621,25 @@ def profile_save(request: Request, username: str = Form(""), display_name: str =
     return _redirect("/profile?msg=saved")
 
 
+@router.post("/profile/email/verify")
+def profile_email_verify(request: Request, sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    """Bestätigungslink erneut senden."""
+    parent = db.get(Parent, sess.parent_id)
+    if not parent.email or parent.email_verified_at is not None or not settings.mail_enabled:
+        return _redirect("/profile")
+    if not accounts.send_email_verification(db, parent):
+        return _profile(request, parent, 502, error=_("Versand fehlgeschlagen (Details im Server-Log)."))
+    return _redirect("/profile?msg=email_sent")
+
+
 @router.post("/profile/report")
 def profile_report(request: Request, interval: str = Form(""), sess: ParentSession = Depends(csrf_protect),
                    db: Session = Depends(get_db)):
     parent = db.get(Parent, sess.parent_id)
     if interval not in report.INTERVALS:
         return _profile(request, parent, 400, error=_("Ungültiger Zeitraum."))
-    if interval and not parent.email:
-        return _profile(request, parent, 400, error=_("Für den Nutzungsbericht zuerst eine E-Mail-Adresse eintragen."))
+    if interval and not accounts.email_usable(parent):
+        return _profile(request, parent, 400, error=_("Für den Nutzungsbericht zuerst eine E-Mail-Adresse eintragen und bestätigen."))
     if interval != parent.report_interval:
         report.activate(parent, interval, sch.today_local())
         db.commit()

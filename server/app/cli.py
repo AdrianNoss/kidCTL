@@ -1,7 +1,8 @@
 """CLI: Bootstrap des ersten Eltern-Accounts, Notfall-Zurücksetzen, VAPID-Schlüssel.
 
 Interaktiv:   python -m app.cli create-parent
-Per Env-Var:  KIDCTL_BOOTSTRAP_USER=… KIDCTL_BOOTSTRAP_PASSWORD=… python -m app.cli create-parent
+Per Env-Var:  KIDCTL_BOOTSTRAP_USER=… [KIDCTL_BOOTSTRAP_EMAIL=…] KIDCTL_BOOTSTRAP_PASSWORD=… python -m app.cli create-parent
+              (im SaaS-Betrieb ist die E-Mail Pflicht und ersetzt den Benutzernamen)
 Notfall:      python -m app.cli reset-password <benutzer> | reset-totp <benutzer>
 VAPID:        python -m app.cli vapid-keys >> .env
 Umstieg:      python -m app.cli import-sqlite /data/kidctl.db [--apply]   (SQLite bis 0.32.x -> PostgreSQL)
@@ -23,13 +24,18 @@ from sqlalchemy import select
 from .db import init_db
 from .tenant import platform_session
 from .accounts import end_sessions, password_error
-from .models import ROLE_OWNER, ROLE_PARENT, Family, Membership, Parent
+from .models import ROLE_OWNER, ROLE_PARENT, Family, Membership, Parent, utcnow
 from .security import hash_password, new_totp_secret, totp_uri
 
 
 def create_parent(args: argparse.Namespace) -> int:
     init_db()
-    username = os.environ.get("KIDCTL_BOOTSTRAP_USER") or input("Benutzername: ").strip()
+    from .config import settings
+    email = os.environ.get("KIDCTL_BOOTSTRAP_EMAIL", "")
+    if settings.saas and not email:
+        email = input("E-Mail-Adresse: ").strip()
+    username = os.environ.get("KIDCTL_BOOTSTRAP_USER") or (email.split("@")[0] if settings.saas and email else "") \
+        or input("Benutzername: ").strip()
     password = os.environ.get("KIDCTL_BOOTSTRAP_PASSWORD")
     if not password:
         password = getpass.getpass("Passwort (min. 12 Zeichen): ")
@@ -48,8 +54,12 @@ def create_parent(args: argparse.Namespace) -> int:
             print("Es existiert bereits ein Eltern-Account. Weitere im WebUI anlegen "
                   "(oder --force).", file=sys.stderr)
             return 1
-        parent = Parent(username=username, password_hash=hash_password(password),
-                        totp_secret=new_totp_secret())
+        from .accounts import email_error
+        if err := email_error(email, db):
+            print(err, file=sys.stderr)
+            return 1
+        parent = Parent(username=username, password_hash=hash_password(password), totp_secret=new_totp_secret(),
+                        email=email, email_verified_at=utcnow() if email else None)   # vom Betreiber angelegt
         db.add(parent)
         db.flush()
         # Einzelbetrieb: erste Familie anlegen bzw. die vorhandene nutzen; der erste Account wird Inhaber
