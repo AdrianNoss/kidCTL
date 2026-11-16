@@ -960,7 +960,7 @@ Self-Hosting bleibt erhalten.
 
 Regel: Keine fremde Familie auf dem Server vor Abschluss von Etappe 4.
 
-## Projekthomepage (entschieden 2026-11-16 per /grill-me, noch nicht umgesetzt)
+## Projekthomepage (entschieden 2026-11-16 per /grill-me, umgesetzt 2026-11-16; Livegang offen)
 
 Ziel: kleine Projektseite, die kidCTL vorstellt, die Funktionen mit Screenshots zeigt und einen Roadmap- und
 News-Bereich hat, den Claude Code pflegt.
@@ -1997,3 +1997,12 @@ News-Bereich hat, den Claude Code pflegt.
   Client-Screenshots (`static/img/client/`) als Platzhalter bis zur Lieferung aus der VM. Getestet: kompletter Lauf
   DE+EN, Sichtprüfung der Bilder, `hugo --minify --panicOnWarning` ohne Warnungen, Playwright-Check der Seite ohne
   Überlauf und ohne externe Requests.
+- 2026-11-16: Projekthomepage Etappe 4 (Inhalte): Funktionstexte, Schnellstart und Datenschutz DE/EN (in Etappe 2
+  angelegt, geprüft); sieben News nach Freigabe durch Adrian: erster vollständiger Stand (0.8.0), Spiele-Limit
+  (0.25.0), GNOME/Debian/Ubuntu/Englisch (0.28.0), Windows (0.32.0), Open Source unter AGPL-3.0, neue WebUI im
+  Material-3-Stil, Projektseite online. Eigenes RSS-Template (Titel „KidCTL – News“, Zusammenfassung aus `summary`),
+  Link „Release auf GitHub“ nur, wenn es das Release gibt; Roadmap „Projektseite“ auf `done`. Getestet:
+  `hugo --minify --gc --panicOnWarning` ohne Warnungen, RSS je Sprache mit 7 Einträgen, Playwright-Check (Start,
+  News-Liste, News-Seite, Releases, Datenschutz, Impressum; mobil/Desktop, hell/dunkel, DE/EN) ohne Überlauf und ohne
+  externe Requests. Offen bis zum Livegang (Adrian): Domain, Impressum-Adresse (`TODO-IMPRESSUM` blockiert den
+  Deploy), GitHub Pages auf „GitHub Actions“ stellen, Client-Screenshots aus der VM nach `website/static/img/client/`.

@@ -229,3 +229,5 @@ dialog.lightbox button { position:fixed; top:.75rem; right:.75rem; width:48px; h
 .grid > *, .steps > *, .feature > *, .hero .wrap > *, .flow > *, .shot-pair > * { min-width:0; }
 .hero .shot.phone { max-width:240px; }
 @media (min-width: 900px) { .hero .shot.phone { max-width:330px; } }
+.site-foot a.lang { display:inline-flex; align-items:center; gap:.375rem; }
+.site-foot a.lang .icon { width:18px; height:18px; }
