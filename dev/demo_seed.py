@@ -3,12 +3,12 @@
 
 Spricht nur die echten Schnittstellen an: Eltern-Aktionen als HTTP-Formulare (wie dev/webctl.py), die Kinderrechner
 als simulierte Agenten über Kopplung + WebSocket (Protokoll v1). Nur Nutzungszeiten älter als 7 Tage – die der
-Agent nicht mehr melden darf – schreibt das Skript direkt in die SQLite-Datenbank.
+Agent nicht mehr melden darf – schreibt das Skript direkt in die Datenbank (PostgreSQL, ``--database-url``).
 
 Inhalt: Kinder „Lena“ und „Max“, Rechner Linux (Lena) und Windows (Familien-PC, beide Kinder), 14 Tage Nutzung mit
 Spielen, Programme, Website-Filter, gesperrte Aktionen, Chat, offene und beantwortete Anfragen. Texte je Sprache.
 
-    dev/demo_seed.py --url http://127.0.0.1:8010 --data-dir DIR --secret TOTP --lang de
+    dev/demo_seed.py --url http://127.0.0.1:8010 --database-url postgresql+psycopg://… --secret TOTP --lang de
         legt alles an und hält die Agenten verbunden (Strg+C beendet); als Modul: seed() + Agent.close().
 """
 
@@ -19,15 +19,14 @@ import asyncio
 import json
 import random
 import re
-import sqlite3
 import uuid
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
-from pathlib import Path
 
 import httpx
 import pyotp
 import websockets
+from sqlalchemy import create_engine, text
 
 PASSWORD = "demo-passwort-lang"
 PARENT = {"de": "mama", "en": "mom"}
@@ -158,11 +157,29 @@ async def pair(web: Web, name: str, hostname: str) -> tuple[int, str]:
     return r.json()["device_id"], r.json()["token"]
 
 
-async def seed(base: str, data_dir: Path, secret: str, lang: str = "de") -> tuple[Web, list[Agent]]:
+class DB:
+    """Lesezugriffe (IDs) und die älteren Nutzungszeiten – direkt per SQL auf die Demo-Datenbank."""
+
+    def __init__(self, url: str):
+        self.engine = create_engine(url)
+
+    def execute(self, sql: str, params: dict | None = None) -> list:
+        with self.engine.begin() as con:
+            res = con.execute(text(sql), params or {})
+            return res.fetchall() if res.returns_rows else []
+
+    def one(self, sql: str, **params):
+        return self.execute(sql, params)[0][0]
+
+    def close(self) -> None:
+        self.engine.dispose()
+
+
+async def seed(base: str, database_url: str, secret: str, lang: str = "de") -> tuple[Web, list[Agent]]:
     """Legt die Demo-Daten an. Rückgabe: angemeldeter Web-Client (Cookies für Playwright) und verbundene Agenten."""
     t = T[lang]
     rnd = random.Random(42)
-    db = sqlite3.connect(data_dir / "kidctl.db")
+    db = DB(database_url)
     today = date.today()
     now = datetime.now().astimezone()
 
@@ -173,7 +190,7 @@ async def seed(base: str, data_dir: Path, secret: str, lang: str = "de") -> tupl
     ids = {}
     for name in ("Lena", "Max"):
         await web.post("/children", {"name": name})
-        ids[name] = db.execute("select id from child where name=?", (name,)).fetchone()[0]
+        ids[name] = db.one("select id from child where name = :n", n=name)
     await web.post(f"/children/{ids['Lena']}/schedule", {
         "quota_wd": "120", "start_wd": "08:00", "end_wd": "20:30", "games_wd": "45",
         "quota_we": "180", "start_we": "09:00", "end_we": "21:00", "games_we": "90"})
@@ -204,7 +221,7 @@ async def seed(base: str, data_dir: Path, secret: str, lang: str = "de") -> tupl
     for key, mapping in (("laptop", {"lena": ids["Lena"]}), ("pc", {"lena": ids["Lena"], "max": ids["Max"]})):
         dev_id = agents[key].device_id
         form = {f"user_{uid}": str(mapping.get(u, "")) for uid, u in
-                db.execute("select id, username from device_user where device_id=?", (dev_id,))}
+                db.execute("select id, username from device_user where device_id = :d", {"d": dev_id})}
         await web.post(f"/devices/{dev_id}/mapping", form)
 
     # Programme und Website-Filter
@@ -241,9 +258,10 @@ async def seed(base: str, data_dir: Path, secret: str, lang: str = "de") -> tupl
                 if back > 6:
                     child_id = ids["Lena" if user == "lena" else "Max"]
                     db.execute("insert into usage_record (device_id, username, day, child_id, seconds, game_seconds,"
-                               " updated_at) values (?,?,?,?,?,?,?)",
-                               (agents[dev].device_id, user, day.isoformat(), child_id, secs, gsecs,
-                                datetime.now(timezone.utc).replace(tzinfo=None).isoformat(sep=" ")))
+                               " updated_at, family_id) select :dev, :user, :day, :child, :s, :g, :at, family_id"
+                               " from device where id = :dev",
+                               {"dev": agents[dev].device_id, "user": user, "day": day, "child": child_id, "s": secs,
+                                "g": gsecs, "at": datetime.now(timezone.utc).replace(tzinfo=None)})
                     continue
                 usage[dev].append({"username": user, "day": day.isoformat(), "seconds": secs, "game_seconds": gsecs})
                 apps = LINUX_APPS if dev == "laptop" else WIN_APPS
@@ -254,7 +272,6 @@ async def seed(base: str, data_dir: Path, secret: str, lang: str = "de") -> tupl
                     if user == "max" or k != GAMES[2][0]:
                         app_usage[dev].append({"username": user, "day": day.isoformat(), "key": k, "name": n,
                                                "seconds": int(gsecs * w)})
-    db.commit()
     for dev, a in agents.items():
         await a.send(type="usage_report", entries=usage[dev])
         await a.send(type="app_usage_report", entries=app_usage[dev],
@@ -299,8 +316,8 @@ async def seed(base: str, data_dir: Path, secret: str, lang: str = "de") -> tupl
                    key="exe:/usr/bin/krita", name="Krita", reason=t["access_reason"])
     await asyncio.sleep(0.8)
     # Lenas Verlängerung genehmigen (mit Antwort), Krita-Anfrage offen lassen, Max' Anfragen offen lassen
-    ext = db.execute("select id from message where child_id=? and kind='extension_request' order by id desc",
-                     (ids["Lena"],)).fetchone()[0]
+    ext = db.one("select id from message where child_id = :c and kind = 'extension_request' order by id desc",
+                 c=ids["Lena"])
     await web.post(f"/children/{ids['Lena']}/requests/{ext}", {"action": "approve", "minutes": "30"})
     await web.post(f"/children/{ids['Lena']}/chat", {"body": t["approve_reply"]})
     await asyncio.sleep(0.3)
@@ -312,13 +329,13 @@ async def seed(base: str, data_dir: Path, secret: str, lang: str = "de") -> tupl
 async def _main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--url", default="http://127.0.0.1:8010")
-    ap.add_argument("--data-dir", type=Path, required=True, help="KIDCTL_DATA_DIR des Demo-Servers")
+    ap.add_argument("--database-url", required=True, help="Datenbank des Demo-Servers (nie die Entwicklungs-DB)")
     ap.add_argument("--secret", required=True, help="TOTP-Secret des Demo-Eltern-Accounts")
     ap.add_argument("--lang", choices=("de", "en"), default="de")
     a = ap.parse_args()
-    if Path.home() / ".local/share/kidctl-dev" in a.data_dir.resolve().parents:
-        raise SystemExit("Nicht in das normale Entwicklungsverzeichnis schreiben – eigenes Datenverzeichnis nutzen.")
-    web, agents = await seed(a.url, a.data_dir, a.secret, a.lang)
+    if a.database_url.rstrip("/").endswith("/kidctl"):
+        raise SystemExit("Nicht in die Entwicklungsdatenbank schreiben – eigene Datenbank nutzen.")
+    web, agents = await seed(a.url, a.database_url, a.secret, a.lang)
     print("Demo-Daten angelegt, Agenten verbunden. Strg+C beendet.")
     try:
         await asyncio.Event().wait()

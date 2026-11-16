@@ -21,7 +21,8 @@ hugo --minify --panicOnWarning  # vor dem Commit
 | `static/img/screenshots/` | WebUI-Screenshots aus `dev/screenshots.py` |
 | `static/img/client/` | Client-Screenshots aus der Test-VM (von Hand): `tray`, `warning`, `lock`, `request`, `windows` (`.webp`, optional `-de`/`-en`) |
 
-WebUI-Screenshots neu erzeugen (fiktive Demo-Daten, eigener Server auf Port 8010, eigenes Datenverzeichnis):
+WebUI-Screenshots neu erzeugen (fiktive Demo-Daten, eigener Server auf Port 8010, eigene Datenbank `kidctl_shots`
+im Container `kidctl-pg` von `dev/devserver.sh`, die danach wieder gelöscht wird):
 
 ```bash
 ~/.local/share/kidctl-dev/venv/bin/pip install playwright pillow

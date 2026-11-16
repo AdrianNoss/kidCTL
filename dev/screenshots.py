@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Screenshots der Eltern-WebUI für die Projektseite (fiktive Demo-Daten, nie echte).
 
-Je Sprache: frisches Datenverzeichnis, eigener Server auf 127.0.0.1:8010 (nicht ~/.local/share/kidctl-dev),
+Je Sprache: frische Datenbank „kidctl_shots“ im PostgreSQL-Container kidctl-pg von dev/devserver.sh (die
+Entwicklungsdatenbank bleibt unberührt), Temp-Datenverzeichnis, eigener Server auf 127.0.0.1:8010,
 Eltern-Account per CLI, Demo-Daten mit dev/demo_seed.py (simulierte Agenten bleiben verbunden), Anmeldung mit TOTP,
 dann Playwright: mobil 390×844 und Desktop 1280×800, hell und dunkel.
 Ausgabe: website/static/img/screenshots/<lang>/<light|dark>/<name>-<mobile|desktop>.webp
@@ -34,6 +35,9 @@ sys.path.insert(0, str(REPO / "dev"))
 import demo_seed  # noqa: E402
 
 PORT = 8010
+PG = "kidctl-pg"
+DB_NAME = "kidctl_shots"
+DATABASE_URL = f"postgresql+psycopg://kidctl:kidctl-dev@127.0.0.1:55432/{DB_NAME}"
 BASE = f"http://127.0.0.1:{PORT}"
 SIZES = {"mobile": (390, 844), "desktop": (1280, 800)}
 # Name -> Pfad ({lena}/{max} = Kind-ID). Abgestimmt mit Adrian 2026-11-16.
@@ -50,8 +54,26 @@ PAGES = {
 }
 
 
+def fresh_database() -> None:
+    """Leere Demo-Datenbank im Container von dev/devserver.sh (muss laufen)."""
+    if subprocess.run(["podman", "container", "exists", PG]).returncode != 0:
+        raise SystemExit(f"Container {PG} fehlt – einmal dev/devserver.sh setup ausführen.")
+    subprocess.run(["podman", "start", PG], check=True, capture_output=True)
+    for _ in range(30):
+        if subprocess.run(["podman", "exec", PG, "pg_isready", "-U", "kidctl"], capture_output=True).returncode == 0:
+            break
+        time.sleep(1)
+    drop_database()
+    subprocess.run(["podman", "exec", PG, "createdb", "-U", "kidctl", DB_NAME], check=True)
+
+
+def drop_database() -> None:
+    subprocess.run(["podman", "exec", PG, "dropdb", "-U", "kidctl", "--if-exists", "--force", DB_NAME], check=True)
+
+
 def server_env(data: Path) -> dict:
     return {**os.environ, "KIDCTL_DEV": "1", "SECRET_KEY": "screenshot-demo", "KIDCTL_DATA_DIR": str(data),
+            "DATABASE_URL": DATABASE_URL, "KIDCTL_MODE": "single",
             "BASE_URL": "https://kids.example.org", "COOKIE_SECURE": "0",
             "PYTHONPATH": f"{REPO / 'server'}:{REPO / 'common'}"}
 
@@ -80,10 +102,11 @@ def start_server(data: Path, lang: str) -> tuple[subprocess.Popen, str]:
 
 async def shoot(lang: str, out: Path, only: set[str], keep: bool) -> None:
     data = Path(tempfile.mkdtemp(prefix=f"kidctl-shots-{lang}-"))
+    fresh_database()
     proc, secret = start_server(data, lang)
     agents = []
     try:
-        web, agents = await demo_seed.seed(BASE, data, secret, lang)
+        web, agents = await demo_seed.seed(BASE, DATABASE_URL, secret, lang)
         cookies = [{"name": c.name, "value": c.value, "url": BASE} for c in web.c.cookies.jar]
         await web.c.aclose()
         async with async_playwright() as pw:
@@ -121,9 +144,10 @@ async def shoot(lang: str, out: Path, only: set[str], keep: bool) -> None:
         proc.terminate()
         proc.wait()
         if keep:
-            print(f"Daten behalten: {data}")
+            print(f"Daten behalten: {data}, Datenbank {DB_NAME}")
         else:
             shutil.rmtree(data, ignore_errors=True)
+            drop_database()
 
 
 def main() -> None:
@@ -131,7 +155,7 @@ def main() -> None:
     ap.add_argument("--lang", default="de,en")
     ap.add_argument("--only", default="", help="nur diese Seiten (Komma-Liste): " + ",".join(PAGES))
     ap.add_argument("--out", type=Path, default=REPO / "website/static/img/screenshots")
-    ap.add_argument("--keep", action="store_true", help="Datenverzeichnis nicht löschen (Fehlersuche)")
+    ap.add_argument("--keep", action="store_true", help="Datenverzeichnis und Datenbank behalten (Fehlersuche)")
     a = ap.parse_args()
     only = {x for x in a.only.split(",") if x}
     if unknown := only - PAGES.keys():

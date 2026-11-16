@@ -2006,3 +2006,9 @@ News-Bereich hat, den Claude Code pflegt.
   News-Liste, News-Seite, Releases, Datenschutz, Impressum; mobil/Desktop, hell/dunkel, DE/EN) ohne Überlauf und ohne
   externe Requests. Offen bis zum Livegang (Adrian): Domain, Impressum-Adresse (`TODO-IMPRESSUM` blockiert den
   Deploy), GitHub Pages auf „GitHub Actions“ stellen, Client-Screenshots aus der VM nach `website/static/img/client/`.
+- 2026-11-16: Screenshots auf PostgreSQL umgestellt (nach Rebase auf main mit Etappe 1.x Multi-Tenant):
+  `dev/screenshots.py` legt je Sprache eine frische Datenbank `kidctl_shots` im Container `kidctl-pg` an
+  (`KIDCTL_MODE=single`) und löscht sie danach; `dev/demo_seed.py` nimmt `--database-url` (verweigert die
+  Entwicklungsdatenbank) und setzt bei den älteren Nutzungszeiten `family_id` vom Gerät. Getestet: Lauf DE für
+  Übersicht, Statistik, Chat, Geräte – optisch gleich den committeten Bildern, Datenbank danach entfernt,
+  Entwicklungsdatenbank unberührt.
