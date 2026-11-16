@@ -2017,3 +2017,7 @@ News-Bereich hat, den Claude Code pflegt.
   beim Schreiben von `website/data/releases.json`. `website/.gitignore` nimmt `data/` wieder auf (`releases.json`
   bleibt ignoriert). Getestet: sauberer Export von HEAD (`git archive`) + Releases per `gh api` + `hugo --minify
   --panicOnWarning` ohne Warnungen, Startseite enthält Funktionen und Roadmap.
+- 2026-11-16: srv02 auf PostgreSQL umgestellt (Etappe 1 Multi-Tenant live): Übernahme mit `import-sqlite` (579 Zeilen, wie im Probelauf),
+  Server läuft, Anmeldeseite mit „E-Mail-Adresse oder Benutzername“ von außen geprüft. Anleitung „Umstieg auf PostgreSQL“ in
+  `docs/installation.md` korrigiert: vor der Übernahme `docker compose build kidctl` (sonst läuft der Befehl im alten Image ohne
+  PostgreSQL-Treiber und bricht mit `No module named 'psycopg'` ab, ohne etwas zu ändern).
