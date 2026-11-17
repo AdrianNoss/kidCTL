@@ -116,7 +116,8 @@ Danach die Rechner gegen physischen Zugriff härten: **[Härtung](https://adrian
   - Bei aktiver Programmkontrolle kann das Kind nichts selbst installieren.
   - Installer ohne Code-Signatur: SmartScreen-Warnung, mögliche Fehlalarme in Defender.
 
-Die vollständige Liste steht in [`spec.md`](spec.md) unter „Bewusst nicht umgesetzt / Restlücken“.
+Die vollständige Liste steht in den Anleitungen: [Grenzen und bekannte Lücken](https://adriannoss.github.io/kidCTL/de/docs/limitations/)
+(Quelle [`docs/limitations.de.md`](docs/limitations.de.md)).
 
 ## Repository-Struktur
 

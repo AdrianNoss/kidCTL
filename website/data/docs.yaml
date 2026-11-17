@@ -22,4 +22,5 @@
   title: { de: "Sicherheit", en: "Security" }
   pages:
     - hardening
+    - limitations
     - code-signing

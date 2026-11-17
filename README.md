@@ -116,7 +116,8 @@ Then harden the computers against physical access: **[Hardening](https://adriann
   - With app control active, the child can't install anything themselves.
   - Installer without code signature: SmartScreen warning, possible false positives in Defender.
 
-The complete list is in [`spec.md`](spec.md) under "Bewusst nicht umgesetzt / Restlücken" (German).
+The complete list is in the guides: [Limitations and known gaps](https://adriannoss.github.io/kidCTL/docs/limitations/)
+(source [`docs/limitations.md`](docs/limitations.md)).
 
 ## Repository layout
 

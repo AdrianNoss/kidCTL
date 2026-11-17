@@ -19,7 +19,7 @@ Verlängerungsanfragen.
 - Abgewehrt werden naheliegende Umgehungen: anderer Browser, Programm umbenennen, eigene
   Binaries/AppImages im Home, WLAN abschalten, TTY-Login, Tray-App beenden.
 - Nicht im Scope: physischer Zugriff (Live-USB, GRUB-Parameter, BIOS). Wird nur als
-  Härtungs-Anleitung dokumentiert: `docs/haertung.md` (root sperren, Firmware-/Bootloader-Passwort,
+  Härtungs-Anleitung dokumentiert: `docs/hardening.de.md` (root sperren, Firmware-/Bootloader-Passwort,
   optional Verschlüsselung, Secure Boot + TPM).
 - Nicht im Scope: aktive VPN-/DoH-Erkennung über das unten Beschriebene hinaus.
 - Durchsetzung ausschließlich auf Systemebene durch den Root-Agenten.
@@ -313,7 +313,7 @@ Abweichungen stehen hier und unter „Restlücken“.
     (Konten, ACLs, WFP, DNS der Adapter, SafeBoot, Browser-Richtlinien).
   - Server: Plattform je Gerät, Programmschlüssel für Windows-Pfade (Groß-/Kleinschreibung egal) und
     Store-Apps.
-- **Härtung:** `docs/haertung.md` um Windows ergänzen (BitLocker, BIOS-Passwort, kein Booten von USB, Kinder
+- **Härtung:** `docs/hardening.de.md` um Windows ergänzen (BitLocker, BIOS-Passwort, kein Booten von USB, Kinder
   nie Administratoren, UAC mit Admin-Passwort).
 - **Testumgebung:** `dev/vm/vm.sh` mit Windows-Zielen (OVMF mit Secure Boot, `swtpm`, virtio-Treiber,
   `autounattend.xml`: lokaler Admin, zwei Kinderkonten, OpenSSH-Server; unaktiviert). VMs: Windows 11 Home
@@ -329,6 +329,27 @@ Abweichungen stehen hier und unter „Restlücken“.
      umgesetzt in 0.31.0.
   4. Spiele: Steam, Epic, Xbox/Store, Schalter „zählt als Spiel“, Spiele-Limit, Spielzeit je Spiel –
      umgesetzt in 0.32.0.
+
+#### Restlücken – Hintergrund (Windows)
+(Elternfassung in `docs/limitations.de.md`; entschieden 2026-11-04 bzw. 2026-11-07, hierher verschoben 2026-11-17.)
+- Whitelist-Modus: Windows-Infrastruktur (Update, Defender, SmartScreen, Konnektivitätstest, Zeit, Zertifikate,
+  Lizenzen) fest erlaubt; Hintergrundrauschen (Telemetrie, MSN/Widgets, Wetter-Kacheln, Edge-Konfiguration) gesperrt
+  und nicht im Sperrprotokoll (feste Listen in `win/dnsfilter.py`). Bing bleibt sichtbar (Standardsuche in Edge,
+  Freigabe muss anfragbar sein).
+- Login-Sperre ohne eigenen Hinweis: Ein eigener Hinweis bräuchte einen Credential Provider.
+- Named Pipe: muss interaktiven Benutzern Schreibrecht geben (Qt öffnet mit `GENERIC_WRITE`, das schließt das Anlegen
+  weiterer Pipe-Instanzen ein) – ein Kind könnte eine zweite Instanz anlegen und Tray-Apps anderer Benutzer falsche
+  Zustände zeigen; Durchsetzung und Identität beim Agenten nicht betroffen.
+- Hintergrund-Netzsperre (WFP) gilt nur für neue Verbindungen; nach dem Hinzufügen eines Adapters kann `dnscache` bis
+  zu 30 s dessen DNS-Server nutzen; während ein Kind vorne ist, lösen auch Dienste anderer Benutzer über `dnscache`
+  mit seinem Filter auf; Weiterleitung der Suchdomänen (Firmen-VPN der Eltern) über den lokalen Resolver. Beim Start
+  beendet der Agent jeden laufenden `unbound.exe`.
+- Programmkontrolle: Prozessliste alle 0,5 s, sehr kurzlebige Prozesse (z. B. `reg.exe` aus `cmd /c`) können
+  durchrutschen; `cmd /c …` ist erlaubt. DLLs im App-Ordner einer freigegebenen Profil-App; vom Ausführverbot schon
+  beim Start abgewiesene Programme sieht der Agent nicht (kein Toast, keine Anfrage); weitere beschreibbare Ordner
+  (z. B. `C:\ProgramData`) ohne Ausführverbot – Programme des Kindes darin gesperrt, DLLs nicht.
+- Store-App-Namen der mitgelieferten Microsoft-Apps aus einer festen Liste (Windows löst sie für SYSTEM nicht auf).
+- Vorwarn-Fenster nicht über exklusivem Vollbild; ohne Code-Signatur SmartScreen/Defender-Fehlalarme.
 
 ### Offline-Verhalten
 - Letzte bekannte Policy wird weiter durchgesetzt.
@@ -667,6 +688,25 @@ Abweichungen stehen hier und unter „Restlücken“.
   einen Subreaper (`systemd --user`) umgehängt, oder ist er bei der Prüfung schon beendet, folgt die
   Kette den fork-Eltern weiter (PID-Wiederverwendung: Vorfahr muss vor dem Kind gestartet sein).
 
+### Restlücken – Hintergrund
+(Elternfassung in `docs/limitations.de.md`; entschieden bei den jeweiligen Umsetzungen, aus „Bewusst nicht umgesetzt“
+hierher verschoben 2026-11-17.)
+- Kein `flatpak --user`, keine Pro-Spiel-Steuerung bei Steam und Heroic.
+- „Nicht-Steam-Spiel hinzufügen“ als bekannte Restlücke. Gleiche Wirkung: Die Steam-Bibliothek gehört dem Kind
+  (Steam aktualisiert sich selbst) – `steam.sh`/Client sind ersetzbar. Wer Steam freigibt, gibt faktisch alles frei,
+  was über Steam gestartet werden kann.
+- Snap/Flatpak: Freigabe gibt alles in der Sandbox frei (auch `snap run --shell`/`flatpak run --command`). Unter
+  Ubuntu ist „Dateien“ immer erlaubt (Desktop-Symbole).
+- Plasma-Widgets und GNOME-Erweiterungen des Kindes laufen als QML/JavaScript in der Shell und sind keine
+  Programmstarts.
+- Shell-Befehle (`sh -c …`) über KRunner o. Ä. sind erlaubt (Systemkomponenten brauchen das); ausführbar sind damit
+  nur erlaubte Programme – eigene Programme scheitern an `noexec`, Interpreter-Code (`python -c`, Skripte aus dem
+  Home) an der Interpreter-Regel.
+- Shell-Skripte aus `/usr`, `/etc`, `/opt` sind immer erlaubt (das gestartete Programm wird geprüft); reine
+  Shell-Skript-Anwendungen unter `/usr` sind daher nicht sperrbar.
+- Programme, die freigegebene Apps intern aufrufen (z. B. `git` aus Kate), sind gesperrt, solange sie nicht selbst
+  freigegeben werden (`git` bewusst nicht in der Basisliste: Aliase/Hooks).
+
 ## Website-Filter
 
 - Modus pro Kind:
@@ -708,6 +748,17 @@ Abweichungen stehen hier und unter „Restlücken“.
     DuckDuckGo per CNAME, YouTube „eingeschränkt (moderat)“. Im Whitelist-Modus nur für
     freigegebene Domains (keine Hintertür).
   - Ressourcen: Vorauswahl ≈ 250 000 Domains → ≈ 110 MB RAM je Kind, Start < 1 s.
+
+### Restlücken – Hintergrund
+(Elternfassung in `docs/limitations.de.md`, hierher verschoben 2026-11-17.)
+- Keine IP-Bindung im ersten Release: direkte IP-Adressen (auch DoH über IP) umgehen den DNS-Filter. VPN-Verkehr mit
+  fest eingetragenen IP-Adressen liegt außerhalb des Threat Models.
+- Programme, die systemd-resolved über D-Bus/Varlink fragen (z. B. `resolvectl`), umgehen die Umleitung; Browser und
+  glibc-Programme nicht (nsswitch angepasst).
+- Zwischen zwei Integritätsprüfungen (≤ 60 s) kann eine entfernte nftables-Tabelle den DNS-Filter offen lassen.
+  `nftables.service` leert beim (Neu-)Laden den gesamten Regelsatz (`flush ruleset`) – der Agent stellt seine Tabelle
+  im nächsten Takt wieder her.
+- Eine Freigabe-Ausnahme im Blacklist-Modus gilt nicht für spezifischere Einträge einer Sperrliste.
 
 ## Messenger
 
@@ -1173,70 +1224,11 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
 
 ## Bewusst nicht umgesetzt / Restlücken
 
-- Kein Schutz gegen physischen Zugriff (nur Härtungs-Anleitung `docs/haertung.md`).
-- Keine Leerlauferkennung.
-- Keine Unterstützung anderer Desktops als KDE Plasma und GNOME (Wayland), kein X11 (Cinnamon/COSMIC folgen).
-- Debian/Ubuntu: nur amd64. Unter Ubuntu ist „Dateien“ immer erlaubt (Desktop-Symbole). Wer eine Snap- oder
-  Flatpak-App freigibt, gibt alles in deren Sandbox frei (auch `snap run --shell`/`flatpak run --command`).
-- Kein GDM-Autologin für Kinder (GDM bliebe bei Login-Sperre schwarz, Integritätsprüfung meldet es).
-- Plasma-Widgets und GNOME-Erweiterungen, die das Kind selbst installiert, laufen als QML/JavaScript in der
-  Shell und sind keine Programmstarts; Zeitlimit, Webfilter und Abmeldung umgehen sie nicht.
-- Kein `flatpak --user`, keine Pro-Spiel-Steuerung bei Steam und Heroic.
-- „Nicht-Steam-Spiel hinzufügen“ als bekannte Restlücke. Gleiche Wirkung: Die Steam-Bibliothek
-  gehört dem Kind (Steam aktualisiert sich selbst) – `steam.sh`/Client sind ersetzbar. **Wer Steam
-  freigibt, gibt faktisch alles frei, was über Steam gestartet werden kann.**
-- Shell-Befehle (`sh -c …`) über KRunner o. Ä. sind erlaubt (Systemkomponenten brauchen das);
-  ausführbar sind damit aber nur erlaubte Programme – eigene Programme scheitern an `noexec`,
-  Interpreter-Code (`python -c`, Skripte aus dem Home) an der Interpreter-Regel.
-- Shell-Skripte aus `/usr`, `/etc`, `/opt` sind immer erlaubt (das Programm, das sie starten,
-  wird geprüft); reine Shell-Skript-Anwendungen unter `/usr` sind daher nicht sperrbar.
-- Programme, die freigegebene Apps intern aufrufen (z. B. `git` aus Kate), sind gesperrt, solange
-  sie nicht selbst freigegeben werden (`git` bewusst nicht in der Basisliste: Aliase/Hooks).
-- Keine IP-Bindung im ersten Release: direkte IP-Adressen (auch DoH über IP) umgehen den
-  DNS-Filter.
-- Programme, die systemd-resolved über D-Bus/Varlink fragen (z. B. `resolvectl`), umgehen die
-  Umleitung; Browser und glibc-Programme nicht (nsswitch angepasst).
-- Zwischen zwei Integritätsprüfungen (≤ 60 s) kann eine entfernte nftables-Tabelle den DNS-Filter
-  offen lassen. Hinweis: `nftables.service` leert beim (Neu-)Laden den gesamten Regelsatz
-  (`flush ruleset`) – der Agent stellt seine Tabelle danach im nächsten Takt wieder her.
-- Eine Freigabe-Ausnahme im Blacklist-Modus gilt nicht für spezifischere Einträge einer Sperrliste
-  (z. B. Ausnahme `example.com`, Liste sperrt `ads.example.com`).
-- Kein Browserverlauf, keine Bilder/Dateien im Chat, keine Lesebestätigungen.
-- Kein Selbst-Update des Agenten unter Linux (nur über Pacman bzw. apt); unter Windows automatisch.
-- Windows (entschieden 2026-11-04):
-  - Website-Filter im Whitelist-Modus: Weil der Filter für den ganzen Rechner gilt, sind Windows-Infrastruktur
-    (Update, Defender, SmartScreen, Konnektivitätstest, Zeit, Zertifikate, Lizenzen) fest erlaubt; bekanntes
-    Hintergrundrauschen (Telemetrie, MSN/Widgets, Wetter-Kacheln, Edge-Konfiguration) bleibt gesperrt und erscheint
-    nicht im Sperrprotokoll (feste Listen in `win/dnsfilter.py`, entschieden 2026-11-07). Bing bleibt sichtbar: Es
-    ist die Standardsuche in Edge, das Kind muss dafür eine Freigabe anfragen können.
-  - Login-Sperre ohne eigenen Hinweis: Windows blendet das deaktivierte Konto auf dem Anmeldebildschirm aus (über
-    „Anderer Benutzer“ nur „Konto deaktiviert“). Ein eigener Hinweis bräuchte einen Credential Provider.
-  - Die Named Pipe muss interaktiven Benutzern Schreibrecht geben (Qt öffnet mit `GENERIC_WRITE`, das schließt das
-    Anlegen weiterer Pipe-Instanzen ein): Ein Kind könnte eine zweite Instanz anlegen und Tray-Apps anderer
-    Benutzer falsche Zustände zeigen. Durchsetzung und Identität beim Agenten sind davon nicht betroffen.
-  - Website-Filter: Hintergrund-Netzsperre gilt nur für neue Verbindungen – eine bestehende (z. B. laufender
-    Download) eines Kindes läuft nach dem Benutzerwechsel weiter, bis sie endet. Nach dem Hinzufügen eines Adapters
-    (z. B. VPN) kann `dnscache` bis zu 30 s dessen DNS-Server nutzen. Während ein Kind vorne ist, gilt sein Filter
-    auch für Dienste und Hintergrundprozesse anderer Benutzer (alle lösen über `dnscache` auf). Beim Start beendet
-    der Agent jeden laufenden `unbound.exe` (auch einen fremden).
-  - Website-Filter folgt der aktiven Sitzung: Ein per Benutzerwechsel im Hintergrund angemeldetes Elternteil
-    ist gefiltert, solange ein Kind vorne sitzt. Auch das Firmen-VPN der Eltern löst über den lokalen
-    Resolver auf (Weiterleitung der Suchdomänen).
-  - Programmkontrolle reagiert auf Prozessstarts (Prozessliste alle 0,5 s); sehr kurzlebige Prozesse
-    (z. B. `reg.exe` aus `cmd /c`) können durchrutschen – eigener Code des Kindes läuft wegen des Ausführverbots
-    trotzdem nicht. `cmd /c …` ist erlaubt (Systemkomponenten brauchen es); was es startet, wird geprüft.
-  - In den Ordner einer freigegebenen App im Benutzerprofil kann das Kind eigene DLLs legen (wie bei Steam).
-  - Programme im Profil, die das Ausführverbot schon beim Start abweist, sieht der Agent nicht: kein Toast und
-    keine „Freigabe anfragen“ – die Eltern geben sie im WebUI frei (sie stehen im Katalog, wenn sie einen
-    Startmenü-Eintrag haben). Selbst installieren kann das Kind bei aktiver Programmkontrolle nicht
-    (Installer im Download-Ordner) – Eltern stellen dafür kurz auf „Aus“.
-  - Weitere vom Kind beschreibbare Ordner (z. B. unter `C:\ProgramData`) haben kein Ausführverbot; Programme
-    darin gehören dem Kind und sind gesperrt, DLLs daraus nicht.
-  - Store-App-Namen der mitgelieferten Microsoft-Apps aus einer festen Liste (Windows löst sie für SYSTEM nicht
-    auf); andere Store-Apps zeigen den Namen aus dem Manifest bzw. den Paketnamen.
-  - Vorwarn-Fenster erscheinen nicht über Spielen im exklusiven Vollbild; die Abmeldung erfolgt trotzdem.
-  - Ohne Code-Signatur: SmartScreen-Warnung beim ersten Installieren, Risiko von Fehlalarmen in Defender.
-  - VPN-Verkehr mit fest eingetragenen IP-Adressen bleibt wie unter Linux außerhalb des Threat Models.
+Einzige Quelle für die Restlücken ist die öffentliche Doku **`docs/limitations.de.md`** (Englisch:
+`docs/limitations.md`, im Wiki Gruppe Sicherheit), für Eltern verständlich nach Überall/Linux/Windows gegliedert.
+Neue Restlücke → dort im selben Commit eintragen (siehe CLAUDE.md „Sicherheit“). Die technischen Hintergründe stehen
+in den Fachabschnitten: Linux in „Programm-Whitelist“ und „Website-Filter“ (jeweils „Restlücken – Hintergrund“),
+Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Windows)“).
 
 ## Offene Punkte
 
@@ -2273,3 +2265,12 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
   READMEs zeigen relativ auf `docs/*.de.md`, bleiben so). Getestet: Dry-Run `kidctl-release.sh` mit Lauf 42863441320
   (Text mit Wiki-Links), Server-Tests 160 grün (eigene Testdatenbank `kidctl_test_homepage`, weil `kidctl_test` schon
   Revision 0008 aus dem SaaS-Branch trägt), Paritäts-Check und Linkprüfung grün.
+- 2026-11-17: Wiki Etappe 8 (Restlücken öffentlich): Abschnitt „Bewusst nicht umgesetzt / Restlücken“ nach
+  `docs/limitations.de.md`/`limitations.md` („Grenzen und bekannte Lücken“, für Eltern formuliert, gegliedert nach
+  Überall/Linux/Windows, Wiki-Gruppe Sicherheit) – dort einzige Quelle; die Spec verweist nur noch. Interne
+  Begründungen als „Restlücken – Hintergrund“ in die Fachabschnitte Programm-Whitelist, Website-Filter und
+  Architektur → Windows (Named Pipe/`GENERIC_WRITE`, Credential Provider, feste Listen in `win/dnsfilter.py`,
+  `dnscache` 30 s, Prozessliste 0,5 s, `git` nicht in der Basisliste, `flush ruleset` …). README-Kurzliste verlinkt
+  die Seite; Verweise auf `docs/haertung.md` in der Spec auf `hardening.de.md`. Getestet: Abgleich aller 34
+  Restlücken der alten Liste gegen `limitations.de.md` per Stichwort (0 fehlend), Paritäts-Check (15 Paare),
+  Linkprüfung Repo (42 Dateien) und Seite (2502 Links), `hugo --minify --panicOnWarning` ohne Warnungen.
