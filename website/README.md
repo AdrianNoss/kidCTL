@@ -8,6 +8,7 @@ cd website
 gh api "repos/AdrianNoss/kidCTL/releases?per_page=100" > data/releases.json   # optional, sonst leere Release-Liste
 hugo server                     # http://localhost:1313/
 hugo --minify --panicOnWarning  # vor dem Commit
+python -m pagefind --site public   # Suchindex (pip install "pagefind[bin]==1.6.0"); hugo server hat keinen
 ```
 
 | Pfad | Inhalt |

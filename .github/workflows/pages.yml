@@ -2,7 +2,8 @@
 # Auslöser: Push auf main mit Änderungen an der Seite oder den Anleitungen (docs/, SECURITY*.md), veröffentlichtes
 # Release (Release-Liste), von Hand.
 # Einmalig in den Repo-Einstellungen: Settings → Pages → Source „GitHub Actions“.
-# Schritte: Releases holen → Platzhalter-Check (Impressum) → Doku-Parität DE/EN → hugo --minify → Deploy.
+# Schritte: Releases holen → Platzhalter-Check (Impressum) → Doku-Parität DE/EN → hugo --minify → Suchindex
+# (Pagefind, pip, gepinnt) → Deploy.
 
 name: Projektseite
 
@@ -24,6 +25,7 @@ concurrency:
 
 env:
   HUGO_VERSION: "0.170.0"
+  PAGEFIND_VERSION: "1.6.0"
 
 jobs:
   build:
@@ -66,6 +68,12 @@ jobs:
       - name: Bauen
         working-directory: website
         run: hugo --minify --gc --panicOnWarning
+
+      - name: Suchindex (Pagefind)
+        run: |
+          python3 -m venv "$RUNNER_TEMP/pagefind"   # Ubuntu-Python ist „externally managed“ (PEP 668)
+          "$RUNNER_TEMP/pagefind/bin/pip" install -q "pagefind[bin]==${PAGEFIND_VERSION}"
+          "$RUNNER_TEMP/pagefind/bin/python" -m pagefind --site website/public
 
       - uses: actions/upload-pages-artifact@v5
         with:

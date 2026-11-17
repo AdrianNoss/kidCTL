@@ -1,0 +1,10 @@
+{{ define "main" }}
+<div class="page"><div class="wrap">
+  <h1>{{ .Title }}</h1>
+  <noscript><p class="lead">{{ T "search_nojs" }}</p></noscript>
+  <div class="search-page">{{ partial "searchbox.html" . }}</div>
+  <p class="muted" style="margin-top:2rem">
+    {{- with site.GetPage "/docs" }}<a href="{{ .RelPermalink }}">{{ T "nav_docs" }}</a>{{ end }} ·
+    {{ with site.GetPage "/news" }}<a href="{{ .RelPermalink }}">{{ T "nav_news" }}</a>{{ end }}</p>
+</div></div>
+{{ end }}

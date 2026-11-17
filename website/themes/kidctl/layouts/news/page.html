@@ -1,6 +1,6 @@
 {{ define "main" }}
 <div class="page"><div class="wrap">
-  <article class="prose">
+  <article class="prose" data-pagefind-body data-pagefind-filter="type:{{ T "filter_news" }}">
     {{- with .Parent }}<a class="backlink" href="{{ .RelPermalink }}">{{ partial "icon.html" "back" }}{{ .Title }}</a>{{ end }}
     <p class="meta">{{ .Date | time.Format ":date_long" }}{{ with .Params.version }} · {{ T "version" }} {{ . }}{{ end }}</p>
     <h1>{{ .Title }}</h1>

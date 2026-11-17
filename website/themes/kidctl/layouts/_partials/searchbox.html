@@ -1,0 +1,17 @@
+{{- /* Suchfeld + Treffer (Pagefind). Wird von search.js belebt; data-* liefern Pfade und Texte der Sprache. */ -}}
+<div class="search" data-search data-bundle="{{ "pagefind/" | relURL }}" data-base="{{ "" | relURL }}"
+     data-filter-docs="{{ T "filter_docs" }}" data-filter-news="{{ T "filter_news" }}"
+     data-t-empty="{{ T "search_empty" }}" data-t-count="{{ T "search_count" }}" data-t-error="{{ T "search_error" }}">
+  <form class="search-form" role="search" action="{{ "search/" | relLangURL }}" onsubmit="return false">
+    {{ partial "icon.html" "search" }}
+    <input type="search" name="q" placeholder="{{ T "search_placeholder" }}" aria-label="{{ T "search_label" }}" autocomplete="off" spellcheck="false">
+    <kbd class="search-kbd">Esc</kbd>
+  </form>
+  <div class="search-filters" role="group" aria-label="{{ T "search_filter" }}">
+    <button type="button" class="chip-btn active" data-filter="">{{ T "search_all" }}</button>
+    <button type="button" class="chip-btn" data-filter="docs">{{ T "filter_docs" }}</button>
+    <button type="button" class="chip-btn" data-filter="news">{{ T "filter_news" }}</button>
+  </div>
+  <p class="search-status muted" aria-live="polite"></p>
+  <ol class="search-results"></ol>
+</div>

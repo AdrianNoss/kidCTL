@@ -1,4 +1,5 @@
 {{ define "main" }}
+<div data-pagefind-body data-pagefind-meta="title:{{ site.Title }} – {{ T "claim" }}">
 {{- $lang := site.Language.Lang }}
 {{- $docs := site.Params.docs }}
 
@@ -176,4 +177,5 @@
   </div>
 </section>
 {{- end }}
+</div>
 {{ end }}

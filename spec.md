@@ -2254,3 +2254,13 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
   Konsolenfehler/404; Linkprüfung über `public/` (2166 interne Links inkl. Anker, 0 Fehler; alle 40 GitHub-Ziele
   existieren im Repo); Sichtprüfung Übersicht, Server (mobil dunkel), Windows (Desktop hell). GitHub-Ansicht der
   Markdown-Dateien unverändert lesbar (reines Markdown, Alerts nativ).
+- 2026-11-17: Wiki Etappe 4 (Suche): Pagefind 1.6.0 (pip `pagefind[bin]`, im Pages-Workflow gepinnt, nach `hugo`).
+  Indexiert werden Startseite, Wiki (`data-pagefind-body`, Filter `type` = „Anleitungen“/„Docs“) und News (Filter
+  „News“); Sprachen getrennt über `<html lang>`. Eigener Suchdialog im Material-Stil (`search.js`, Pagefind-JS-API,
+  `baseUrl` = Unterpfad der Seite): Lupe im Kopf, `Strg+K`/`⌘K` und `/`, Filter-Chips Alle/Anleitungen/News,
+  Pfeiltasten in den Treffern, Index wird erst beim Fokus/Tippen geladen. Ohne JavaScript führt die Lupe auf
+  `/search/` mit Hinweis und Links zu Anleitungen und News. Getestet (Playwright gegen `hugo` + `pagefind` unter
+  `/kidCTL/`): kein Pagefind-Request vor der Suche; EN „installing“ findet „Installation“, DE „Kinderrechners“ findet
+  „Kinderrechner“ (Stemming); „Kinderrechner“ auf einer englischen Seite ohne Treffer (Sprachen getrennt); Filter
+  News/Anleitungen liefern nur den jeweiligen Typ; Treffer-Link landet unter `/kidCTL/`; keine externen Requests,
+  keine Konsolenfehler; ohne JS erreichbare Suchseite; Sichtprüfung Dialog dunkel/Desktop und hell/Handy.

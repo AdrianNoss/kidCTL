@@ -11,5 +11,8 @@
       <a href="{{ site.Params.github }}">GitHub</a>
       {{ partial "langswitch.html" . }}
     </nav>
+    {{- with site.GetPage "/search" }}
+    <a class="icon-btn search-open" href="{{ .RelPermalink }}" data-search-open title="{{ T "search_label" }} (Strg+K, /)" aria-label="{{ T "search_label" }}">{{ partial "icon.html" "search" }}</a>
+    {{- end }}
   </div>
 </header>
