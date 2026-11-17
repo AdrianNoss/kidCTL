@@ -28,10 +28,27 @@ def free_port() -> int:
         return s.getsockname()[1]
 
 
+E2E_DB = "postgresql+psycopg://kidctl:kidctl-dev@127.0.0.1:55432/kidctl_e2e"
+
+
+def fresh_database(url: str) -> str:
+    """Eigene, leere PostgreSQL-Datenbank für den Server-Unterprozess (nie die Entwicklungsdatenbank)."""
+    psycopg = pytest.importorskip("psycopg")
+    base, name = url.replace("postgresql+psycopg://", "postgresql://").rsplit("/", 1)
+    try:
+        with psycopg.connect(base + "/postgres", autocommit=True, connect_timeout=3) as conn:
+            conn.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
+            conn.execute(f'CREATE DATABASE "{name}"')
+    except psycopg.OperationalError as e:
+        pytest.skip(f"PostgreSQL für E2E nicht erreichbar ({e}) – dev/devserver.sh startet den Container kidctl-pg")
+    return url
+
+
 @pytest.fixture
 def server(tmp_path):
     port = free_port()
     env = {**os.environ, "KIDCTL_DEV": "1", "SECRET_KEY": "e2e", "KIDCTL_DATA_DIR": str(tmp_path / "srv"),
+           "DATABASE_URL": fresh_database(os.environ.get("KIDCTL_E2E_DATABASE_URL", E2E_DB)),
            "BASE_URL": f"http://127.0.0.1:{port}", "COOKIE_SECURE": "0",
            "PYTHONPATH": f"{ROOT / 'server'}:{ROOT / 'common'}",
            "KIDCTL_BOOTSTRAP_USER": "mama", "KIDCTL_BOOTSTRAP_PASSWORD": "ein-langes-passwort"}
@@ -126,7 +143,7 @@ def test_full_flow(server):
         today = agent.now_local().date()
         agent.usage.local[("kind", today.isoformat())] = 1500.0
         await agent.send_usage()
-        await wait_for(lambda: "0:25 h <span class=\"muted\">von" in web.get("/").text)
+        await wait_for(lambda: "0:25 h von" in web.get("/").text)   # Übersicht (Karte je Kind)
 
         # Tick zählt die aktive Sitzung
         await agent.tick_once()

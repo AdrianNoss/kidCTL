@@ -13,3 +13,7 @@
   en: "**Admins stay free:** root, `sudo`/`wheel` and Windows administrators are never restricted."
 - de: "**Offener Quelltext** unter der AGPL-3.0 – prüfbar, veränderbar, kostenlos."
   en: "**Open source** under the AGPL-3.0 – auditable, modifiable, free of charge."
+- de: "**Verschlüsselt je Familie:** Namen, Chat, Protokoll und Statistik liegen auf dem Server verschlüsselt, mit eigenem Schlüssel je Familie."
+  en: "**Encrypted per family:** names, chat, activity log and statistics are stored encrypted on the server, with one key per family."
+- de: "**Offen gegenüber dem Kind:** Beim ersten Anmelden erklärt KidCTL, was erfasst wird. Kein verdeckter Modus."
+  en: "**Open with the child:** on first sign-in KidCTL explains what is recorded. No hidden mode."

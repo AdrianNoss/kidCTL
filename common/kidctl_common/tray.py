@@ -90,6 +90,7 @@ class TrayState(BaseModel):
     # Windows: Die Tray-App zeigt die letzte Minute als eigenes Fenster im Vordergrund.
     logout_in_seconds: int | None = None
     gaming: bool = False   # gerade läuft ein Spiel (Windows: letzte Minute Spielzeit als Fenster)
+    paused: bool = False   # Ruhemodus (Abo der Familie abgelaufen): keine Einschränkungen, Tray zeigt „pausiert“
 
 
 class TrayChat(BaseModel):

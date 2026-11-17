@@ -33,6 +33,10 @@ USAGE_DAYS_BACK = 7
 # ---------- Policy ----------
 
 def build_policy(db: Session, device_id: int) -> p.Policy:
+    from .models import Device, Family
+    family = db.get(Family, db.scalar(select(Device.family_id).where(Device.id == device_id)))
+    if family is not None and family.paused_at is not None:
+        return paused_policy(db, device_id)
     mapped = db.execute(select(DeviceUser.username, DeviceUser.child_id).where(
         DeviceUser.device_id == device_id, DeviceUser.child_id.is_not(None))
         .order_by(DeviceUser.username)).all()
@@ -61,6 +65,17 @@ def build_policy(db: Session, device_id: int) -> p.Policy:
             temp_grants=access.temp_grants(db, child.id),
         ))
     body = p.Policy(version="", timezone=settings.timezone, users=users, children=children)
+    digest = hashlib.sha256(body.model_dump_json(exclude={"version"}).encode()).hexdigest()[:16]
+    return body.model_copy(update={"version": digest})
+
+
+def paused_policy(db: Session, device_id: int) -> p.Policy:
+    """Ruhemodus: keine Zuordnungen und keine Kinder – auch ältere Agenten heben damit alle Einschränkungen auf.
+    ``paused_users`` nennt die sonst zugeordneten User (Tray zeigt „KidCTL pausiert“)."""
+    names = db.scalars(select(DeviceUser.username).where(DeviceUser.device_id == device_id,
+                                                         DeviceUser.child_id.is_not(None)))
+    paused = sorted(u for u in names if re.fullmatch(p.USERNAME_PATTERN, u))
+    body = p.Policy(version="", timezone=settings.timezone, users={}, children=[], paused=True, paused_users=paused)
     digest = hashlib.sha256(body.model_dump_json(exclude={"version"}).encode()).hexdigest()[:16]
     return body.model_copy(update={"version": digest})
 

@@ -30,6 +30,8 @@ class Family(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     # Datenschlüssel der Familie, mit dem Hauptschlüssel eingepackt (app.crypto); NULL = gelöscht/unlesbar
     wrapped_key: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    # Ruhemodus seit (Abo/Testphase abgelaufen, Etappe 5 setzt ihn): Agenten heben alle Einschränkungen auf
+    paused_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class FamilyScoped:

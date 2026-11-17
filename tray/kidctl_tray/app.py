@@ -27,6 +27,7 @@ WINDOWS = sys.platform == "win32"
 
 class TrayApp:
     def __init__(self, app: QApplication, socket_path: str | None = None) -> None:
+        self._notice_done = False
         self.app = app
         self.state: t.TrayState | None = None
         self.client = AgentClient(socket_path)
@@ -137,21 +138,54 @@ class TrayApp:
             self.status_action.setText(_("Keine Verbindung zum kidctl-Dienst"))
         self.window.set_state(self.state, connected)
 
+    def _first_notice(self) -> None:
+        """Beim ersten Anmelden nach der Zuordnung einmal zeigen, dass der Account verwaltet wird und was erfasst wird."""
+        flag = notice_flag()
+        if self._notice_done or os.path.exists(flag):
+            return
+        self._notice_done = True
+        try:
+            os.makedirs(os.path.dirname(flag), exist_ok=True)
+            with open(flag, "w", encoding="utf-8") as f:
+                f.write("1\n")
+        except OSError:
+            pass   # dann eben beim nächsten Start noch einmal
+        box = QMessageBox(QMessageBox.Icon.Information, "KidCTL", texts.first_notice())
+        box.setModal(False)   # nicht blockierend: die Tray-App läuft weiter
+        box.show()
+        self._notice_box = box   # Referenz halten, sonst schließt Qt das Fenster sofort
+
     def _state_changed(self, state: t.TrayState) -> None:
         self.state = state
         if self.countdown is not None:
             self.countdown.set_state(state)
         if not state.restricted:  # nicht zugeordneter User: nichts anzeigen
-            self.tray.hide()
+            if state.paused:       # Ruhemodus: Symbol mit Hinweis, sonst nichts
+                self.tray.setIcon(render_icon("‖", "ok"))
+                self.tray.setToolTip(texts.paused_line())
+                self.status_action.setText(texts.paused_line())
+                self.tray.show()
+            else:
+                self.tray.hide()
             self.window.hide()
             self.blocked.hide()
             return
+        self._first_notice()
         self.tray.setIcon(render_icon(texts.icon_text(state), texts.level(state)))
         line = texts.status_line(state)
         self.tray.setToolTip("\n".join(texts.detail_lines(state)))
         self.status_action.setText(line)
         self.window.set_state(state, True)
         self.tray.show()
+
+
+def notice_flag() -> str:
+    """Merker „Hinweis gezeigt“ im Profil des Kindes (löscht es ihn, kommt der Hinweis eben noch einmal)."""
+    if WINDOWS:
+        base = os.environ.get("APPDATA") or os.path.expanduser("~")
+        return os.path.join(base, "KidCTL", "notice-shown")
+    base = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+    return os.path.join(base, "kidctl-tray", "notice-shown")
 
 
 def instance_path() -> str | None:

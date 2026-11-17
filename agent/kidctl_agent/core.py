@@ -332,7 +332,8 @@ class AgentCore:
         now = self.now_local()
         d = self.decisions(now).get(user)
         if d is None:
-            return t.TrayState(restricted=False, online=self.online)
+            paused = bool(self.policy and self.policy.paused and user in self.policy.paused_users)
+            return t.TrayState(restricted=False, online=self.online, paused=paused)
         child_id = self.policy.users[user]
         child = next(c for c in self.policy.children if c.id == child_id)
         quota, start, end = day_limits(child, now.date())

@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from kidctl_common import protocol as p
 
 from .. import access, chat, integrity, nowplaying, policy, programs, stats, webfilter
+from ..config import settings
 from ..db import get_platform_db
 from ..tenant import family_session, platform_session, set_family
 from ..models import BlocklistState, Device, DeviceUser, PairingCode, utcnow
@@ -143,6 +144,8 @@ async def agent_ws(ws: WebSocket):
              device_id, hello.agent_version, hello.protocol_version)
     with family_session(family_id) as db:
         await policy.send_policy(db, device_id)
+    if settings.relocate_to:   # Server-Umzug: der Agent prüft das Ziel selbst, bevor er wechselt
+        await _send(ws, p.Relocate(server_url=settings.relocate_to))
 
     last_seen = utcnow()
     try:

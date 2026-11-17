@@ -42,6 +42,7 @@ class Settings:
     dev: bool = False
     mode: str = "single"   # single = eine Familie (Self-Hosting) | saas = viele Familien
     master_key: str = ""   # KIDCTL_MASTER_KEY: verschlüsselt die Schlüssel der Familien (app.crypto)
+    relocate_to: str = ""  # KIDCTL_RELOCATE_TO: Server-Umzug – Agenten wechseln, wenn der neue Server sie anerkennt
 
     @property
     def saas(self) -> bool:
@@ -84,6 +85,13 @@ def _master_key(dev: bool) -> str:
     return key or DEV_MASTER_KEY
 
 
+def _relocate_to() -> str:
+    url = os.environ.get("KIDCTL_RELOCATE_TO", "").strip().rstrip("/")
+    if url and not url.startswith("https://"):
+        raise RuntimeError("KIDCTL_RELOCATE_TO muss mit https:// beginnen.")
+    return url
+
+
 def _mode() -> str:
     mode = os.environ.get("KIDCTL_MODE", "single").strip().lower() or "single"
     if mode not in ("single", "saas"):
@@ -114,6 +122,7 @@ def load_settings() -> Settings:
         source_url=os.environ.get("SOURCE_URL", "https://github.com/AdrianNoss/kidCTL"),
         mode=_mode(),
         master_key=_master_key(dev),
+        relocate_to=_relocate_to(),
         vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY", ""),
         vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY", ""),
         vapid_subject=os.environ.get("VAPID_SUBJECT", ""),

@@ -38,8 +38,12 @@ child's computer the language of the desktop session is used.
 - **Push alerts**:
   - Device offline for too long.
   - Protection tampered with, e.g. PAM, nftables or noexec.
+- **Open with the child**: on first sign-in the tray app explains that the account is managed by KidCTL
+  and what is recorded; the icon stays visible, there is no hidden mode.
 - **Security**:
   - Parent sign-in only with TOTP, rate limiting, CSRF protection.
+  - Names, chat, activity log, statistics and email addresses are stored encrypted on the server (one key
+    per family).
   - Signed package repository for updates (pacman and APT); the Windows agent updates itself
     (Ed25519-signed).
 

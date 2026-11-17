@@ -29,6 +29,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # enter the outp
 | `KIDCTL_MASTER_KEY` | Required. Master key of the encryption (names, chat, log, statistics per family). Create it with `docker compose run --rm kidctl python -m app.cli master-key`. **Back it up separately** (password manager): without it the data can't be restored, not even from backups. Never change it. |
 | `POSTGRES_PASSWORD` | Required. Database password, only letters, digits, `-` and `_` (e.g. `secrets.token_urlsafe(32)`). The database runs in the container `kidctl-db` and is only reachable by the server. |
 | `BASE_URL` | Public address, e.g. `https://kids.example.org` |
+| `KIDCTL_RELOCATE_TO` | Only when moving the server: the new address (`https://…`). Every agent from 0.33 switches to it as soon as the new server accepts its device token (same database, same `SECRET_KEY`); otherwise it stays with the old one. Set it on the **old** server until all devices have moved. |
 | `KIDCTL_MODE` | `single` (default, one family) or `saas` (many families; email is required and replaces the user name) |
 | `TOTP_ISSUER` | Name in the authenticator app (default `KidCTL`) |
 | `SOURCE_URL` | "Source code" link in the footer (AGPL-3.0 §13); set it to your own fork if you make changes. Default: the KidCTL repository |

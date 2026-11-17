@@ -136,3 +136,23 @@ def blocked_line(item: t.BlockedItem) -> str:
     if item.count > 1:
         parts.append(f"{item.count}×")
     return " · ".join(parts)
+
+
+def paused_line() -> str:
+    """Ruhemodus: Abo der Familie abgelaufen – nichts wird eingeschränkt."""
+    return _("KidCTL ist pausiert – keine Einschränkungen")
+
+
+def first_notice() -> str:
+    """Einmaliger Hinweis beim ersten Anmelden nach der Zuordnung (offener Betrieb, kein verdeckter Modus)."""
+    return "\n\n".join([
+        _("Dieser Account wird von KidCTL verwaltet."),
+        _("Deine Eltern legen fest, wann und wie lange du den Rechner nutzen kannst und welche Programme und Websites "
+          "erlaubt sind."),
+        _("Erfasst werden: Bildschirmzeit, genutzte Programme und Spiele mit ihrer Dauer, gesperrte Programme und "
+          "Websites sowie die Nachrichten im Chat mit deinen Eltern."),
+        _("Nicht erfasst werden: Inhalte von Websites, welche erlaubten Websites du besuchst, deine Eingaben, "
+          "Bildschirminhalte und Dateien."),
+        _("Das KidCTL-Symbol in der Taskleiste zeigt dir jederzeit deine Restzeit. Dort kannst du deinen Eltern auch "
+          "schreiben und mehr Zeit anfragen."),
+    ])

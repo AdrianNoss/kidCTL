@@ -14,7 +14,7 @@ from websockets.exceptions import ConnectionClosed, InvalidStatus, WebSocketExce
 
 from kidctl_common import protocol as p
 
-from . import __version__, tls
+from . import __version__, store, tls
 
 log = logging.getLogger("kidctl.conn")
 
@@ -40,6 +40,7 @@ class Connection:
         if not self.url.startswith("wss://") and not device.get("insecure_http"):
             raise ValueError(f"unverschlüsselte Serveradresse {device['server_url']} – neu koppeln mit https://")
         self.token = device["token"]
+        self.device = device
         self.handler = handler
         self._ws = None
         self._welcomed = False
@@ -91,9 +92,7 @@ class Connection:
         async with connect(self.url, ssl=ssl_context, additional_headers={"Authorization": f"Bearer {self.token}"},
                            open_timeout=15, ping_interval=30, ping_timeout=30,
                            max_size=4 * 1024 * 1024) as ws:
-            await ws.send(p.Hello(protocol_version=p.PROTOCOL_VERSION, agent_version=__version__,
-                                  hostname=socket.gethostname(),
-                                  platform="windows" if sys.platform == "win32" else "linux").model_dump_json())
+            await ws.send(self._hello())
             first = p.server_message_adapter.validate_json(await asyncio.wait_for(ws.recv(), 15))
             if not isinstance(first, p.Welcome):
                 log.error("Handshake abgelehnt: %s", first)
@@ -109,4 +108,41 @@ class Connection:
                 except ValidationError:
                     log.debug("Unbekannte/ungültige Nachricht ignoriert: %.200s", raw)
                     continue
+                if isinstance(msg, p.Relocate):
+                    await self._relocate(msg.server_url)
+                    continue
                 await self.handler.on_message(msg)
+
+    @staticmethod
+    def _hello() -> str:
+        return p.Hello(protocol_version=p.PROTOCOL_VERSION, agent_version=__version__, hostname=socket.gethostname(),
+                       platform="windows" if sys.platform == "win32" else "linux").model_dump_json()
+
+    async def _probe(self, url: str) -> bool:
+        """Meldet sich das Gerät mit seinem Token beim neuen Server erfolgreich an (``welcome``)?"""
+        try:
+            async with connect(url, ssl=tls.context(), additional_headers={"Authorization": f"Bearer {self.token}"},
+                               open_timeout=15, max_size=4 * 1024 * 1024) as ws:
+                await ws.send(self._hello())
+                first = p.server_message_adapter.validate_json(await asyncio.wait_for(ws.recv(), 15))
+                return isinstance(first, p.Welcome)
+        except (OSError, InvalidStatus, WebSocketException, asyncio.TimeoutError, ValidationError) as e:
+            log.info("Umzugsziel %s nicht bestätigt: %s", url, e)
+            return False
+
+    async def _relocate(self, server_url: str) -> None:
+        """Server-Umzug: neue Adresse nur übernehmen, wenn der neue Server das Gerät anerkennt."""
+        url = ws_url(server_url)
+        if url == self.url:
+            return
+        if not await self._probe(url):
+            log.warning("Umzug nach %s abgelehnt: neuer Server erkennt das Gerät nicht – bleibe bei %s",
+                        server_url, self.device.get("server_url"))
+            return
+        old = self.device.get("server_url")
+        self.device.update(server_url=server_url, previous_server_url=old)
+        store.save(store.DEVICE_FILE, self.device)
+        log.warning("Server umgezogen: %s -> %s", old, server_url)
+        self.url = url
+        if self._ws is not None:
+            await self._ws.close()   # neu verbinden, jetzt mit dem neuen Server

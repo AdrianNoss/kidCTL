@@ -38,8 +38,12 @@ gilt die Sprache der Desktop-Sitzung.
 - **Alarme per Push**:
   - Gerät zu lange offline.
   - Schutzmaßnahme manipuliert, z. B. PAM, nftables oder noexec.
+- **Offen gegenüber dem Kind**: Beim ersten Anmelden erklärt die Tray-App, dass der Account von KidCTL
+  verwaltet wird und was erfasst wird; das Symbol bleibt sichtbar, einen verdeckten Modus gibt es nicht.
 - **Sicherheit**:
   - Eltern-Login nur mit TOTP, Rate-Limiting, CSRF-Schutz.
+  - Namen, Chat, Protokoll, Statistik und E-Mail-Adressen liegen auf dem Server verschlüsselt (eigener Schlüssel
+    je Familie).
   - Signiertes Paket-Repository für Updates (Pacman und APT); der Windows-Agent aktualisiert sich selbst
     (Ed25519-signiert).
 

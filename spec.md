@@ -2321,3 +2321,17 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-17: Fix Pages-Workflow: `upload-pages-artifact` lässt Dateien mit Punkt am Anfang standardmäßig weg –
   `/.well-known/security.txt` fehlte auf der Live-Seite (404). Jetzt `include-hidden-files: true`. Getestet: nach dem
   Deploy Abruf der Datei auf der Live-Seite.
+- 2026-11-17: Etappe 3 Multi-Tenant (Agent 0.33.0): Protokoll ohne neue Version erweitert (ältere Agenten ignorieren unbekannte
+  Nachrichten und Felder). **Ruhemodus:** `Policy.paused` + `paused_users`; der Server schickt bei gesetztem `family.paused_at` (Alembic
+  `0009`, gesetzt ab Etappe 5) eine Policy ohne Zuordnungen und Kinder – damit heben auch ältere Agenten alle Einschränkungen auf; neue
+  zeigen im Tray „KidCTL ist pausiert – keine Einschränkungen“; Zurücksetzen bringt die Regeln sofort zurück. **Server-Umzug:**
+  Nachricht `relocate` (nur `https://`), die der Server nach der Policy sendet, solange `KIDCTL_RELOCATE_TO` gesetzt ist; der Agent
+  meldet sich per Probeverbindung mit seinem Token beim neuen Server an und übernimmt die Adresse (`device.json`, alte als
+  `previous_server_url`) nur nach `welcome`, sonst bleibt er. **Hinweis beim ersten Anmelden:** Die Tray-App zeigt einmal je Benutzer
+  (Merker im Profil, nicht blockierend), dass der Account verwaltet wird, was erfasst wird und was nicht. Website: News 0.33, zwei
+  Punkte unter „Datenschutz & Sicherheit“; README DE/EN ergänzt. Nebenbei: E2E-Tests des Agenten nutzten seit Etappe 1 die
+  Entwicklungsdatenbank (scheiterten an vorhandenem Account) – jetzt eigene, frisch angelegte Datenbank `kidctl_e2e`; erwarteter Text
+  der Übersicht an die neue WebUI angepasst. Getestet: Server (171), Agent (274, u. a. Umzug angenommen/abgelehnt/gleiche Adresse,
+  Ruhemodus ohne Warnung/Abmeldung, ältere Agenten ignorieren Neues, E2E gegen echten Server), Tray (19); Server über echte
+  WebSocket-Verbindung: pausieren → leere Policy, wieder aktiv → Regeln zurück, `relocate` nach der Policy; `hugo --minify` ohne
+  Warnungen. Nicht getestet: Umzug zwischen zwei echten Servern, Hinweis-Dialog in einer echten Desktop-Sitzung (VM).

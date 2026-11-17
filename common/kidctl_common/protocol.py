@@ -286,6 +286,19 @@ class Policy(BaseModel):
     timezone: str  # Tageswechsel/Zeitfenster in dieser Zone (z. B. Europe/Berlin)
     users: dict[UserName, ChildId]  # Linux-Username -> Kind-ID
     children: list[ChildPolicy]
+    # Ruhemodus (Abo abgelaufen): ``users`` und ``children`` sind leer – damit heben auch ältere Agenten alle
+    # Einschränkungen auf (nicht zugeordnete User werden nie eingeschränkt). ``paused_users`` nennt die sonst
+    # zugeordneten User, damit neuere Tray-Apps „KidCTL pausiert“ zeigen.
+    paused: bool = False
+    paused_users: list[UserName] = Field(default=[], max_length=200)
+
+
+class Relocate(BaseModel):
+    """Server -> Agent: Der Server zieht um. Der Agent übernimmt die neue Adresse nur, wenn er sich dort mit seinem
+    Geräte-Token erfolgreich anmeldet (``welcome``); sonst bleibt er beim bisherigen Server. Ältere Agenten
+    ignorieren die Nachricht."""
+    type: Literal["relocate"] = "relocate"
+    server_url: str = Field(max_length=255, pattern=r"^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?(/[A-Za-z0-9._~/-]*)?$")
 
 
 class PolicyAck(BaseModel):
@@ -417,7 +430,7 @@ AgentMessage = Annotated[
           UsageReport, ReportApps, BlockedReport, IntegrityReport, AppUsageReport],
     Field(discriminator="type")]
 ServerMessage = Annotated[
-    Union[Welcome, Error, Ping, Pong, Ack, ChatMessage, Policy, UsageUpdate],
+    Union[Welcome, Error, Ping, Pong, Ack, ChatMessage, Policy, UsageUpdate, Relocate],
     Field(discriminator="type")]
 
 agent_message_adapter: TypeAdapter[AgentMessage] = TypeAdapter(AgentMessage)
