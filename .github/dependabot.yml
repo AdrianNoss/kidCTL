@@ -11,6 +11,10 @@ updates:
     groups:
       server-pip:
         patterns: ["*"]
+    ignore:
+      # passlib 1.7.4 ist mit bcrypt 5.x inkompatibel ("password cannot be longer than 72 bytes") – bleibt auf 4.0.1
+      - dependency-name: bcrypt
+        versions: [">=4.1"]
   - package-ecosystem: github-actions
     directory: /
     schedule:

@@ -2341,3 +2341,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   dem Zurücksetzen dieselbe Policy-Version wie vorher und Restzeit wieder im Tray. Server-Umzug in der VM nicht prüfbar (Entwicklungsserver
   nur `http://`, Umzug erlaubt nur `https://`) – durch Unit-Tests abgedeckt. Auf aktuellen main (Wiki) gesetzt; `KIDCTL_RELOCATE_TO` in
   `docs/server(.de).md`; Paritäts-Check grün.
+- 2026-11-17: Dependabot: `bcrypt` ab 4.1 ignoriert (passlib 1.7.4 bricht mit bcrypt 5.0.0 schon beim Laden ab:
+  „password cannot be longer than 72 bytes“). Dependabot-PR #1 (fastapi 0.163.0, SQLAlchemy 2.1.8, python-multipart 0.0.33,
+  pydantic 2.14.3, tzdata 2026.6) lokal geprüft: alle 174 Server-Tests grün mit bcrypt 4.0.1; mit bcrypt 5.0.0 Abbruch bestätigt.
