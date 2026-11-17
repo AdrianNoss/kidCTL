@@ -2290,3 +2290,13 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Commit-SHA gepinnt. Python (embeddable) und Unbound deckt das nicht ab (Hinweis im Workflow). Getestet: beide
   YAML-Dateien gültig; pip-audit lokal mit derselben Befehlszeile – „No known vulnerabilities found“, Exit 0;
   Gegenprobe mit `websockets==9.0` meldet PYSEC-2021-95, Exit 1.
+- 2026-11-17: Sicherheitsrichtlinie Etappe 9 (security.txt, RFC 9116): Server-Route `/.well-known/security.txt` ohne
+  Anmeldung (`app/routes/wellknown.py`, eigener Router, `config.py` unverändert): optional zuerst
+  `SECURITY_CONTACT` des Betreibers (E-Mail → `mailto:`, oder https-URL), dann `mailto:security@nossco.de` und
+  GitHub-Meldeweg, `Expires` = jetzt + 365 Tage, `Policy` = Wiki-Seite der Richtlinie, `Preferred-Languages: en, de`,
+  `Canonical` aus `BASE_URL`. `.env.example` und `docs/server*` (Tabelle + Testhinweis) ergänzt. Projektseite:
+  `website/static/.well-known/security.txt`, `Expires` setzt der Pages-Build auf heute + 1 Jahr (wirksam erst mit
+  eigener Domain). Server-Version noch nicht erhöht (Rückfrage: es gibt nur die gemeinsame Paketversion). Getestet:
+  `server/tests/test_security_txt.py` (ohne Login 200 text/plain, Felder, Expires ≈ 1 Jahr, Betreiberkontakt zuerst
+  als E-Mail/URL, ungültiger Wert ignoriert), Server-Tests gesamt 163 grün; Hugo-Build übernimmt `.well-known/`,
+  `sed`-Schritt des Workflows lokal geprüft; Paritäts-Check und Linkprüfung grün.

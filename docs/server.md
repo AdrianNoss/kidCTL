@@ -32,6 +32,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # enter the outp
 | `TOTP_ISSUER` | Name in the authenticator app (default `KidCTL`) |
 | `SOURCE_URL` | "Source code" link in the footer (AGPL-3.0 §13); set it to your own fork if you make changes. Default: the KidCTL repository |
 | `TZ_HOME` | Time zone for daily allowances and allowed hours (default `Europe/Berlin`) |
+| `SECURITY_CONTACT` | Optional. Your own security contact (email address or https URL) for `/.well-known/security.txt`; listed before the project contact |
 | `VAPID_*` | Web Push, see [Web Push](#web-push-recommended). Without keys there are no push notifications. |
 | `SMTP_*` | Email for "Forgot password", security notices and the usage report (optional), see [Email](#email-and-account-recovery-recommended) |
 
@@ -48,7 +49,8 @@ docker compose up -d --build
 docker compose logs -f kidctl      # "Application startup complete"
 ```
 
-Test: `https://kids.example.org` shows the sign-in page.
+Test: `https://kids.example.org` shows the sign-in page. At `https://kids.example.org/.well-known/security.txt`
+the server provides the security contacts (RFC 9116, see [security policy](../SECURITY.md)).
 
 ## Web Push (recommended)
 

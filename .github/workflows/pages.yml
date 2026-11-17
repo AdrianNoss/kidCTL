@@ -69,6 +69,11 @@ jobs:
         working-directory: website
         run: hugo --minify --gc --panicOnWarning
 
+      - name: security.txt – Expires auf heute + 1 Jahr
+        run: |
+          sed -i "s/^Expires: .*/Expires: $(date -u -d '+1 year' +%Y-%m-%dT%H:%M:%SZ)/" website/public/.well-known/security.txt
+          cat website/public/.well-known/security.txt
+
       - name: Suchindex (Pagefind)
         run: |
           python3 -m venv "$RUNNER_TEMP/pagefind"   # Ubuntu-Python ist „externally managed“ (PEP 668)
