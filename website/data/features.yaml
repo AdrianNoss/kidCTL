@@ -131,3 +131,10 @@
   text:
     de: "Linux über Pacman bzw. APT aus deinem Repository, Windows aktualisiert sich selbst."
     en: "Linux via pacman or APT from your repository, Windows updates itself."
+- id: export
+  icon: download
+  small: true
+  title: { de: "Eure Daten mitnehmen", en: "Take your data with you" }
+  text:
+    de: "Export aller Daten der Familie als ZIP, Import auf einem anderen KidCTL-Server – auch zwischen Self-Hosting und gehostet."
+    en: "Export all of your family's data as a ZIP and import it on another KidCTL server – also between self-hosting and hosted."

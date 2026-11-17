@@ -2065,3 +2065,67 @@ msgid "{n} Stunde"
 msgid_plural "{n} Stunden"
 msgstr[0] "{n} hour"
 msgstr[1] "{n} hours"
+
+# Export/Import, Familie löschen (Etappe 4.5)
+msgid "Das ist keine KidCTL-Export-Datei."
+msgstr "This is not a KidCTL export file."
+
+msgid "Daten der Familie"
+msgstr "Your family's data"
+
+msgid "Die Datei ist zu groß."
+msgstr "The file is too large."
+
+msgid "Die Export-Datei ist beschädigt; es wurde nichts übernommen."
+msgstr "The export file is damaged; nothing was imported."
+
+msgid "Die Export-Datei stammt von einer neueren KidCTL-Version. Bitte zuerst den Server aktualisieren."
+msgstr "The export file comes from a newer KidCTL version. Please update the server first."
+
+msgid "Die Familie und alle ihre Daten wurden gelöscht."
+msgstr "The family and all its data have been deleted."
+
+msgid "Export, Import und Löschen der Familie: nur der Inhaber."
+msgstr "Export, import and deleting the family: owner only."
+
+msgid "Export-Datei"
+msgstr "Export file"
+
+msgid "Export: ZIP mit allen Daten eurer Familie (Kinder, Regeln, Geräte, Nutzung, Protokoll, Chat) – lesbar, für ein eigenes Backup oder den Umzug zu einem anderen KidCTL-Server. Eltern-Accounts und Passwörter sind nicht enthalten."
+msgstr "Export: ZIP with all your family's data (children, rules, devices, usage, log, chat) – readable, for your own backup or for moving to another KidCTL server. Parent accounts and passwords are not included."
+
+msgid "Exportieren"
+msgstr "Export"
+
+msgid "Familie endgültig löschen"
+msgstr "Delete family permanently"
+
+msgid "Familie löschen"
+msgstr "Delete family"
+
+msgid "Import"
+msgstr "Import"
+
+msgid "Import abgeschlossen. Geräte bitte neu koppeln – ihre Kopplung gilt nur auf dem alten Server."
+msgstr "Import complete. Please pair the devices again – their pairing is only valid on the old server."
+
+msgid "Import nur in eine leere Familie (ohne Kinder und Geräte)."
+msgstr "Import only into an empty family (no children and devices)."
+
+msgid "Importieren"
+msgstr "Import"
+
+msgid "Löscht eure Familie endgültig: alle Eltern-Accounts, Kinder, Geräte und Daten. Der Schlüssel der Familie wird verworfen, dadurch sind die Daten auch in Backups des Servers nicht mehr lesbar. Verbundene Agenten heben dabei alle Einschränkungen auf; Computer, die gerade aus sind, behalten die letzten Regeln – dort KidCTL deinstallieren."
+msgstr "Permanently deletes your family: all parent accounts, children, devices and data. The family's key is discarded, so the data can no longer be read even in the server's backups. Connected agents lift all restrictions; computers that are off keep the last rules – uninstall KidCTL there."
+
+msgid "Plattform-Backup"
+msgstr "Platform backup"
+
+msgid "Zur Bestätigung LÖSCHEN eingeben"
+msgstr "Type DELETE to confirm"
+
+msgid "Zur Bestätigung bitte LÖSCHEN eingeben."
+msgstr "Please type DELETE to confirm."
+
+msgid "Übernimmt einen Export in diese noch leere Familie. Geräte kommen getrennt an und müssen neu gekoppelt werden."
+msgstr "Imports an export into this still empty family. Devices arrive disconnected and must be paired again."

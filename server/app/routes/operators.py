@@ -8,7 +8,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from .. import operators as opr
-from .. import support
+from .. import backup, support
 from ..config import settings
 from ..db import get_platform_db
 from ..i18n import _
@@ -85,7 +85,7 @@ def overview(request: Request, sess: OperatorSession = Depends(opr.require_opera
     totals = {"families": len(rows), "children": sum(r.children for r in rows),
               "devices": sum(r.devices for r in rows), "paused": sum(1 for r in rows if r.paused_at)}
     return _render(request, "admin_overview.html", sess, families=rows, totals=totals,
-                   granted=support.granted_families(db))
+                   granted=support.granted_families(db), backups=backup.backups(), backup_error=backup.last_error())
 
 
 # ---------- Support-Ansicht (nur mit Freigabe der Familie) ----------

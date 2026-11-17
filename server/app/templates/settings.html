@@ -30,6 +30,44 @@
 </section>
 {% endif %}
 
+<section class="card" id="data">
+  <div class="card-head"><h2>{{ _("Daten der Familie") }}</h2></div>
+  {% if imported %}<p class="success">{{ _("Import abgeschlossen. Geräte bitte neu koppeln – ihre Kopplung gilt nur auf dem alten Server.") }}</p>{% endif %}
+  {% if is_owner %}
+  <p class="muted"><small>{{ _("Export: ZIP mit allen Daten eurer Familie (Kinder, Regeln, Geräte, Nutzung, Protokoll, Chat) – lesbar, für ein eigenes Backup oder den Umzug zu einem anderen KidCTL-Server. Eltern-Accounts und Passwörter sind nicht enthalten.") }}</small></p>
+  <form method="post" action="/settings/export" class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>{{ _("Aktuelles Passwort") }} <input type="password" name="current_password" required autocomplete="current-password"></label>
+    <button type="submit" class="secondary">{{ _("Exportieren") }}</button>
+  </form>
+  {% if export_error %}<p class="error">{{ export_error }}</p>{% endif %}
+  {% if family_empty %}
+  <h3>{{ _("Import") }}</h3>
+  <p class="muted"><small>{{ _("Übernimmt einen Export in diese noch leere Familie. Geräte kommen getrennt an und müssen neu gekoppelt werden.") }}</small></p>
+  <form method="post" action="/settings/import" enctype="multipart/form-data" class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>{{ _("Export-Datei") }} <input type="file" name="file" accept=".zip,application/zip" required></label>
+    <label>{{ _("Aktuelles Passwort") }} <input type="password" name="current_password" required autocomplete="current-password"></label>
+    <button type="submit" class="secondary">{{ _("Importieren") }}</button>
+  </form>
+  {% endif %}
+  {% if import_error %}<p class="error">{{ import_error }}</p>{% endif %}
+  {% if SAAS %}
+  <details{% if delete_error %} open{% endif %}><summary>{{ _("Familie löschen") }}</summary>
+    <p class="warn"><small>{{ _("Löscht eure Familie endgültig: alle Eltern-Accounts, Kinder, Geräte und Daten. Der Schlüssel der Familie wird verworfen, dadurch sind die Daten auch in Backups des Servers nicht mehr lesbar. Verbundene Agenten heben dabei alle Einschränkungen auf; Computer, die gerade aus sind, behalten die letzten Regeln – dort KidCTL deinstallieren.") }}</small></p>
+    <form method="post" action="/settings/delete-family" class="row">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <label>{{ _("Zur Bestätigung LÖSCHEN eingeben") }} <input name="confirm" required autocomplete="off"></label>
+      <label>{{ _("Aktuelles Passwort") }} <input type="password" name="current_password" required autocomplete="current-password"></label>
+      <button type="submit" class="danger">{{ _("Familie endgültig löschen") }}</button>
+    </form>
+    {% if delete_error %}<p class="error">{{ delete_error }}</p>{% endif %}
+  </details>
+  {% endif %}
+  {% else %}<p class="muted"><small>{{ _("Export, Import und Löschen der Familie: nur der Inhaber.") }}</small></p>{% endif %}
+</section>
+
+{% if not SAAS %}
 <section class="card" id="backup">
   <div class="card-head"><h2>{{ _("Datenbank-Backup") }}</h2>
     {% if backup_error %}<span class="pill warn">{{ _("Fehler") }}</span>{% elif backups %}<span class="pill ok">{{ _("aktuell") if (backups[0].at.date() >= today_minus(1)) else _("veraltet") }}</span>{% endif %}</div>
@@ -55,6 +93,7 @@
     <button type="submit" class="secondary">{{ _("Jetzt sichern") }}</button>
   </form>
 </section>
+{% endif %}
 
 <h2 class="section-title">{{ _("Push-Benachrichtigungen") }}</h2>
 {% if not push_enabled %}

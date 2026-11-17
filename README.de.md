@@ -40,6 +40,8 @@ gilt die Sprache der Desktop-Sitzung.
   - Schutzmaßnahme manipuliert, z. B. PAM, nftables oder noexec.
 - **Offen gegenüber dem Kind**: Beim ersten Anmelden erklärt die Tray-App, dass der Account von KidCTL
   verwaltet wird und was erfasst wird; das Symbol bleibt sichtbar, einen verdeckten Modus gibt es nicht.
+- **Eure Daten**: Export aller Daten einer Familie als ZIP (lesbar, versioniert) und Import auf einem anderen
+  KidCTL-Server – auch für den Umzug zwischen Self-Hosting und gehostetem Betrieb.
 - **Sicherheit**:
   - Eltern-Login nur mit TOTP, Rate-Limiting, CSRF-Schutz.
   - Namen, Chat, Protokoll, Statistik und E-Mail-Adressen liegen auf dem Server verschlüsselt (eigener Schlüssel

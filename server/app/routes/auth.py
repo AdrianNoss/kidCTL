@@ -34,6 +34,7 @@ LOGIN_NOTICES = {
     "reset": N_("Passwort geändert. Bitte mit dem neuen Passwort und dem Authenticator-Code anmelden."),
     "totp": N_("Authenticator eingerichtet. Bitte mit Passwort und dem neuen Code anmelden."),
     "email": N_("E-Mail-Adresse bestätigt. Du kannst dich jetzt mit ihr anmelden."),
+    "family_deleted": N_("Die Familie und alle ihre Daten wurden gelöscht."),
     "email_invalid": N_("Der Bestätigungslink ist ungültig oder abgelaufen. Im Profil kannst du einen neuen anfordern."),
 }
 

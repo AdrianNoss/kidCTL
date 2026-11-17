@@ -23,6 +23,9 @@ steht im README.
 - **Blacklist-Ausnahmen:** Eine Ausnahme gilt nicht für genauere Einträge einer Sperrliste (Beispiel: Ausnahme
   `example.com`, die Liste sperrt `ads.example.com` – das bleibt gesperrt).
 - **Chat:** keine Bilder oder Dateien, keine Lesebestätigungen.
+- **Familie gelöscht, Gerät entfernt:** Ein Agent, der in diesem Moment nicht verbunden ist, erfährt davon nichts und
+  wendet weiter die zuletzt gespeicherten Regeln an, bis er deinstalliert wird. Verbundene Agenten heben beim Löschen
+  der Familie alle Einschränkungen auf.
 - **Kein Browserverlauf:** KidCTL speichert bewusst nicht, welche erlaubten Websites besucht wurden – nur, was
   gesperrt wurde.
 

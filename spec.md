@@ -2397,3 +2397,18 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   anderes Elternteil beendet offene Ansicht; nur Inhaber gibt frei, nur 1/24/72 h; fremde Familie ohne Freigabe 403;
   abgelaufene Freigabe; Betreiber-Abmeldung beendet Ansicht; Einzelbetrieb ohne Bereich. Im Browser im SaaS-Modus
   angesehen (Banner, Einstellungen), Widerruf beendet die Ansicht auf dem laufenden Server.
+- 2026-11-17: Etappe 4.5 Export/Import, Backup-Trennung, Familie löschen: `app/family_export.py` – ZIP mit
+  `manifest.json` (`kidctl-family-export`, Version 1, Zeilen je Tabelle) und je Familientabelle einer JSON-Datei,
+  entschlüsselt; ohne Eltern-Accounts, Einladungen, Kopplungscodes, Support-Daten. Import nur in eine leere Familie,
+  neue IDs mit umgeschriebenen Verweisen, Verweise auf Eltern entfallen, Geräte kommen getrennt an (neu koppeln);
+  ältere Versionen lesbar, neuere abgelehnt, Fehler → nichts übernommen. Einstellungen „Daten der Familie“: Export und
+  Import nur Inhaber mit Passwort; im SaaS „Familie löschen“ (Passwort + „LÖSCHEN“): erst Ruhemodus an verbundene
+  Agenten, dann `tenant.delete_family`. Im SaaS kein Datenbank-Backup für Eltern (Bereich ausgeblendet, Routen 404),
+  Stand im Verwaltungsbereich ohne Download. Restlücke „offline Agent nach Löschen/Entfernen“ in `docs/limitations`.
+  Doku `docs/backup(.de).md` (Umzug Self-Hosting ↔ gehostet), README und Website-Funktionsliste.
+  Getestet (pytest, 6 neue Tests): Export → Import in andere Familie (Kinder, Regeln, Gerät getrennt, Gerätebenutzer,
+  Nutzung, Chat entschlüsselt, Quelle unverändert), falsches Passwort, nicht leere Familie, kaputte/zu neue/beschädigte
+  Dateien ohne Teilimport, nur Inhaber; SaaS ohne Backup-Bereich; Löschen mit Bestätigung, vorher Ruhemodus-Push,
+  andere Familie bleibt; Einzelbetrieb ohne Löschen. Zusätzlich Export der Entwicklungsdatenbank (11 Tabellen,
+  311 Zeilen) in eine Wegwerf-Familie importiert: alle Zeilenzahlen gleich, danach gelöscht. Agent-Tests (274) grün,
+  `hugo --minify` fehlerfrei.

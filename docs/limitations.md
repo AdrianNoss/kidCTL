@@ -23,6 +23,9 @@ version is in the README.
 - **Block list exceptions:** an exception doesn't apply to more specific entries of a block list (example: exception
   `example.com`, the list blocks `ads.example.com` – that stays blocked).
 - **Chat:** no pictures or files, no read receipts.
+- **Family deleted, device removed:** An agent that is not connected at that moment doesn't learn about it and
+  keeps applying the last saved rules until it is uninstalled. Connected agents lift all restrictions when the family
+  is deleted.
 - **No browsing history:** KidCTL deliberately doesn't store which allowed websites were visited – only what
   was blocked.
 

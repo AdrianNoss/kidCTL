@@ -4,6 +4,11 @@
 {% set heading = _("Familien") %}{% include "_admin_head.html" %}
 <section class="card">
   <p>{{ _("{families} Familien · {children} Kinder · {devices} Geräte · {paused} im Ruhemodus").format(**totals) }}</p>
+  <p>{{ _("Plattform-Backup") }}:
+    {% if backup_error %}<span class="pill danger">{{ _("Fehler") }}</span> <small>{{ backup_error }}</small>
+    {% elif backups %}{{ _("Letztes Backup: {when} ({size})").format(when=fmt_datetime(backups[0].at), size=fmt_size(backups[0].size)) }}
+      · {{ ngettext("{n} Backup vorhanden", "{n} Backups vorhanden", backups | length).format(n=backups | length) }}
+    {% else %}<span class="pill warn">{{ _("Noch kein Backup vorhanden.") }}</span>{% endif %}</p>
   <p class="muted"><small>{{ _("Nur Metadaten: Namen und Inhalte der Familien sind verschlüsselt und hier nicht lesbar.") }}</small></p>
 </section>
 <section class="card">
