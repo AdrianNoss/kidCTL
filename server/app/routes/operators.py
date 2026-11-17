@@ -8,7 +8,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from .. import operators as opr
-from .. import backup, support
+from .. import backup, billing, support
 from ..config import settings
 from ..db import get_platform_db
 from ..i18n import _
@@ -85,7 +85,59 @@ def overview(request: Request, sess: OperatorSession = Depends(opr.require_opera
     totals = {"families": len(rows), "children": sum(r.children for r in rows),
               "devices": sum(r.devices for r in rows), "paused": sum(1 for r in rows if r.paused_at)}
     return _render(request, "admin_overview.html", sess, families=rows, totals=totals,
-                   granted=support.granted_families(db), backups=backup.backups(), backup_error=backup.last_error())
+                   granted=support.granted_families(db), backups=backup.backups(), backup_error=backup.last_error(),
+                   plans=billing.PLANS, statuses=billing.STATUSES)
+
+
+# ---------- Abo einer Familie ----------
+
+def _family_page(request, db, sess, family_id, status_code=200, **ctx):
+    from ..models import Family
+    f = db.get(Family, family_id)
+    if f is None or f.wrapped_key is None:
+        raise HTTPException(404)
+    row = next((r for r in opr.families(db) if r.id == family_id), None)
+    return _render(request, "admin_family.html", sess, status_code, f=f, row=row, st=billing.state(f),
+                   plans=billing.PLANS, statuses=billing.STATUSES, **ctx)
+
+
+@router.get("/families/{family_id}")
+def family_detail(family_id: int, request: Request, sess: OperatorSession = Depends(opr.require_operator),
+                  db: Session = Depends(get_platform_db)):
+    return _family_page(request, db, sess, family_id, saved=request.query_params.get("saved"))
+
+
+def _date(value: str):
+    from datetime import date, datetime, time
+    value = value.strip()
+    return datetime.combine(date.fromisoformat(value), time(23, 59)) if value else None
+
+
+@router.post("/families/{family_id}")
+async def family_billing(family_id: int, request: Request, plan: str = Form(...), status: str = Form(...),
+                         trial_ends: str = Form(""), paid_until: str = Form(""), provider: str = Form(""),
+                         customer: str = Form(""), sess: OperatorSession = Depends(opr.operator_csrf),
+                         db: Session = Depends(get_platform_db)):
+    """Tarif und Abo-Status von Hand setzen (bis ein Zahlungsanbieter angebunden ist); wirkt sofort."""
+    from ..models import Family
+    f = db.get(Family, family_id)
+    if f is None or f.wrapped_key is None:
+        raise HTTPException(404)
+    try:
+        if plan not in billing.PLANS or status not in billing.STATUSES:
+            raise ValueError
+        trial, paid = _date(trial_ends), _date(paid_until)
+    except ValueError:
+        return _family_page(request, db, sess, family_id, 400, error=_("Ungültige Eingabe."))
+    f.plan, f.trial_ends_at, f.paid_until = plan, trial, paid
+    f.billing_provider, f.billing_customer = provider.strip()[:32], customer.strip()[:128]
+    billing.set_status(f, status, paid)
+    db.commit()
+    import logging
+    logging.getLogger("kidctl.billing").info("Familie %s: Abo gesetzt von %s (%s, %s)", family_id,
+                                              sess.operator.username, plan, status)
+    await billing.apply(family_id)
+    return RedirectResponse(f"/admin/families/{family_id}?saved=1", status_code=303)
 
 
 # ---------- Support-Ansicht (nur mit Freigabe der Familie) ----------
@@ -125,9 +177,9 @@ def codes(request: Request, sess: OperatorSession = Depends(opr.require_operator
 
 
 @router.post("/codes")
-def code_create(request: Request, note: str = Form(""), sess: OperatorSession = Depends(opr.operator_csrf),
-                db: Session = Depends(get_platform_db)):
-    code = opr.create_code(db, note, sess.operator_id)
+def code_create(request: Request, note: str = Form(""), free: str = Form(""),
+                sess: OperatorSession = Depends(opr.operator_csrf), db: Session = Depends(get_platform_db)):
+    code = opr.create_code(db, note, sess.operator_id, "free" if free else "")
     return _codes_page(request, db, sess, new_code=code)
 
 

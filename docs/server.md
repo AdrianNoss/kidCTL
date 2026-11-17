@@ -32,6 +32,8 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # enter the outp
 | `KIDCTL_RELOCATE_TO` | Only when moving the server: the new address (`https://…`). Every agent from 0.33 switches to it as soon as the new server accepts its device token (same database, same `SECRET_KEY`); otherwise it stays with the old one. Set it on the **old** server until all devices have moved. |
 | `KIDCTL_MODE` | `single` (default, one family) or `saas` (many families; email is required and replaces the user name) |
 | `REGISTRATION` | Only with `KIDCTL_MODE=saas`: `invite` (default, sign-up only with an invitation code from the administration area), `open` (anyone) or `closed`. Requires sending email (`SMTP_*`). Always closed in single mode. |
+| `KIDCTL_TRIAL_DAYS` | SaaS only: trial period of new families in days (default 30). |
+| `BILLING_WEBHOOK_SECRET` | SaaS only, optional: secret for the subscription webhook `POST /api/billing/webhook` (see below). Empty = webhook off. |
 | `ADMIN_ALLOW_NETS` | Optional. Administration area `/admin` only from these networks, comma-separated (e.g. `192.168.1.0/24,2001:db8::/32`); from anywhere else it answers 404. Empty = from anywhere (password + authenticator are still required). |
 | `TOTP_ISSUER` | Name in the authenticator app (default `KidCTL`) |
 | `SOURCE_URL` | "Source code" link in the footer (AGPL-3.0 §13); set it to your own fork if you make changes. Default: the KidCTL repository |
@@ -95,6 +97,24 @@ activity and issues (devices offline, agent too old, paused). Names and content 
 and cannot be read there. You also create **invitation codes** for sign-up here (single use, valid for 30 days, with
 a note). New families sign up at `/signup`: email address (and code) → confirmation link by email (24 h) →
 password and authenticator → their own family, owner account, signed in.
+
+**Subscription:** New families start with a trial (`KIDCTL_TRIAL_DAYS`), families from an invitation code with
+"Plan Free" and all families from before the update on the plan "Free" (no expiry). You set the plan, status (trial,
+active, canceled, past due) and "paid until" in the overview via the family number; the change takes effect
+immediately. After expiry there is a 14-day grace period with notices (email to the owner, push, banner), then the
+family is paused: the agents lift all restrictions, the web interface only shows the settings (subscription, export,
+delete). After another 90 days without a subscription the family is deleted automatically, with warnings 30, 7 and
+1 day before. None of this exists in single mode.
+
+For a payment provider there is a neutral webhook (only with `BILLING_WEBHOOK_SECRET`):
+
+```bash
+curl -X POST https://kids.example.org/api/billing/webhook -H "Authorization: Bearer $BILLING_WEBHOOK_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"family_id": 12, "status": "active", "provider": "anbieter", "customer": "K-123", "paid_until": "2027-11-30"}'
+```
+
+`status` is `active`, `canceled` or `past_due`; after the first call, `customer` is enough instead of `family_id`.
 
 **Support view:** The owner of a family grants access under "Settings → Support access" for 1, 24 or 72 hours; any
 parent can end it at any time. While it is valid, the overview shows "View" next to the family. You then see its

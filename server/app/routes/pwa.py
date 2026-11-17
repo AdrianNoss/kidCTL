@@ -64,8 +64,13 @@ def _is_owner(db: Session, parent_id) -> bool:
 def _support_ctx(db: Session, sess) -> dict:
     if not settings.saas:
         return {}
+    from .. import billing
+    from ..models import Family
+    family = db.scalar(select(Family))
     return {"support_grant": support.active_grant(db), "support_log": support.log(db),
-            "support_durations": support.DURATIONS}
+            "support_durations": support.DURATIONS, "family": family,
+            "billing_state": billing.state(family) if family else None,
+            "plan_label": billing.PLANS, "status_label": billing.STATUSES}
 
 
 def _no_saas() -> None:

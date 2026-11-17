@@ -32,6 +32,8 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # Ausgabe als SE
 | `KIDCTL_RELOCATE_TO` | Nur beim Server-Umzug: neue Adresse (`https://…`). Jeder Agent ab 0.33 wechselt dorthin, sobald der neue Server sein Geräte-Token anerkennt (gleiche Datenbank, gleicher `SECRET_KEY`); sonst bleibt er beim alten. Auf dem **alten** Server setzen, bis alle Geräte umgezogen sind. |
 | `KIDCTL_MODE` | `single` (Standard, eine Familie) oder `saas` (viele Familien; E-Mail ist Pflicht und ersetzt den Benutzernamen) |
 | `REGISTRATION` | Nur mit `KIDCTL_MODE=saas`: `invite` (Standard, Registrierung nur mit Einladungscode aus dem Verwaltungsbereich), `open` (jeder) oder `closed`. Braucht E-Mail-Versand (`SMTP_*`). Im Einzelbetrieb immer geschlossen. |
+| `KIDCTL_TRIAL_DAYS` | Nur SaaS: Testphase neuer Familien in Tagen (Standard 30). |
+| `BILLING_WEBHOOK_SECRET` | Nur SaaS, optional: Geheimnis für den Abo-Webhook `POST /api/billing/webhook` (siehe unten). Leer = Webhook aus. |
 | `ADMIN_ALLOW_NETS` | Optional. Verwaltungsbereich `/admin` nur aus diesen Netzen, kommagetrennt (z. B. `192.168.1.0/24,2001:db8::/32`); von anderswo antwortet er mit 404. Leer = von überall (Passwort + Authenticator bleiben Pflicht). |
 | `TOTP_ISSUER` | Name in der Authenticator-App (Standard `KidCTL`) |
 | `SOURCE_URL` | Link „Quellcode“ in der Fußzeile (AGPL-3.0 §13); bei eigenen Änderungen auf den eigenen Fork setzen. Standard: das KidCTL-Repo |
@@ -95,6 +97,24 @@ und Auffälligkeiten (Geräte offline, Agent zu alt, Ruhemodus). Namen und Inhal
 Familie verschlüsselt und dort nicht lesbar. Außerdem erzeugst du hier **Einladungscodes** für die Registrierung
 (einmalig, 30 Tage gültig, mit Notiz). Neue Familien registrieren sich unter `/signup`: E-Mail-Adresse (und Code) →
 Bestätigungslink per Mail (24 h) → Passwort und Authenticator → eigene Familie, Inhaber-Account, angemeldet.
+
+**Abo:** Neue Familien starten mit einer Testphase (`KIDCTL_TRIAL_DAYS`), Familien aus einem Einladungscode mit
+„Tarif Kostenlos“ und alle Familien von vor dem Update im Tarif „Kostenlos“ (ohne Ablauf). Tarif, Status (Testphase,
+aktiv, gekündigt, überfällig) und „bezahlt bis“ setzt du in der Übersicht über die Familiennummer; die Änderung wirkt
+sofort. Nach Ablauf folgen 14 Tage Schonfrist mit Hinweisen (Mail an den Inhaber, Push, Banner), dann der Ruhemodus:
+Die Agenten heben alle Einschränkungen auf, das WebUI zeigt nur noch Einstellungen (Abo, Export, Löschen). Nach
+weiteren 90 Tagen ohne Abo wird die Familie automatisch gelöscht, mit Vorwarnung 30, 7 und 1 Tag vorher. Im
+Einzelbetrieb gibt es das alles nicht.
+
+Für einen Zahlungsanbieter gibt es einen neutralen Webhook (nur mit `BILLING_WEBHOOK_SECRET`):
+
+```bash
+curl -X POST https://kids.example.org/api/billing/webhook -H "Authorization: Bearer $BILLING_WEBHOOK_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"family_id": 12, "status": "active", "provider": "anbieter", "customer": "K-123", "paid_until": "2027-11-30"}'
+```
+
+`status` ist `active`, `canceled` oder `past_due`; nach dem ersten Aufruf genügt `customer` statt `family_id`.
 
 **Support-Ansicht:** Der Inhaber einer Familie gibt unter „Einstellungen → Support-Zugriff“ für 1, 24 oder 72 Stunden
 frei; jedes Elternteil kann die Freigabe jederzeit beenden. Solange sie gilt, steht in der Übersicht bei der Familie

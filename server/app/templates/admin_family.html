@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Familie #{id}").format(id=f.id) }} – KidCTL{% endblock %}
+{% block content %}
+{% set heading = _("Familie #{id}").format(id=f.id) %}{% include "_admin_head.html" %}
+{% if saved %}<p class="success">{{ _("Gespeichert.") }}</p>{% endif %}
+<section class="card">
+  {% if row %}<p>{{ _("{parents} Eltern · {children} Kinder · {devices} Geräte").format(parents=row.parents, children=row.children, devices=row.devices) }}
+    · {{ _("seit {date}").format(date=fmt_date(f.created_at.date())) }}</p>{% endif %}
+  <p>{% if st.phase == "paused" %}<span class="pill danger">{{ _("Ruhemodus") }}</span>
+       {{ _("seit {since}, Löschung am {date}").format(since=f.paused_at | localtime, date=fmt_date(st.delete_at.date())) }}
+     {% elif st.phase == "grace" %}<span class="pill warn">{{ _("Schonfrist") }}</span> {{ _("Ruhemodus ab {date}").format(date=fmt_date(st.grace_end.date())) }}
+     {% else %}<span class="pill ok">{{ _("ok") }}</span>{% if st.until %} {{ _("bis {date}").format(date=fmt_date(st.until.date())) }}{% endif %}{% endif %}</p>
+</section>
+<form method="post" action="/admin/families/{{ f.id }}" class="card">
+  <h2>{{ _("Abo") }}</h2>
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <label>{{ _("Tarif") }} <select name="plan">{% for k, label in plans.items() %}<option value="{{ k }}"{% if f.plan == k %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select></label>
+  <label>{{ _("Status") }} <select name="status">{% for k, label in statuses.items() %}<option value="{{ k }}"{% if f.billing_status == k %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select></label>
+  <label>{{ _("Testphase bis") }} <input type="date" name="trial_ends" value="{{ f.trial_ends_at.date().isoformat() if f.trial_ends_at else '' }}"></label>
+  <label>{{ _("Bezahlt bis") }} <span class="field-note">{{ _("leer bei „aktiv“ = ohne Ende") }}</span> <input type="date" name="paid_until" value="{{ f.paid_until.date().isoformat() if f.paid_until else '' }}"></label>
+  <label>{{ _("Zahlungsanbieter") }} <input name="provider" maxlength="32" value="{{ f.billing_provider }}"></label>
+  <label>{{ _("Kundennummer") }} <input name="customer" maxlength="128" value="{{ f.billing_customer }}"></label>
+  <button type="submit">{{ _("Speichern") }}</button>
+  <p class="muted"><small>{{ _("Wirkt sofort: Ist die Familie danach nicht mehr abgelaufen, endet ein Ruhemodus und die Computer bekommen ihre Regeln zurück.") }}</small></p>
+</form>
+{% endblock %}

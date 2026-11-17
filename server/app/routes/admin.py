@@ -76,6 +76,10 @@ def child_create(request: Request, name: str = Form(...), db: Session = Depends(
     name = name.strip()
     if not name:
         return _redirect("/children")
+    from .. import billing
+    if limit_error := billing.child_limit_error(db):
+        return render(request, "children.html", status_code=400, children=_by_name(db.scalars(select(Child))),
+                      error=limit_error)
     child = Child(name=name, rules=[
         WeekdayRule(weekday=d, quota_minutes=60, window_start=time(8, 0), window_end=time(20, 0))
         for d in range(7)

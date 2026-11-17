@@ -984,6 +984,17 @@ Self-Hosting bleibt erhalten.
   nur Abo, Export, Löschung; Agenten erhalten den Zustand „pausiert“ und heben alle Einschränkungen auf, Tray zeigt
   „KidCTL pausiert“; nach erneuter Zahlung gelten die Regeln sofort wieder. Nach weiteren 90 Tagen ohne Abo Löschung
   der Familie mit Vorwarnung. Kinder werden nie ohne ansprechbare Eltern eingeschränkt.
+- **Festgelegt 2026-11-17 (Etappe 5):**
+  - Vorerst **ein Tarif „Standard“ ohne Kindergrenze**; die Grenzprüfung beim Anlegen eines Kindes ist vorbereitet
+    (Grenze je Tarif), Stufen kommen mit den Preisen.
+  - Tarif **„Kostenlos“** ohne Ablauf und Grenze: bestehende Familien bei der Migration, vom Betreiber im
+    Verwaltungsbereich setzbar und per Einladungscode mitgebbar. Neue Familien sonst: Testphase 30 Tage
+    (`KIDCTL_TRIAL_DAYS`). Einzelbetrieb: immer kostenlos, keine Fristen.
+  - Abo-Status **manuell im Verwaltungsbereich** und über einen neutralen **Webhook** (`BILLING_WEBHOOK_SECRET`,
+    Status aktiv/gekündigt/überfällig, bezahlt bis, Anbieter, Kundennummer) für den späteren Zahlungsanbieter.
+  - Schonfrist-Hinweise per Mail und Push 14, 7 und 1 Tag vor dem Ruhemodus, Banner im WebUI. Im Ruhemodus nur
+    Einstellungen (Abo, Export, Löschen), Profil und Abmelden.
+  - **Automatische Löschung** 90 Tage nach Beginn des Ruhemodus; Vorwarnung per Mail und Push 30, 7 und 1 Tag vorher.
 
 ### Missbrauch
 - Nur offener Betrieb: Tray-Symbol auf jedem verwalteten Account sichtbar, Hinweis beim ersten Anmelden nach der
@@ -2412,3 +2423,20 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   andere Familie bleibt; Einzelbetrieb ohne Löschen. Zusätzlich Export der Entwicklungsdatenbank (11 Tabellen,
   311 Zeilen) in eine Wegwerf-Familie importiert: alle Zeilenzahlen gleich, danach gelöscht. Agent-Tests (274) grün,
   `hugo --minify` fehlerfrei.
+- 2026-11-17: Etappe 5 Abo-Vorbereitung (nur SaaS): `family.plan` (free | standard), `billing_status` (trial | active |
+  canceled | past_due), `trial_ends_at`, `paid_until`, neutrale Felder `billing_provider`/`billing_customer`,
+  `billing_notified`; `signup_code.plan` (Migration 0013 – bestehende Familien „Kostenlos“/aktiv). `app/billing.py`:
+  Ablauf → 14 Tage Schonfrist (Mail an Inhaber + Push 14/7/1 Tage vorher, Banner) → Ruhemodus (`paused_at`, Policy ohne
+  Zuordnungen an alle aktiven Geräte; WebUI nur Einstellungen, Profil, Abmelden, Push) → nach 90 Tagen automatische
+  Löschung (Vorwarnung 30/7/1 Tage). Stündliche Prüfung im Hintergrund, sofort nach Änderung; einmal pausiert bleibt
+  pausiert, bis wieder bezahlt ist. Registrierung: Testphase (`KIDCTL_TRIAL_DAYS`, 30) oder „Kostenlos“ per Code.
+  Kindergrenze je Tarif vorbereitet (vorerst keine). Verwaltungsbereich: Abo-Spalte, Familienseite `/admin/families/<id>`
+  zum Setzen von Tarif/Status/Daten/Anbieter/Kundennummer (wirkt sofort), Codes mit Option „Kostenlos“.
+  Webhook `POST /api/billing/webhook` (Bearer `BILLING_WEBHOOK_SECRET`, sonst 404). Einstellungen: Karte „Abo“.
+  SQLite-Übernahme verträgt Spalten, die alte Datenbanken nicht haben.
+  Getestet (pytest, 8 neue Tests): Bestand kostenlos, Einzelbetrieb ohne Fristen; Testphase → Hinweise nur einmal je
+  Stufe → Banner → Ruhemodus (Umleitung, Einstellungen mit Export, Policy-Push); Betreiber verlängert → Ruhemodus endet
+  sofort mit Push; Löschung mit drei Vorwarnungen; Registrierung mit Testphase bzw. Code „Kostenlos“; Webhook
+  (aus ohne Geheimnis, 401, wieder aktiv, überfällig mit Laufzeit, ungültig, unbekannt); Kindergrenze; Abo-Karte.
+  Im Browser im SaaS-Modus: abgelaufene Testphase mit Banner und Abo-Karte, Übersicht und Familienseite; die
+  Hintergrundprüfung beim Start hat den ersten Hinweis vermerkt. Server 205, Agent 274 Tests grün.

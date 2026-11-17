@@ -14,6 +14,7 @@
   <p class="muted">{{ _("Für die Registrierung mit REGISTRATION=invite: Wer den Code hat, kann eine Familie anlegen.") }}</p>
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
   <label>{{ _("Notiz (für wen)") }} <input name="note" maxlength="255"></label>
+  <label class="option"><input type="checkbox" name="free" value="1"> {{ _("Tarif „Kostenlos“ (sonst Testphase)") }}</label>
   <button type="submit">{{ _("Erzeugen") }}</button>
 </form>
 {% if codes %}
@@ -21,7 +22,7 @@
   <table class="responsive">
     {% for c in codes %}
     <tr>
-      <td><strong>{{ c.note or _("ohne Notiz") }}</strong><br><small class="muted">{{ _("erstellt {date}").format(date=c.created_at | localtime) }}</small></td>
+      <td><strong>{{ c.note or _("ohne Notiz") }}</strong>{% if c.plan == "free" %} <span class="pill play">{{ _("Kostenlos") }}</span>{% endif %}<br><small class="muted">{{ _("erstellt {date}").format(date=c.created_at | localtime) }}</small></td>
       <td class="right"><div class="actions">
         {% if c.used_at %}<span class="pill ok">{{ _("eingelöst {date}").format(date=c.used_at | localtime) }}{% if c.family_id %} · #{{ c.family_id }}{% endif %}</span>
         {% elif c.expires_at < now %}<span class="pill">{{ _("abgelaufen") }}</span>

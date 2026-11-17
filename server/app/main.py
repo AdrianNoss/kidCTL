@@ -9,13 +9,13 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import alarms, backup, blocklog, i18n, policy, report, versions, webfilter, retention
+from . import alarms, backup, billing, blocklog, i18n, policy, report, versions, webfilter, retention
 from .config import settings
 from .db import init_db
 from .tenant import platform_session
 from .middleware import SecurityMiddleware
-from .routes import admin, api, auth, operators, pwa, signup, wellknown
-from .security import LoginRequired
+from .routes import admin, api, auth, billing as billing_routes, operators, pwa, signup, wellknown
+from .security import FamilyPaused, LoginRequired
 from .web import render
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -26,7 +26,7 @@ async def lifespan(_app: FastAPI):
     init_db()
     tasks = [asyncio.create_task(alarms.run_forever()), asyncio.create_task(_refresh_lists_forever()),
              asyncio.create_task(_prune_log_forever()), asyncio.create_task(report.run_forever()),
-             asyncio.create_task(backup.run_forever())]
+             asyncio.create_task(backup.run_forever()), asyncio.create_task(billing.run_forever())]
     yield
     for t in tasks:
         t.cancel()
@@ -91,6 +91,11 @@ async def _login_required(_request: Request, _exc: LoginRequired):
     return RedirectResponse("/login", status_code=303)
 
 
+@app.exception_handler(FamilyPaused)
+async def _family_paused(_request: Request, _exc: FamilyPaused):
+    return RedirectResponse("/settings#abo", status_code=303)
+
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
@@ -99,6 +104,7 @@ def healthz():
 app.include_router(auth.router)
 app.include_router(operators.router)
 app.include_router(signup.router)
+app.include_router(billing_routes.router)
 app.include_router(api.router)
 app.include_router(pwa.router)
 app.include_router(wellknown.router)

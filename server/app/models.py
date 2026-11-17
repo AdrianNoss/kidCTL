@@ -32,6 +32,14 @@ class Family(Base):
     wrapped_key: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     # Ruhemodus seit (Abo/Testphase abgelaufen, Etappe 5 setzt ihn): Agenten heben alle Einschränkungen auf
     paused_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Abo (Etappe 5, nur SaaS – app.billing): Tarif free | standard, Status trial | active | canceled | past_due
+    plan: Mapped[str] = mapped_column(String(16), default="free", server_default="free")
+    billing_status: Mapped[str] = mapped_column(String(16), default="active", server_default="active")
+    trial_ends_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    paid_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)   # leer bei „aktiv“ = ohne Ende
+    billing_provider: Mapped[str] = mapped_column(String(32), default="", server_default="")   # neutral
+    billing_customer: Mapped[str] = mapped_column(String(128), default="", server_default="")  # Kundennummer dort
+    billing_notified: Mapped[str] = mapped_column(String(255), default="", server_default="")  # gesendete Hinweise
 
 
 class FamilyScoped:
@@ -154,6 +162,7 @@ class SignupCode(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     code_hash: Mapped[str] = mapped_column(String(64), unique=True)
     note: Mapped[str] = mapped_column(String(255), default="")      # Notiz des Betreibers (für wen)
+    plan: Mapped[str] = mapped_column(String(16), default="", server_default="")   # "" = Testphase | free
     created_by: Mapped[int | None] = mapped_column(ForeignKey("operator.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     expires_at: Mapped[datetime] = mapped_column(DateTime)

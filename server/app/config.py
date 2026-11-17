@@ -43,6 +43,8 @@ class Settings:
     mode: str = "single"   # single = eine Familie (Self-Hosting) | saas = viele Familien
     master_key: str = ""   # KIDCTL_MASTER_KEY: verschlüsselt die Schlüssel der Familien (app.crypto)
     registration: str = "closed"   # REGISTRATION: open | invite | closed (Einzelbetrieb immer closed)
+    trial_days: int = 30            # KIDCTL_TRIAL_DAYS: Testphase neuer Familien (SaaS)
+    billing_webhook_secret: str = ""   # BILLING_WEBHOOK_SECRET: Webhook des Zahlungsanbieters (leer = aus)
     admin_allow_nets: tuple = ()   # ADMIN_ALLOW_NETS: Verwaltungsbereich nur aus diesen Netzen (leer = alle)
     relocate_to: str = ""  # KIDCTL_RELOCATE_TO: Server-Umzug – Agenten wechseln, wenn der neue Server sie anerkennt
 
@@ -145,6 +147,8 @@ def load_settings() -> Settings:
         master_key=_master_key(dev),
         relocate_to=_relocate_to(),
         admin_allow_nets=_admin_nets(),
+        trial_days=int(os.environ.get("KIDCTL_TRIAL_DAYS", "30") or 30),
+        billing_webhook_secret=os.environ.get("BILLING_WEBHOOK_SECRET", "").strip(),
         vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY", ""),
         vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY", ""),
         vapid_subject=os.environ.get("VAPID_SUBJECT", ""),

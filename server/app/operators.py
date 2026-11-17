@@ -86,10 +86,10 @@ def normalize_code(code: str) -> str:
     return code.strip().upper().replace("-", "").replace(" ", "")
 
 
-def create_code(db: Session, note: str, operator_id: int | None) -> str:
+def create_code(db: Session, note: str, operator_id: int | None, plan: str = "") -> str:
     """Neuer Code (12 Zeichen, gut abtippbar, angezeigt als XXXX-XXXX-XXXX); gespeichert wird nur der Hash."""
     raw = "".join(secrets.choice(PAIRING_ALPHABET) for _ in range(12))
-    db.add(SignupCode(code_hash=token_hash(raw), note=note.strip()[:255], created_by=operator_id,
+    db.add(SignupCode(code_hash=token_hash(raw), note=note.strip()[:255], created_by=operator_id, plan=plan,
                       expires_at=utcnow() + timedelta(days=CODE_DAYS)))
     db.commit()
     return "-".join(raw[i:i + 4] for i in range(0, 12, 4))
@@ -116,11 +116,16 @@ class FamilyRow:
     last_seen: datetime | None = None
     versions: list[str] = field(default_factory=list)
     last_login: datetime | None = None   # letzte Anmeldung eines Elternteils
+    plan: str = "free"
+    billing_status: str = "active"
+    billing: object = None               # billing.State
 
 
 def families(db: Session) -> list[FamilyRow]:
-    rows = {f.id: FamilyRow(f.id, f.created_at, f.paused_at)
-            for f in db.execute(select(Family.id, Family.created_at, Family.paused_at).order_by(Family.id))}
+    from . import billing
+    rows = {f.id: FamilyRow(f.id, f.created_at, f.paused_at, plan=f.plan, billing_status=f.billing_status,
+                            billing=billing.state(f))
+            for f in db.scalars(select(Family).where(Family.wrapped_key.is_not(None)).order_by(Family.id))}
 
     def count(model, *where):
         return db.execute(select(model.family_id, func.count()).where(*where).group_by(model.family_id))

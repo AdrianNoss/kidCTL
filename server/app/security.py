@@ -182,16 +182,41 @@ def require_session(request: Request, db: Session = Depends(get_db)) -> ParentSe
             from . import support
             view = support.view_for(db, request)        # Support-Ansicht des Betreibers (nur lesend)
     if view is not None:
+        _billing_gate(db, request, view.family_id)
         support.enter(db, request, view)
         request.state.session = request.state.support = view
         request.state.family_id = view.family_id
         return view
     if sess is None or family_id is None:
         raise LoginRequired()
+    _billing_gate(db, request, family_id)
     set_family(db, family_id)
     request.state.session = sess
     request.state.family_id = family_id
     return sess
+
+
+class FamilyPaused(Exception):
+    """Ruhemodus (Abo abgelaufen): main.py leitet zu den Einstellungen (Abo, Export, Löschen) um."""
+
+
+PAUSED_ALLOWED = ("/settings", "/profile", "/logout", "/push/")   # Abo, Export, Löschen; Push für Hinweise
+
+
+def _billing_gate(db: Session, request: Request, family_id: int) -> None:
+    """SaaS: Hinweis-Banner zum Abo setzen; im Ruhemodus nur Einstellungen, Profil und Abmelden."""
+    if not settings.saas:
+        return
+    from . import billing
+    from .models import Family
+    from .tenant import platform
+    with platform(db):
+        family = db.get(Family, family_id)
+    if family is None:
+        return
+    request.state.billing = billing.banner(family)
+    if family.paused_at is not None and not request.url.path.startswith(PAUSED_ALLOWED):
+        raise FamilyPaused()
 
 
 # ---------- CSRF ----------

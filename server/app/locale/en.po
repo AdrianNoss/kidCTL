@@ -2129,3 +2129,127 @@ msgstr "Please type DELETE to confirm."
 
 msgid "Übernimmt einen Export in diese noch leere Familie. Geräte kommen getrennt an und müssen neu gekoppelt werden."
 msgstr "Imports an export into this still empty family. Devices arrive disconnected and must be paired again."
+
+# Abo (Etappe 5)
+msgid "Ab {date} ist KidCTL pausiert, falls das Abo nicht verlängert wird."
+msgstr "From {date}, KidCTL will be paused unless the subscription is renewed."
+
+msgid "Abo"
+msgstr "Subscription"
+
+msgid "Abo abgelaufen"
+msgstr "Subscription expired"
+
+msgid "Abo aktiv"
+msgstr "Subscription active"
+
+msgid "Bezahlt bis"
+msgstr "Paid until"
+
+msgid "Danke! KidCTL ist wieder aktiv, die Regeln gelten ab sofort wieder."
+msgstr "Thank you! KidCTL is active again, your rules apply again right away."
+
+msgid "Dein Tarif umfasst höchstens {n} Kinder."
+msgstr "Your plan includes at most {n} children."
+
+msgid "Die Online-Bezahlung wird gerade vorbereitet. Zum Abschließen oder Verlängern bitte beim Betreiber dieses Servers melden."
+msgstr "Online payment is being prepared. To subscribe or renew, please contact the operator of this server."
+
+msgid "Die Testphase endet am {date}."
+msgstr "The trial ends on {date}."
+
+msgid "Euer Abo ist abgelaufen. Ab {date} ist KidCTL pausiert."
+msgstr "Your subscription has expired. From {date}, KidCTL will be paused."
+
+msgid "Eure Testphase bzw. euer Abo ist abgelaufen. Ab {date} ist KidCTL pausiert: Die Computer heben dann alle Einschränkungen auf."
+msgstr "Your trial or subscription has expired. From {date}, KidCTL will be paused: the computers will then lift all restrictions."
+
+msgid "Familie #{id}"
+msgstr "Family #{id}"
+
+msgid "Gespeichert."
+msgstr "Saved."
+
+msgid "KidCTL ist pausiert – die Computer eurer Kinder sind ohne Einschränkungen. Ohne Abo werden eure Daten am {date} gelöscht."
+msgstr "KidCTL is paused – your children's computers have no restrictions. Without a subscription, your data will be deleted on {date}."
+
+msgid "KidCTL ist pausiert: Die Computer eurer Kinder heben alle Einschränkungen auf. Mit einem Abo gelten die Regeln sofort wieder. Ohne Abo werden eure Daten am {date} gelöscht."
+msgstr "KidCTL is paused: your children's computers lift all restrictions. With a subscription, the rules apply again right away. Without one, your data will be deleted on {date}."
+
+msgid "KidCTL ist pausiert: Die Computer eurer Kinder heben alle Einschränkungen auf. Mit einem Abo gelten eure Regeln sofort wieder. Ohne Abo werden eure Daten am {date} gelöscht – vorher könnt ihr sie unten exportieren."
+msgstr "KidCTL is paused: your children's computers lift all restrictions. With a subscription, your rules apply again right away. Without one, your data will be deleted on {date} – you can export it below before then."
+
+msgid "KidCTL pausiert"
+msgstr "KidCTL paused"
+
+msgid "Kostenlos"
+msgstr "Free"
+
+msgid "Kundennummer"
+msgstr "Customer number"
+
+msgid "Löschung eurer Daten"
+msgstr "Deletion of your data"
+
+msgid "Ohne Abo werden eure KidCTL-Daten am {date} endgültig gelöscht. Vorher könnt ihr sie unter Einstellungen exportieren."
+msgstr "Without a subscription, your KidCTL data will be permanently deleted on {date}. You can export it under Settings before then."
+
+msgid "Ruhemodus ab {date}"
+msgstr "Paused from {date}"
+
+msgid "Schonfrist"
+msgstr "Grace period"
+
+msgid "Standard"
+msgstr "Standard"
+
+msgid "Tarif"
+msgstr "Plan"
+
+msgid "Tarif „Kostenlos“ (sonst Testphase)"
+msgstr "Plan \"Free\" (otherwise trial)"
+
+msgid "Tarif: {plan}"
+msgstr "Plan: {plan}"
+
+msgid "Testphase"
+msgstr "Trial"
+
+msgid "Testphase bis"
+msgstr "Trial until"
+
+msgid "Ungültige Eingabe."
+msgstr "Invalid input."
+
+msgid "Wirkt sofort: Ist die Familie danach nicht mehr abgelaufen, endet ein Ruhemodus und die Computer bekommen ihre Regeln zurück."
+msgstr "Takes effect immediately: if the family is no longer expired afterwards, a pause ends and the computers get their rules back."
+
+msgid "Zahlungsanbieter"
+msgstr "Payment provider"
+
+msgid "Zum Abo"
+msgstr "Go to subscription"
+
+msgid "aktiv"
+msgstr "active"
+
+msgid "bis {date}"
+msgstr "until {date}"
+
+msgid "gekündigt"
+msgstr "canceled"
+
+msgid "leer bei „aktiv“ = ohne Ende"
+msgstr "empty with \"active\" = no end"
+
+msgid "pausiert"
+msgstr "paused"
+
+msgid "seit {since}, Löschung am {date}"
+msgstr "since {since}, deletion on {date}"
+
+msgid "{parents} Eltern · {children} Kinder · {devices} Geräte"
+msgstr "{parents} parents · {children} children · {devices} devices"
+
+msgid "überfällig"
+msgstr "past due"

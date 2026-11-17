@@ -92,15 +92,22 @@ def start(db: Session, email: str, code: str, lang: str) -> bool:
 def complete(db: Session, email: str, code: str, display_name: str, password: str, totp_secret: str,
              totp_last_step: int) -> Parent:
     """Familie und Inhaber-Account anlegen (eine Transaktion); der Code wird dabei eingelöst."""
-    code_id = None
+    from . import billing
+    code_id, code_plan = None, ""
     if settings.registration == "invite":
-        code_id = db.execute(update(SignupCode).where(
+        row = db.execute(update(SignupCode).where(
             SignupCode.code_hash == token_hash(operators.normalize_code(code)), SignupCode.used_at.is_(None),
-            SignupCode.expires_at > utcnow()).values(used_at=utcnow()).returning(SignupCode.id)).scalar()
-        if code_id is None:
+            SignupCode.expires_at > utcnow()).values(used_at=utcnow())
+            .returning(SignupCode.id, SignupCode.plan)).first()
+        if row is None:
             db.rollback()
             raise SignupError(_("Der Einladungscode ist ungültig, abgelaufen oder schon eingelöst."))
+        code_id, code_plan = row
     family = Family()
+    if code_plan == "free":
+        family.plan, family.billing_status = "free", "active"
+    else:
+        billing.start_trial(family)                # Testphase
     db.add(family)
     db.flush()                                    # Schlüssel der Familie entsteht hier (tenant._family_key)
     set_family(db, family.id)

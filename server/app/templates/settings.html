@@ -3,6 +3,22 @@
 {% block content %}
 <div class="page-head"><h1>{{ _("Einstellungen") }}</h1></div>
 
+{% if SAAS and family %}
+<section class="card" id="abo">
+  <div class="card-head"><h2>{{ _("Abo") }}</h2>
+    {% if billing_state.phase == "paused" %}<span class="pill danger">{{ _("pausiert") }}</span>
+    {% elif billing_state.phase == "grace" %}<span class="pill warn">{{ _("abgelaufen") }}</span>
+    {% else %}<span class="pill ok">{{ _(status_label[family.billing_status]) if family.plan != "free" else _("aktiv") }}</span>{% endif %}</div>
+  <p>{{ _("Tarif: {plan}").format(plan=_(plan_label[family.plan])) }}
+    {% if family.plan != "free" %}· {{ _(status_label[family.billing_status]) }}{% if billing_state.until %} · {{ _("bis {date}").format(date=fmt_date(billing_state.until.date())) }}{% endif %}{% endif %}</p>
+  {% if billing_state.phase == "paused" %}
+  <p class="error">{{ _("KidCTL ist pausiert: Die Computer eurer Kinder heben alle Einschränkungen auf. Mit einem Abo gelten eure Regeln sofort wieder. Ohne Abo werden eure Daten am {date} gelöscht – vorher könnt ihr sie unten exportieren.").format(date=fmt_date(billing_state.delete_at.date())) }}</p>
+  {% elif billing_state.phase == "grace" %}
+  <p class="warn">{{ _("Ab {date} ist KidCTL pausiert, falls das Abo nicht verlängert wird.").format(date=fmt_date(billing_state.grace_end.date())) }}</p>
+  {% endif %}
+  {% if family.plan != "free" %}<p class="muted"><small>{{ _("Die Online-Bezahlung wird gerade vorbereitet. Zum Abschließen oder Verlängern bitte beim Betreiber dieses Servers melden.") }}</small></p>{% endif %}
+</section>
+{% endif %}
 {% if SAAS %}
 <section class="card" id="support">
   <div class="card-head"><h2>{{ _("Support-Zugriff") }}</h2>

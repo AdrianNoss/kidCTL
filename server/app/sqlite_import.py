@@ -113,7 +113,7 @@ def _too_long(table, rows) -> list[str]:
         if not length:
             continue
         for row in rows:
-            value = row[col.name]
+            value = row.get(col.name)   # neuere Spalten fehlen in alten Datenbanken
             if isinstance(value, str) and len(value) > length:
                 out.append(f"{table.name}.{col.name} (id {row.get('id', '?')}): {len(value)} > {length} Zeichen")
     return out
