@@ -24,7 +24,7 @@ sudo systemctl enable --now kidctl-agent.service
 In der Test-VM ist das Repo schreibgeschützt eingebunden:
 `BUILDDIR=/var/tmp/kb PKGDEST=/var/tmp/kb makepkg -f` (nicht `/tmp` – wird beim Neustart geleert).
 
-Danach den Rechner gegen physischen Zugriff härten: [`docs/haertung.md`](../../docs/haertung.md).
+Danach den Rechner gegen physischen Zugriff härten: [`docs/hardening.de.md`](../../docs/hardening.de.md).
 
 ## Was das Paket einrichtet
 

@@ -2213,3 +2213,16 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
   (Alembic `0008`); abgelaufene Kopplungscodes werden nach 1 Tag gelöscht (`KIDCTL_KEEP_PAIRING_DAYS`). Danach im Klartext nur noch
   bewusst unverschlüsselte Bereiche: Programmkatalog, Freigaben, Eltern-Benutzername/Anzeigename, Anmeldeversuche, Browserkennung der
   Sitzung, technischer Sperrcode. Probedaten gelöscht. Getestet: alle Server-Tests.
+- 2026-11-17: Wiki Etappe 1 (Umbau Deutsch): `docs/installation.md` → `installation.de.md` (git mv, jetzt Übersicht:
+  Reihenfolge, Voraussetzungen, Härtung, Betrieb) plus Themenseiten `server`, `package-repo`, `child-linux`,
+  `child-windows`, `webui` (mit „Sprache“), `games`, `updates`, `postgresql-migration`, `backup`, `uninstall` (je
+  `.de.md`); `haertung.md` → `hardening.de.md` (git mv); `code-signing.md` geteilt in EN (`code-signing.md`) und DE
+  (`code-signing.de.md`, bisheriger Abschnitt „Deutsch“). Bedien-Teile aus `packaging/repo/README.md` (Schlüssel-
+  Details, Release-Schritte, Client-Skript) und `packaging/windows/README.md` (Was der Installer einrichtet, Updates,
+  Deinstallation) nach `docs/package-repo`, `child-linux` und `child-windows`; die Komponenten-READMEs behalten
+  Interna und verweisen auf die Anleitung. Abschnittsnummern entfallen, Querverweise („siehe 1.4“, „(2.2)“, „unten“)
+  sind jetzt Links; Hinweise als GitHub-Alerts (Datenordner sichern, privaten Schlüssel sichern, Admins nie
+  eingeschränkt, SmartScreen). Links in README, `server/`, `packaging/arch` nachgezogen. Getestet: Skript prüft alle
+  relativen Links und Anker in allen `.md` des Repos (26 Dateien, 0 Fehler); Abgleich jeder Zeile der alten Dateien
+  gegen den neuen Bestand – fehlend nur umnummerierte Überschriften, umformulierte Querverweise/Alerts und
+  zusammengeführte Doppelungen (z. B. Kopplungsbefehl, Client-Skript mit `kids.nossco.de`).

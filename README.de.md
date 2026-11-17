@@ -67,7 +67,7 @@ Grundregel: root, Accounts in `wheel`/`sudo`/`admin` und Windows-Administratoren
 
 Quellcode: <https://github.com/AdrianNoss/kidCTL>
 
-Schritt für Schritt in **[docs/installation.md](docs/installation.md)**: Server, Paket-Repository,
+Schritt für Schritt in **[docs/installation.de.md](docs/installation.de.md)**: Server, Paket-Repository,
 Kinderrechner und WebUI. Kurzfassung:
 
 ```bash
@@ -86,9 +86,9 @@ sudo systemctl enable --now kidctl-agent.service
 Windows-Kinderrechner (als Administrator): `KidCTL-Setup-<Version>.exe` von `https://kids.example.org/repo/windows/`
 oder aus den [GitHub-Releases](https://github.com/AdrianNoss/kidCTL/releases) herunterladen, ausführen,
 Server-Adresse und Kopplungscode eintragen. Der Installer ist noch nicht signiert, SmartScreen fragt einmal nach
-(„Weitere Informationen“ → „Trotzdem ausführen“). Details: [docs/installation.md, 3.6](docs/installation.md#36-windows).
+(„Weitere Informationen“ → „Trotzdem ausführen“). Details: [Kinderrechner (Windows)](docs/child-windows.de.md).
 
-Danach die Rechner gegen physischen Zugriff härten: **[docs/haertung.md](docs/haertung.md)**.
+Danach die Rechner gegen physischen Zugriff härten: **[docs/hardening.de.md](docs/hardening.de.md)**.
 
 ## Grenzen
 
@@ -144,12 +144,12 @@ zuerst in `spec.md` beschrieben und im Changelog datiert. Konventionen stehen in
 
 Die Windows-Installer sind derzeit **nicht signiert**, Windows SmartScreen fragt deshalb beim ersten
 Start nach. Sie werden von GitHub Actions aus diesem Repository gebaut; jedes Release nennt die SHA-256
-des Installers und verlinkt den Bau-Lauf. Ablauf und Verantwortliche: [Code signing policy](docs/code-signing.md).
+des Installers und verlinkt den Bau-Lauf. Ablauf und Verantwortliche: [Code-Signatur](docs/code-signing.de.md).
 
 ## Datenschutz
 
 KidCTL spricht nur mit dem selbst betriebenen KidCTL-Server – keine Telemetrie, keine Verbindung zu den
-Entwicklern oder Dritten. Siehe [Datenschutzhinweis](docs/code-signing.md#privacy).
+Entwicklern oder Dritten. Siehe [Datenschutzhinweis](docs/code-signing.de.md).
 
 ## Lizenz
 

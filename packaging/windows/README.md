@@ -3,6 +3,9 @@
 Ein Installer (`KidCTL-Setup-<Version>.exe`, Inno Setup) mit eingebettetem Python 3.14 und allen Bibliotheken –
 auf dem Kinderrechner muss nichts weiter installiert sein.
 
+Bedienung (Installation, was der Installer einrichtet, Updates, Deinstallation): Anleitung
+[Kinderrechner (Windows)](../../docs/child-windows.de.md) im Wiki.
+
 | Teil | Inhalt |
 |---|---|
 | `build.py` | Staging auf dem Linux-Rechner, Bau in der Windows-VM, Signatur der Updates |
@@ -35,7 +38,7 @@ packaging/repo/kidctl-repo-publish.sh --apply
 [`.github/workflows/release.yml`](../../.github/workflows/release.yml) baut den Installer auf einem
 GitHub-Runner (`build.py ci`) – ausgelöst durch einen Tag `v<Version>` oder von Hand – und lädt ihn als
 Artefakt `KidCTL-Setup-unsigned` hoch. Je Release erledigt `packaging/repo/kidctl-release.sh --apply` Holen, Signieren
-und Veröffentlichen ([`packaging/repo/README.md`](../repo/README.md)); einzeln:
+und Veröffentlichen ([Paket-Repository](../../docs/package-repo.de.md)); einzeln:
 
 ```bash
 packaging/windows/build.py fetch --apply      # Installer des Laufs zum Tag v<Version> ins Repo holen
@@ -45,33 +48,9 @@ packaging/windows/build.py sign --apply       # latest.json mit dem Update-Schl�
 - Der geheime Update-Schlüssel bleibt auf dem Bau-Rechner; der öffentliche Teil liegt in
   `packaging/windows/update-key.pub` (`build.py` bricht ab, wenn beide nicht zusammenpassen).
 - Authenticode-Signatur über SignPath ist vorbereitet, aber derzeit nicht aktiv (Antrag bei der SignPath
-  Foundation im November 2026 abgelehnt, siehe [`docs/code-signing.md`](../../docs/code-signing.md)). Für
+  Foundation im November 2026 abgelehnt, siehe [`docs/code-signing.de.md`](../../docs/code-signing.de.md)). Für
   einen späteren Antrag: Secret `SIGNPATH_API_TOKEN` und Variablen `SIGNPATH_ORGANIZATION_ID`,
   `SIGNPATH_PROJECT_SLUG`, `SIGNPATH_SIGNING_POLICY_SLUG`, `SIGNPATH_ARTIFACT_CONFIGURATION_SLUG` in GitHub
   setzen, Vorlage [`signpath/artifact-configuration.xml`](signpath/artifact-configuration.xml); `fetch` nimmt
   dann automatisch den signierten Installer.
 - Lokaler Bau in der Windows-VM (`build.py all --apply`) bleibt möglich, z. B. für Tests vor einem Release.
-
-## Was der Installer einrichtet
-
-- `C:\Program Files\KidCTL\` – `python\` (eingebettetes Python + Bibliotheken), `lib\` (kidctl), `kidctl.cmd`.
-- `C:\ProgramData\KidCTL\` – Zustand, Logs, Updates; Rechte nur SYSTEM und Administratoren (Vererbung entfernt).
-- Dienst `KidCTL` (LocalSystem, automatischer Start, Neustart bei Absturz), auch unter
-  `HKLM\SYSTEM\CurrentControlSet\Control\SafeBoot\Minimal` und `\Network`.
-- Tray-App im Autostart aller Benutzer (`HKLM\…\Run`), Startmenü-Eintrag „KidCTL“ mit AppUserModelID
-  `KidCTL.Tray` (nötig für Toasts), Protokoll `kidctl://` für die Knöpfe in Toasts.
-- Kopplung: Seite im Installer (Server-Adresse + Code) oder später als Administrator:
-  `"C:\Program Files\KidCTL\kidctl.cmd" enroll https://kids.example.de ABCD-EFGH`.
-- Stille Installation: `KidCTL-Setup-<Version>.exe /VERYSILENT /SERVER=https://… /CODE=ABCD-EFGH`.
-
-## Updates
-
-Der Agent prüft alle 6 Stunden `latest.json`, prüft die Ed25519-Signatur und die SHA-256 des Installers und
-führt ihn still aus. Der Installer stoppt Dienst und Tray-Apps, ersetzt die Dateien und startet den Dienst; der
-Agent startet die Tray-App in aktiven Kinder-Sitzungen neu.
-
-## Deinstallation
-
-„Apps → Installierte Apps → KidCTL“ (als Administrator). Vorher aktiviert der Uninstaller alle Konten, die
-KidCTL gesperrt hat (`kidctl.cmd unlock-all`), danach entfernt er Dienst, Registry-Einträge und
-`C:\ProgramData\KidCTL`.

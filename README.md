@@ -38,8 +38,8 @@ app) are available in **English and German**. Parents choose their language in t
 ## Installation
 
 The step-by-step guide is currently available in German only:
-**[docs/installation.md](docs/installation.md)** (server, package repository, child computers, web
-interface) and **[docs/haertung.md](docs/haertung.md)** (hardening against physical access).
+**[docs/installation.de.md](docs/installation.de.md)** (server, package repository, child computers, web
+interface) and **[docs/hardening.de.md](docs/hardening.de.md)** (hardening against physical access).
 
 Short version:
 

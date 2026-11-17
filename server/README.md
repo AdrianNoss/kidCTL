@@ -4,7 +4,7 @@ FastAPI-App mit Eltern-WebUI und Agent-API (Kopplung + WebSocket).
 
 ## Betrieb (Docker/Traefik)
 
-Ausführlich: [`docs/installation.md`](../docs/installation.md).
+Ausführlich: [`docs/installation.de.md`](../docs/installation.de.md).
 
 1. `mkdir -p data && sudo chown 10001:10001 data` (Container läuft als UID 10001);
    `.env` aus `.env.example` anlegen, `SECRET_KEY` setzen.
