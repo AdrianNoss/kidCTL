@@ -21,7 +21,7 @@ kommt der **Offline-Alarm** auf das Handy.
 ## 1. Konten prüfen
 
 ```bash
-groups kind                                      # darf weder wheel noch sudo/admin enthalten
+groups <child>                                   # darf weder wheel noch sudo/admin enthalten
 sudo grep -rn NOPASSWD /etc/sudoers /etc/sudoers.d   # keine Regel, die für Kinder gilt
 sudo passwd -S root                              # zweites Feld: P = Passwort, L = gesperrt
 ```
@@ -84,8 +84,8 @@ Ziel: Die Standardeinträge starten ohne Passwort, Bearbeiten (`e`), Konsole (`c
    Am Ende anfügen:
 
    ```
-   set superusers="eltern"
-   password_pbkdf2 eltern grub.pbkdf2.sha512.10000.…
+   set superusers="parents"
+   password_pbkdf2 parents grub.pbkdf2.sha512.10000.…
    ```
 
 3. Ohne weiteren Schritt verlangt GRUB jetzt bei **jedem** Start das Passwort. Damit die
@@ -100,7 +100,7 @@ Ziel: Die Standardeinträge starten ohne Passwort, Bearbeiten (`e`), Konsole (`c
    set -e
    f=/etc/grub.d/10_linux
    sed -i '/^CLASS=/{/--unrestricted/!s/"$/ --unrestricted"/}' "$f"
-   grep -q '^CLASS=.*--unrestricted' "$f" || { echo "grub-unrestricted: $f hat ein unbekanntes Format" >&2; exit 1; }
+   grep -q '^CLASS=.*--unrestricted' "$f" || { echo "grub-unrestricted: $f has an unknown format" >&2; exit 1; }
    grub-mkconfig -o /boot/grub/grub.cfg
    ```
 
@@ -114,7 +114,7 @@ Ziel: Die Standardeinträge starten ohne Passwort, Bearbeiten (`e`), Konsole (`c
    Target = grub
 
    [Action]
-   Description = GRUB: Starteinträge ohne Passwort, Bearbeiten nur mit Passwort
+   Description = GRUB: boot entries without password, editing only with password
    When = PostTransaction
    Exec = /usr/local/sbin/grub-unrestricted
    ```

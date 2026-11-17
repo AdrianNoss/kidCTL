@@ -19,8 +19,8 @@ sudo passwd max
 
 ```bash
 curl -O https://kids.example.org/repo/kidctl-repo-client.sh
-sudo bash kidctl-repo-client.sh https://kids.example.org/repo <FINGERABDRUCK>           # Probelauf
-sudo bash kidctl-repo-client.sh https://kids.example.org/repo <FINGERABDRUCK> --apply
+sudo bash kidctl-repo-client.sh https://kids.example.org/repo <FINGERPRINT>           # Probelauf
+sudo bash kidctl-repo-client.sh https://kids.example.org/repo <FINGERPRINT> --apply
 # Arch
 sudo pacman -S kidctl kidctl-plasma   # KDE Plasma
 sudo pacman -S kidctl kidctl-gnome    # GNOME
@@ -50,7 +50,7 @@ Debian/Ubuntu legt es den Schlüssel nach `/etc/apt/keyrings/kidctl.asc` und das
 - **Dateien** (Nautilus) ist unter Ubuntu immer erlaubt: Die Desktop-Symbole von Ubuntu brauchen es
   laufend im Hintergrund.
 - **Steam** aus Ubuntus Paket `steam-installer` (`/usr/games/steam`) legt seine Bibliothek wie unter Arch
-  unter `/srv/steam/<kind>` ab (`~/.steam/debian-installation` ist ein Verweis dorthin).
+  unter `/srv/steam/<child>` ab (`~/.steam/debian-installation` ist ein Verweis dorthin).
 
 Sind beide Desktops installiert, beide Pakete installieren. Das Skript bricht ab, wenn der Schlüssel
 nicht zum Fingerabdruck passt. Bei der Installation trägt `kidctl` die Login-Sperre in
@@ -83,7 +83,7 @@ Ohne Repository (z. B. zum Ausprobieren) geht es auch direkt aus dem Git-Checkou
 2. Auf dem Kinderrechner:
 
    ```bash
-   sudo kidctl enroll https://kids.example.org <KOPPLUNGSCODE>
+   sudo kidctl enroll https://kids.example.org <PAIRING-CODE>
    sudo systemctl enable --now kidctl-agent.service
    ```
 

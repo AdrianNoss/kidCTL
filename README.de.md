@@ -7,6 +7,10 @@ Selbst gehostete Kindersicherung für **Windows 10 (22H2) und Windows 11 (ab 23H
 mit Eltern-WebUI (auch als App aufs Handy) steuert einen Root-Agenten auf jedem Kinderrechner. Alle
 Daten bleiben auf dem eigenen Server, es gibt keine Cloud und kein Konto bei Dritten.
 
+WebUI, E-Mails, Push-Benachrichtigungen und alles, was das Kind sieht (Benachrichtigungen, Tray-App), gibt es auf
+**Deutsch und Englisch**. Eltern wählen ihre Sprache im Profil (Standard: Browsersprache); auf dem Kinderrechner
+gilt die Sprache der Desktop-Sitzung.
+
 ## Funktionen
 
 - **Bildschirmzeit**:
@@ -14,19 +18,23 @@ Daten bleiben auf dem eigenen Server, es gibt keine Cloud und kein Konto bei Dri
   - Warnungen vor Ablauf, danach Abmeldung und Login-Sperre (SDDM, GDM und TTY; Windows: Konto des Kindes
     wird deaktiviert).
   - Funktioniert auch offline mit der zuletzt bekannten Regel.
-- **Verlängerungen und Chat**: Das Kind fragt in der Tray-App nach mehr Zeit oder schreibt eine
-  Nachricht, die Eltern antworten per Push auf dem Handy.
+- **Spiele-Limit**: optional ein eigenes Tageskontingent für Spiele (Steam, Heroic und Apps der Gruppe
+  „Spiele“); Spiele werden nach einer Vorwarnung geschlossen, der Rest des Rechners bleibt nutzbar.
+- **Anfragen und Chat**: Das Kind fragt in der Tray-App nach mehr Zeit, mehr Spielzeit oder der Freigabe einer
+  gesperrten App bzw. Website oder schreibt eine Nachricht; die Eltern antworten per Push auf dem Handy –
+  „Dauerhaft erlauben“, „Nur heute“ oder „Ablehnen“.
 - **Programm-Whitelist**:
   - Modi „Nur protokollieren“ oder „Sperren“.
-  - Katalog der installierten Apps, Flatpak (systemweit) und Steam, unter Windows Startmenü und Store-Apps.
+  - Katalog der installierten Apps, Flatpak (systemweit), Steam und Heroic, unter Windows Startmenü und Store-Apps.
   - Eigene Programme im Home sind durch noexec blockiert (Windows: Ausführverbot im Benutzerprofil).
 - **Website-Filter** (DNS):
   - Whitelist mit Dienst-Bundles (YouTube, Wikipedia, Lern-Apps, Microsoft 365) oder Blacklist mit
     Sperrlisten (HaGeZi, OISD, StevenBlack).
   - SafeSearch je Kind.
   - DNS-over-HTTPS bzw. DoT der Browser sind gesperrt.
-- **Auswertung**: Statistik pro Tag und Programm sowie ein Protokoll gesperrter Programme und
-  Domains. Ein Verlauf erlaubter Websites wird **nicht** gespeichert.
+- **Auswertung**: Statistik pro Tag, Programm und Spiel, ein Protokoll gesperrter Programme und
+  Domains sowie optional ein wöchentlicher oder monatlicher Nutzungsbericht per E-Mail. Ein Verlauf erlaubter
+  Websites wird **nicht** gespeichert.
 - **Alarme per Push**:
   - Gerät zu lange offline.
   - Schutzmaßnahme manipuliert, z. B. PAM, nftables oder noexec.
@@ -38,20 +46,20 @@ Daten bleiben auf dem eigenen Server, es gibt keine Cloud und kein Konto bei Dri
 ## Architektur
 
 ```
- Eltern (Browser / PWA)        Kinderrechner (Arch/Debian, Plasma/GNOME)
+ Parents (browser / PWA)       Child's computer (Arch/Debian, Plasma/GNOME)
           │ HTTPS                          ┌──────────────────────────────┐
           ▼                                │ kidctl-agent (root, systemd) │
- ┌──────────────────────┐   WebSocket      │  Zeit · PAM · Prozesse ·     │
+ ┌──────────────────────┐   WebSocket      │  time · PAM · processes ·    │
  │ Server (FastAPI)     │◄─────────────────┤  Unbound/nftables · noexec   │
- │ Docker hinter Traefik│   (ausgehend)    └──────────────┬───────────────┘
- │ PostgreSQL · Web Push    │                                 │ Unix-Socket
- │ /repo (Pacman-Repo)  │                  ┌──────────────┴───────────────┐
- └──────────────────────┘                  │ Tray-App (PySide6, Kind)     │
+ │ Docker behind Traefik│   (outgoing)     └──────────────┬───────────────┘
+ │ PostgreSQL · Web Push│                                 │ Unix socket
+ │ /repo (packages)     │                  ┌──────────────┴───────────────┐
+ └──────────────────────┘                  │ tray app (PySide6, child)    │
                                            └──────────────────────────────┘
 ```
 
 - **Server**: Python/FastAPI, SQLAlchemy/PostgreSQL, Jinja2. Er liefert auch das signierte
-  Pacman-Repository aus.
+  Paket-Repository (Pacman und APT) und den Windows-Installer aus.
 - **Agent**: Python/asyncio als root.
   - Hält als Einziger das Geräte-Token.
   - Setzt alles auf Systemebene durch: logind, PAM, Netlink-Prozessereignisse, Unbound je Kind,
@@ -79,7 +87,7 @@ docker compose exec kidctl python -m app.cli create-parent
 # Kinderrechner (nach Einrichtung des Repos)
 sudo pacman -S kidctl kidctl-plasma   # bzw. kidctl-gnome (bei beiden Desktops beide)
 sudo apt install kidctl kidctl-gnome  # Debian/Ubuntu (bzw. kidctl-plasma)
-sudo kidctl enroll https://kids.example.org <KOPPLUNGSCODE>
+sudo kidctl enroll https://kids.example.org <PAIRING-CODE>
 sudo systemctl enable --now kidctl-agent.service
 ```
 
@@ -119,9 +127,10 @@ Die vollständige Liste steht in [`spec.md`](spec.md) unter „Bewusst nicht umg
 | `common/` | Gemeinsames, versioniertes Protokoll (`kidctl_common`) |
 | `packaging/arch/` | PKGBUILD, systemd-Units, Install-Skript |
 | `packaging/pam`, `dns`, `mounts`, `sddm`, `gnome` | Login-Sperre, DNS-Filter und Browser-Policies, noexec, Anmeldebildschirm, GNOME-Anpassungen |
-| `packaging/repo/`, `debian` | Skripte für das signierte Paket-Repository, `.deb`-Bau für Debian/Ubuntu |
-| `dev/` | Entwicklungsserver, WebUI-Testskript, Test-VM (QEMU/KVM) |
-| `docs/` | Installations- und Härtungsanleitung |
+| `packaging/repo/`, `debian`, `windows` | Skripte für das signierte Paket-Repository, `.deb`-Bau für Debian/Ubuntu, Windows-Installer |
+| `website/` | Projektseite (Hugo) |
+| `dev/` | Entwicklungsserver, WebUI-Testskript, Screenshots, Doku-Check, Test-VM (QEMU/KVM) |
+| `docs/` | Anleitungen (Quelle des Wikis, Deutsch `.de.md` und Englisch `.md`) |
 | `spec.md` | Lebende Spezifikation mit Changelog |
 
 ## Entwicklung
@@ -130,6 +139,7 @@ Die vollständige Liste steht in [`spec.md`](spec.md) unter „Bewusst nicht umg
 dev/devserver.sh                 # lokaler Server auf 127.0.0.1:8000 (Testaccount wird angelegt)
 
 # Tests (venv mit server/requirements.txt + pytest httpx dbus-next websockets)
+python dev/check_docs_parity.py  # Doku Deutsch/Englisch gleich
 cd server && python -m pytest -q tests
 cd agent  && python -m pytest -q tests
 cd tray   && QT_QPA_PLATFORM=offscreen python -m pytest -q tests
@@ -138,7 +148,10 @@ cd tray   && QT_QPA_PLATFORM=offscreen python -m pytest -q tests
 Systemnahe Teile wie PAM, nftables und Mounts **nie auf dem Entwicklungsrechner** scharf schalten,
 sondern in der Test-VM ausprobieren: [`dev/vm/README.md`](dev/vm/README.md). Änderungen werden
 zuerst in `spec.md` beschrieben und im Changelog datiert. Konventionen stehen in
-[`CLAUDE.md`](CLAUDE.md).
+[`CLAUDE.md`](CLAUDE.md). Spezifikation, Konventionen und Code-Kommentare sind deutsch; die Anleitungen in
+`docs/` und dieses README gibt es auf Deutsch (Quelle) und Englisch mit gleichem Inhalt. Übersetzungen der
+Oberfläche liegen in `server/app/locale/en.po`, `agent/kidctl_agent/locale/en.po` und
+`tray/kidctl_tray/locale/en.po`; Tests prüfen, dass jeder markierte Text übersetzt ist.
 
 ## Code-Signatur
 
@@ -149,7 +162,7 @@ des Installers und verlinkt den Bau-Lauf. Ablauf und Verantwortliche: [Code-Sign
 ## Datenschutz
 
 KidCTL spricht nur mit dem selbst betriebenen KidCTL-Server – keine Telemetrie, keine Verbindung zu den
-Entwicklern oder Dritten. Siehe [Datenschutzhinweis](docs/code-signing.de.md).
+Entwicklern oder Dritten. Siehe [Datenschutzhinweis](docs/code-signing.de.md#datenschutz).
 
 ## Lizenz
 

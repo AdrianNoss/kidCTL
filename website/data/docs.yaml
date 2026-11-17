@@ -1,0 +1,25 @@
+# Navigation des Wikis (Anleitungen aus docs/). Je Gruppe Titel de/en und die Seiten in Reihenfolge
+# (Dateiname ohne Endung: docs/<name>.md = Englisch, docs/<name>.de.md = Deutsch). „security“ kommt aus SECURITY.md.
+# Neue oder umbenannte Seite hier eintragen – dev/check_docs_parity.py prüft das.
+- id: start
+  title: { de: "Erste Schritte", en: "Getting started" }
+  pages:
+    - installation
+    - server
+    - package-repo
+    - child-linux
+    - child-windows
+    - webui
+- id: operation
+  title: { de: "Betrieb", en: "Operation" }
+  pages:
+    - updates
+    - backup
+    - postgresql-migration
+    - uninstall
+    - games
+- id: security
+  title: { de: "Sicherheit", en: "Security" }
+  pages:
+    - hardening
+    - code-signing

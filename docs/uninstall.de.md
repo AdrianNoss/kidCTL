@@ -12,5 +12,4 @@ Danach im WebUI beim Gerät „Token widerrufen“. Den Repository-Eintrag bei B
 `[kidctl]` aus `/etc/pacman.conf` bzw. `/etc/apt/sources.list.d/kidctl.sources` und
 `/etc/apt/keyrings/kidctl.asc`.
 
-
 Windows: siehe [Kinderrechner (Windows)](child-windows.de.md#deinstallation).

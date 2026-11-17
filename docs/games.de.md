@@ -2,7 +2,7 @@
 
 ## Steam
 
-Die Steam-Bibliothek eines Kindes liegt unter `/srv/steam/<kind>`, `~/.local/share/Steam` ist nur
+Die Steam-Bibliothek eines Kindes liegt unter `/srv/steam/<child>`, `~/.local/share/Steam` ist nur
 ein Verweis dorthin. Grund: Bei aktiver Programmkontrolle ist das Home `noexec`, aus dem Home startet
 Steam dann nicht. Den Verweis legt der Agent für jedes zugeordnete Kind an. Einen schon vorhandenen
 Steam-Ordner im Home verschiebt er nach der Abmeldung des Kindes automatisch.
@@ -13,9 +13,9 @@ ist (das noexec-Home ist ein eigener Mount). Sonst meldet das WebUI unter „Int
 verschieben“. Dann von Hand verschieben, bei abgemeldetem Kind und mit beendetem Steam:
 
 ```bash
-sudo rmdir /srv/steam/<kind>                         # muss leer sein
-sudo mv /home/<kind>/.local/share/Steam /srv/steam/<kind>
-sudo chown -R <kind>: /srv/steam/<kind> && sudo chmod 700 /srv/steam/<kind>
+sudo rmdir /srv/steam/<child>                         # muss leer sein
+sudo mv /home/<child>/.local/share/Steam /srv/steam/<child>
+sudo chown -R <child>: /srv/steam/<child> && sudo chmod 700 /srv/steam/<child>
 sudo systemctl restart kidctl-agent                  # legt den Verweis an
 ```
 
@@ -25,17 +25,17 @@ Der Ordner kann sehr groß sein, das Kopieren zwischen Partitionen dauert entspr
 
 Freigegeben wird nur „Heroic“. Electron, die Hilfsprogramme (`gogdl`, `legendary`) und alles, was
 Heroic startet (Wine, Proton, Spiele), sind damit erlaubt. Wie bei Steam liegen die Ordner, aus
-denen etwas gestartet wird, außerhalb des Homes unter `/srv/heroic/<kind>`:
+denen etwas gestartet wird, außerhalb des Homes unter `/srv/heroic/<child>`:
 
 | Im Home (Verweis) | Ziel |
 |---|---|
-| `~/Games/Heroic` | `/srv/heroic/<kind>/Games` (Spiele, Wine-Prefixe) |
-| `~/.config/heroic/tools` | `/srv/heroic/<kind>/tools` (Wine, Proton) |
-| `~/.local/share/umu` | `/srv/heroic/<kind>/umu` (Laufzeit für Proton) |
-| `~/.cache/heroic_gogdl`, `~/.cache/legendary` | `/srv/heroic/<kind>/cache/…` (native Module von GOG- und Epic-Anbindung) |
+| `~/Games/Heroic` | `/srv/heroic/<child>/Games` (Spiele, Wine-Prefixe) |
+| `~/.config/heroic/tools` | `/srv/heroic/<child>/tools` (Wine, Proton) |
+| `~/.local/share/umu` | `/srv/heroic/<child>/umu` (Laufzeit für Proton) |
+| `~/.cache/heroic_gogdl`, `~/.cache/legendary` | `/srv/heroic/<child>/cache/…` (native Module von GOG- und Epic-Anbindung) |
 
 Vorhandene Ordner verschiebt der Agent nach der Abmeldung, soweit möglich (Einschränkungen wie bei
-Steam), sonst von Hand wie bei Steam (`/srv/heroic/<kind>/Games` bzw. `tools` als Ziel). Die
+Steam), sonst von Hand wie bei Steam (`/srv/heroic/<child>/Games` bzw. `tools` als Ziel). Die
 Cache-Ordner von `gogdl`/`legendary` werden einfach gelöscht und neu angelegt.
 
 Ist Steam bzw. Heroic für ein Kind mit Programmkontrolle **nicht** freigegeben, hängt der Agent dessen

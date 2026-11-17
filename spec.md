@@ -2226,3 +2226,16 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
   relativen Links und Anker in allen `.md` des Repos (26 Dateien, 0 Fehler); Abgleich jeder Zeile der alten Dateien
   gegen den neuen Bestand – fehlend nur umnummerierte Überschriften, umformulierte Querverweise/Alerts und
   zusammengeführte Doppelungen (z. B. Kopplungsbefehl, Client-Skript mit `kids.nossco.de`).
+- 2026-11-17: Wiki Etappe 2 (Englisch + Paritäts-Check): englische Fassungen aller `docs/`-Seiten (`installation.md`
+  wieder unter dem alten Pfad, jetzt Englisch), `code-signing.de.md` als vollständige Übersetzung, README.md als
+  Übersetzung von README.de.md (Basis Deutsch; im Deutschen ergänzt, was nur im Englischen stand: Spiele-Limit,
+  Freigabe-Anfragen, Heroic, Nutzungsbericht, Sprachen, Übersetzungsdateien). Sprachneutral gemacht, damit Codeblöcke
+  identisch sind: Platzhalter `<FINGERPRINT>`, `<PAIRING-CODE>`, `<child>`, `<user>`, GRUB-Benutzer `parents`,
+  Meldungen im GRUB-Skript/Pacman-Hook, Sicherungsdatei `kidctl.db.bak`, Architekturdiagramm im README.
+  `dev/check_docs_parity.py` (Paare docs/README/SECURITY, Überschriftenfolge, Codeblöcke ohne Kommentare, Tabellen-
+  zeilen, Listenpunkte, Hinweisboxen je Typ, Linkziele ohne Anker/Sprachendung, Bilder ohne Sprachordner,
+  `website/data/docs.yaml` ↔ `docs/`), Ausgabe `<datei>:<zeile>: …`; `website/data/docs.yaml` mit den Gruppen
+  Erste Schritte, Betrieb, Sicherheit. Getestet: Check grün (14 Paare); `dev/tests/test_check_docs_parity.py`
+  (9 Tests) mit Gegenproben – Überschrift nur im Deutschen, Befehl nur im Englischen geändert, Listenpunkt nur im
+  Englischen, Linkziel, Hinweisbox-Typ, fehlende Übersetzung, Navigation ohne Datei – jeweils Fehler mit Datei und
+  Zeile, abweichende Kommentare kein Fehler; Linkprüfung aller `.md` (38 Dateien, 0 Fehler).

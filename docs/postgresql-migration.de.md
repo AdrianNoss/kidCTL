@@ -5,7 +5,7 @@ SQLite-Adresse nicht. Ablauf:
 
 ```bash
 docker compose stop kidctl                         # nichts schreibt mehr in die SQLite-Datei
-cp data/kidctl.db data/kidctl.db.vorher            # Sicherung aufheben
+cp data/kidctl.db data/kidctl.db.bak            # Sicherung aufheben
 git pull                                           # neue docker-compose.yml mit Datenbank-Container
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"   # als POSTGRES_PASSWORD in .env eintragen
 docker compose build kidctl                        # neues Image (mit PostgreSQL-Treiber) – vor der Übernahme!
@@ -17,4 +17,4 @@ docker compose up -d
 
 Die Übernahme arbeitet auf einer Kopie, die SQLite-Datei bleibt unverändert; sie bricht ab, wenn die
 PostgreSQL-Datenbank nicht leer ist. Geräte, Sitzungen und Kopplungen bleiben gültig (gleicher `SECRET_KEY`).
-Zurück: `docker compose down`, alte Version auschecken, `data/kidctl.db.vorher` zurückkopieren.
+Zurück: `docker compose down`, alte Version auschecken, `data/kidctl.db.bak` zurückkopieren.
