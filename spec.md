@@ -2335,3 +2335,9 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Ruhemodus ohne Warnung/Abmeldung, ältere Agenten ignorieren Neues, E2E gegen echten Server), Tray (19); Server über echte
   WebSocket-Verbindung: pausieren → leere Policy, wieder aktiv → Regeln zurück, `relocate` nach der Policy; `hugo --minify` ohne
   Warnungen. Nicht getestet: Umzug zwischen zwei echten Servern, Hinweis-Dialog in einer echten Desktop-Sitzung (VM).
+- 2026-11-17: Etappe 3 in der Arch-VM (Plasma, Wayland) mit 0.33.0 aus dem Paketbau gegen den Entwicklungsserver geprüft: Hinweis beim
+  ersten Anmelden erscheint nach dem Login von `kind` gut lesbar und nicht blockierend, Merker im Profil, nach Neustart der Tray-App kein
+  zweites Mal; Ruhemodus (`family.paused_at` gesetzt, Agent neu verbunden): Policy ohne Zuordnungen, Tray zeigt das Pause-Symbol; nach
+  dem Zurücksetzen dieselbe Policy-Version wie vorher und Restzeit wieder im Tray. Server-Umzug in der VM nicht prüfbar (Entwicklungsserver
+  nur `http://`, Umzug erlaubt nur `https://`) – durch Unit-Tests abgedeckt. Auf aktuellen main (Wiki) gesetzt; `KIDCTL_RELOCATE_TO` in
+  `docs/server(.de).md`; Paritäts-Check grün.
