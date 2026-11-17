@@ -31,6 +31,7 @@ root sperren und Firmware- sowie Bootloader-Passwort setzen: [Härtung](hardenin
 
 - [Updates](updates.de.md)
 - [Backup und Wiederherstellung](backup.de.md)
+- [Aufbewahrung](retention.de.md)
 - [Umstieg auf PostgreSQL (einmalig)](postgresql-migration.de.md)
 - [Deinstallation (Kinderrechner)](uninstall.de.md)
 - [Spiele (Steam, Heroic)](games.de.md)

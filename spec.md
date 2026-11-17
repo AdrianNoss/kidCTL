@@ -2300,3 +2300,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   `server/tests/test_security_txt.py` (ohne Login 200 text/plain, Felder, Expires ≈ 1 Jahr, Betreiberkontakt zuerst
   als E-Mail/URL, ungültiger Wert ignoriert), Server-Tests gesamt 163 grün; Hugo-Build übernimmt `.well-known/`,
   `sed`-Schritt des Workflows lokal geprüft; Paritäts-Check und Linkprüfung grün.
+- 2026-11-17: Wiki: Änderungen der SaaS-Etappe 2 an `docs/installation.md` nach dem Rebase in die Themenseiten
+  übernommen (DE + EN): `KIDCTL_MASTER_KEY` in der `.env`-Tabelle von `server`, Zeile „Verschlüsselung je Familie
+  (einmalig)“ in `updates`, Abschnitt „Aufbewahrung“ als eigene Seite `retention` („Aufbewahrung“/„Data retention“,
+  Gruppe Betrieb, inkl. „Chat leeren“ und `cli delete-family`). Getestet: Paritäts-Check (17 Paare), pytest
+  `dev/tests`, Linkprüfung Repo und Seite, `hugo --minify --panicOnWarning` ohne Warnungen.

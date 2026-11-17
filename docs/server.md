@@ -26,6 +26,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # enter the outp
 | Variable | Meaning |
 |---|---|
 | `SECRET_KEY` | Required. **Never change it**, otherwise all sessions and device tokens become invalid (pair devices again). |
+| `KIDCTL_MASTER_KEY` | Required. Master key of the encryption (names, chat, log, statistics per family). Create it with `docker compose run --rm kidctl python -m app.cli master-key`. **Back it up separately** (password manager): without it the data can't be restored, not even from backups. Never change it. |
 | `POSTGRES_PASSWORD` | Required. Database password, only letters, digits, `-` and `_` (e.g. `secrets.token_urlsafe(32)`). The database runs in the container `kidctl-db` and is only reachable by the server. |
 | `BASE_URL` | Public address, e.g. `https://kids.example.org` |
 | `KIDCTL_MODE` | `single` (default, one family) or `saas` (many families; email is required and replaces the user name) |

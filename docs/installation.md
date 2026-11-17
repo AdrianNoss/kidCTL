@@ -31,6 +31,7 @@ lock root and set firmware and boot loader passwords: [Hardening](hardening.md).
 
 - [Updates](updates.md)
 - [Backup and restore](backup.md)
+- [Data retention](retention.md)
 - [Switching to PostgreSQL (one-time)](postgresql-migration.md)
 - [Uninstalling (child's computer)](uninstall.md)
 - [Games (Steam, Heroic)](games.md)
