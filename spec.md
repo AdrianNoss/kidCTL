@@ -2318,3 +2318,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Desktop hell/Handy dunkel ohne Überlauf, alle Bilder laden.
 - 2026-11-17: Wiki und Sicherheitsrichtlinie als umgesetzt markiert; Roadmap-Eintrag „Anleitungen auf Deutsch und
   Englisch“ (`done`). Getestet: `hugo --minify --panicOnWarning` ohne Warnungen.
+- 2026-11-17: Fix Pages-Workflow: `upload-pages-artifact` lässt Dateien mit Punkt am Anfang standardmäßig weg –
+  `/.well-known/security.txt` fehlte auf der Live-Seite (404). Jetzt `include-hidden-files: true`. Getestet: nach dem
+  Deploy Abruf der Datei auf der Live-Seite.
