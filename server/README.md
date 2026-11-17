@@ -4,7 +4,8 @@ FastAPI-App mit Eltern-WebUI und Agent-API (Kopplung + WebSocket).
 
 ## Betrieb (Docker/Traefik)
 
-Ausführlich: [`docs/installation.de.md`](../docs/installation.de.md).
+Bedienung (Installation, Konfiguration, Updates, Backup): Anleitung [Server](../docs/server.de.md) im Wiki
+(<https://adriannoss.github.io/kidCTL/de/docs/server/>).
 
 1. `mkdir -p data && sudo chown 10001:10001 data` (Container läuft als UID 10001);
    `.env` aus `.env.example` anlegen, `SECRET_KEY` setzen.

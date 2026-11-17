@@ -55,6 +55,7 @@ def norm_code(lines: list[str]) -> str:
 
 def norm_target(t: str) -> str:
     t = t.split("#", 1)[0]
+    t = re.sub(r"(adriannoss\.github\.io/kidCTL)/de/", r"\1/", t)   # Wiki-URL der jeweiligen Sprache
     t = re.sub(r"\.de\.md$", ".md", t)
     t = re.sub(r"(^|/)img/(de|en)/", r"\1img/<lang>/", t)
     return t or "#"

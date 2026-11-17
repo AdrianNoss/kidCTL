@@ -33,7 +33,7 @@ Links auf das Repository, Releases und Downloads führen zu github.com. Dort gil
 ## Die Software KidCTL
 
 Die Software selbst spricht nur mit dem KidCTL-Server, den du selbst betreibst – keine Telemetrie, keine
-Verbindung zu den Entwicklern. Siehe [Datenschutzhinweis im Repository](https://github.com/AdrianNoss/kidCTL/blob/main/docs/code-signing.md#privacy).
+Verbindung zu den Entwicklern. Siehe [Datenschutzhinweis in den Anleitungen](../../docs/code-signing/#datenschutz).
 
 ## Deine Rechte
 

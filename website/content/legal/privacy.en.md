@@ -31,7 +31,7 @@ Links to the repository, releases and downloads lead to github.com, where GitHub
 ## The KidCTL software
 
 The software itself only talks to the KidCTL server you run yourself – no telemetry, no connection to the
-developers. See the [privacy note in the repository](https://github.com/AdrianNoss/kidCTL/blob/main/docs/code-signing.md#privacy).
+developers. See the [privacy note in the guides](../../docs/code-signing/#privacy).
 
 ## Your rights
 

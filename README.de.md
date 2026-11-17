@@ -75,8 +75,9 @@ Grundregel: root, Accounts in `wheel`/`sudo`/`admin` und Windows-Administratoren
 
 Quellcode: <https://github.com/AdrianNoss/kidCTL>
 
-Schritt für Schritt in **[docs/installation.de.md](docs/installation.de.md)**: Server, Paket-Repository,
-Kinderrechner und WebUI. Kurzfassung:
+Anleitungen: **[Wiki](https://adriannoss.github.io/kidCTL/de/docs/)** (Quelle: [`docs/`](docs/installation.de.md)).
+Schritt für Schritt in der **[Installationsanleitung](https://adriannoss.github.io/kidCTL/de/docs/installation/)**:
+Server, Paket-Repository, Kinderrechner und WebUI. Kurzfassung:
 
 ```bash
 # Server
@@ -94,9 +95,9 @@ sudo systemctl enable --now kidctl-agent.service
 Windows-Kinderrechner (als Administrator): `KidCTL-Setup-<Version>.exe` von `https://kids.example.org/repo/windows/`
 oder aus den [GitHub-Releases](https://github.com/AdrianNoss/kidCTL/releases) herunterladen, ausführen,
 Server-Adresse und Kopplungscode eintragen. Der Installer ist noch nicht signiert, SmartScreen fragt einmal nach
-(„Weitere Informationen“ → „Trotzdem ausführen“). Details: [Kinderrechner (Windows)](docs/child-windows.de.md).
+(„Weitere Informationen“ → „Trotzdem ausführen“). Details: [Kinderrechner (Windows)](https://adriannoss.github.io/kidCTL/de/docs/child-windows/).
 
-Danach die Rechner gegen physischen Zugriff härten: **[docs/hardening.de.md](docs/hardening.de.md)**.
+Danach die Rechner gegen physischen Zugriff härten: **[Härtung](https://adriannoss.github.io/kidCTL/de/docs/hardening/)**.
 
 ## Grenzen
 

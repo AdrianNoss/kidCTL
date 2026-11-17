@@ -20,7 +20,7 @@
   </table>
   </div>
   <p class="muted"><small>{{ _("Auf dem Kinderrechner als Administrator ausführen. Ist ein Installer nicht signiert, fragt Windows SmartScreen beim ersten Start nach.") }}
-    <a href="https://github.com/AdrianNoss/kidCTL/blob/main/docs/code-signing.md" rel="noopener">Code signing policy</a></small></p>
+    <a href="https://adriannoss.github.io/kidCTL/{% if lang() == 'de' %}de/{% endif %}docs/code-signing/" rel="noopener">Code signing policy</a></small></p>
   {% else %}
   <p class="muted">{{ _("Noch keine Installer veröffentlicht.") }}</p>
   {% endif %}

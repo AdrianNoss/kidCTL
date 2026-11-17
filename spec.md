@@ -2264,3 +2264,12 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
   „Kinderrechner“ (Stemming); „Kinderrechner“ auf einer englischen Seite ohne Treffer (Sprachen getrennt); Filter
   News/Anleitungen liefern nur den jeweiligen Typ; Treffer-Link landet unter `/kidCTL/`; keine externen Requests,
   keine Konsolenfehler; ohne JS erreichbare Suchseite; Sichtprüfung Dialog dunkel/Desktop und hell/Handy.
+- 2026-11-17: Wiki Etappe 6 (Verweise): README DE/EN verlinken im Abschnitt Installation ins Wiki („Anleitungen:
+  Wiki (Quelle: docs/)“, Installationsanleitung, Windows, Härtung); Release-Text in `kidctl-release.sh` verlinkt
+  Linux-, Server- und Installationsanleitung sowie Code-Signatur/Datenschutz im Wiki (EN); `repo.html` verlinkt die
+  Code-Signatur im Wiki in der Sprache des Eltern-Accounts; Fehlermeldung in `config.py` (SQLite) nennt Wiki-URL und
+  `docs/postgresql-migration.md`; Datenschutzseite der Projektseite und `server/README.md` zeigen aufs Wiki. Paritäts-
+  Check behandelt Wiki-URLs beider Sprachen als gleiches Ziel. Weitere `docs/`-Verweise im Repo gesucht (Komponenten-
+  READMEs zeigen relativ auf `docs/*.de.md`, bleiben so). Getestet: Dry-Run `kidctl-release.sh` mit Lauf 42863441320
+  (Text mit Wiki-Links), Server-Tests 160 grün (eigene Testdatenbank `kidctl_test_homepage`, weil `kidctl_test` schon
+  Revision 0008 aus dem SaaS-Branch trägt), Paritäts-Check und Linkprüfung grün.

@@ -91,14 +91,15 @@ else
   [[ -n "$highlights" ]] && highlights="Changelog (German):"$'\n\n'"$highlights"
 fi
 blob="https://github.com/$GITHUB_REPO/blob/main"
+wiki="https://adriannoss.github.io/kidCTL/docs"
 body="$(cat <<EOT
 KidCTL is self-hosted parental control for **Windows 10/11** and **Linux** (Arch, Debian, Ubuntu with KDE Plasma or GNOME on Wayland). A server you run yourself gives parents a web interface to manage screen time, game time, allowed apps and websites; an agent on each child's computer enforces the rules, also offline. No cloud, no telemetry.
 
 ### Downloads
 
 - **Windows:** \`$exe\` below – run as administrator on the child's computer and enter your server address and the pairing code from the web interface (Devices → Pair). This build is **not code-signed yet**, so Windows SmartScreen asks for confirmation.
-- **Linux:** packages from your server's package repository (\`pacman -S kidctl\` / \`apt install kidctl\`), see [installation guide]($blob/docs/installation.md).
-- **Server:** Docker Compose, see [installation guide]($blob/docs/installation.md).
+- **Linux:** packages from your server's package repository (\`pacman -S kidctl\` / \`apt install kidctl\`), see [Linux guide]($wiki/child-linux/).
+- **Server:** Docker Compose, see [server guide]($wiki/server/) and [installation overview]($wiki/installation/).
 
 SHA-256 \`$exe\`: \`$digest\`
 Built by GitHub Actions from this tag ([run](https://github.com/$GITHUB_REPO/actions/runs/$RUN)).
@@ -107,7 +108,7 @@ Built by GitHub Actions from this tag ([run](https://github.com/$GITHUB_REPO/act
 
 ${highlights:-–}
 
-[Code signing policy]($blob/docs/code-signing.md) · [Privacy]($blob/docs/code-signing.md#privacy) · [Changelog (German)]($blob/spec.md#changelog)
+[Code signing policy]($wiki/code-signing/) · [Privacy]($wiki/code-signing/#privacy) · [Changelog (German)]($blob/spec.md#changelog)
 EOT
 )"
 exists=0

@@ -75,8 +75,9 @@ Basic rule: root, accounts in `wheel`/`sudo`/`admin` and Windows administrators 
 
 Source code: <https://github.com/AdrianNoss/kidCTL>
 
-Step by step in **[docs/installation.md](docs/installation.md)**: server, package repository,
-child computers and web interface. Short version:
+Guides: **[wiki](https://adriannoss.github.io/kidCTL/docs/)** (source: [`docs/`](docs/installation.md)).
+Step by step in the **[installation guide](https://adriannoss.github.io/kidCTL/docs/installation/)**:
+server, package repository, child computers and web interface. Short version:
 
 ```bash
 # Server
@@ -94,9 +95,9 @@ sudo systemctl enable --now kidctl-agent.service
 Windows child's computer (as administrator): download `KidCTL-Setup-<version>.exe` from `https://kids.example.org/repo/windows/`
 or from the [GitHub releases](https://github.com/AdrianNoss/kidCTL/releases), run it and enter
 the server address and pairing code. The installer is not code-signed yet, so SmartScreen asks once
-("More info" → "Run anyway"). Details: [Child's computer (Windows)](docs/child-windows.md).
+("More info" → "Run anyway"). Details: [Child's computer (Windows)](https://adriannoss.github.io/kidCTL/docs/child-windows/).
 
-Then harden the computers against physical access: **[docs/hardening.md](docs/hardening.md)**.
+Then harden the computers against physical access: **[Hardening](https://adriannoss.github.io/kidCTL/docs/hardening/)**.
 
 ## Limitations
 
