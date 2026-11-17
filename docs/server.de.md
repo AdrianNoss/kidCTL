@@ -31,6 +31,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # Ausgabe als SE
 | `BASE_URL` | Öffentliche Adresse, z. B. `https://kids.example.org` |
 | `KIDCTL_RELOCATE_TO` | Nur beim Server-Umzug: neue Adresse (`https://…`). Jeder Agent ab 0.33 wechselt dorthin, sobald der neue Server sein Geräte-Token anerkennt (gleiche Datenbank, gleicher `SECRET_KEY`); sonst bleibt er beim alten. Auf dem **alten** Server setzen, bis alle Geräte umgezogen sind. |
 | `KIDCTL_MODE` | `single` (Standard, eine Familie) oder `saas` (viele Familien; E-Mail ist Pflicht und ersetzt den Benutzernamen) |
+| `REGISTRATION` | Nur mit `KIDCTL_MODE=saas`: `invite` (Standard, Registrierung nur mit Einladungscode aus dem Verwaltungsbereich), `open` (jeder) oder `closed`. Braucht E-Mail-Versand (`SMTP_*`). Im Einzelbetrieb immer geschlossen. |
 | `ADMIN_ALLOW_NETS` | Optional. Verwaltungsbereich `/admin` nur aus diesen Netzen, kommagetrennt (z. B. `192.168.1.0/24,2001:db8::/32`); von anderswo antwortet er mit 404. Leer = von überall (Passwort + Authenticator bleiben Pflicht). |
 | `TOTP_ISSUER` | Name in der Authenticator-App (Standard `KidCTL`) |
 | `SOURCE_URL` | Link „Quellcode“ in der Fußzeile (AGPL-3.0 §13); bei eigenen Änderungen auf den eigenen Fork setzen. Standard: das KidCTL-Repo |
@@ -92,7 +93,8 @@ verloren: derselbe Befehl mit `--reset` setzt beides neu und beendet alle Sitzun
 Der Bereich zeigt nur Metadaten: Familien mit Anzahl Eltern, Kinder und Geräte, Agent-Versionen, letzte Aktivität
 und Auffälligkeiten (Geräte offline, Agent zu alt, Ruhemodus). Namen und Inhalte sind mit dem Schlüssel der jeweiligen
 Familie verschlüsselt und dort nicht lesbar. Außerdem erzeugst du hier **Einladungscodes** für die Registrierung
-(einmalig, 30 Tage gültig, mit Notiz). Die Sitzung gilt 12 Stunden; mit `ADMIN_ALLOW_NETS` lässt sich der Bereich
+(einmalig, 30 Tage gültig, mit Notiz). Neue Familien registrieren sich unter `/signup`: E-Mail-Adresse (und Code) →
+Bestätigungslink per Mail (24 h) → Passwort und Authenticator → eigene Familie, Inhaber-Account, angemeldet. Die Sitzung gilt 12 Stunden; mit `ADMIN_ALLOW_NETS` lässt sich der Bereich
 auf bestimmte Netze beschränken.
 
 ## Handy einrichten

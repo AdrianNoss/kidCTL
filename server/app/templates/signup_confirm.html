@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Registrieren") }} – KidCTL{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <div class="login-brand"><span class="mark" aria-hidden="true"></span>KidCTL</div>
+  <h2>{{ _("Account einrichten") }}</h2>
+  {% if invalid %}
+  <p class="error">{{ invalid }}</p>
+  <a href="/login" class="btn secondary">{{ _("Zur Anmeldung") }}</a>
+  {% else %}
+  <p>{{ _("E-Mail-Adresse {email} bestätigt. Jetzt Passwort festlegen und den Authenticator einrichten – er ist bei jeder Anmeldung nötig.").format(email=email) }}</p>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <form method="post" action="/signup/{{ token }}">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <input type="hidden" name="secret" value="{{ secret }}">
+    <label>{{ _("Anzeigename") }} <span class="field-note">{{ _("optional") }}</span> <input name="display_name" maxlength="128" value="{{ form.display_name or '' }}"></label>
+    <label>{{ _("Passwort (min. 12 Zeichen)") }} <input type="password" name="password" minlength="12" required autocomplete="new-password"></label>
+    <label>{{ _("Wiederholen") }} <input type="password" name="repeat" minlength="12" required autocomplete="new-password"></label>
+    <p>{{ _("QR-Code mit einer Authenticator-App scannen (z. B. Aegis, 2FAS, Google Authenticator):") }}</p>
+    <div class="qr">{{ qr_svg | safe }}</div>
+    <p class="muted"><small>{{ _("Ohne Kamera: Schlüssel") }} <code>{{ secret }}</code></small></p>
+    <label>{{ _("Code aus der App") }} <input name="totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
+    <button type="submit" style="width:100%">{{ _("Account anlegen") }}</button>
+  </form>
+  {% endif %}
+  {% include "_langswitch.html" %}
+</div>
+{% endblock %}

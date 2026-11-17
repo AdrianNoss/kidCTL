@@ -42,6 +42,7 @@ class Settings:
     dev: bool = False
     mode: str = "single"   # single = eine Familie (Self-Hosting) | saas = viele Familien
     master_key: str = ""   # KIDCTL_MASTER_KEY: verschlüsselt die Schlüssel der Familien (app.crypto)
+    registration: str = "closed"   # REGISTRATION: open | invite | closed (Einzelbetrieb immer closed)
     admin_allow_nets: tuple = ()   # ADMIN_ALLOW_NETS: Verwaltungsbereich nur aus diesen Netzen (leer = alle)
     relocate_to: str = ""  # KIDCTL_RELOCATE_TO: Server-Umzug – Agenten wechseln, wenn der neue Server sie anerkennt
 
@@ -93,6 +94,15 @@ def _relocate_to() -> str:
     return url
 
 
+def _registration(mode: str) -> str:
+    if mode != "saas":
+        return "closed"   # Einzelbetrieb: eine Familie, erster Account per CLI
+    value = os.environ.get("REGISTRATION", "invite").strip().lower() or "invite"
+    if value not in ("open", "invite", "closed"):
+        raise RuntimeError(f"REGISTRATION={value!r} – erlaubt sind open, invite und closed.")
+    return value
+
+
 def _admin_nets() -> tuple:
     import ipaddress
     raw = os.environ.get("ADMIN_ALLOW_NETS", "")
@@ -131,6 +141,7 @@ def load_settings() -> Settings:
         totp_issuer=os.environ.get("TOTP_ISSUER", "KidCTL"),
         source_url=os.environ.get("SOURCE_URL", "https://github.com/AdrianNoss/kidCTL"),
         mode=_mode(),
+        registration=_registration(_mode()),
         master_key=_master_key(dev),
         relocate_to=_relocate_to(),
         admin_allow_nets=_admin_nets(),

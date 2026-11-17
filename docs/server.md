@@ -31,6 +31,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # enter the outp
 | `BASE_URL` | Public address, e.g. `https://kids.example.org` |
 | `KIDCTL_RELOCATE_TO` | Only when moving the server: the new address (`https://…`). Every agent from 0.33 switches to it as soon as the new server accepts its device token (same database, same `SECRET_KEY`); otherwise it stays with the old one. Set it on the **old** server until all devices have moved. |
 | `KIDCTL_MODE` | `single` (default, one family) or `saas` (many families; email is required and replaces the user name) |
+| `REGISTRATION` | Only with `KIDCTL_MODE=saas`: `invite` (default, sign-up only with an invitation code from the administration area), `open` (anyone) or `closed`. Requires sending email (`SMTP_*`). Always closed in single mode. |
 | `ADMIN_ALLOW_NETS` | Optional. Administration area `/admin` only from these networks, comma-separated (e.g. `192.168.1.0/24,2001:db8::/32`); from anywhere else it answers 404. Empty = from anywhere (password + authenticator are still required). |
 | `TOTP_ISSUER` | Name in the authenticator app (default `KidCTL`) |
 | `SOURCE_URL` | "Source code" link in the footer (AGPL-3.0 §13); set it to your own fork if you make changes. Default: the KidCTL repository |
@@ -92,7 +93,8 @@ same command with `--reset` sets both again and ends all sessions of that accoun
 The area shows metadata only: families with the number of parents, children and devices, agent versions, last
 activity and issues (devices offline, agent too old, paused). Names and content are encrypted with each family's key
 and cannot be read there. You also create **invitation codes** for sign-up here (single use, valid for 30 days, with
-a note). The session lasts 12 hours; `ADMIN_ALLOW_NETS` restricts the area to certain networks.
+a note). New families sign up at `/signup`: email address (and code) → confirmation link by email (24 h) →
+password and authenticator → their own family, owner account, signed in. The session lasts 12 hours; `ADMIN_ALLOW_NETS` restricts the area to certain networks.
 
 ## Set up the phone
 

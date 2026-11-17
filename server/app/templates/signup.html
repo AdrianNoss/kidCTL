@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Registrieren") }} – KidCTL{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <div class="login-brand"><span class="mark" aria-hidden="true"></span>KidCTL</div>
+  <h2>{{ _("Familie registrieren") }}</h2>
+  {% if sent %}
+  <p class="success">{{ _("Fast geschafft: Wir haben dir an {email} einen Link geschickt. Er ist 24 Stunden gültig.").format(email=sent) }}</p>
+  <p class="muted"><small>{{ _("Keine Mail bekommen? Spam-Ordner prüfen. Gibt es für die Adresse schon einen Account, kommt keine Mail – dann einfach anmelden.") }}</small></p>
+  {% else %}
+  <p>{{ _("Du bekommst einen Link per E-Mail. Darüber legst du Passwort und Authenticator fest; danach legst du dein erstes Kind an und koppelst seinen Computer.") }}</p>
+  <form method="post" action="/signup">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>{{ _("E-Mail-Adresse") }} <input type="email" name="email" maxlength="255" value="{{ form.email or '' }}" autocomplete="email" required autofocus></label>
+    {% if invite %}<label>{{ _("Einladungscode") }} <input name="code" maxlength="20" value="{{ form.code or '' }}" autocomplete="off" autocapitalize="characters" placeholder="XXXX-XXXX-XXXX" required></label>{% endif %}
+    <button type="submit" style="width:100%">{{ _("Link schicken") }}</button>
+  </form>
+  {% endif %}
+  <p class="login-help"><a href="/login">{{ _("Schon registriert? Anmelden") }}</a></p>
+  {% include "_langswitch.html" %}
+</div>
+{% endblock %}

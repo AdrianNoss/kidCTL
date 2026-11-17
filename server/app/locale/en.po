@@ -1953,3 +1953,67 @@ msgid "{n} Gerät offline"
 msgid_plural "{n} Geräte offline"
 msgstr[0] "{n} device offline"
 msgstr[1] "{n} devices offline"
+
+# Registrierung (Etappe 4.3)
+msgid "Account anlegen"
+msgstr "Create account"
+
+msgid "Account einrichten"
+msgstr "Set up your account"
+
+msgid "Der Code passt nicht. Bitte die Uhrzeit des Handys prüfen und den aktuellen Code eingeben."
+msgstr "The code doesn't match. Please check your phone's clock and enter the current code."
+
+msgid "Der Einladungscode ist ungültig, abgelaufen oder schon eingelöst."
+msgstr "The invitation code is invalid, expired or already used."
+
+msgid "Die Registrierung braucht E-Mail-Versand, der auf diesem Server nicht eingerichtet ist."
+msgstr "Sign-up requires sending email, which is not set up on this server."
+
+msgid "Die Registrierung ist geschlossen."
+msgstr "Sign-up is closed."
+
+msgid "Du bekommst einen Link per E-Mail. Darüber legst du Passwort und Authenticator fest; danach legst du dein erstes Kind an und koppelst seinen Computer."
+msgstr "You'll receive a link by email. With it you set your password and authenticator; then you add your first child and pair their computer."
+
+msgid "E-Mail-Adresse {email} bestätigt. Jetzt Passwort festlegen und den Authenticator einrichten – er ist bei jeder Anmeldung nötig."
+msgstr "Email address {email} confirmed. Now choose a password and set up the authenticator – it is needed every time you sign in."
+
+msgid "Einladungscode"
+msgstr "Invitation code"
+
+msgid "Falls du dich nicht registriert hast, ignoriere diese Mail."
+msgstr "If you didn't sign up, just ignore this email."
+
+msgid "Familie registrieren"
+msgstr "Register your family"
+
+msgid "Fast geschafft: Wir haben dir an {email} einen Link geschickt. Er ist 24 Stunden gültig."
+msgstr "Almost done: we sent a link to {email}. It is valid for 24 hours."
+
+msgid "Für diese E-Mail-Adresse gibt es schon einen Account. Bitte anmelden oder „Passwort vergessen“ nutzen."
+msgstr "There is already an account for this email address. Please sign in or use \"Forgot password\"."
+
+msgid "Keine Mail bekommen? Spam-Ordner prüfen. Gibt es für die Adresse schon einen Account, kommt keine Mail – dann einfach anmelden."
+msgstr "No email? Check your spam folder. If the address already has an account, no email is sent – just sign in."
+
+msgid "Link schicken"
+msgstr "Send link"
+
+msgid "Neu hier? Familie registrieren"
+msgstr "New here? Register your family"
+
+msgid "QR-Code mit einer Authenticator-App scannen (z. B. Aegis, 2FAS, Google Authenticator):"
+msgstr "Scan the QR code with an authenticator app (e.g. Aegis, 2FAS, Google Authenticator):"
+
+msgid "Registrieren"
+msgstr "Sign up"
+
+msgid "Schon registriert? Anmelden"
+msgstr "Already registered? Sign in"
+
+msgid "Willkommen bei KidCTL!"
+msgstr "Welcome to KidCTL!"
+
+msgid "Über diesen Link bestätigst du deine E-Mail-Adresse und legst Passwort und Authenticator fest ({hours} Stunden gültig):"
+msgstr "Use this link to confirm your email address and set your password and authenticator (valid for {hours} hours):"

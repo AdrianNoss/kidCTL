@@ -9,6 +9,7 @@
   <label>{{ _("Authenticator-Code") }} <input name="totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
   <button type="submit" style="width:100%">{{ _("Anmelden") }}</button>
   <p class="login-help"><a href="/reset">{{ _("Passwort vergessen?") }}</a></p>
+  {% if REGISTRATION != "closed" %}<p class="login-help"><a href="/signup">{{ _("Neu hier? Familie registrieren") }}</a></p>{% endif %}
   {% include "_langswitch.html" %}
 </form>
 {% endblock %}

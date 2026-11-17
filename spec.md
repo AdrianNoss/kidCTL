@@ -2375,3 +2375,13 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Fehlversuchssperre, Übersicht ohne Namen/Inhalte, Codes (einmalig, tolerant bei Eingabe, eingelöste nicht löschbar,
   CSRF), IP-Beschränkung, CLI anlegen/zurücksetzen. Im Browser auf der Entwicklungsdatenbank angesehen (Login, Familien,
   Codes); `alembic check` sauber.
+- 2026-11-17: Etappe 4.3 Registrierung: `REGISTRATION=open|invite|closed` (SaaS Standard `invite`, Einzelbetrieb immer
+  `closed`, ungültiger Wert bricht den Start ab). `/signup`: E-Mail (+ Einladungscode) → Bestätigungslink per Mail (24 h,
+  mit `SECRET_KEY` signiert, trägt E-Mail/Code/Ablauf – bis zur Bestätigung wird nichts gespeichert); immer dieselbe
+  Antwort, bei vergebener Adresse keine Mail; ohne SMTP 503. `/signup/<link>`: Anzeigename, Passwort, Authenticator auf
+  einer Seite (Code wird vor dem Anlegen geprüft) → Familie (eigener Schlüssel) + Inhaber-Account mit bestätigter E-Mail
+  in einer Transaktion, Code atomar eingelöst (mit Familie), danach angemeldet auf der Übersicht („Kind anlegen“).
+  Begrenzung je IP (Anfragen und falsche Codes, Zähler `signup`); Link auf der Anmeldeseite nur bei offener Registrierung.
+  Getestet (pytest, 5 neue Tests): offener Ablauf bis zur eigenen Familie, Link danach unbrauchbar, vergebene Adresse
+  ohne Mail; Einladungscode Pflicht, eingelöst mit Familie, zweiter Link mit demselben Code abgewiesen; Signatur/Ablauf;
+  Einzelbetrieb 404; ohne SMTP 503; Fehlversuchssperre. Seiten im Browser im SaaS-Modus angesehen.

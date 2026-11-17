@@ -14,7 +14,7 @@ from .config import settings
 from .db import init_db
 from .tenant import platform_session
 from .middleware import SecurityMiddleware
-from .routes import admin, api, auth, operators, pwa, wellknown
+from .routes import admin, api, auth, operators, pwa, signup, wellknown
 from .security import LoginRequired
 from .web import render
 
@@ -98,6 +98,7 @@ def healthz():
 
 app.include_router(auth.router)
 app.include_router(operators.router)
+app.include_router(signup.router)
 app.include_router(api.router)
 app.include_router(pwa.router)
 app.include_router(wellknown.router)

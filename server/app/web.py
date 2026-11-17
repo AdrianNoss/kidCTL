@@ -61,6 +61,7 @@ templates.env.globals.update(_=i18n.gettext, gettext=i18n.gettext, ngettext=i18n
                              update_for=versions.update_for, fmt_datetime=i18n.fmt_datetime, fmt_size=_fmt_size,
                              today_minus=_today_minus, asset=asset)
 templates.env.globals["SOURCE_URL"] = settings.source_url
+templates.env.globals["REGISTRATION"] = settings.registration   # open | invite | closed
 templates.env.globals["SAAS"] = settings.saas            # Betriebsart: viele Familien, Anmeldung nur per E-Mail
 
 
