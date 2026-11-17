@@ -42,6 +42,7 @@ class Settings:
     dev: bool = False
     mode: str = "single"   # single = eine Familie (Self-Hosting) | saas = viele Familien
     master_key: str = ""   # KIDCTL_MASTER_KEY: verschlüsselt die Schlüssel der Familien (app.crypto)
+    admin_allow_nets: tuple = ()   # ADMIN_ALLOW_NETS: Verwaltungsbereich nur aus diesen Netzen (leer = alle)
     relocate_to: str = ""  # KIDCTL_RELOCATE_TO: Server-Umzug – Agenten wechseln, wenn der neue Server sie anerkennt
 
     @property
@@ -92,6 +93,15 @@ def _relocate_to() -> str:
     return url
 
 
+def _admin_nets() -> tuple:
+    import ipaddress
+    raw = os.environ.get("ADMIN_ALLOW_NETS", "")
+    try:
+        return tuple(ipaddress.ip_network(n.strip(), strict=False) for n in raw.split(",") if n.strip())
+    except ValueError as e:
+        raise RuntimeError(f"ADMIN_ALLOW_NETS ungültig ({e}) – z. B. 192.168.1.0/24,2001:db8::/32") from e
+
+
 def _mode() -> str:
     mode = os.environ.get("KIDCTL_MODE", "single").strip().lower() or "single"
     if mode not in ("single", "saas"):
@@ -123,6 +133,7 @@ def load_settings() -> Settings:
         mode=_mode(),
         master_key=_master_key(dev),
         relocate_to=_relocate_to(),
+        admin_allow_nets=_admin_nets(),
         vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY", ""),
         vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY", ""),
         vapid_subject=os.environ.get("VAPID_SUBJECT", ""),

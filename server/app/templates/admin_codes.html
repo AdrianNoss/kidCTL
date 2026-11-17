@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Einladungscodes") }} – KidCTL{% endblock %}
+{% block content %}
+{% set heading = _("Einladungscodes") %}{% include "_admin_head.html" %}
+{% if new_code %}
+<section class="card">
+  <h2>{{ _("Neuer Code") }}</h2>
+  <p><code class="link-box">{{ new_code }}</code></p>
+  <p class="muted"><small>{{ _("Der Code wird nur jetzt angezeigt. Er ist {days} Tage gültig und einmal verwendbar.").format(days=days) }}</small></p>
+</section>
+{% endif %}
+<form method="post" action="/admin/codes" class="card">
+  <h2>{{ _("Code erzeugen") }}</h2>
+  <p class="muted">{{ _("Für die Registrierung mit REGISTRATION=invite: Wer den Code hat, kann eine Familie anlegen.") }}</p>
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <label>{{ _("Notiz (für wen)") }} <input name="note" maxlength="255"></label>
+  <button type="submit">{{ _("Erzeugen") }}</button>
+</form>
+{% if codes %}
+<section class="card">
+  <table class="responsive">
+    {% for c in codes %}
+    <tr>
+      <td><strong>{{ c.note or _("ohne Notiz") }}</strong><br><small class="muted">{{ _("erstellt {date}").format(date=c.created_at | localtime) }}</small></td>
+      <td class="right"><div class="actions">
+        {% if c.used_at %}<span class="pill ok">{{ _("eingelöst {date}").format(date=c.used_at | localtime) }}{% if c.family_id %} · #{{ c.family_id }}{% endif %}</span>
+        {% elif c.expires_at < now %}<span class="pill">{{ _("abgelaufen") }}</span>
+        {% else %}<span class="pill play">{{ _("offen bis {date}").format(date=c.expires_at | localtime) }}</span>{% endif %}
+        {% if not c.used_at %}
+        <form method="post" action="/admin/codes/{{ c.id }}/delete" class="inline">
+          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+          <button type="submit" class="danger small">{{ _("Löschen") }}</button>
+        </form>{% endif %}
+      </div></td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endif %}
+{% endblock %}

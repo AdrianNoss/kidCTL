@@ -122,6 +122,45 @@ class ParentSession(Base):
     parent: Mapped[Parent] = relationship()
 
 
+class Operator(Base):
+    """Betreiber-Account für den Verwaltungsbereich (``/admin``) – getrennt von Eltern, ohne Familie."""
+    __tablename__ = "operator"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(64), unique=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    totp_secret: Mapped[str] = mapped_column(String(64))
+    totp_last_step: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class OperatorSession(Base):
+    __tablename__ = "operator_session"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    operator_id: Mapped[int] = mapped_column(ForeignKey("operator.id", ondelete="CASCADE"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    csrf_token: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+
+    operator: Mapped[Operator] = relationship()
+
+
+class SignupCode(Base):
+    """Einladungscode für die Registrierung (``REGISTRATION=invite``): einmalig, nur der Hash wird gespeichert."""
+    __tablename__ = "signup_code"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    note: Mapped[str] = mapped_column(String(255), default="")      # Notiz des Betreibers (für wen)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("operator.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    family_id: Mapped[int | None] = mapped_column(ForeignKey("family.id", ondelete="SET NULL"), nullable=True)
+
+
 class LoginAttempt(Base):
     """Fehlgeschlagene Logins/Kopplungen für Rate-Limiting."""
     __tablename__ = "login_attempt"

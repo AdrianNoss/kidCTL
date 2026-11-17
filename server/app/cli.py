@@ -6,6 +6,7 @@ Per Env-Var:  KIDCTL_BOOTSTRAP_USER=… [KIDCTL_BOOTSTRAP_EMAIL=…] KIDCTL_BOOT
 Notfall:      python -m app.cli reset-password <benutzer> | reset-totp <benutzer>
 VAPID:        python -m app.cli vapid-keys >> .env
 Hauptschlüssel: python -m app.cli master-key >> .env   (einmalig; getrennt sichern!)
+Betreiber:    python -m app.cli create-operator [--reset]   (Verwaltungsbereich /admin, Passwort + TOTP)
 Umstieg:      python -m app.cli import-sqlite /data/kidctl.db [--apply]   (SQLite bis 0.32.x -> PostgreSQL)
 """
 
@@ -78,6 +79,45 @@ def create_parent(args: argparse.Namespace) -> int:
 
     print(f"\nEltern-Account {username!r} angelegt.")
     _print_totp(uri, parent.totp_secret)
+    return 0
+
+
+def create_operator(args: argparse.Namespace) -> int:
+    """Betreiber-Account für /admin anlegen; mit --reset Passwort und Authenticator eines bestehenden neu setzen."""
+    init_db()
+    from .models import Operator, OperatorSession
+    username = os.environ.get("KIDCTL_OPERATOR_USER") or input("Betreiber-Benutzername: ").strip()
+    password = os.environ.get("KIDCTL_OPERATOR_PASSWORD")
+    if not password:
+        password = getpass.getpass("Passwort (min. 12 Zeichen): ")
+        if password != getpass.getpass("Passwort wiederholen: "):
+            print("Passwörter stimmen nicht überein.", file=sys.stderr)
+            return 1
+    if err := password_error(password):
+        print(err, file=sys.stderr)
+        return 1
+    if not username or len(username) > 64:
+        print("Benutzername: 1–64 Zeichen.", file=sys.stderr)
+        return 1
+    with platform_session() as db:
+        op = db.scalar(select(Operator).where(Operator.username == username))
+        if op is not None and not args.reset:
+            print(f"Betreiber {username!r} existiert bereits (zum Zurücksetzen: --reset).", file=sys.stderr)
+            return 1
+        if op is None and args.reset:
+            print(f"Betreiber {username!r} gibt es nicht.", file=sys.stderr)
+            return 1
+        if op is None:
+            op = Operator(username=username)
+            db.add(op)
+        op.password_hash, op.totp_secret, op.totp_last_step = hash_password(password), new_totp_secret(), 0
+        db.flush()
+        from sqlalchemy import delete
+        db.execute(delete(OperatorSession).where(OperatorSession.operator_id == op.id))   # alte Sitzungen beenden
+        db.commit()
+        uri, secret = totp_uri(op), op.totp_secret
+    print(f"\nBetreiber {username!r} {'zurückgesetzt' if args.reset else 'angelegt'} – Anmeldung unter /admin.")
+    _print_totp(uri, secret)
     return 0
 
 
@@ -223,6 +263,9 @@ def main() -> int:
     df.add_argument("family_id", type=int)
     df.add_argument("--apply", action="store_true", help="wirklich löschen (sonst nur anzeigen)")
     df.set_defaults(func=delete_family)
+    co = sub.add_parser("create-operator", help="Betreiber-Account für den Verwaltungsbereich /admin anlegen")
+    co.add_argument("--reset", action="store_true", help="Passwort und Authenticator eines bestehenden neu setzen")
+    co.set_defaults(func=create_operator)
     ip = sub.add_parser("import-sqlite", help="SQLite-Datenbank (bis 0.32.x) nach PostgreSQL übernehmen")
     ip.add_argument("path", help="Pfad zur kidctl.db")
     ip.add_argument("--apply", action="store_true", help="wirklich übernehmen (sonst Probelauf)")

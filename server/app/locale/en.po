@@ -1873,3 +1873,83 @@ msgstr "{by} invites you to help manage your family's children in KidCTL."
 
 msgid "Über diesen Link legst du Passwort und Authenticator fest ({days} Tage gültig):"
 msgstr "Use this link to set your password and authenticator (valid for {days} days):"
+
+# Verwaltungsbereich (Etappe 4.2)
+msgid "Agent-Versionen"
+msgstr "Agent versions"
+
+msgid "Code erzeugen"
+msgstr "Create code"
+
+msgid "Der Code wird nur jetzt angezeigt. Er ist {days} Tage gültig und einmal verwendbar."
+msgstr "The code is shown only now. It is valid for {days} days and can be used once."
+
+msgid "Einladungscodes"
+msgstr "Invitation codes"
+
+msgid "Erzeugen"
+msgstr "Create"
+
+msgid "Familie"
+msgstr "Family"
+
+msgid "Familien"
+msgstr "Families"
+
+msgid "Für die Registrierung mit REGISTRATION=invite: Wer den Code hat, kann eine Familie anlegen."
+msgstr "For sign-up with REGISTRATION=invite: whoever has the code can create a family."
+
+msgid "Letzte Aktivität"
+msgstr "Last activity"
+
+msgid "Neuer Code"
+msgstr "New code"
+
+msgid "Notiz (für wen)"
+msgstr "Note (for whom)"
+
+msgid "Nur Metadaten: Namen und Inhalte der Familien sind verschlüsselt und hier nicht lesbar."
+msgstr "Metadata only: the families' names and content are encrypted and cannot be read here."
+
+msgid "Ruhemodus"
+msgstr "Paused"
+
+msgid "Verwaltung"
+msgstr "Administration"
+
+msgid "Zustand"
+msgstr "Status"
+
+msgid "abgelaufen"
+msgstr "expired"
+
+msgid "eingelöst {date}"
+msgstr "redeemed {date}"
+
+msgid "erstellt {date}"
+msgstr "created {date}"
+
+msgid "offen bis {date}"
+msgstr "open until {date}"
+
+msgid "ohne Notiz"
+msgstr "no note"
+
+msgid "ok"
+msgstr "ok"
+
+msgid "seit {date}"
+msgstr "since {date}"
+
+msgid "{families} Familien · {children} Kinder · {devices} Geräte · {paused} im Ruhemodus"
+msgstr "{families} families · {children} children · {devices} devices · {paused} paused"
+
+msgid "{n} Agent zu alt"
+msgid_plural "{n} Agenten zu alt"
+msgstr[0] "{n} agent too old"
+msgstr[1] "{n} agents too old"
+
+msgid "{n} Gerät offline"
+msgid_plural "{n} Geräte offline"
+msgstr[0] "{n} device offline"
+msgstr[1] "{n} devices offline"

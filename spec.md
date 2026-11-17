@@ -2362,3 +2362,16 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Getestet (pytest): kompletter Ablauf Einladen → Mail → Annehmen → Authenticator → Login per E-Mail; Link nur einmal gültig;
   abgelaufene und zurückgezogene Einladungen 404; fremde Familie sieht die Einladung nicht; nur Inhaber darf einladen;
   E-Mail über alle Familien eindeutig; SaaS ohne Benutzernamenfeld. `alembic check` auf der Entwicklungsdatenbank sauber.
+- 2026-11-17: Etappe 4.2 Verwaltungsbereich des Betreibers: Tabellen `operator`, `operator_session`, `signup_code`
+  (Migration 0011). `cli create-operator` (interaktiv oder `KIDCTL_OPERATOR_USER`/`_PASSWORD`; `--reset` setzt Passwort und
+  Authenticator neu und beendet Sitzungen). Anmeldung `/admin/login` mit Passwort + TOTP, eigener Cookie `kidctl_admin`
+  (Pfad `/admin`, SameSite=Strict, 12 h), eigene Fehlversuchszähler; `ADMIN_ALLOW_NETS` (CIDR-Liste) – außerhalb 404.
+  Übersicht `/admin`: je Familie Anzahl Eltern/Kinder/Geräte, Agent-Versionen, letzte Geräte- und Eltern-Aktivität,
+  Geräte offline (> 48 h), Agent zu alt, Ruhemodus – nur unverschlüsselte Spalten im Plattformkontext. Einladungscodes
+  `/admin/codes`: 12 Zeichen (XXXX-XXXX-XXXX), nur Hash gespeichert, einmalig, 30 Tage, mit Notiz; eingelöste Codes
+  bleiben sichtbar (mit Familie), offene löschbar; `operators.find_code` für die Registrierung (4.3). Aufbewahrung:
+  abgelaufene Betreiber-Sitzungen 30 Tage (`KIDCTL_KEEP_ADMIN_SESSIONS_DAYS`). Doku `docs/server(.de).md`, `.env.example`.
+  Getestet (pytest, 6 neue Tests): Zugang nur mit Betreiber-Sitzung (Eltern-Sitzung gilt nicht und umgekehrt), Abmelden,
+  Fehlversuchssperre, Übersicht ohne Namen/Inhalte, Codes (einmalig, tolerant bei Eingabe, eingelöste nicht löschbar,
+  CSRF), IP-Beschränkung, CLI anlegen/zurücksetzen. Im Browser auf der Entwicklungsdatenbank angesehen (Login, Familien,
+  Codes); `alembic check` sauber.

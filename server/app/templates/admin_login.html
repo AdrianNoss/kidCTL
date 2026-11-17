@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Verwaltung") }} – KidCTL{% endblock %}
+{% block content %}
+<form method="post" action="/admin/login" class="card narrow">
+  <div class="login-brand"><span class="mark" aria-hidden="true"></span>KidCTL</div>
+  <h2>{{ _("Verwaltung") }}</h2>
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <label>{{ _("Benutzername") }} <input name="username" value="{{ username or '' }}" autocomplete="username" required autofocus></label>
+  <label>{{ _("Passwort") }} <input type="password" name="password" autocomplete="current-password" required></label>
+  <label>{{ _("Authenticator-Code") }} <input name="totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
+  <button type="submit" style="width:100%">{{ _("Anmelden") }}</button>
+  {% include "_langswitch.html" %}
+</form>
+{% endblock %}
