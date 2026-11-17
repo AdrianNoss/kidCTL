@@ -9,7 +9,7 @@
 <section class="card">
   <table class="responsive">
     <tr><th>{{ _("Familie") }}</th><th>{{ _("Eltern") }}</th><th>{{ _("Kinder") }}</th><th>{{ _("Geräte") }}</th>
-      <th>{{ _("Agent-Versionen") }}</th><th>{{ _("Letzte Aktivität") }}</th><th>{{ _("Zustand") }}</th></tr>
+      <th>{{ _("Agent-Versionen") }}</th><th>{{ _("Letzte Aktivität") }}</th><th>{{ _("Zustand") }}</th><th>{{ _("Support") }}</th></tr>
     {% for f in families %}
     <tr>
       <td><strong>#{{ f.id }}</strong><br><small class="muted">{{ _("seit {date}").format(date=fmt_date(f.created_at.date())) }}</small></td>
@@ -24,6 +24,11 @@
         {% if f.unsupported %}<span class="pill danger">{{ ngettext("{n} Agent zu alt", "{n} Agenten zu alt", f.unsupported).format(n=f.unsupported) }}</span>{% endif %}
         {% if not (f.paused_at or f.offline or f.unsupported) %}<span class="pill ok">{{ _("ok") }}</span>{% endif %}
       </td>
+      <td class="right">{% if f.id in granted %}
+        <form method="post" action="/admin/support/{{ f.id }}" class="inline">
+          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+          <button type="submit" class="secondary small" title="{{ _('freigegeben bis {until}').format(until=granted[f.id][1] | localtime) }}">{{ _("Ansehen") }}</button>
+        </form>{% endif %}</td>
     </tr>
     {% endfor %}
   </table>

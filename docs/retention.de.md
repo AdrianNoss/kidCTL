@@ -12,6 +12,8 @@ Der Server löscht alle 6 Stunden, was älter ist als:
 | Anmeldeversuche | 30 Tage | `KIDCTL_KEEP_LOGINS_DAYS` |
 | Abgelaufene Sitzungen und Links | 30 Tage nach Ablauf | `KIDCTL_KEEP_SESSIONS_DAYS`, `KIDCTL_KEEP_ADMIN_SESSIONS_DAYS`, `KIDCTL_KEEP_TOKENS_DAYS` |
 | Abgelaufene Kopplungscodes | 1 Tag nach Ablauf | `KIDCTL_KEEP_PAIRING_DAYS` |
+| Protokoll der Support-Zugriffe | 2 Jahre (730 Tage) | `KIDCTL_KEEP_SUPPORT_LOG_DAYS` |
+| Support-Freigaben | 2 Jahre nach Ablauf | `KIDCTL_KEEP_SUPPORT_GRANTS_DAYS` |
 
 Den Chat eines Kindes können Eltern jederzeit unter **Chat → Chat leeren** löschen. Eine Familie endgültig löschen
 (Schlüssel verwerfen, dann alle Daten): `docker compose exec kidctl python -m app.cli delete-family <id>` (Probelauf),

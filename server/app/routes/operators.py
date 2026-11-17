@@ -8,6 +8,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from .. import operators as opr
+from .. import support
 from ..config import settings
 from ..db import get_platform_db
 from ..i18n import _
@@ -67,10 +68,11 @@ def login(request: Request, username: str = Form(""), password: str = Form(""), 
 
 @router.post("/logout")
 def logout(sess: OperatorSession = Depends(opr.operator_csrf), db: Session = Depends(get_platform_db)):
-    db.execute(delete(OperatorSession).where(OperatorSession.id == sess.id))
+    db.execute(delete(OperatorSession).where(OperatorSession.id == sess.id))   # Support-Ansichten enden mit
     db.commit()
     resp = RedirectResponse("/admin/login", status_code=303)
     resp.delete_cookie(opr.COOKIE, path="/admin")
+    resp.delete_cookie(support.COOKIE, path="/")
     return resp
 
 
@@ -82,7 +84,31 @@ def overview(request: Request, sess: OperatorSession = Depends(opr.require_opera
     rows = opr.families(db)
     totals = {"families": len(rows), "children": sum(r.children for r in rows),
               "devices": sum(r.devices for r in rows), "paused": sum(1 for r in rows if r.paused_at)}
-    return _render(request, "admin_overview.html", sess, families=rows, totals=totals)
+    return _render(request, "admin_overview.html", sess, families=rows, totals=totals,
+                   granted=support.granted_families(db))
+
+
+# ---------- Support-Ansicht (nur mit Freigabe der Familie) ----------
+
+@router.post("/support/{family_id}")
+def support_open(family_id: int, sess: OperatorSession = Depends(opr.operator_csrf),
+                 db: Session = Depends(get_platform_db)):
+    raw = support.open_view(db, sess, family_id)
+    if raw is None:
+        raise HTTPException(403, "Keine Freigabe dieser Familie")
+    resp = RedirectResponse("/", status_code=303)
+    resp.set_cookie(support.COOKIE, raw, max_age=support.VIEW_HOURS * 3600, httponly=True,
+                    secure=settings.cookie_secure, samesite="strict", path="/")
+    return resp
+
+
+@router.get("/support/end")
+def support_end(request: Request, db: Session = Depends(get_platform_db)):
+    """Support-Ansicht beenden (Link im Banner); ohne Betreiber-Anmeldung nötig, löscht nur die eigene Ansicht."""
+    support.close_view(db, request)
+    resp = RedirectResponse("/admin", status_code=303)
+    resp.delete_cookie(support.COOKIE, path="/")
+    return resp
 
 
 # ---------- Einladungscodes ----------

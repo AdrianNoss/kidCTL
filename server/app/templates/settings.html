@@ -3,6 +3,33 @@
 {% block content %}
 <div class="page-head"><h1>{{ _("Einstellungen") }}</h1></div>
 
+{% if SAAS %}
+<section class="card" id="support">
+  <div class="card-head"><h2>{{ _("Support-Zugriff") }}</h2>
+    {% if support_grant %}<span class="pill warn">{{ _("freigegeben bis {until}").format(until=support_grant.expires_at | localtime) }}</span>{% else %}<span class="pill">{{ _("aus") }}</span>{% endif %}</div>
+  <p class="muted"><small>{{ _("Für eine Supportanfrage kann der Betreiber eure Seiten zeitlich begrenzt ansehen – nur lesend: Er kann nichts ändern, keine Nachrichten senden und keine Profile sehen. Jeder Zugriff steht unten im Protokoll.") }}</small></p>
+  {% if support_grant %}
+  <form method="post" action="/settings/support/revoke">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <button type="submit" class="danger">{{ _("Freigabe beenden") }}</button>
+  </form>
+  {% elif is_owner %}
+  <form method="post" action="/settings/support" class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>{{ _("Dauer") }} <select name="hours">{% for h in support_durations %}<option value="{{ h }}"{% if h == 24 %} selected{% endif %}>{{ ngettext("{n} Stunde", "{n} Stunden", h).format(n=h) }}</option>{% endfor %}</select></label>
+    <button type="submit" class="secondary">{{ _("Support-Zugriff freigeben") }}</button>
+  </form>
+  {% else %}<p class="muted"><small>{{ _("Freigeben kann nur der Inhaber der Familie.") }}</small></p>{% endif %}
+  {% if support_log %}
+  <details><summary>{{ _("Protokoll der Support-Zugriffe") }} ({{ support_log | length }})</summary>
+    <table class="responsive">
+      {% for a in support_log %}<tr><td>{{ a.at | localtime }}</td><td data-label="{{ _('Betreiber') }}">{{ a.operator }}</td><td data-label="{{ _('Seite') }}"><code>{{ a.path }}</code></td></tr>{% endfor %}
+    </table>
+  </details>
+  {% endif %}
+</section>
+{% endif %}
+
 <section class="card" id="backup">
   <div class="card-head"><h2>{{ _("Datenbank-Backup") }}</h2>
     {% if backup_error %}<span class="pill warn">{{ _("Fehler") }}</span>{% elif backups %}<span class="pill ok">{{ _("aktuell") if (backups[0].at.date() >= today_minus(1)) else _("veraltet") }}</span>{% endif %}</div>

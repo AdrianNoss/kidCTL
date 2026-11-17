@@ -94,7 +94,13 @@ Der Bereich zeigt nur Metadaten: Familien mit Anzahl Eltern, Kinder und Geräte,
 und Auffälligkeiten (Geräte offline, Agent zu alt, Ruhemodus). Namen und Inhalte sind mit dem Schlüssel der jeweiligen
 Familie verschlüsselt und dort nicht lesbar. Außerdem erzeugst du hier **Einladungscodes** für die Registrierung
 (einmalig, 30 Tage gültig, mit Notiz). Neue Familien registrieren sich unter `/signup`: E-Mail-Adresse (und Code) →
-Bestätigungslink per Mail (24 h) → Passwort und Authenticator → eigene Familie, Inhaber-Account, angemeldet. Die Sitzung gilt 12 Stunden; mit `ADMIN_ALLOW_NETS` lässt sich der Bereich
+Bestätigungslink per Mail (24 h) → Passwort und Authenticator → eigene Familie, Inhaber-Account, angemeldet.
+
+**Support-Ansicht:** Der Inhaber einer Familie gibt unter „Einstellungen → Support-Zugriff“ für 1, 24 oder 72 Stunden
+frei; jedes Elternteil kann die Freigabe jederzeit beenden. Solange sie gilt, steht in der Übersicht bei der Familie
+„Ansehen“. Du siehst dann ihre Seiten wie ein Elternteil, aber nur lesend (keine Änderungen, keine Nachrichten, keine
+Profile), mit Banner; die Ansicht endet nach 2 Stunden, mit der Freigabe oder beim Abmelden. Jeder Seitenaufruf
+wird protokolliert und ist für die Familie in den Einstellungen sichtbar. Die Sitzung gilt 12 Stunden; mit `ADMIN_ALLOW_NETS` lässt sich der Bereich
 auf bestimmte Netze beschränken.
 
 ## Handy einrichten

@@ -69,6 +69,7 @@ def render(request: Request, template: str, status_code: int = 200, **ctx):
     sess = getattr(request.state, "session", None)
     ctx.setdefault("current_parent", sess.parent if sess else None)
     ctx.setdefault("csrf_token", sess.csrf_token if sess else "")
+    ctx.setdefault("support_view", getattr(request.state, "support", None))
     return templates.TemplateResponse(request, template, ctx, status_code=status_code)
 
 

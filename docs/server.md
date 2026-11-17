@@ -94,7 +94,12 @@ The area shows metadata only: families with the number of parents, children and 
 activity and issues (devices offline, agent too old, paused). Names and content are encrypted with each family's key
 and cannot be read there. You also create **invitation codes** for sign-up here (single use, valid for 30 days, with
 a note). New families sign up at `/signup`: email address (and code) → confirmation link by email (24 h) →
-password and authenticator → their own family, owner account, signed in. The session lasts 12 hours; `ADMIN_ALLOW_NETS` restricts the area to certain networks.
+password and authenticator → their own family, owner account, signed in.
+
+**Support view:** The owner of a family grants access under "Settings → Support access" for 1, 24 or 72 hours; any
+parent can end it at any time. While it is valid, the overview shows "View" next to the family. You then see its
+pages like a parent, but read-only (no changes, no messages, no profiles), with a banner; the view ends after 2 hours,
+with the grant or when you sign out. Every page view is logged and visible to the family in the settings. The session lasts 12 hours; `ADMIN_ALLOW_NETS` restricts the area to certain networks.
 
 ## Set up the phone
 

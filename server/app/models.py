@@ -161,6 +161,40 @@ class SignupCode(Base):
     family_id: Mapped[int | None] = mapped_column(ForeignKey("family.id", ondelete="SET NULL"), nullable=True)
 
 
+class SupportGrant(FamilyScoped, Base):
+    """Freigabe der Familie für die Support-Ansicht (nur lesend), zeitlich begrenzt, jederzeit widerrufbar."""
+    __tablename__ = "support_grant"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    granted_by: Mapped[int | None] = mapped_column(ForeignKey("parent.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class SupportAccess(FamilyScoped, Base):
+    """Protokoll der Support-Zugriffe – für die Familie sichtbar, 2 Jahre aufbewahrt."""
+    __tablename__ = "support_access"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    operator: Mapped[str] = mapped_column(String(64), default="")   # Benutzername des Betreibers
+    path: Mapped[str] = mapped_column(String(255), default="")      # aufgerufene Seite
+
+
+class SupportSession(Base):
+    """Laufende Support-Ansicht eines Betreibers in einer Familie (Cookie ``kidctl_support``). Gilt nur, solange
+    Freigabe und Betreiber-Sitzung gelten."""
+    __tablename__ = "support_session"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    operator_session_id: Mapped[int] = mapped_column(ForeignKey("operator_session.id", ondelete="CASCADE"))
+    grant_id: Mapped[int] = mapped_column(ForeignKey("support_grant.id", ondelete="CASCADE"))
+    family_id: Mapped[int] = mapped_column(ForeignKey("family.id", ondelete="CASCADE"))
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+
+
 class LoginAttempt(Base):
     """Fehlgeschlagene Logins/Kopplungen für Rate-Limiting."""
     __tablename__ = "login_attempt"

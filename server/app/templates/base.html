@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <script src="{{ asset('app.js') }}" defer></script>
 </head>
-<body class="{{ 'has-nav' if current_parent else 'no-nav' }}">
+<body class="{{ 'has-nav' if current_parent else 'no-nav' }}{{ ' support-view' if support_view }}">
 <header class="appbar">
   <a href="/" class="brand"><span class="mark" aria-hidden="true"></span>KidCTL</a>
   <div class="appbar-actions">
@@ -24,7 +24,9 @@
             title="{{ _('Darstellung wechseln') }}" aria-label="{{ _('Darstellung wechseln') }}">
       {{ icon("theme-auto", "only-auto") }}{{ icon("theme-light", "only-light") }}{{ icon("theme-dark", "only-dark") }}
     </button>
-    {% if current_parent %}
+    {% if support_view %}
+    <a href="/admin/support/end" class="btn secondary small">{{ _("Support-Ansicht beenden") }}</a>
+    {% elif current_parent %}
     <a href="/profile" class="icon-btn{% if path == '/profile' %} active{% endif %}" title="{{ _('Profil') }}: {{ current_parent.display_name or current_parent.username }}"
        aria-label="{{ _('Profil') }}"{% if path == '/profile' %} aria-current="page"{% endif %}>{{ icon("account") }}</a>
     <form method="post" action="/logout" class="inline">
@@ -45,6 +47,7 @@
 </nav>
 {% endif %}
 <main>
+{% if support_view %}<p class="warn support-banner">{{ _("Support-Ansicht (nur lesend) · Familie #{family} · {operator} · bis {until}").format(family=support_view.family_id, operator=support_view.operator, until=support_view.expires_at | localtime) }}</p>{% endif %}
 {% if error %}<p class="error">{{ error }}</p>{% endif %}
 {% if notice %}<p class="success">{{ notice }}</p>{% endif %}
 {% block content %}{% endblock %}

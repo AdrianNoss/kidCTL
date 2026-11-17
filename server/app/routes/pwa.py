@@ -11,12 +11,12 @@ from pydantic import BaseModel, Field
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from .. import backup
+from .. import backup, support
 from ..i18n import _
 from ..config import settings
 from ..db import get_db
 from .. import accounts
-from ..models import Parent, ParentSession, PushSubscription
+from ..models import ROLE_OWNER, Membership, Parent, ParentSession, PushSubscription
 from ..push import send_to_parents_sync
 from ..security import csrf_protect, require_session
 from ..web import render
@@ -51,7 +51,38 @@ def _settings(request: Request, db: Session, sess: ParentSession, status_code: i
                   vapid_public_key=settings.vapid_public_key, subscription_count=count,
                   sent=request.query_params.get("sent"), backups=backup.backups(), backup_error=backup.last_error(),
                   backup_keep=backup.KEEP, backup_hour=backup.BACKUP_HOUR,
-                  backup_done=request.query_params.get("backup"), **ctx)
+                  backup_done=request.query_params.get("backup"), **_support_ctx(db, sess), **ctx)
+
+
+def _is_owner(db: Session, parent_id) -> bool:
+    return db.scalar(select(Membership.role).where(Membership.parent_id == parent_id)) == ROLE_OWNER
+
+
+def _support_ctx(db: Session, sess) -> dict:
+    if not settings.saas:
+        return {}
+    return {"support_grant": support.active_grant(db), "support_log": support.log(db),
+            "support_durations": support.DURATIONS, "is_owner": _is_owner(db, sess.parent_id)}
+
+
+@router.post("/settings/support")
+def support_grant(hours: int = Form(24), sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    """Inhaber gibt die Support-Ansicht frei (nur lesend, protokolliert)."""
+    if not settings.saas:
+        raise HTTPException(404)
+    if not _is_owner(db, sess.parent_id):
+        raise HTTPException(403, "Nur der Inhaber der Familie")
+    if hours not in support.DURATIONS:
+        raise HTTPException(400)
+    support.grant(db, sess.parent_id, hours)
+    return RedirectResponse("/settings#support", status_code=303)
+
+
+@router.post("/settings/support/revoke")
+def support_revoke(sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    """Jedes Elternteil kann die Freigabe sofort beenden – auch eine gerade offene Support-Ansicht."""
+    support.revoke(db)
+    return RedirectResponse("/settings#support", status_code=303)
 
 
 @router.post("/settings/backup/download")

@@ -12,6 +12,8 @@ Every 6 hours the server deletes what is older than:
 | Sign-in attempts | 30 days | `KIDCTL_KEEP_LOGINS_DAYS` |
 | Expired sessions and links | 30 days after expiry | `KIDCTL_KEEP_SESSIONS_DAYS`, `KIDCTL_KEEP_ADMIN_SESSIONS_DAYS`, `KIDCTL_KEEP_TOKENS_DAYS` |
 | Expired pairing codes | 1 day after expiry | `KIDCTL_KEEP_PAIRING_DAYS` |
+| Support access log | 2 years (730 days) | `KIDCTL_KEEP_SUPPORT_LOG_DAYS` |
+| Support access grants | 2 years after expiry | `KIDCTL_KEEP_SUPPORT_GRANTS_DAYS` |
 
 Parents can delete a child's chat at any time under **Chat → Clear chat**. To delete a family permanently
 (discard the key, then all data): `docker compose exec kidctl python -m app.cli delete-family <id>` (dry run),

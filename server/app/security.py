@@ -177,6 +177,15 @@ def require_session(request: Request, db: Session = Depends(get_db)) -> ParentSe
     with platform(db):
         sess = get_session(db, request)
         family_id = family_of_parent(db, sess.parent_id) if sess else None
+        view = None
+        if sess is None:
+            from . import support
+            view = support.view_for(db, request)        # Support-Ansicht des Betreibers (nur lesend)
+    if view is not None:
+        support.enter(db, request, view)
+        request.state.session = request.state.support = view
+        request.state.family_id = view.family_id
+        return view
     if sess is None or family_id is None:
         raise LoginRequired()
     set_family(db, family_id)
@@ -208,6 +217,8 @@ def _check_origin(request: Request) -> None:
 
 async def csrf_protect(request: Request, sess: ParentSession = Depends(require_session)) -> ParentSession:
     """Für alle POST-Aktionen eingeloggter Eltern: Token muss zur Session passen."""
+    from .support import deny_write
+    deny_write(sess)
     _check_origin(request)
     if not hmac.compare_digest(await _form_token(request), sess.csrf_token):
         raise HTTPException(403, "CSRF-Token ungültig")

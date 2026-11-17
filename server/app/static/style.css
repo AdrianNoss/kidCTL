@@ -519,3 +519,5 @@ body.no-nav .save-bar { bottom:0; }
   .save-bar { bottom:0; }
   main { padding:1rem 2rem 3rem; }
 }
+/* Support-Ansicht (nur lesend): Aktionen sichtbar, aber nicht bedienbar – der Server lehnt sie ohnehin ab */
+.support-view main form[method="post"] { opacity:.55; pointer-events:none; }

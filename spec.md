@@ -2385,3 +2385,15 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Getestet (pytest, 5 neue Tests): offener Ablauf bis zur eigenen Familie, Link danach unbrauchbar, vergebene Adresse
   ohne Mail; Einladungscode Pflicht, eingelöst mit Familie, zweiter Link mit demselben Code abgewiesen; Signatur/Ablauf;
   Einzelbetrieb 404; ohne SMTP 503; Fehlversuchssperre. Seiten im Browser im SaaS-Modus angesehen.
+- 2026-11-17: Etappe 4.4 Support-Freigabe: Tabellen `support_grant`, `support_access`, `support_session` (Migration 0012).
+  Inhaber gibt unter „Einstellungen → Support-Zugriff“ (nur SaaS) für 1/24/72 h frei, jedes Elternteil kann beenden.
+  Betreiber öffnet in `/admin` bei freigegebenen Familien „Ansehen“ → Cookie `kidctl_support` (Pfad `/`, SameSite=Strict);
+  `require_session` setzt dann den Familienkontext ohne Eltern-Sitzung. Gültig nur, solange Ansicht (max. 2 h),
+  Freigabe und Betreiber-Sitzung gelten (Prüfung bei jedem Aufruf; Widerruf/Abmelden beendet sofort). Nur lesend: alle
+  Aktionen laufen über `csrf_protect` und werden abgelehnt, `/profile` gesperrt, Formulare ausgegraut, Banner mit Familie,
+  Betreiber und Ablauf, Abmelden/Profil im Kopf ersetzt durch „Support-Ansicht beenden“. Jeder Seitenaufruf (außer
+  Chat-Aktualisierung) wird mit Betreiber und Pfad protokolliert, für alle Eltern sichtbar; Aufbewahrung 2 Jahre.
+  Getestet (pytest, 5 neue Tests): Freigabe → Ansicht zeigt Kinder, Senden/Ändern/Profil 403, Protokoll; Widerruf durch
+  anderes Elternteil beendet offene Ansicht; nur Inhaber gibt frei, nur 1/24/72 h; fremde Familie ohne Freigabe 403;
+  abgelaufene Freigabe; Betreiber-Abmeldung beendet Ansicht; Einzelbetrieb ohne Bereich. Im Browser im SaaS-Modus
+  angesehen (Banner, Einstellungen), Widerruf beendet die Ansicht auf dem laufenden Server.

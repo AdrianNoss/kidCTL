@@ -2017,3 +2017,51 @@ msgstr "Welcome to KidCTL!"
 
 msgid "Über diesen Link bestätigst du deine E-Mail-Adresse und legst Passwort und Authenticator fest ({hours} Stunden gültig):"
 msgstr "Use this link to confirm your email address and set your password and authenticator (valid for {hours} hours):"
+
+# Support-Freigabe (Etappe 4.4)
+msgid "Ansehen"
+msgstr "View"
+
+msgid "Betreiber"
+msgstr "Operator"
+
+msgid "Freigabe beenden"
+msgstr "End access"
+
+msgid "Freigeben kann nur der Inhaber der Familie."
+msgstr "Only the owner of the family can grant access."
+
+msgid "Für eine Supportanfrage kann der Betreiber eure Seiten zeitlich begrenzt ansehen – nur lesend: Er kann nichts ändern, keine Nachrichten senden und keine Profile sehen. Jeder Zugriff steht unten im Protokoll."
+msgstr "For a support request, the operator can view your pages for a limited time – read-only: they can't change anything, send messages or see profiles. Every access is listed in the log below."
+
+msgid "Protokoll der Support-Zugriffe"
+msgstr "Support access log"
+
+msgid "Seite"
+msgstr "Page"
+
+msgid "Support"
+msgstr "Support"
+
+msgid "Support-Ansicht (nur lesend) · Familie #{family} · {operator} · bis {until}"
+msgstr "Support view (read-only) · family #{family} · {operator} · until {until}"
+
+msgid "Support-Ansicht beenden"
+msgstr "End support view"
+
+msgid "Support-Zugriff"
+msgstr "Support access"
+
+msgid "Support-Zugriff freigeben"
+msgstr "Grant support access"
+
+msgid "aus"
+msgstr "off"
+
+msgid "freigegeben bis {until}"
+msgstr "granted until {until}"
+
+msgid "{n} Stunde"
+msgid_plural "{n} Stunden"
+msgstr[0] "{n} hour"
+msgstr[1] "{n} hours"

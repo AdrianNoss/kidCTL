@@ -16,7 +16,7 @@ from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
 from .models import (
-    AppUsage, BlockedEvent, GameSession, LoginAttempt, Message, OperatorSession, PairingCode, ParentSession, ParentToken,
+    AppUsage, BlockedEvent, GameSession, LoginAttempt, Message, OperatorSession, PairingCode, SupportAccess, SupportGrant, SupportSession, ParentSession, ParentToken,
     UsageRecord,
 )
 
@@ -42,6 +42,9 @@ RULES = [
     Rule("LOGINS", LoginAttempt, "at", 30, "Anmeldeversuche"),
     Rule("SESSIONS", ParentSession, "expires_at", 30, "abgelaufene Sitzungen (nach Ablauf)"),
     Rule("ADMIN_SESSIONS", OperatorSession, "expires_at", 30, "abgelaufene Sitzungen des Betreibers (nach Ablauf)"),
+    Rule("SUPPORT_LOG", SupportAccess, "at", 730, "Protokoll der Support-Zugriffe (2 Jahre)"),
+    Rule("SUPPORT_GRANTS", SupportGrant, "expires_at", 730, "Support-Freigaben (2 Jahre nach Ablauf)"),
+    Rule("SUPPORT_SESSIONS", SupportSession, "expires_at", 1, "abgelaufene Support-Ansichten (nach Ablauf)"),
     Rule("TOKENS", ParentToken, "expires_at", 30, "abgelaufene Links (nach Ablauf)"),
     Rule("PAIRING", PairingCode, "expires_at", 1, "abgelaufene Kopplungscodes (nach Ablauf)"),
 ]
