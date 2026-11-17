@@ -1039,6 +1039,138 @@ News-Bereich hat, den Claude Code pflegt.
   `website/**`, bei `release: published` und von Hand (`workflow_dispatch`). Hugo-Version im Workflow fest
   gepinnt. Schritte: Releases holen → Platzhalter-Check (Impressum) → `hugo --minify` → Deploy auf Pages.
 
+### Wiki (entschieden 2026-11-17 per /grill-me)
+
+Ziel: Die Anleitungen aus `docs/` als gut lesbares Wiki auf der Projektseite, zweisprachig, mit Suche.
+Quelle bleiben die Markdown-Dateien im Repo; auf GitHub sind sie weiterhin direkt lesbar.
+
+#### Technik
+- Im bestehenden Hugo-Theme. `docs/` wird per Hugo-Mount als Abschnitt eingebunden: `/docs/` (EN),
+  `/de/docs/` (DE).
+- **Dateien:** `docs/<name>.md` = Englisch, `docs/<name>.de.md` = Deutsch (wie `README.md`/`README.de.md`).
+  Dateinamen englisch.
+- **Reines Markdown ohne Frontmatter.** Titel = erste `#`-Überschrift. Gruppen und Reihenfolge zentral in
+  `website/data/docs.yaml` (Gruppentitel `de`/`en`, Liste von Dateinamen ohne Endung).
+- **Render-Hooks:** relative Links zwischen `docs/`-Dateien → Wiki-Links der gleichen Sprache; Links außerhalb
+  von `docs/` (z. B. `../packaging/...`) → GitHub-Links (`blob/main/...`); Bilder aus `docs/img/` werden
+  mitveröffentlicht.
+- **Hinweisboxen** über GitHub-Alert-Syntax (`> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`, `> [!IMPORTANT]`) –
+  auf GitHub und im Wiki gleich.
+
+#### Aufteilung (`docs/`)
+| Gruppe | Seiten (Reihenfolge) |
+|---|---|
+| Erste Schritte / Getting started | `installation` (Übersicht: Voraussetzungen, Reihenfolge, Links), `server`, `package-repo`, `child-linux`, `child-windows`, `webui` |
+| Betrieb / Operation | `updates`, `backup`, `postgresql-migration`, `uninstall`, `games` (Steam, Heroic) |
+| Sicherheit / Security | `hardening` (bisher `haertung.md`), `limitations` (siehe „Sicherheitsrichtlinie“), `security` (Mount von `SECURITY.md`/`SECURITY.de.md`), `code-signing` |
+
+- `installation.md` und `code-signing.md` behalten ihren Pfad (externe Links, SignPath).
+- Der Bedien-Teil aus `packaging/repo/README.md` wandert nach `docs/package-repo`, der aus
+  `packaging/windows/README.md` nach `docs/child-windows`. Die Komponenten-READMEs (`server/`, `agent/`, `tray/`,
+  `packaging/*`, `dev/vm/`) behalten nur Entwickler-Interna, bleiben deutsch und verweisen fürs Bedienen ins Wiki.
+
+#### Sprache und Parität
+- **Quellsprache Deutsch.** Änderungen werden auf Deutsch geschrieben und im selben Commit ins Englische
+  übersetzt; bei Widerspruch gilt die deutsche Fassung.
+- Beide Fassungen haben **exakt den gleichen Inhalt** – gilt für alle `docs/`-Paare, für
+  `README.md`/`README.de.md` und für `SECURITY.md`/`SECURITY.de.md`. Spec, `CLAUDE.md`, Komponenten-READMEs und Code-Kommentare bleiben deutsch.
+- **Paritäts-Check** `dev/check_docs_parity.py` (als pytest-Test und im Pages-Workflow vor dem Hugo-Build;
+  Abweichung → Fehler mit Datei und Stelle):
+  - jede `x.md` hat eine `x.de.md` und umgekehrt
+  - gleiche Überschriftenfolge (Anzahl und Ebenen)
+  - Codeblöcke identisch (Sprache des Blocks und Inhalt; Kommentarzeilen `#`/`//`/`REM` dürfen abweichen)
+  - gleiche Anzahl Tabellenzeilen, Listenpunkte und Hinweisboxen (je Typ)
+  - gleiche Linkziele (Anker dürfen sprachabhängig sein) und gleiche Bilder (bis auf den Sprachordner
+    `img/en/` ↔ `img/de/`)
+  - jede `docs/`-Datei steht in `website/data/docs.yaml`, jeder Eintrag dort existiert
+
+#### Suche
+- **Pagefind** über die ganze Seite (Wiki, News, Startseite), Sprachen getrennt über `lang`, Filter
+  „Wiki“/„News“. Suchfeld im Seitenkopf, Tastenkürzel `Strg+K` und `/`. Index wird erst beim Tippen geladen;
+  keine externen Requests. Installation im Workflow per `pip install pagefind` (kein Node), Version gepinnt.
+  Lokal: `hugo --minify && python -m pagefind --site public`.
+
+#### Layout
+- Linke Navigation mit Gruppen aus `docs.yaml` (mobil einklappbar), Inhaltsverzeichnis rechts (H2/H3),
+  Kopier-Button an Codeblöcken, Vor/Zurück in der Reihenfolge aus `docs.yaml`, Link „Auf GitHub bearbeiten“ auf
+  die Quelldatei der aktuellen Sprache. Material-3-Stil wie die übrige Seite.
+
+#### Screenshots
+- WebUI-Bilder aus `dev/screenshots.py` (helle Variante) in `docs/img/<en|de>/<name>.webp`, damit sie auch auf
+  GitHub angezeigt werden. Neue Motive für Anleitungsschritte: Gerät koppeln (Kopplungscode), Kind anlegen und
+  zuordnen, Programm-Whitelist, Webfilter, Spiele. Client-Bilder (Linux/Windows) von Hand aus der VM, nur wo sie
+  helfen.
+
+#### Verweise
+- **Startseite:** Schnellstart bleibt; Button „Vollständige Anleitung“ und neuer Menüpunkt „Anleitungen“/„Docs“
+  führen ins Wiki (`params.docs` auf die Wiki-URL umstellen).
+- **README (DE/EN):** Abschnitt Installation verlinkt ins Wiki; Hinweis „Anleitungen: <Wiki> (Quelle: `docs/`)“.
+- **Release-Notes** (`kidctl-release.sh`), **WebUI** (`repo.html`): Links ins Wiki (EN; WebUI in Sprache des
+  Eltern-Accounts, falls einfach möglich).
+- **`server/app/config.py`:** Fehlermeldung nennt Wiki-URL und `docs/postgresql-migration.md`.
+- Wiki-URLs auf `adriannoss.github.io/kidCTL/...` bleiben beim späteren Domain-Wechsel gültig (GitHub leitet
+  weiter).
+
+## Sicherheitsrichtlinie (entschieden 2026-11-17 per /grill-me, noch nicht umgesetzt)
+
+Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher Issues; GitHub-Hinweis
+„no SECURITY.md“ beheben.
+
+### Dateien
+- `SECURITY.md` (EN) und `SECURITY.de.md` (DE) im Repo-Root, gleicher Inhalt, im Paritäts-Check. GitHub wertet
+  `SECURITY.md` aus (Security-Reiter). Zusätzlich per Einzeldatei-Mount als Wiki-Seite `security` (Gruppe
+  Sicherheit).
+- Abschnitt „Reporting“ in `docs/code-signing*.md` wird zum Verweis auf `SECURITY.md` (der bisherige Satz
+  „open an issue“ entfällt). README (DE/EN) bekommt einen kurzen Abschnitt „Sicherheit“ mit Link.
+
+### Inhalt `SECURITY.md`
+- **Meldeweg:** bevorzugt GitHub Private Vulnerability Reporting (Security → „Report a vulnerability“);
+  alternativ `security@nossco.de` (später `security@<Produkt-Domain>`). Kein PGP. Ausdrücklich: Sicherheitslücken
+  nie als öffentliches Issue, Pull Request oder in Foren melden.
+- **Unterstützte Versionen:** nur die jeweils neueste Version (vor 1.0); Fixes erscheinen als neue Patch-Version,
+  keine Backports. Server und Agenten auf demselben Stand halten.
+- **Im Rahmen (vertraulich melden):**
+  - Rechteausweitung, Codeausführung, Umgehen von Anmeldung/TOTP/Sitzungen, CSRF/XSS/Injection im WebUI,
+    Angriffe auf die Verbindung Agent ↔ Server (Token, Kopplung, Update-Signaturen), Datenabfluss; im
+    SaaS-Betrieb Zugriff auf Daten anderer Familien.
+  - Neue Wege, wie ein Kind **ohne Admin-Rechte** Zeitlimit, Programm- oder Website-Filter umgeht oder die
+    Durchsetzung abschaltet.
+- **Nicht im Rahmen:** physischer Zugriff ohne die Härtung aus `docs/hardening.md`; VPN bzw. feste IP-Adressen;
+  alle in `docs/limitations.md` dokumentierten Restlücken; Angriffe, die Admin-/Root-Rechte auf dem Kinderrechner
+  voraussetzen; fehlende Best-Practice-Header ohne konkrete Auswirkung.
+- **Ablauf und Fristen:** Eingangsbestätigung innerhalb von 7 Tagen, erste Einschätzung (bestätigt, Schwere)
+  innerhalb von 14 Tagen, Fix so schnell wie möglich – Ziel bei schweren Lücken 30 Tage. Coordinated Disclosure:
+  Veröffentlichung nach dem Fix-Release, spätestens nach 90 Tagen in Absprache mit dem Melder.
+- **Veröffentlichung:** GitHub Security Advisory je bestätigter Lücke (betroffene/behobene Version, CVSS,
+  Beschreibung ohne fertige Ausnutzungsanleitung, Dank an den Melder, wenn gewünscht); CVE über GitHub ab
+  mittlerer Schwere. News und Release-Text verlinken das Advisory. **Kein Bug-Bounty.**
+- **Testregeln:** nur an eigener Installation bzw. Test-VM, nie an `kids.nossco.de` oder anderen fremden
+  Instanzen; nur eigene Kinderrechner; kein DoS, kein Social Engineering, kein Zugriff auf fremde Daten (passiert
+  es doch: sofort aufhören, nichts speichern, melden).
+- **Safe Harbor:** Wer in gutem Glauben und nach diesen Regeln forscht und meldet, gegen den wird nicht rechtlich
+  vorgegangen. Formulierung bei der Anwaltsprüfung (AGB/Datenschutz/Impressum) mit prüfen lassen.
+
+### Restlücken als öffentliche Doku
+- Der Abschnitt „Bewusst nicht umgesetzt / Restlücken“ zieht nach `docs/limitations.md` / `limitations.de.md`
+  (Wiki-Gruppe Sicherheit) und ist dort die **einzige Quelle**, für Eltern verständlich formuliert. Interne
+  Begründungen bleiben in den Fachabschnitten der Spec. In der Spec bleibt nur ein Verweis.
+- README-Kurzliste „Limitations“ und `SECURITY.md` verlinken darauf.
+
+### `security.txt` (RFC 9116)
+- **Projektseite:** `website/static/.well-known/security.txt`; `Expires` setzt der Pages-Build auf heute + 1 Jahr.
+  Wirksam erst mit eigener Domain (unter `adriannoss.github.io/kidCTL/` nicht im Domain-Root).
+- **kidCTL-Server:** Route `/.well-known/security.txt` (ohne Login), `Expires` dynamisch (+ 1 Jahr),
+  `Contact: mailto:security@nossco.de` und GitHub-Meldeweg, `Policy:` auf `SECURITY.md`, `Preferred-Languages:
+  en, de`. Optionale Umgebungsvariable `SECURITY_CONTACT`: zusätzlicher Kontakt des Betreibers (zuerst gelistet).
+
+### GitHub-Funktionen
+- Dependabot-Alerts; Dependabot-Updates wöchentlich, gruppiert (ein PR je Ökosystem) für `pip`
+  (`server/requirements.txt`) und `github-actions` (`.github/dependabot.yml`).
+- Secret Scanning mit Push Protection.
+- CodeQL im Standard-Setup (Python, GitHub Actions).
+- Workflow `.github/workflows/audit.yml`: wöchentlich (und von Hand) `pip-audit` gegen die Pakete aus
+  `packaging/windows/vendor.lock` (Dependabot kennt das Format nicht); Fund → Workflow schlägt fehl.
+
 ## Bewusst nicht umgesetzt / Restlücken
 
 - Kein Schutz gegen physischen Zugriff (nur Härtungs-Anleitung `docs/haertung.md`).
@@ -2029,3 +2161,9 @@ News-Bereich hat, den Claude Code pflegt.
   VM-Build vom 2026-11-08 (`d8e2…`, vor Einführung des CI-Baus, von `latest.json` signiert). Kein Fehler, ab dem
   nächsten Release kommen beide aus demselben CI-Lauf. Getestet: `hugo --minify --panicOnWarning`, Prüfsummen von
   Release-Asset und CI-Artefakt verglichen.
+- 2026-11-17: Anforderungen Wiki per /grill-me abgestimmt (Abschnitt „Projekthomepage“ → „Wiki“): `docs/` als
+  Wiki auf der Projektseite, DE/EN mit Paritäts-Check, Aufteilung in Themenseiten, Pagefind-Suche. Noch keine
+  Umsetzung.
+- 2026-11-17: Anforderungen Sicherheitsrichtlinie per /grill-me abgestimmt (Abschnitt „Sicherheitsrichtlinie“):
+  `SECURITY.md` DE/EN, vertraulicher Meldeweg, Restlücken nach `docs/limitations*.md`, `security.txt` in Server
+  und Projektseite, Dependabot/CodeQL/Secret Scanning/pip-audit. Noch keine Umsetzung.

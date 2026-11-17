@@ -88,6 +88,30 @@ CLAUDE.md
   Bilder mit committen. Client-Screenshots nur auf Anweisung.
 - Kein Tracking, keine externen Ressourcen (Schriften/Icons lokal).
 - Lokal prüfen: `cd website && hugo server` – vor dem Commit einmal `hugo --minify` ohne Fehler.
+- **Doku (`docs/`) und README sind zweisprachig mit exakt gleichem Inhalt.** Quelle ist Deutsch (`x.de.md`,
+  `README.de.md`); Englisch (`x.md`, `README.md`) im selben Commit nachziehen. Vor dem Commit
+  `python dev/check_docs_parity.py` – muss fehlerfrei sein.
+- Doku-Dateien ohne Frontmatter; Titel = erste `#`-Überschrift. Neue oder umbenannte Seite → in
+  `website/data/docs.yaml` eintragen.
+- Links zwischen Doku-Seiten relativ (`server.md#…`), damit sie auf GitHub funktionieren. Hinweise als
+  GitHub-Alerts (`> [!NOTE]` usw.).
+- Bedienanleitungen für Self-Hoster gehören nach `docs/`, nicht in Komponenten-READMEs. Komponenten-READMEs,
+  Spec und Code-Kommentare bleiben deutsch.
+- Sichtbare Änderung an einem in `docs/img/` abgebildeten WebUI-Schritt → `dev/screenshots.py` laufen lassen.
+- In Code, Skripten und Templates auf das Wiki verlinken, nicht auf `blob/main/docs/…` (Ausnahme: Fehlermeldungen
+  nennen zusätzlich den Dateipfad).
+
+## Sicherheit
+
+- Meldeweg und Regeln stehen in `SECURITY.md`/`SECURITY.de.md` (zweisprachig, Paritäts-Check). Sicherheitsthemen
+  nie in öffentlichen Issues, Commit-Messages oder News im Detail beschreiben, bevor der Fix veröffentlicht ist.
+- **Neue Restlücke** (bewusst nicht umgesetzt oder bekannte Umgehung) → im selben Commit in
+  `docs/limitations.de.md` und `docs/limitations.md` eintragen; die Spec verweist nur.
+- **Sicherheitsfix:** Patch-Version erhöhen; Text für das GitHub Security Advisory vorbereiten (betroffene/behobene
+  Version, Schwere, Beschreibung ohne Ausnutzungsanleitung, Dank laut Melder) und Adrian zum Veröffentlichen
+  übergeben; Security-News laut Website-Regel, mit Link aufs Advisory.
+- Keine Geheimnisse ins Repo (GPG-/Signaturschlüssel, Tokens, `.env`); Push Protection ist aktiv – Treffer nie
+  per Ausnahme freigeben, sondern Geheimnis entfernen und ggf. austauschen.
 
 ## Tests & Verifikation
 
