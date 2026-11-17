@@ -172,26 +172,6 @@ def test_enroll_rate_limit(client):
     assert client.post(p.ENROLL_PATH, json={"code": "AAAAAAAA", "hostname": "h"}).status_code == 429
 
 
-def test_add_second_parent_shows_totp(client, parent):
-    login(client, parent)
-    tok = csrf_from(client.get("/parents").text)
-    r = client.post("/parents", data={"csrf_token": tok, "username": "papa",
-                                      "password": "kurz"})
-    assert r.status_code == 400
-    r = client.post("/parents", data={"csrf_token": tok, "username": "papa",
-                                      "password": "ein-langes-passwort"})
-    assert r.status_code == 200 and "<svg" in r.text
-    with SessionLocal() as db:
-        papa = db.scalar(select(Parent).where(Parent.username == "papa"))
-    assert papa.totp_secret in r.text
-    client.cookies.clear()
-    page = client.get("/login")
-    r = client.post("/login", data={"csrf_token": csrf_from(page.text), "username": "papa",
-                                    "password": "ein-langes-passwort",
-                                    "totp": pyotp.TOTP(papa.totp_secret).now()}, follow_redirects=False)
-    assert r.status_code == 303
-
-
 def test_repo_listing_shows_only_installers(client):
     import shutil
     from pathlib import Path

@@ -36,17 +36,9 @@ msgstr "Authenticator code"
 msgid "Passwort vergessen?"
 msgstr "Forgot password?"
 
-msgid "Account angelegt"
-msgstr "Account created"
 
-msgid "Account „{name}“ angelegt"
-msgstr "Account “{name}” created"
 
-msgid "TOTP jetzt in der Authenticator-App einrichten."
-msgstr "Set up TOTP in your authenticator app now."
 
-msgid "Dieser QR-Code wird nur einmal angezeigt."
-msgstr "This QR code is shown only once."
 
 msgid "Fertig"
 msgstr "Done"
@@ -345,8 +337,6 @@ msgstr "Delete account?"
 msgid "angemeldet"
 msgstr "signed in"
 
-msgid "Account hinzufügen"
-msgstr "Add account"
 
 msgid "Anzeigename"
 msgstr "Display name"
@@ -1801,8 +1791,6 @@ msgstr "please confirm this address for your KidCTL account. The link is valid f
 msgid "nicht bestätigt"
 msgstr "not confirmed"
 
-msgid "optional, für Anmeldung und „Passwort vergessen“"
-msgstr "optional, for sign-in and “Forgot password”"
 
 msgid "E-Mail-Adresse oder Benutzername"
 msgstr "Email address or username"
@@ -1818,3 +1806,70 @@ msgstr "Clear chat"
 
 msgid "Chat geleert."
 msgstr "Chat cleared."
+
+# Einladungen (Etappe 4.1)
+msgid "Bitte um eine neue Einladung."
+msgstr "Please ask for a new invitation."
+
+msgid "Damit legt die eingeladene Person ihr Passwort und ihren Authenticator selbst fest."
+msgstr "With it, the invited person sets their own password and authenticator."
+
+msgid "Die Einladung wurde per E-Mail verschickt."
+msgstr "The invitation has been sent by email."
+
+msgid "Die eingeladene Person bekommt einen Link und legt Passwort und Authenticator selbst fest."
+msgstr "The invited person gets a link and sets their own password and authenticator."
+
+msgid "Dieser Link wird nur jetzt angezeigt. Bei Bedarf die Einladung löschen und neu erstellen."
+msgstr "This link is shown only now. If needed, withdraw the invitation and create a new one."
+
+msgid "Du wirst eingeladen, die Kinder dieser Familie mitzuverwalten. Lege dein Passwort fest; danach richtest du den Authenticator ein."
+msgstr "You have been invited to help manage this family's children. Choose your password; then you will set up the authenticator."
+
+msgid "Einladen"
+msgstr "Invite"
+
+msgid "Einladung"
+msgstr "Invitation"
+
+msgid "Einladung annehmen"
+msgstr "Accept invitation"
+
+msgid "Einladung erstellt"
+msgstr "Invitation created"
+
+msgid "Einladung für {email}"
+msgstr "Invitation for {email}"
+
+msgid "Elternteil einladen"
+msgstr "Invite a parent"
+
+msgid "Falls du damit nichts anfangen kannst, ignoriere diese Mail."
+msgstr "If this doesn't mean anything to you, just ignore this email."
+
+msgid "Gib diesen Link weiter (persönlich oder per Messenger). Er ist {days} Tage gültig und nur einmal verwendbar."
+msgstr "Pass this link on (in person or via messenger). It is valid for {days} days and can be used only once."
+
+msgid "KidCTL: Einladung"
+msgstr "KidCTL: Invitation"
+
+msgid "Offene Einladungen"
+msgstr "Open invitations"
+
+msgid "Weiter zum Authenticator"
+msgstr "Continue to authenticator"
+
+msgid "Zurückziehen"
+msgstr "Withdraw"
+
+msgid "gültig bis {date}"
+msgstr "valid until {date}"
+
+msgid "optional"
+msgstr "optional"
+
+msgid "{by} lädt dich ein, die Kinder eurer Familie in KidCTL mitzuverwalten."
+msgstr "{by} invites you to help manage your family's children in KidCTL."
+
+msgid "Über diesen Link legst du Passwort und Authenticator fest ({days} Tage gültig):"
+msgstr "Use this link to set your password and authenticator (valid for {days} days):"

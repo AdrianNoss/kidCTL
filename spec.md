@@ -964,6 +964,16 @@ Self-Hosting bleibt erhalten.
   Fehler) – ohne Familienkontext und damit ohne Entschlüsselung.
 - **Support-Freigabe:** Eltern (Inhaber) geben Einsicht zeitlich begrenzt (z. B. 24 h) frei, jederzeit widerrufbar;
   jeder Zugriff wird protokolliert und ist für die Familie sichtbar.
+- **Festgelegt 2026-11-17 (Etappe 4):**
+  - Support-Ansicht **nur lesend**: Der Betreiber sieht die Seiten der Familie wie ein Elternteil, kann aber nichts
+    ändern oder senden; Banner „Support-Ansicht“.
+  - **Eigene Betreiber-Accounts** (`cli create-operator`), Anmeldung unter `/admin` mit Passwort + TOTP, eigene
+    Sitzung, optional nur aus bestimmten IP-Netzen (`ADMIN_ALLOW_NETS`). Getrennt von Eltern-Accounts.
+  - **Einladungscodes** für `REGISTRATION=invite` erzeugt der Betreiber im Verwaltungsbereich: einmalig nutzbar,
+    30 Tage gültig, mit Notiz; eingelöste Codes sichtbar.
+  - **Eltern einladen** (Inhaber): Einladungslink an eine E-Mail-Adresse (7 Tage gültig, wird angezeigt und – mit
+    SMTP – per Mail geschickt); die eingeladene Person legt Passwort und Authenticator selbst fest. Ersetzt das
+    Anlegen mit Passwort durch andere Eltern, auch im Einzelbetrieb.
 
 ### Abrechnung (Vorbereitung)
 - Später pauschal pro Familie mit Stufen nach Kinderzahl, Testphase (z. B. 30 Tage), Jahresabo mit Rabatt.
@@ -2344,3 +2354,11 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-17: Dependabot: `bcrypt` ab 4.1 ignoriert (passlib 1.7.4 bricht mit bcrypt 5.0.0 schon beim Laden ab:
   „password cannot be longer than 72 bytes“). Dependabot-PR #1 (fastapi 0.163.0, SQLAlchemy 2.1.8, python-multipart 0.0.33,
   pydantic 2.14.3, tzdata 2026.6) lokal geprüft: alle 174 Server-Tests grün mit bcrypt 4.0.1; mit bcrypt 5.0.0 Abbruch bestätigt.
+- 2026-11-17: Etappe 4.1 Eltern einladen per Link: Inhaber lädt unter „Eltern“ per E-Mail-Adresse (+ optional Anzeigename) ein;
+  neue Tabelle `family_invite` (Migration 0010, nur Hash des Links, E-Mail und Anzeigename verschlüsselt), 7 Tage gültig,
+  einmalig, mit SMTP auch per Mail, offene Einladungen sichtbar und zurückziehbar. `/invite/<token>`: Passwort (Einzelbetrieb
+  auch Benutzername, SaaS abgeleitet), Account als Elternteil mit bestätigter E-Mail, danach direkt die vorhandene
+  Authenticator-Einrichtung (`/totp-setup/…`). Das Anlegen eines Accounts mit Passwort durch den Inhaber entfällt.
+  Getestet (pytest): kompletter Ablauf Einladen → Mail → Annehmen → Authenticator → Login per E-Mail; Link nur einmal gültig;
+  abgelaufene und zurückgezogene Einladungen 404; fremde Familie sieht die Einladung nicht; nur Inhaber darf einladen;
+  E-Mail über alle Familien eindeutig; SaaS ohne Benutzernamenfeld. `alembic check` auf der Entwicklungsdatenbank sauber.

@@ -30,15 +30,31 @@
   </table>
 </section>
 {% if is_owner %}
-<form method="post" action="/parents" class="card">
-  <h2>{{ _("Account hinzufügen") }}</h2>
+{% if invites %}
+<section class="card">
+  <h2>{{ _("Offene Einladungen") }}</h2>
+  <table class="responsive">
+    {% for i in invites %}
+    <tr>
+      <td><strong>{{ i.email }}</strong>{% if i.display_name %} <span class="muted">{{ i.display_name }}</span>{% endif %}
+        <br><small class="muted">{{ _("gültig bis {date}").format(date=i.expires_at.strftime("%d.%m.%Y")) }}</small></td>
+      <td class="right"><form method="post" action="/parents/invites/{{ i.id }}/delete" class="inline">
+        <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+        <button type="submit" class="danger small">{{ _("Zurückziehen") }}</button>
+      </form></td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endif %}
+<form method="post" action="/parents/invite" class="card">
+  <h2>{{ _("Elternteil einladen") }}</h2>
+  <p class="muted">{{ _("Die eingeladene Person bekommt einen Link und legt Passwort und Authenticator selbst fest.") }}</p>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-  <label>{{ _("E-Mail-Adresse") }}{% if not SAAS %} <span class="field-note">{{ _("optional, für Anmeldung und „Passwort vergessen“") }}</span>{% endif %}
-    <input type="email" name="email" maxlength="255"{% if SAAS %} required{% endif %}></label>
-  {% if not SAAS %}<label>{{ _("Benutzername") }} <input name="username" required maxlength="64" autocomplete="off"></label>{% endif %}
-  <label>{{ _("Anzeigename") }} <input name="display_name" maxlength="128"></label>
-  <label>{{ _("Passwort (min. 12 Zeichen)") }} <input type="password" name="password" minlength="12" required autocomplete="new-password"></label>
-  <button type="submit">{{ _("Anlegen") }}</button>
+  <label>{{ _("E-Mail-Adresse") }} <input type="email" name="email" maxlength="255" required></label>
+  <label>{{ _("Anzeigename") }} <span class="field-note">{{ _("optional") }}</span> <input name="display_name" maxlength="128"></label>
+  <button type="submit">{{ _("Einladen") }}</button>
 </form>
 {% endif %}
 {% endblock %}

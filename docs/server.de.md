@@ -72,8 +72,9 @@ docker compose exec kidctl python -m app.cli create-parent
 ```
 
 Benutzername (bzw. mit `KIDCTL_MODE=saas` die E-Mail-Adresse) und Passwort eingeben, dann den angezeigten
-QR-Code mit der Authenticator-App scannen. Dieser erste Account ist **Inhaber** der Familie: Nur er legt weitere
-Eltern-Accounts im WebUI unter „Eltern“ an oder entfernt sie.
+QR-Code mit der Authenticator-App scannen. Dieser erste Account ist **Inhaber** der Familie: Nur er lädt im WebUI unter
+„Eltern“ weitere Elternteile ein (Einladungslink, 7 Tage gültig; die eingeladene Person legt Passwort und
+Authenticator selbst fest) oder entfernt sie.
 
 ## Handy einrichten
 

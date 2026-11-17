@@ -74,8 +74,7 @@ def test_email_is_unique_across_families(client, parent):
     r = _profile(client, email="Eltern@Example.org")
     assert r.status_code == 400 and "wird schon verwendet" in r.text
     tok = csrf_from(client.get("/parents").text)
-    r = client.post("/parents", data={"csrf_token": tok, "username": "papa", "email": "eltern@example.org",
-                                      "password": "x" * 12})
+    r = client.post("/parents/invite", data={"csrf_token": tok, "email": "eltern@example.org"})
     assert r.status_code == 400 and "wird schon verwendet" in r.text
 
 
@@ -94,13 +93,19 @@ def test_without_smtp_email_counts_as_confirmed(client, parent):
 def test_saas_requires_email_and_derives_username(client, parent, saas):
     login(client, parent)
     page = client.get("/parents").text
-    assert 'name="username"' not in page.split("Account hinzufügen")[1]          # kein Benutzername im SaaS
     tok = csrf_from(page)
-    r = client.post("/parents", data={"csrf_token": tok, "email": "", "password": "x" * 12})
+    r = client.post("/parents/invite", data={"csrf_token": tok, "email": ""})
     assert r.status_code == 400 and "Bitte eine E-Mail-Adresse angeben." in r.text
     add_parent(username="papa")
-    r = client.post("/parents", data={"csrf_token": tok, "email": "papa@example.org", "password": "x" * 12})
-    assert r.status_code == 200
+    r = client.post("/parents/invite", data={"csrf_token": tok, "email": "papa@example.org"})
+    link = re.search(r"http://testserver(/invite/[^<\s]+)", r.text).group(1)
+    client.cookies.clear()
+    form = client.get(link).text
+    assert 'name="username"' not in form                                        # kein Benutzername im SaaS
+    r = client.post(link, data={"csrf_token": csrf_from(form), "password": "x" * 12, "repeat": "x" * 12},
+                    follow_redirects=False)
+    assert r.status_code == 303
+    login(client, parent)
     with SessionLocal() as db:
         names = {p.email: p.username for p in db.query(Parent).all()}
     assert names["papa@example.org"] == "papa2"                                    # abgeleitet, eindeutig

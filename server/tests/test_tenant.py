@@ -154,10 +154,10 @@ def test_only_owner_manages_parents(client, parent):
     oma = add_parent(username="oma")
     login(client, papa)                                                   # Elternteil, nicht Inhaber
     page = client.get("/parents").text
-    assert "Inhaber" in page and "Account hinzufügen" not in page and f"/parents/{oma.id}/delete" not in page
+    assert "Inhaber" in page and "Elternteil einladen" not in page and f"/parents/{oma.id}/delete" not in page
     tok = csrf_from(page)
     assert client.post(f"/parents/{oma.id}/delete", data={"csrf_token": tok}).status_code == 403
-    assert client.post("/parents", data={"csrf_token": tok, "username": "x", "password": "y" * 12}).status_code == 403
+    assert client.post("/parents/invite", data={"csrf_token": tok, "email": "x@example.org"}).status_code == 403
     client.cookies.clear()
     login(client, parent)                                                 # Inhaber
     tok = csrf_from(client.get("/parents").text)

@@ -56,6 +56,20 @@ class Membership(FamilyScoped, Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class FamilyInvite(FamilyScoped, Base):
+    """Einladung eines weiteren Elternteils (Inhaber). Gespeichert wird nur der Hash des Links; die E-Mail verschlüsselt."""
+    __tablename__ = "family_invite"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    email: Mapped[str] = mapped_column(Sealed("family_invite.email"))
+    display_name: Mapped[str] = mapped_column(Sealed("family_invite.display_name"), default="")
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("parent.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
 class Parent(Base):
     """Eltern-Account; gehört über ``Membership`` zu genau einer Familie."""
     __tablename__ = "parent"

@@ -191,3 +191,30 @@ def totp_setup(token: str, request: Request, password: str = Form(""), totp: str
     db.commit()
     accounts.notify(parent, N_("Authenticator eingerichtet"), N_("für deinen Account wurde ein neuer Authenticator eingerichtet."))
     return RedirectResponse("/login?msg=totp", status_code=303)
+
+
+# ---------- Einladung annehmen ----------
+
+@router.get("/invite/{token}")
+def invite_form(token: str, request: Request, db: Session = Depends(get_platform_db)):
+    invite = accounts.open_invite(db, token)
+    if invite is None:
+        return render_anon(request, "invite.html", status_code=404, invalid=True)
+    return render_anon(request, "invite.html", invite=invite, token=token, saas=settings.saas,
+                       form={"display_name": invite.display_name})
+
+
+@router.post("/invite/{token}", dependencies=[Depends(csrf_protect_anon)])
+def invite_accept(token: str, request: Request, username: str = Form(""), display_name: str = Form(""),
+                  password: str = Form(""), repeat: str = Form(""), db: Session = Depends(get_platform_db)):
+    invite = accounts.open_invite(db, token)
+    if invite is None:
+        return render_anon(request, "invite.html", status_code=404, invalid=True)
+    username = username.strip() or accounts.username_from_email(db, invite.email)
+    error = (accounts.username_error(db, username) or accounts.password_error(password, repeat)
+             or accounts.email_error(invite.email, db))
+    if error:
+        return render_anon(request, "invite.html", status_code=400, invite=invite, token=token, saas=settings.saas,
+                           error=error, form={"username": username, "display_name": display_name})
+    _parent, raw = accounts.accept_invite(db, invite, username, display_name, password)
+    return RedirectResponse(f"/totp-setup/{raw}", status_code=303)

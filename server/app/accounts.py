@@ -25,7 +25,7 @@ from .config import settings
 from . import crypto
 from .models import Parent, ParentSession, ParentToken, utcnow
 from .tenant import load_parent, platform
-from .security import new_token, new_totp_secret, token_hash
+from .security import hash_password, new_token, new_totp_secret, token_hash
 
 RESET_MINUTES = 30
 TOTP_SETUP_HOURS = 24
@@ -240,3 +240,57 @@ def notify(parent: Parent, subject: str, text: str, **fmt) -> None:
 
 def new_secret() -> str:
     return new_totp_secret()
+
+
+# ---------- Einladungen (Inhaber lädt weiteres Elternteil ein) ----------
+
+INVITE_DAYS = 7
+
+
+def create_invite(db: Session, email: str, display_name: str, created_by: int) -> str:
+    """Einladung anlegen (Familie aus dem Kontext); Rückgabe: der Link-Token (nur einmal bekannt)."""
+    from .models import FamilyInvite
+    raw = new_token()
+    db.add(FamilyInvite(token_hash=token_hash(raw), email=email[:255], display_name=display_name.strip()[:128],
+                        created_by=created_by, expires_at=utcnow() + timedelta(days=INVITE_DAYS)))
+    db.commit()
+    return raw
+
+
+def send_invite(email: str, link: str, by: str, lang: str) -> bool:
+    with i18n.use(lang):
+        return mail.send(email, _("KidCTL: Einladung"),
+                         _("{by} lädt dich ein, die Kinder eurer Familie in KidCTL mitzuverwalten.").format(by=by)
+                         + "\n\n" + _("Über diesen Link legst du Passwort und Authenticator fest ({days} Tage gültig):").format(
+                             days=INVITE_DAYS) + f"\n\n{link}\n\n"
+                         + _("Falls du damit nichts anfangen kannst, ignoriere diese Mail.") + "\n")
+
+
+def open_invite(db: Session, raw: str):
+    """Gültige Einladung zum Link – wechselt dafür in den Kontext ihrer Familie (E-Mail verschlüsselt)."""
+    from .models import FamilyInvite
+    from .tenant import set_family
+    if not raw or len(raw) > 128:
+        return None
+    with platform(db):
+        row = db.execute(select(FamilyInvite.id, FamilyInvite.family_id, FamilyInvite.used_at, FamilyInvite.expires_at)
+                         .where(FamilyInvite.token_hash == token_hash(raw))).first()
+    if row is None or row.used_at is not None or row.expires_at < utcnow():
+        return None
+    set_family(db, row.family_id)
+    return db.get(FamilyInvite, row.id)
+
+
+def accept_invite(db: Session, invite, username: str, display_name: str, password: str) -> tuple[Parent, str]:
+    """Account aus der Einladung anlegen (Elternteil); Rückgabe: Account und Token für die Authenticator-Einrichtung."""
+    from .models import ROLE_PARENT, Membership
+    secret = new_totp_secret()
+    parent = Parent(username=username, display_name=display_name.strip()[:128], password_hash=hash_password(password),
+                    totp_secret=new_totp_secret(), email=invite.email, email_verified_at=utcnow())
+    db.add(parent)
+    db.flush()
+    db.add(Membership(parent_id=parent.id, role=ROLE_PARENT))
+    invite.used_at = utcnow()
+    raw = create_token(db, parent, "totp_setup", timedelta(hours=TOTP_SETUP_HOURS), secret)
+    db.commit()
+    return parent, raw

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Einladung erstellt") }} – KidCTL{% endblock %}
+{% block content %}
+<div class="page-head"><div><span class="eyebrow">{{ _("Eltern") }}</span><h1>{{ _("Einladung für {email}").format(email=email) }}</h1></div></div>
+<section class="card">
+  <p>{% if sent %}{{ _("Die Einladung wurde per E-Mail verschickt.") }} {% endif %}
+    {{ _("Gib diesen Link weiter (persönlich oder per Messenger). Er ist {days} Tage gültig und nur einmal verwendbar.").format(days=days) }}
+    {{ _("Damit legt die eingeladene Person ihr Passwort und ihren Authenticator selbst fest.") }}</p>
+  <p><code class="link-box">{{ link }}</code></p>
+  <p class="muted"><small>{{ _("Dieser Link wird nur jetzt angezeigt. Bei Bedarf die Einladung löschen und neu erstellen.") }}</small></p>
+  <a href="/parents" class="btn">{{ _("Fertig") }}</a>
+</section>
+{% endblock %}

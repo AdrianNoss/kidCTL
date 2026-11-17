@@ -16,7 +16,8 @@ from kidctl_common.protocol import CLOSE_REVOKED, MAX_BODY, SUPPORTED_VERSIONS
 from ..config import settings
 from ..db import get_db
 from ..models import (
-    ROLE_OWNER, ROLE_PARENT, BlocklistState, Child, DayException, Device, Membership, Message, PairingCode, Parent, ParentSession,
+    ROLE_OWNER, BlocklistState, Child, DayException, Device, FamilyInvite, Membership, Message, PairingCode, Parent,
+    ParentSession,
     WeekdayRule, utcnow,
 )
 from .. import access, accounts, blocklog, chat, i18n, nowplaying, policy, programs, report, stats, webfilter
@@ -509,8 +510,10 @@ def parents_list(request: Request, db: Session = Depends(get_db)):
 
 def _parents_ctx(db: Session, sess: ParentSession) -> dict:
     roles = {pid: role for pid, role in db.execute(select(Membership.parent_id, Membership.role))}
+    invites = [i for i in db.scalars(select(FamilyInvite).order_by(FamilyInvite.created_at))
+               if i.used_at is None and i.expires_at > utcnow()]
     return {"parents": db.scalars(select(Parent).order_by(Parent.username)).all(), "roles": roles,
-            "is_owner": roles.get(sess.parent_id) == ROLE_OWNER}
+            "is_owner": roles.get(sess.parent_id) == ROLE_OWNER, "invites": invites}
 
 
 def _role(db: Session, parent_id: int) -> str | None:
@@ -523,29 +526,28 @@ def _require_owner(db: Session, sess: ParentSession) -> None:
         raise HTTPException(403, "Nur der Inhaber der Familie")
 
 
-@router.post("/parents")
-def parent_create(request: Request, username: str = Form(""), display_name: str = Form(""),
-                  email: str = Form(""), password: str = Form(...), sess: ParentSession = Depends(csrf_protect),
-                  db: Session = Depends(get_db)):
+@router.post("/parents/invite")
+def parent_invite(request: Request, email: str = Form(""), display_name: str = Form(""),
+                  sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    """Inhaber lädt ein weiteres Elternteil ein: Link anzeigen und (mit SMTP) per Mail schicken."""
     _require_owner(db, sess)
-    username, email = username.strip(), email.strip()
-    if settings.saas and not username and email:
-        username = accounts.username_from_email(db, email)
-    error = (accounts.email_error(email, db) or accounts.username_error(db, username)
-             or accounts.password_error(password))
+    email = email.strip()
+    error = (_("Bitte eine E-Mail-Adresse angeben.") if not email else None) or accounts.email_error(email, db)
     if error:
         return render(request, "parents.html", status_code=400, error=error, **_parents_ctx(db, sess))
+    raw = accounts.create_invite(db, email, display_name, sess.parent_id)
+    link = f"{settings.base_url}/invite/{raw}"
+    by = sess.parent.display_name or sess.parent.username
+    sent = settings.mail_enabled and accounts.send_invite(email, link, by, i18n.current())
+    return render(request, "parent_invited.html", email=email, link=link, sent=sent, days=accounts.INVITE_DAYS)
 
-    parent = Parent(username=username, display_name=display_name.strip()[:128],
-                    password_hash=hash_password(password), totp_secret=new_totp_secret())
-    db.add(parent)
-    db.flush()
-    accounts.set_email(db, parent, email)
-    db.add(Membership(parent_id=parent.id, role=ROLE_PARENT))   # Familie aus dem Kontext
+
+@router.post("/parents/invites/{invite_id}/delete")
+def parent_invite_delete(invite_id: int, sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    _require_owner(db, sess)
+    db.delete(_get_or_404(db, FamilyInvite, invite_id))
     db.commit()
-    uri = totp_uri(parent)
-    return render(request, "parent_created.html", parent=parent, uri=uri, qr_svg=totp_qr_svg(uri),
-                  secret=parent.totp_secret)
+    return _redirect("/parents")
 
 
 @router.post("/parents/{parent_id}/totp-reset")

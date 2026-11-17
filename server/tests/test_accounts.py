@@ -155,3 +155,66 @@ def test_other_parent_resets_lost_authenticator(client, parent, outbox):
     _set(papa, totp_last_step=0)
     assert _login_as(client, papa, secret=old_secret).status_code == 401
     assert _login_as(client, papa, secret=secret).status_code == 303
+
+
+def test_invite_parent_by_link(client, parent, outbox):
+    from conftest import add_family
+    from app.models import ROLE_PARENT, FamilyInvite, Membership
+    from app.tenant import family_session
+    from sqlalchemy import select
+    assert login(client, parent).status_code == 303
+    tok = csrf_from(client.get("/parents").text)
+    assert client.post("/parents/invite", data={"csrf_token": tok, "email": "kaputt"}).status_code == 400
+    page = client.post("/parents/invite", data={"csrf_token": tok, "email": "papa@example.org",
+                                               "display_name": "Papa"}).text
+    link = re.search(r"http://testserver(/invite/[^<\s]+)", page).group(1)
+    assert outbox[-1][0] == "papa@example.org" and link in outbox[-1][2]
+    assert "papa@example.org" in client.get("/parents").text                    # offene Einladung sichtbar
+    with SessionLocal() as db:
+        inv = db.scalar(select(FamilyInvite))
+        assert inv.token_hash not in link and link.rsplit("/", 1)[1] not in inv.token_hash
+    fremd = add_family("Fremd")                                                 # andere Familie sieht sie nicht
+    with family_session(fremd) as db:
+        assert db.scalar(select(FamilyInvite)) is None
+    client.cookies.clear()
+
+    form = client.get(link).text
+    assert "papa@example.org" in form and 'value="Papa"' in form
+    bad = _anon_post(client, link, {"username": "papa", "display_name": "Papa", "password": "kurz", "repeat": "kurz"})
+    assert bad.status_code == 400
+    r = _anon_post(client, link, {"username": "papa", "display_name": "Papa", "password": NEW_PW, "repeat": NEW_PW})
+    assert r.status_code == 303 and r.headers["location"].startswith("/totp-setup/")
+    assert client.get(link).status_code == 404                                  # nur einmal verwendbar
+    setup_link = r.headers["location"]
+    secret = re.search(r"Schlüssel <code>([A-Z2-7]+)</code>", client.get(setup_link).text).group(1)
+    r = _anon_post(client, setup_link, {"password": NEW_PW, "totp": pyotp.TOTP(secret).now()})
+    assert r.status_code == 303
+    with SessionLocal() as db:
+        papa = db.scalar(select(Parent).where(Parent.username == "papa"))
+        assert papa.email == "papa@example.org" and papa.email_verified_at is not None and papa.totp_secret == secret
+        assert db.scalar(select(Membership.role).where(Membership.parent_id == papa.id)) == ROLE_PARENT
+        papa.totp_last_step = 0
+        db.commit()
+    page = client.get("/login")
+    r = client.post("/login", data={"csrf_token": csrf_from(page.text), "username": "papa@example.org",
+                                    "password": NEW_PW, "totp": pyotp.TOTP(secret).now()}, follow_redirects=False)
+    assert r.status_code == 303
+
+
+def test_invite_revoke_and_expiry(client, parent):
+    from datetime import timedelta
+    from app.models import FamilyInvite
+    from sqlalchemy import select
+    assert login(client, parent).status_code == 303
+    tok = csrf_from(client.get("/parents").text)
+    links = [re.search(r"http://testserver(/invite/[^<\s]+)", client.post(
+        "/parents/invite", data={"csrf_token": tok, "email": f"p{n}@example.org"}).text).group(1) for n in (1, 2)]
+    with SessionLocal() as db:
+        first, second = db.scalars(select(FamilyInvite).order_by(FamilyInvite.id)).all()
+        second.expires_at = utcnow() - timedelta(minutes=1)
+        db.commit()
+        first_id = first.id
+    assert client.post(f"/parents/invites/{first_id}/delete", data={"csrf_token": tok},
+                       follow_redirects=False).status_code == 303
+    client.cookies.clear()
+    assert client.get(links[0]).status_code == 404 and client.get(links[1]).status_code == 404
