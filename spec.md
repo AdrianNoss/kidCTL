@@ -1090,7 +1090,7 @@ News-Bereich hat, den Claude Code pflegt.
   `website/**`, bei `release: published` und von Hand (`workflow_dispatch`). Hugo-Version im Workflow fest
   gepinnt. Schritte: Releases holen → Platzhalter-Check (Impressum) → `hugo --minify` → Deploy auf Pages.
 
-### Wiki (entschieden 2026-11-17 per /grill-me)
+### Wiki (entschieden 2026-11-17 per /grill-me, umgesetzt 2026-11-17)
 
 Ziel: Die Anleitungen aus `docs/` als gut lesbares Wiki auf der Projektseite, zweisprachig, mit Suche.
 Quelle bleiben die Markdown-Dateien im Repo; auf GitHub sind sie weiterhin direkt lesbar.
@@ -1162,7 +1162,7 @@ Quelle bleiben die Markdown-Dateien im Repo; auf GitHub sind sie weiterhin direk
 - Wiki-URLs auf `adriannoss.github.io/kidCTL/...` bleiben beim späteren Domain-Wechsel gültig (GitHub leitet
   weiter).
 
-## Sicherheitsrichtlinie (entschieden 2026-11-17 per /grill-me, noch nicht umgesetzt)
+## Sicherheitsrichtlinie (entschieden 2026-11-17 per /grill-me, umgesetzt 2026-11-17; GitHub-Einstellungen von Hand)
 
 Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher Issues; GitHub-Hinweis
 „no SECURITY.md“ beheben.
@@ -2316,3 +2316,5 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Getestet: kompletter Lauf DE+EN (Demo-Datenbank danach entfernt), Sichtprüfung aller Motive, Paritäts-Check (Bilder
   bis auf den Sprachordner gleich), Linkprüfung Repo und Seite (2936 Links inkl. Bilder), Wiki-Seiten mit Bildern
   Desktop hell/Handy dunkel ohne Überlauf, alle Bilder laden.
+- 2026-11-17: Wiki und Sicherheitsrichtlinie als umgesetzt markiert; Roadmap-Eintrag „Anleitungen auf Deutsch und
+  Englisch“ (`done`). Getestet: `hugo --minify --panicOnWarning` ohne Warnungen.

@@ -50,6 +50,12 @@
   text:
     de: "Diese Seite: Funktionen, Schnellstart, News und Releases auf Deutsch und Englisch."
     en: "This site: features, quick start, news and releases in English and German."
+- id: docs
+  status: done
+  title: { de: "Anleitungen auf Deutsch und Englisch", en: "Guides in English and German" }
+  text:
+    de: "Alle Anleitungen als durchsuchbares Wiki auf dieser Seite, mit Screenshots und Sicherheitsrichtlinie."
+    en: "All guides as a searchable wiki on this site, with screenshots and a security policy."
 - id: saas
   status: in_progress
   title: { de: "Gehostete Variante für Familien", en: "Hosted version for families" }
