@@ -197,7 +197,7 @@ class Device(FamilyScoped, Base):
     alert_after_hours: Mapped[int] = mapped_column(Integer, default=48)
     policy_version: Mapped[str] = mapped_column(String(64), default="")  # vom Agenten bestätigt
     offline_alerted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    integrity_json: Mapped[str] = mapped_column(Text, default="")  # letzte IntegrityReport.checks
+    integrity_json: Mapped[str] = mapped_column(Sealed("device.integrity_json"), default="")  # letzte IntegrityReport.checks
     integrity_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     update_alerted: Mapped[str] = mapped_column(String(32), default="")  # Version, zu der schon gewarnt wurde
 
@@ -407,7 +407,7 @@ class PairingCode(FamilyScoped, Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     code_hash: Mapped[str] = mapped_column(String(64), unique=True)
-    device_name: Mapped[str] = mapped_column(String(128))
+    device_name: Mapped[str] = mapped_column(Sealed("pairing_code.device_name"))
     created_by: Mapped[int | None] = mapped_column(ForeignKey("parent.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     expires_at: Mapped[datetime] = mapped_column(DateTime)

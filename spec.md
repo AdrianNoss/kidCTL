@@ -2205,3 +2205,11 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
 - 2026-11-17: Anforderungen Sicherheitsrichtlinie per /grill-me abgestimmt (Abschnitt „Sicherheitsrichtlinie“):
   `SECURITY.md` DE/EN, vertraulicher Meldeweg, Restlücken nach `docs/limitations*.md`, `security.txt` in Server
   und Projektseite, Dependabot/CodeQL/Secret Scanning/pip-audit. Noch keine Umsetzung.
+- 2026-11-17: Etappe 2 Probelauf mit einem `pg_dump` der echten srv02-Datenbank (Stand Revision 0003) und neu erzeugtem Hauptschlüssel ohne
+  Entwicklungsmodus: Migrationen 0004–0006 in unter 1 s, alle 416 verschlüsselten Zeilen in neuem Prozess (Schlüssel aus der Datenbank)
+  entschlüsselbar, alle 16 WebUI-Seiten ohne Fehler und ohne Geheimtext (316 Protokolleinträge, 27 Chatnachrichten). Abgleich aller
+  entschlüsselten Werte mit dem rohen Dump fand zwei Lücken, beide behoben: Gerätename der Kopplungscodes (Alembic `0007`, Kopplung
+  liest im Plattformkontext nur unverschlüsselte Spalten) und Ergebnis der Integritätsprüfung mit Benutzernamen/Pfaden der Kinder
+  (Alembic `0008`); abgelaufene Kopplungscodes werden nach 1 Tag gelöscht (`KIDCTL_KEEP_PAIRING_DAYS`). Danach im Klartext nur noch
+  bewusst unverschlüsselte Bereiche: Programmkatalog, Freigaben, Eltern-Benutzername/Anzeigename, Anmeldeversuche, Browserkennung der
+  Sitzung, technischer Sperrcode. Probedaten gelöscht. Getestet: alle Server-Tests.

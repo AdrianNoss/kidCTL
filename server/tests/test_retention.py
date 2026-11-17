@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 
 from app import retention
 from app.models import (
-    AppUsage, BlockedEvent, Child, Device, LoginAttempt, Message, ParentSession, UsageRecord, utcnow,
+    AppUsage, BlockedEvent, Child, Device, LoginAttempt, Message, PairingCode, ParentSession, UsageRecord, utcnow,
 )
 from conftest import SessionLocal, csrf_from, login, platform_db
 
@@ -32,11 +32,12 @@ def test_prune_keeps_recent_and_removes_old_per_rule(client, parent, monkeypatch
             Message(child_id=child.id, from_child=True, body="neu", created_at=new),
             LoginAttempt(ip="1.2.3.4", at=now - timedelta(days=31)),
             ParentSession(parent_id=parent.id, token_hash="t" * 64, csrf_token="c", expires_at=now - timedelta(days=31)),
+            PairingCode(code_hash="k" * 64, device_name="Lenas PC", expires_at=now - timedelta(days=2)),
         ])
         db.commit()
     with platform_db() as db:
         removed = retention.prune_all(db)
-        assert removed == {"LOG": 1, "APPS": 1, "USAGE": 1, "CHAT": 1, "LOGINS": 1, "SESSIONS": 1}
+        assert removed == {"LOG": 1, "APPS": 1, "USAGE": 1, "CHAT": 1, "LOGINS": 1, "SESSIONS": 1, "PAIRING": 1}
         assert _count(db, BlockedEvent) == 1 and _count(db, UsageRecord) == 1 and _count(db, Message) == 1
     monkeypatch.setenv("KIDCTL_KEEP_LOG_DAYS", "5")                  # per Umgebung kürzer
     with platform_db() as db:

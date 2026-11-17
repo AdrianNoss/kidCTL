@@ -58,12 +58,14 @@ def enroll(req: p.EnrollRequest, request: Request, db: Session = Depends(get_pla
         raise HTTPException(429, "Zu viele Fehlversuche")
 
     code = normalize_pairing_code(req.code)
-    pc = db.scalar(select(PairingCode).where(PairingCode.code_hash == token_hash(code)))
-    if pc is None or pc.used_at is not None or pc.expires_at < utcnow():
+    found = db.execute(select(PairingCode.id, PairingCode.family_id, PairingCode.used_at, PairingCode.expires_at)
+                       .where(PairingCode.code_hash == token_hash(code))).first()   # Plattform: ohne Gerätenamen
+    if found is None or found.used_at is not None or found.expires_at < utcnow():
         record_failure(db, "enroll", ip)
         raise HTTPException(400, "Kopplungscode ungültig oder abgelaufen")
 
-    set_family(db, pc.family_id)   # das Gerät gehört zur Familie, die den Code erzeugt hat
+    set_family(db, found.family_id)   # das Gerät gehört zur Familie, die den Code erzeugt hat
+    pc = db.get(PairingCode, found.id)   # Gerätename ist mit dem Schlüssel dieser Familie verschlüsselt
     token = new_token()
     device = Device(name=pc.device_name, hostname=req.hostname, token_hash=token_hash(token))
     db.add(device)

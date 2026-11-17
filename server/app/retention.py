@@ -16,7 +16,7 @@ from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
 from .models import (
-    AppUsage, BlockedEvent, GameSession, LoginAttempt, Message, ParentSession, ParentToken, UsageRecord,
+    AppUsage, BlockedEvent, GameSession, LoginAttempt, Message, PairingCode, ParentSession, ParentToken, UsageRecord,
 )
 
 log = logging.getLogger("kidctl.retention")
@@ -41,6 +41,7 @@ RULES = [
     Rule("LOGINS", LoginAttempt, "at", 30, "Anmeldeversuche"),
     Rule("SESSIONS", ParentSession, "expires_at", 30, "abgelaufene Sitzungen (nach Ablauf)"),
     Rule("TOKENS", ParentToken, "expires_at", 30, "abgelaufene Links (nach Ablauf)"),
+    Rule("PAIRING", PairingCode, "expires_at", 1, "abgelaufene Kopplungscodes (nach Ablauf)"),
 ]
 
 
