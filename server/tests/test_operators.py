@@ -62,7 +62,8 @@ def test_overview_shows_metadata_only(client, operator):
     admin_login(client, operator)
     page = client.get("/admin").text
     assert f"#{fid}" in page and "0.33.0" in page and "1 Gerät offline" in page
-    assert "Geheim" not in page                                            # keine Namen, keine Inhalte
+    assert "Geheimname" in page                                            # Familienname: Plattform-Schlüssel
+    assert "Geheimkind" not in page and "Geheimgerät" not in page          # Kinder, Geräte: Schlüssel der Familie
     with platform_db() as db:
         row = next(r for r in operators.families(db) if r.id == fid)
     assert (row.children, row.devices, row.offline) == (1, 1, 1)

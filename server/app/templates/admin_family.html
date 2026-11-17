@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ _("Familie #{id}").format(id=f.id) }} – KidCTL{% endblock %}
 {% block content %}
-{% set heading = _("Familie #{id}").format(id=f.id) %}{% include "_admin_head.html" %}
+{% set heading = _("Familie #{id}").format(id=f.id) ~ (" · " ~ f.name if f.name else "") %}{% include "_admin_head.html" %}
 {% if saved %}<p class="success">{{ _("Gespeichert.") }}</p>{% endif %}
 <section class="card">
   {% if row %}<p>{{ _("{parents} Eltern · {children} Kinder · {devices} Geräte").format(parents=row.parents, children=row.children, devices=row.devices) }}
@@ -10,6 +10,21 @@
        {{ _("seit {since}, Löschung am {date}").format(since=f.paused_at | localtime, date=fmt_date(st.delete_at.date())) }}
      {% elif st.phase == "grace" %}<span class="pill warn">{{ _("Schonfrist") }}</span> {{ _("Ruhemodus ab {date}").format(date=fmt_date(st.grace_end.date())) }}
      {% else %}<span class="pill ok">{{ _("ok") }}</span>{% if st.until %} {{ _("bis {date}").format(date=fmt_date(st.until.date())) }}{% endif %}{% endif %}</p>
+</section>
+<form method="post" action="/admin/families/{{ f.id }}/name" class="card row">
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <label>{{ _("Name der Familie") }} <input name="name" maxlength="128" value="{{ f.name }}"></label>
+  <button type="submit" class="secondary">{{ _("Speichern") }}</button>
+</form>
+<section class="card">
+  <h2>{{ _("Rechnungsangaben") }}</h2>
+  {% if address %}
+  <p>{{ address.name }}<br>{{ address.street }}<br>{{ address.postal_code }} {{ address.city }}<br>{{ address.country }}</p>
+  <p>{{ address.email }}{% if address.vat_id %}<br>{{ _("USt-IdNr.") }} {{ address.vat_id }}{% endif %}</p>
+  <p class="muted"><small>{{ _("zuletzt geändert {date}").format(date=address.updated_at | localtime) }}</small>
+    {% if not address.complete %} <span class="pill warn">{{ _("unvollständig") }}</span>{% endif %}</p>
+  {% else %}<p class="muted">{{ _("Noch keine Rechnungsangaben hinterlegt.") }}</p>{% endif %}
+  {% if row and row.address_missing %}<p class="warn"><small>{{ _("Werden für das Abo gebraucht – die Familie sieht einen Hinweis.") }}</small></p>{% endif %}
 </section>
 <form method="post" action="/admin/families/{{ f.id }}" class="card">
   <h2>{{ _("Abo") }}</h2>

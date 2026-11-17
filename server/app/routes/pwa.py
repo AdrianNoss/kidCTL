@@ -16,7 +16,7 @@ from ..i18n import N_, _
 from ..config import settings
 from ..db import get_db
 from .. import accounts
-from ..models import ROLE_OWNER, Membership, Parent, ParentSession, PushSubscription, utcnow
+from ..models import ROLE_OWNER, Family, Membership, Parent, ParentSession, PushSubscription, utcnow
 from ..push import send_to_parents_sync
 from ..security import csrf_protect, require_session
 from ..web import render
@@ -53,7 +53,9 @@ def _settings(request: Request, db: Session, sess: ParentSession, status_code: i
                   backups=[] if settings.saas else backup.backups(), backup_error=None if settings.saas else backup.last_error(),
                   backup_keep=backup.KEEP, backup_hour=backup.BACKUP_HOUR,
                   backup_done=request.query_params.get("backup"), imported=request.query_params.get("imported"),
+                  saved=request.query_params.get("saved"),
                   is_owner=_is_owner(db, sess.parent_id), family_empty=family_export.is_empty(db),
+                  family=db.scalar(select(Family)),
                   **_support_ctx(db, sess), **ctx)
 
 
@@ -66,9 +68,12 @@ def _support_ctx(db: Session, sess) -> dict:
         return {}
     from .. import billing
     from ..models import Family
+    from ..models import BillingAddress
     family = db.scalar(select(Family))
-    return {"support_grant": support.active_grant(db), "support_log": support.log(db),
-            "support_durations": support.DURATIONS, "family": family,
+    address = db.scalar(select(BillingAddress))
+    return {"billing_address": address, "address_needed": billing.address_needed(family, address) if family else False,
+            "support_grant": support.active_grant(db), "support_log": support.log(db),
+            "support_durations": support.DURATIONS,
             "billing_state": billing.state(family) if family else None,
             "plan_label": billing.PLANS, "status_label": billing.STATUSES}
 
@@ -86,6 +91,46 @@ def _owner_with_password(request: Request, db: Session, sess, password: str) -> 
     if error:
         db.commit()   # Fehlversuch zählt
     return error
+
+
+# ---------- Familienname, Rechnungsangaben ----------
+
+@router.post("/settings/family")
+def family_rename(name: str = Form(""), sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    """Name der Familie (nur Inhaber); im Verwaltungsbereich sichtbar."""
+    from ..models import Family
+    if not _is_owner(db, sess.parent_id):
+        raise HTTPException(403, "Nur der Inhaber der Familie")
+    db.scalar(select(Family)).name = name.strip()[:128]
+    db.commit()
+    return RedirectResponse("/settings?saved=family#family", status_code=303)
+
+
+BILLING_FIELDS = {"name": 128, "street": 128, "postal_code": 16, "city": 64, "country": 64, "email": 255, "vat_id": 32}
+
+
+@router.post("/settings/billing")
+async def billing_address_save(request: Request, sess: ParentSession = Depends(csrf_protect),
+                               db: Session = Depends(get_db)):
+    """Rechnungsangaben (nur Inhaber, nur SaaS); Plattform-Schlüssel, damit der Betreiber Rechnungen stellen kann."""
+    from ..models import BillingAddress
+    if not settings.saas:
+        raise HTTPException(404)
+    if not _is_owner(db, sess.parent_id):
+        raise HTTPException(403, "Nur der Inhaber der Familie")
+    form = await request.form()
+    values = {k: str(form.get(k, "")).strip()[:n] for k, n in BILLING_FIELDS.items()}
+    missing = [k for k in BillingAddress.REQUIRED if not values[k]]
+    email_error = accounts.email_error(values["email"]) if values["email"] else None
+    if missing or email_error:
+        return _settings(request, db, sess, 400, billing_form=values,
+                         billing_error=email_error or _("Bitte alle Pflichtfelder ausfüllen."))
+    address = db.scalar(select(BillingAddress)) or BillingAddress()
+    for k, v in values.items():
+        setattr(address, k, v)
+    db.add(address)
+    db.commit()
+    return RedirectResponse("/settings?saved=billing#abo", status_code=303)
 
 
 # ---------- Export, Import, Familie löschen (Etappe 4.5) ----------

@@ -3,6 +3,19 @@
 {% block content %}
 <div class="page-head"><h1>{{ _("Einstellungen") }}</h1></div>
 
+<section class="card" id="family">
+  <div class="card-head"><h2>{{ _("Familie") }}</h2></div>
+  {% if saved == "family" %}<p class="success">{{ _("Gespeichert.") }}</p>{% endif %}
+  {% if is_owner %}
+  <form method="post" action="/settings/family" class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>{{ _("Name der Familie") }} <input name="name" maxlength="128" value="{{ family.name if family else '' }}" placeholder="{{ _('z. B. Familie Müller') }}"></label>
+    <button type="submit" class="secondary">{{ _("Speichern") }}</button>
+  </form>
+  {% else %}<p>{{ family.name or _("ohne Namen") }}</p>{% endif %}
+  {% if SAAS %}<p class="muted"><small>{{ _("Der Name hilft dem Betreiber, eure Familie bei Fragen zuzuordnen.") }}</small></p>{% endif %}
+</section>
+
 {% if SAAS and family %}
 <section class="card" id="abo">
   <div class="card-head"><h2>{{ _("Abo") }}</h2>
@@ -15,6 +28,30 @@
   <p class="error">{{ _("KidCTL ist pausiert: Die Computer eurer Kinder heben alle Einschränkungen auf. Mit einem Abo gelten eure Regeln sofort wieder. Ohne Abo werden eure Daten am {date} gelöscht – vorher könnt ihr sie unten exportieren.").format(date=fmt_date(billing_state.delete_at.date())) }}</p>
   {% elif billing_state.phase == "grace" %}
   <p class="warn">{{ _("Ab {date} ist KidCTL pausiert, falls das Abo nicht verlängert wird.").format(date=fmt_date(billing_state.grace_end.date())) }}</p>
+  {% endif %}
+  {% if family.plan != "free" %}
+  <h3>{{ _("Rechnungsangaben") }}</h3>
+  {% if saved == "billing" %}<p class="success">{{ _("Gespeichert.") }}</p>{% endif %}
+  {% if address_needed %}<p class="warn">{{ _("Für das Abo brauchen wir eure Rechnungsangaben.") }}</p>{% endif %}
+  {% if billing_error %}<p class="error">{{ billing_error }}</p>{% endif %}
+  {% set b = billing_form or billing_address %}
+  {% if is_owner %}
+  <form method="post" action="/settings/billing">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>{{ _("Name bzw. Firma") }} <input name="name" maxlength="128" required autocomplete="name" value="{{ b.name if b else '' }}"></label>
+    <label>{{ _("Straße und Hausnummer") }} <input name="street" maxlength="128" required autocomplete="street-address" value="{{ b.street if b else '' }}"></label>
+    <div class="row">
+      <label>{{ _("PLZ") }} <input name="postal_code" maxlength="16" required autocomplete="postal-code" value="{{ b.postal_code if b else '' }}"></label>
+      <label>{{ _("Ort") }} <input name="city" maxlength="64" required autocomplete="address-level2" value="{{ b.city if b else '' }}"></label>
+    </div>
+    <label>{{ _("Land") }} <input name="country" maxlength="64" required autocomplete="country-name" value="{{ b.country if b else _('Deutschland') }}"></label>
+    <label>{{ _("E-Mail für Rechnungen") }} <input type="email" name="email" maxlength="255" required autocomplete="email" value="{{ b.email if b else (current_parent.email if current_parent else '') }}"></label>
+    <label>{{ _("USt-IdNr.") }} <span class="field-note">{{ _("optional, nur für Firmen") }}</span> <input name="vat_id" maxlength="32" value="{{ b.vat_id if b else '' }}"></label>
+    <button type="submit" class="secondary">{{ _("Rechnungsangaben speichern") }}</button>
+  </form>
+  {% elif billing_address %}<p>{{ billing_address.name }}<br>{{ billing_address.street }}<br>{{ billing_address.postal_code }} {{ billing_address.city }}<br>{{ billing_address.country }}</p>
+  {% else %}<p class="muted"><small>{{ _("Rechnungsangaben hinterlegt der Inhaber der Familie.") }}</small></p>{% endif %}
+  <p class="muted"><small>{{ _("Diese Angaben sieht der Betreiber, damit er Rechnungen stellen kann. Sie werden mit eurer Familie gelöscht.") }}</small></p>
   {% endif %}
   {% if family.plan != "free" %}<p class="muted"><small>{{ _("Die Online-Bezahlung wird gerade vorbereitet. Zum Abschließen oder Verlängern bitte beim Betreiber dieses Servers melden.") }}</small></p>{% endif %}
 </section>

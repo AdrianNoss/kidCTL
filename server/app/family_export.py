@@ -28,7 +28,7 @@ from .models import Child, Device, FamilyScoped, utcnow
 
 FORMAT = "kidctl-family-export"
 VERSION = 1
-EXCLUDED = {"membership", "family_invite", "pairing_code", "support_grant", "support_access"}
+EXCLUDED = {"membership", "family_invite", "pairing_code", "support_grant", "support_access", "billing_address"}
 MAX_ZIP = 200 * 1024 * 1024       # Schutz vor zu großen Uploads/Archiven (entpackt)
 
 

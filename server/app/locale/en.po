@@ -1908,8 +1908,6 @@ msgstr "New code"
 msgid "Notiz (für wen)"
 msgstr "Note (for whom)"
 
-msgid "Nur Metadaten: Namen und Inhalte der Familien sind verschlüsselt und hier nicht lesbar."
-msgstr "Metadata only: the families' names and content are encrypted and cannot be read here."
 
 msgid "Ruhemodus"
 msgstr "Paused"
@@ -2253,3 +2251,82 @@ msgstr "{parents} parents · {children} children · {devices} devices"
 
 msgid "überfällig"
 msgstr "past due"
+
+# Familienname, Rechnungsangaben
+msgid "Außer Familienname und Rechnungsangaben nur Metadaten: Namen der Kinder und alle Inhalte sind mit dem Schlüssel der Familie verschlüsselt und hier nicht lesbar."
+msgstr "Apart from the family name and billing details, metadata only: children's names and all content are encrypted with the family's key and cannot be read here."
+
+msgid "Bitte alle Pflichtfelder ausfüllen."
+msgstr "Please fill in all required fields."
+
+msgid "Bitte hinterlegt eure Rechnungsangaben."
+msgstr "Please enter your billing details."
+
+msgid "Der Name hilft dem Betreiber, eure Familie bei Fragen zuzuordnen."
+msgstr "The name helps the operator identify your family when you have questions."
+
+msgid "Deutschland"
+msgstr "Germany"
+
+msgid "Diese Angaben sieht der Betreiber, damit er Rechnungen stellen kann. Sie werden mit eurer Familie gelöscht."
+msgstr "The operator sees these details so they can issue invoices. They are deleted together with your family."
+
+msgid "E-Mail für Rechnungen"
+msgstr "Email for invoices"
+
+msgid "Für das Abo brauchen wir eure Rechnungsangaben."
+msgstr "We need your billing details for the subscription."
+
+msgid "Land"
+msgstr "Country"
+
+msgid "Name bzw. Firma"
+msgstr "Name or company"
+
+msgid "Name der Familie"
+msgstr "Family name"
+
+msgid "Noch keine Rechnungsangaben hinterlegt."
+msgstr "No billing details yet."
+
+msgid "Ort"
+msgstr "City"
+
+msgid "PLZ"
+msgstr "Postal code"
+
+msgid "Rechnungsangaben"
+msgstr "Billing details"
+
+msgid "Rechnungsangaben fehlen"
+msgstr "Billing details missing"
+
+msgid "Rechnungsangaben hinterlegt der Inhaber der Familie."
+msgstr "The owner of the family enters the billing details."
+
+msgid "Rechnungsangaben speichern"
+msgstr "Save billing details"
+
+msgid "Straße und Hausnummer"
+msgstr "Street and number"
+
+msgid "USt-IdNr."
+msgstr "VAT ID"
+
+msgid "Werden für das Abo gebraucht – die Familie sieht einen Hinweis."
+msgstr "Needed for the subscription – the family sees a notice."
+
+msgid "ohne Namen"
+msgstr "no name"
+
+msgid "optional, nur für Firmen"
+msgstr "optional, businesses only"
+
+msgid "unvollständig"
+msgstr "incomplete"
+
+msgid "z. B. Familie Müller"
+msgstr "e.g. The Smiths"
+
+msgid "zuletzt geändert {date}"
+msgstr "last changed {date}"

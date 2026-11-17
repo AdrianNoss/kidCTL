@@ -51,7 +51,8 @@
 {% if billing_banner %}<p class="{{ 'error' if billing_banner.kind == 'paused' else 'warn' }} billing-banner">
   {% if billing_banner.kind == "paused" %}{{ _("KidCTL ist pausiert – die Computer eurer Kinder sind ohne Einschränkungen. Ohne Abo werden eure Daten am {date} gelöscht.").format(date=fmt_date(billing_banner.date.date())) }}
   {% elif billing_banner.kind == "grace" %}{{ _("Euer Abo ist abgelaufen. Ab {date} ist KidCTL pausiert.").format(date=fmt_date(billing_banner.date.date())) }}
-  {% else %}{{ _("Die Testphase endet am {date}.").format(date=fmt_date(billing_banner.date.date())) }}{% endif %}
+  {% elif billing_banner.kind == "address" %}{{ _("Bitte hinterlegt eure Rechnungsangaben.") }}
+  {% else %}{{ _("Die Testphase endet am {date}.").format(date=fmt_date(billing_banner.date.date())) }}{% if billing_banner.address %} {{ _("Bitte hinterlegt eure Rechnungsangaben.") }}{% endif %}{% endif %}
   <a href="/settings#abo">{{ _("Zum Abo") }}</a></p>{% endif %}
 {% if error %}<p class="error">{{ error }}</p>{% endif %}
 {% if notice %}<p class="success">{{ notice }}</p>{% endif %}

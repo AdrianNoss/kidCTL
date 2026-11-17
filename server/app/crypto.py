@@ -33,7 +33,7 @@ from sqlalchemy.types import TypeDecorator
 
 from .config import settings
 
-SEALED, MATCHABLE = "g1:", "s1:"
+SEALED, MATCHABLE, PLATFORM = "g1:", "s1:", "p1:"
 _current: ContextVar[int | None] = ContextVar("kidctl_crypto_family", default=None)
 _keys: dict[int, bytes] = {}   # entpackte Familienschlüssel (nur im Arbeitsspeicher)
 
@@ -195,6 +195,48 @@ class Matchable(_Encrypted):
     """Deterministisch verschlüsselt (AES-SIV): Gleichheit, Eindeutigkeit und Gruppieren in der Datenbank."""
     cache_ok = True   # Ver-/Entschlüsselung erst beim Ausführen (Kontext), nicht beim Kompilieren
     _encrypt = staticmethod(match)
+
+
+# ---------- Plattform-Daten (Betreiber muss sie lesen können) ----------
+
+def seal_platform(value: str, label: str) -> str:
+    """Daten, die der Betreiber lesen muss (Familienname, Rechnungsanschrift): eigener, vom Hauptschlüssel
+    abgeleiteter Schlüssel – lesbar ohne Familienkontext, aber nicht in einer Kopie der Datenbank allein."""
+    nonce = os.urandom(12)
+    ct = AESGCM(_derive(b"kidctl platform data")).encrypt(nonce, value.encode(), label.encode())
+    return PLATFORM + base64.b64encode(nonce + ct).decode()
+
+
+def open_platform(value: str, label: str) -> str:
+    if value == "":
+        return ""
+    if not value.startswith(PLATFORM):
+        raise DecryptError(f"{label}: Wert ist nicht verschlüsselt")
+    raw = base64.b64decode(value[len(PLATFORM):])
+    try:
+        return AESGCM(_derive(b"kidctl platform data")).decrypt(raw[:12], raw[12:], label.encode()).decode()
+    except InvalidTag as e:
+        raise DecryptError(f"{label}: Entschlüsselung fehlgeschlagen") from e
+
+
+class PlatformSealed(TypeDecorator):
+    """Mit dem Plattform-Schlüssel verschlüsselt (AES-GCM) – unabhängig vom Familienkontext."""
+    impl = Text
+    cache_ok = True
+
+    def __init__(self, label: str):
+        super().__init__()
+        self.label = label
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        return seal_platform(str(value), self.label)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return open_platform(value, self.label)
 
 
 WrappedKey = LargeBinary

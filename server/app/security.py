@@ -210,11 +210,14 @@ def _billing_gate(db: Session, request: Request, family_id: int) -> None:
     from . import billing
     from .models import Family
     from .tenant import platform
+    from .models import BillingAddress
+    from sqlalchemy import select as _select
     with platform(db):
         family = db.get(Family, family_id)
+        address = db.scalar(_select(BillingAddress).where(BillingAddress.family_id == family_id))
     if family is None:
         return
-    request.state.billing = billing.banner(family)
+    request.state.billing = billing.banner(family, address)
     if family.paused_at is not None and not request.url.path.startswith(PAUSED_ALLOWED):
         raise FamilyPaused()
 

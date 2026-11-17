@@ -96,8 +96,10 @@ def _family_page(request, db, sess, family_id, status_code=200, **ctx):
     f = db.get(Family, family_id)
     if f is None or f.wrapped_key is None:
         raise HTTPException(404)
+    from ..models import BillingAddress
     row = next((r for r in opr.families(db) if r.id == family_id), None)
-    return _render(request, "admin_family.html", sess, status_code, f=f, row=row, st=billing.state(f),
+    address = db.scalar(select(BillingAddress).where(BillingAddress.family_id == family_id))
+    return _render(request, "admin_family.html", sess, status_code, f=f, row=row, st=billing.state(f), address=address,
                    plans=billing.PLANS, statuses=billing.STATUSES, **ctx)
 
 
@@ -111,6 +113,18 @@ def _date(value: str):
     from datetime import date, datetime, time
     value = value.strip()
     return datetime.combine(date.fromisoformat(value), time(23, 59)) if value else None
+
+
+@router.post("/families/{family_id}/name")
+def family_name(family_id: int, name: str = Form(""), sess: OperatorSession = Depends(opr.operator_csrf),
+                db: Session = Depends(get_platform_db)):
+    from ..models import Family
+    f = db.get(Family, family_id)
+    if f is None or f.wrapped_key is None:
+        raise HTTPException(404)
+    f.name = name.strip()[:128]
+    db.commit()
+    return RedirectResponse(f"/admin/families/{family_id}?saved=1", status_code=303)
 
 
 @router.post("/families/{family_id}")

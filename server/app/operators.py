@@ -119,12 +119,17 @@ class FamilyRow:
     plan: str = "free"
     billing_status: str = "active"
     billing: object = None               # billing.State
+    name: str = ""                       # Name der Familie (Plattform-Schlüssel)
+    address_missing: bool = False        # Rechnungsangaben gebraucht, aber unvollständig
 
 
 def families(db: Session) -> list[FamilyRow]:
     from . import billing
+    from .models import BillingAddress
+    addresses = {a.family_id: a for a in db.scalars(select(BillingAddress))}
     rows = {f.id: FamilyRow(f.id, f.created_at, f.paused_at, plan=f.plan, billing_status=f.billing_status,
-                            billing=billing.state(f))
+                            billing=billing.state(f), name=f.name,
+                            address_missing=billing.address_needed(f, addresses.get(f.id)))
             for f in db.scalars(select(Family).where(Family.wrapped_key.is_not(None)).order_by(Family.id))}
 
     def count(model, *where):

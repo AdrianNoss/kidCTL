@@ -9,7 +9,7 @@
     {% elif backups %}{{ _("Letztes Backup: {when} ({size})").format(when=fmt_datetime(backups[0].at), size=fmt_size(backups[0].size)) }}
       · {{ ngettext("{n} Backup vorhanden", "{n} Backups vorhanden", backups | length).format(n=backups | length) }}
     {% else %}<span class="pill warn">{{ _("Noch kein Backup vorhanden.") }}</span>{% endif %}</p>
-  <p class="muted"><small>{{ _("Nur Metadaten: Namen und Inhalte der Familien sind verschlüsselt und hier nicht lesbar.") }}</small></p>
+  <p class="muted"><small>{{ _("Außer Familienname und Rechnungsangaben nur Metadaten: Namen der Kinder und alle Inhalte sind mit dem Schlüssel der Familie verschlüsselt und hier nicht lesbar.") }}</small></p>
 </section>
 <section class="card">
   <table class="responsive">
@@ -17,14 +17,15 @@
       <th>{{ _("Agent-Versionen") }}</th><th>{{ _("Letzte Aktivität") }}</th><th>{{ _("Abo") }}</th><th>{{ _("Zustand") }}</th><th>{{ _("Support") }}</th></tr>
     {% for f in families %}
     <tr>
-      <td><a href="/admin/families/{{ f.id }}"><strong>#{{ f.id }}</strong></a><br><small class="muted">{{ _("seit {date}").format(date=fmt_date(f.created_at.date())) }}</small></td>
+      <td><a href="/admin/families/{{ f.id }}"><strong>#{{ f.id }}</strong>{% if f.name %} {{ f.name }}{% endif %}</a><br><small class="muted">{{ _("seit {date}").format(date=fmt_date(f.created_at.date())) }}</small></td>
       <td data-label="{{ _('Eltern') }}">{{ f.parents }}</td>
       <td data-label="{{ _('Kinder') }}">{{ f.children }}</td>
       <td data-label="{{ _('Geräte') }}">{{ f.devices }}</td>
       <td data-label="{{ _('Agent-Versionen') }}">{{ f.versions | join(", ") }}</td>
       <td data-label="{{ _('Letzte Aktivität') }}">{{ _("Gerät") }}: {{ f.last_seen | localtime }}<br>{{ _("Eltern") }}: {{ f.last_login | localtime }}</td>
       <td data-label="{{ _('Abo') }}">{{ _(plans[f.plan]) }}{% if f.plan != "free" %} · {{ _(statuses[f.billing_status]) }}{% if f.billing.until %} {{ _("bis {date}").format(date=fmt_date(f.billing.until.date())) }}{% endif %}{% endif %}
-        {% if f.billing.phase == "grace" %}<span class="pill warn">{{ _("Schonfrist") }}</span>{% endif %}</td>
+        {% if f.billing.phase == "grace" %}<span class="pill warn">{{ _("Schonfrist") }}</span>{% endif %}
+        {% if f.address_missing %}<span class="pill warn">{{ _("Rechnungsangaben fehlen") }}</span>{% endif %}</td>
       <td class="right">
         {% if f.paused_at %}<span class="pill warn">{{ _("Ruhemodus") }}</span>{% endif %}
         {% if f.offline %}<span class="pill danger">{{ ngettext("{n} Gerät offline", "{n} Geräte offline", f.offline).format(n=f.offline) }}</span>{% endif %}

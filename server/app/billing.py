@@ -94,15 +94,27 @@ def child_limit_error(db: Session) -> str | None:
     return None
 
 
-def banner(f: Family) -> dict | None:
-    """Hinweis oben im WebUI (Schonfrist, Ruhemodus) oder ``None``."""
+def address_needed(f: Family, address) -> bool:
+    """Rechnungsangaben fehlen, werden aber gebraucht: bezahlter Tarif außerhalb der Testphase oder Testphase in den
+    letzten 7 Tagen bzw. abgelaufen."""
+    if not settings.saas or f.plan == "free" or (address is not None and address.complete):
+        return False
+    if f.billing_status != "trial":
+        return True
+    return f.trial_ends_at is not None and f.trial_ends_at - utcnow() < timedelta(days=7)
+
+
+def banner(f: Family, address=None) -> dict | None:
+    """Hinweis oben im WebUI (Schonfrist, Ruhemodus, Rechnungsangaben fehlen) oder ``None``."""
     st = state(f)
     if st.phase == "grace":
         return {"kind": "grace", "date": st.grace_end}
     if st.phase == "paused":
         return {"kind": "paused", "date": st.delete_at}
     if st.until is not None and f.billing_status == "trial" and st.until - utcnow() < timedelta(days=7):
-        return {"kind": "trial", "date": st.until}
+        return {"kind": "trial", "date": st.until, "address": address_needed(f, address)}
+    if address_needed(f, address):
+        return {"kind": "address", "date": None}
     return None
 
 

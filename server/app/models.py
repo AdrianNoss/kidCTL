@@ -13,7 +13,7 @@ from sqlalchemy import (
 from sqlalchemy import event
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
-from .crypto import Matchable, Sealed
+from .crypto import Matchable, PlatformSealed, Sealed
 from .db import Base
 
 
@@ -26,7 +26,8 @@ class Family(Base):
     __tablename__ = "family"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(128), default="")
+    # Name der Familie (von ihr selbst oder vom Betreiber gesetzt) – Plattform-Schlüssel, im Verwaltungsbereich lesbar
+    name: Mapped[str] = mapped_column(PlatformSealed("family.name"), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     # Datenschlüssel der Familie, mit dem Hauptschlüssel eingepackt (app.crypto); NULL = gelöscht/unlesbar
     wrapped_key: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
@@ -202,6 +203,29 @@ class SupportSession(Base):
     grant_id: Mapped[int] = mapped_column(ForeignKey("support_grant.id", ondelete="CASCADE"))
     family_id: Mapped[int] = mapped_column(ForeignKey("family.id", ondelete="CASCADE"))
     expires_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class BillingAddress(FamilyScoped, Base):
+    """Rechnungsangaben, von der Familie selbst hinterlegt. Plattform-Schlüssel: Der Betreiber braucht sie für
+    Rechnungen; mit der Familie gelöscht (CASCADE)."""
+    __tablename__ = "billing_address"
+    __table_args__ = (UniqueConstraint("family_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(PlatformSealed("billing_address.name"), default="")        # Name bzw. Firma
+    street: Mapped[str] = mapped_column(PlatformSealed("billing_address.street"), default="")
+    postal_code: Mapped[str] = mapped_column(PlatformSealed("billing_address.postal_code"), default="")
+    city: Mapped[str] = mapped_column(PlatformSealed("billing_address.city"), default="")
+    country: Mapped[str] = mapped_column(PlatformSealed("billing_address.country"), default="")
+    email: Mapped[str] = mapped_column(PlatformSealed("billing_address.email"), default="")      # für Rechnungen
+    vat_id: Mapped[str] = mapped_column(PlatformSealed("billing_address.vat_id"), default="")    # optional
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+
+    REQUIRED = ("name", "street", "postal_code", "city", "country", "email")
+
+    @property
+    def complete(self) -> bool:
+        return all(getattr(self, f).strip() for f in self.REQUIRED)
 
 
 class LoginAttempt(Base):

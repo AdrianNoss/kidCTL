@@ -106,6 +106,13 @@ Die Agenten heben alle Einschränkungen auf, das WebUI zeigt nur noch Einstellun
 weiteren 90 Tagen ohne Abo wird die Familie automatisch gelöscht, mit Vorwarnung 30, 7 und 1 Tag vorher. Im
 Einzelbetrieb gibt es das alles nicht.
 
+**Familienname und Rechnungsangaben:** Der Inhaber trägt unter „Einstellungen“ den Namen der Familie und in der
+Abo-Karte die Rechnungsangaben ein (Name bzw. Firma, Anschrift, Land, E-Mail für Rechnungen, optional USt-IdNr.).
+Fehlen sie, obwohl sie gebraucht werden (bezahlter Tarif, Testphase in den letzten 7 Tagen), sieht die Familie einen
+Hinweis und du in der Übersicht „Rechnungsangaben fehlen“. Auf der Familienseite siehst du die Angaben und kannst den
+Namen ändern. Beides ist mit einem eigenen, vom Hauptschlüssel abgeleiteten Schlüssel verschlüsselt: im
+Verwaltungsbereich lesbar, in einer Kopie der Datenbank allein nicht; es wird mit der Familie gelöscht.
+
 Für einen Zahlungsanbieter gibt es einen neutralen Webhook (nur mit `BILLING_WEBHOOK_SECRET`):
 
 ```bash

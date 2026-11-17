@@ -106,6 +106,13 @@ family is paused: the agents lift all restrictions, the web interface only shows
 delete). After another 90 days without a subscription the family is deleted automatically, with warnings 30, 7 and
 1 day before. None of this exists in single mode.
 
+**Family name and billing details:** The owner enters the family name under "Settings" and the billing details in
+the subscription card (name or company, address, country, email for invoices, optional VAT ID). If they are missing
+although they are needed (paid plan, last 7 days of the trial), the family sees a notice and you see "Billing details
+missing" in the overview. The family page shows the details and lets you change the name. Both are encrypted with a
+separate key derived from the master key: readable in the administration area, not in a copy of the database alone;
+they are deleted with the family.
+
 For a payment provider there is a neutral webhook (only with `BILLING_WEBHOOK_SECRET`):
 
 ```bash

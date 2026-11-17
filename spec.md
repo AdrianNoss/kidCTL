@@ -995,6 +995,12 @@ Self-Hosting bleibt erhalten.
   - Schonfrist-Hinweise per Mail und Push 14, 7 und 1 Tag vor dem Ruhemodus, Banner im WebUI. Im Ruhemodus nur
     Einstellungen (Abo, Export, Löschen), Profil und Abmelden.
   - **Automatische Löschung** 90 Tage nach Beginn des Ruhemodus; Vorwarnung per Mail und Push 30, 7 und 1 Tag vorher.
+- **Festgelegt 2026-11-17 (Familienname, Rechnungsangaben):** Den Namen der Familie setzt der Inhaber in den
+  Einstellungen, der Betreiber sieht und ändert ihn im Verwaltungsbereich. Rechnungsangaben (Name bzw. Firma, Straße,
+  PLZ, Ort, Land, E-Mail für Rechnungen, optional USt-IdNr.) hinterlegt der Inhaber selbst; gebraucht ab bezahltem
+  Tarif bzw. in den letzten 7 Tagen der Testphase (Hinweis, Banner, Markierung beim Betreiber). Beides mit einem
+  Plattform-Schlüssel (HKDF aus dem Hauptschlüssel) verschlüsselt: für den Betreiber lesbar – Ausnahme vom Grundsatz
+  „nur Metadaten“ –, nicht in einer Datenbankkopie allein; mit der Familie gelöscht, nicht im Familien-Export.
 
 ### Missbrauch
 - Nur offener Betrieb: Tray-Symbol auf jedem verwalteten Account sichtbar, Hinweis beim ersten Anmelden nach der
@@ -2440,3 +2446,14 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   (aus ohne Geheimnis, 401, wieder aktiv, überfällig mit Laufzeit, ungültig, unbekannt); Kindergrenze; Abo-Karte.
   Im Browser im SaaS-Modus: abgelaufene Testphase mit Banner und Abo-Karte, Übersicht und Familienseite; die
   Hintergrundprüfung beim Start hat den ersten Hinweis vermerkt. Server 205, Agent 274 Tests grün.
+- 2026-11-17: Familienname und Rechnungsangaben: `crypto.PlatformSealed` (AES-GCM, Schlüssel per HKDF „kidctl platform
+  data“ aus dem Hauptschlüssel, Präfix `p1:`), `family.name` darauf umgestellt (Migration 0014 verschlüsselt bestehende
+  Namen), neue Tabelle `billing_address` (je Familie eine, CASCADE). Einstellungen: Karte „Familie“ (Name, nur Inhaber
+  ändert), in der Abo-Karte Formular „Rechnungsangaben“ (nur SaaS, nur Inhaber, Pflichtfelder, E-Mail geprüft);
+  `billing.address_needed` → Banner „Bitte hinterlegt eure Rechnungsangaben“. Verwaltungsbereich: Name in Übersicht und
+  Familienseite (änderbar), Rechnungsangaben lesend, Markierung „Rechnungsangaben fehlen“. Nicht im Familien-Export.
+  Getestet (pytest, 6 neue Tests): Name verschlüsselt gespeichert, im Verwaltungsbereich lesbar und änderbar, nur
+  Inhaber; Rechnungsangaben: kein Hinweis in früher Testphase, Banner bei aktivem Abo, Pflichtfelder/E-Mail, gespeichert
+  verschlüsselt, Banner weg, Anzeige beim Betreiber; Markierung in der Übersicht; Einzelbetrieb 404; Löschen der Familie
+  entfernt sie. Migration 0014 auf der Entwicklungsdatenbank mit Klartext-Namen hin und zurück geprüft. Im Browser im
+  SaaS-Modus angesehen. Server 211 Tests grün.
