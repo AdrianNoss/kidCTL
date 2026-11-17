@@ -1,0 +1,7 @@
+{{- /* Wiki: Bilder aus docs/img/ (Mount nach static/docs/img/), mit Lightbox-Link. */ -}}
+{{- $src := .Destination }}
+{{- if and (eq .Page.Section "docs") (not (findRE `^[a-zA-Z][a-zA-Z0-9+.-]*:|^/` $src)) }}
+  {{- $src = path.Join "docs" $src | relURL }}
+{{- end -}}
+<a href="{{ $src }}" data-lightbox><img src="{{ $src }}" alt="{{ .PlainText }}" loading="lazy" decoding="async"{{ with .Title }} title="{{ . }}"{{ end }}></a>
+{{- /**/ -}}

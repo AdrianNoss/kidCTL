@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#f9f9ff" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#121318" media="(prefers-color-scheme: dark)">
-  {{- $title := cond .IsHome (printf "%s – %s" site.Title (T "claim")) (printf "%s · %s" .Title site.Title) }}
+  {{- $title := cond .IsHome (printf "%s – %s" site.Title (T "claim")) (printf "%s · %s" (partial "pagetitle.html" .) site.Title) }}
   <title>{{ $title }}</title>
   <meta name="description" content="{{ with .Description }}{{ . }}{{ else }}{{ with .Summary }}{{ . | plainify | truncate 160 }}{{ else }}{{ T "meta_description" }}{{ end }}{{ end }}">
   <link rel="canonical" href="{{ .Permalink }}">
@@ -33,5 +33,7 @@
   {{ partial "footer.html" . }}
   {{- $js := resources.Get "js/lightbox.js" | minify | fingerprint }}
   <script src="{{ $js.RelPermalink }}" integrity="{{ $js.Data.Integrity }}" defer></script>
+  {{- if eq .Section "docs" }}{{ $djs := resources.Get "js/docs.js" | minify | fingerprint }}
+  <script src="{{ $djs.RelPermalink }}" integrity="{{ $djs.Data.Integrity }}" defer></script>{{ end }}
 </body>
 </html>

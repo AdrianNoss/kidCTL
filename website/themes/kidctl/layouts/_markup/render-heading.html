@@ -1,0 +1,4 @@
+{{- /* Wiki: die erste #-Überschrift ist der Seitentitel (steht im Layout), nicht noch einmal im Text. */ -}}
+{{- if and (eq .Level 1) (eq .Page.Section "docs") }}{{ else -}}
+<h{{ .Level }} id="{{ .Anchor }}">{{ .Text }}{{ if and (ge .Level 2) (eq .Page.Section "docs") }} <a class="anchor" href="#{{ .Anchor }}" aria-hidden="true" tabindex="-1">#</a>{{ end }}</h{{ .Level }}>
+{{- end -}}

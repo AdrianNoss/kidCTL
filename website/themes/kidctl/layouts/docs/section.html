@@ -1,0 +1,24 @@
+{{ define "main" }}
+<div class="page"><div class="wrap">
+  <div class="section-head">
+    <span class="eyebrow">{{ T "docs_eyebrow" }}</span>
+    <h1>{{ .Title }}</h1>
+    <p class="lead">{{ .Description }}</p>
+  </div>
+  <div class="grid three">
+  {{- range hugo.Data.docs }}
+    <section class="card docgroup">
+      <h2>{{ partial "tr.html" .title }}</h2>
+      <ul>
+      {{- range .pages }}
+        {{- with site.GetPage (printf "/docs/%s" .) }}
+        <li><a href="{{ .RelPermalink }}">{{ partial "pagetitle.html" . }}</a></li>
+        {{- end }}
+      {{- end }}
+      </ul>
+    </section>
+  {{- end }}
+  </div>
+  <p class="muted" style="margin-top:1.5rem">{{ T "docs_source" (dict "url" (printf "%s/tree/main/docs" site.Params.github)) | safeHTML }}</p>
+</div></div>
+{{ end }}

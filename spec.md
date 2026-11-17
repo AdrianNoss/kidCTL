@@ -2239,3 +2239,18 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
   (9 Tests) mit Gegenproben – Überschrift nur im Deutschen, Befehl nur im Englischen geändert, Listenpunkt nur im
   Englischen, Linkziel, Hinweisbox-Typ, fehlende Übersetzung, Navigation ohne Datei – jeweils Fehler mit Datei und
   Zeile, abweichende Kommentare kein Fehler; Linkprüfung aller `.md` (38 Dateien, 0 Fehler).
+- 2026-11-17: Wiki Etappe 3 (Wiki im Theme): Hugo-Mounts `../docs` → `content/docs` (ohne `img/`) und `../docs/img` →
+  `static/docs/img`; Abschnitt „Anleitungen“/„Docs“ (`/docs/`, `/de/docs/`) mit Übersichtsseite nach Gruppen aus
+  `data/docs.yaml`. Seitenlayout: Navigation links (mobil als aufklappbares Menü), Inhaltsverzeichnis rechts (H2/H3,
+  mobil aufklappbar), Vor/Zurück in der Reihenfolge aus `docs.yaml`, „Auf GitHub bearbeiten“ auf die Quelldatei der
+  Sprache, Kopier-Button an Codeblöcken (`docs.js`, ohne JS normal markierbar). Titel aus der ersten `#`-Überschrift
+  (Partial `pagetitle`, im Text ausgeblendet). Render-Hooks: Links in `docs/` → Wiki-Seite derselben Sprache (mit
+  Anker), übrige Repo-Pfade → GitHub `blob/main`; Bilder aus `docs/img/`; GitHub-Alerts als Hinweisboxen.
+  Menüpunkt „Anleitungen“/„Docs“ (ersetzt „Installieren“ im Kopf; Schnellstart bleibt per Hero-Button), Buttons
+  „Vollständige Anleitung“ und „Härtung“ im Schnellstart (`params.docs` = Wiki; vorher Link auf das entfallene
+  `haertung.md` bei GitHub). Pages-Workflow: Paritäts-Check vor dem Build, Auslöser auch `docs/**`, `SECURITY*.md`.
+  Getestet: `hugo --minify --gc --panicOnWarning` ohne Warnungen; jede Wiki-Seite DE/EN (28) mobil 390×844 und
+  Desktop 1366×900, hell/dunkel per Playwright: kein Überlauf, Titel gesetzt, keine externen Requests, keine
+  Konsolenfehler/404; Linkprüfung über `public/` (2166 interne Links inkl. Anker, 0 Fehler; alle 40 GitHub-Ziele
+  existieren im Repo); Sichtprüfung Übersicht, Server (mobil dunkel), Windows (Desktop hell). GitHub-Ansicht der
+  Markdown-Dateien unverändert lesbar (reines Markdown, Alerts nativ).

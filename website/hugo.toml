@@ -9,7 +9,8 @@ disableKinds = ["taxonomy", "term"]
 
 [params]
   github = "https://github.com/AdrianNoss/kidCTL"
-  docs = "https://github.com/AdrianNoss/kidCTL/blob/main/docs"
+  # Wiki (Anleitungen aus ../docs, eingebunden per Mount unten); Pfad relativ zur Sprachstartseite
+  docs = "docs/"
   license = "AGPL-3.0-or-later"
 
 [languages]
@@ -28,6 +29,26 @@ disableKinds = ["taxonomy", "term"]
 
 [markup.goldmark.renderer]
   unsafe = false
+
+[markup.tableOfContents]
+  startLevel = 2
+  endLevel = 3
+
+# Wiki: docs/<name>.md (Englisch) und docs/<name>.de.md (Deutsch) aus dem Repo als Abschnitt /docs/ bzw. /de/docs/,
+# Bilder aus docs/img/ unter /docs/img/. Mit eigenen Mounts müssen die Standard-Mounts mit aufgeführt werden.
+[[module.mounts]]
+  source = "content"
+  target = "content"
+[[module.mounts]]
+  source = "../docs"
+  target = "content/docs"
+  files = ["! img/**"]
+[[module.mounts]]
+  source = "static"
+  target = "static"
+[[module.mounts]]
+  source = "../docs/img"
+  target = "static/docs/img"
 
 [markup.highlight]
   noClasses = false

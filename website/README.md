@@ -16,6 +16,7 @@ hugo --minify --panicOnWarning  # vor dem Commit
 | `i18n/{en,de}.yaml` | Texte der Oberfläche |
 | `data/features.yaml`, `platforms.yaml`, `trust.yaml`, `install.yaml` | Inhalte der Startseite (Felder `de`/`en`) |
 | `data/roadmap.yaml` | Roadmap (`planned` / `in_progress` / `done`) |
+| `../docs/` (Mount) | Wiki „Anleitungen“/„Docs“ unter `/docs/` bzw. `/de/docs/`; Navigation in `data/docs.yaml`, Bilder `docs/img/` |
 | `content/news/` | News: `YYYY-MM-DD-<slug>.de.md` + `.en.md` |
 | `content/legal/` | Impressum (`TODO-IMPRESSUM` blockiert den Deploy) und Datenschutz |
 | `static/img/screenshots/` | WebUI-Screenshots aus `dev/screenshots.py` |

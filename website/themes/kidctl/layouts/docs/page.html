@@ -1,0 +1,39 @@
+{{ define "main" }}
+{{- $title := partial "pagetitle.html" . }}
+{{- $all := partial "docpages.html" . }}
+{{- $idx := -1 }}
+{{- range $i, $e := $all }}{{ if eq $e.page.RelPermalink $.RelPermalink }}{{ $idx = $i }}{{ end }}{{ end }}
+{{- $group := "" }}{{ if ge $idx 0 }}{{ $group = partial "tr.html" (index $all $idx).group.title }}{{ end }}
+{{- $src := .File.LogicalName }}
+{{- $srcPath := printf "docs/%s" $src }}
+{{- if eq .File.ContentBaseName "security" }}{{ $srcPath = cond (eq site.Language.Lang "de") "SECURITY.de.md" "SECURITY.md" }}{{ end }}
+<div class="docs-layout wrap">
+  <aside class="docnav" aria-label="{{ T "docs_nav" }}">
+    <a class="docnav-home" href="{{ .Parent.RelPermalink }}">{{ .Parent.Title }}</a>
+    {{ partial "docnav.html" . }}
+  </aside>
+  <article class="doc">
+    <details class="docnav-mobile">
+      <summary>{{ partial "icon.html" "menu" }}{{ .Parent.Title }}</summary>
+      {{ partial "docnav.html" . }}
+    </details>
+    <p class="meta">{{ with .Parent }}<a href="{{ .RelPermalink }}">{{ .Title }}</a>{{ end }}{{ with $group }} · {{ . }}{{ end }}</p>
+    <h1>{{ $title }}</h1>
+    {{- with .TableOfContents }}{{ if ne (trim (. | plainify) " \n") "" }}
+    <details class="toc-mobile"><summary>{{ T "docs_toc" }}</summary>{{ . }}</details>
+    {{- end }}{{ end }}
+    <div class="doc-body prose" data-pagefind-body data-pagefind-filter="type:{{ T "filter_docs" }}" data-pagefind-meta="title:{{ $title }}">
+      {{ .Content }}
+    </div>
+    <nav class="prevnext" aria-label="{{ T "docs_prevnext" }}">
+      {{- if gt $idx 0 }}{{ with (index $all (sub $idx 1)).page }}<a class="prev" href="{{ .RelPermalink }}"><span class="meta">{{ T "docs_prev" }}</span>{{ partial "pagetitle.html" . }}</a>{{ end }}{{ else }}<span></span>{{ end }}
+      {{- if and (ge $idx 0) (lt (add $idx 1) (len $all)) }}{{ with (index $all (add $idx 1)).page }}<a class="next" href="{{ .RelPermalink }}"><span class="meta">{{ T "docs_next" }}</span>{{ partial "pagetitle.html" . }}</a>{{ end }}{{ end }}
+    </nav>
+    <p class="doc-edit"><a href="{{ site.Params.github }}/edit/main/{{ $srcPath }}" rel="noopener">{{ partial "icon.html" "edit" }}{{ T "docs_edit" }}</a>
+      <span class="muted">· {{ T "docs_edit_hint" }}</span></p>
+  </article>
+  <aside class="doctoc" aria-label="{{ T "docs_toc" }}">
+    {{- with .TableOfContents }}{{ if ne (trim (. | plainify) " \n") "" }}<p class="docnav-group">{{ T "docs_toc" }}</p>{{ . }}{{ end }}{{ end }}
+  </aside>
+</div>
+{{ end }}

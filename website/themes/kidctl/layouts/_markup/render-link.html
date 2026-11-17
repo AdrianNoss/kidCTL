@@ -1,0 +1,19 @@
+{{- /* Wiki-Links: Ziele innerhalb von docs/ (auch SECURITY.md) → Wiki-Seite derselben Sprache; übrige relative Ziele im
+       Repo → GitHub (blob/main). Andere Seiten: unverändert. */ -}}
+{{- $d := .Destination }}
+{{- $href := $d }}
+{{- $p := .Page }}
+{{- if and (eq $p.Section "docs") $p.File (not (hasPrefix $d "#")) (not (findRE `^[a-zA-Z][a-zA-Z0-9+.-]*:` $d)) }}
+  {{- $parts := split $d "#" }}
+  {{- $frag := "" }}{{ if gt (len $parts) 1 }}{{ $frag = printf "#%s" (index $parts 1) }}{{ end }}
+  {{- $base := cond (eq $p.File.ContentBaseName "security") "" "docs" }}
+  {{- $file := path.Join $base (index $parts 0) }}
+  {{- $name := "" }}
+  {{- with findRESubmatch `^docs/([a-z0-9-]+?)(?:\.de)?\.md$` $file 1 }}{{ $name = index (index . 0) 1 }}{{ end }}
+  {{- if findRE `^SECURITY(\.de)?\.md$` $file }}{{ $name = "security" }}{{ end }}
+  {{- $target := "" }}
+  {{- with $name }}{{ with site.GetPage (printf "/docs/%s" .) }}{{ $target = .RelPermalink }}{{ end }}{{ end }}
+  {{- if $target }}{{ $href = printf "%s%s" $target $frag }}{{ else }}{{ $href = printf "%s/blob/main/%s%s" site.Params.github $file $frag }}{{ end }}
+{{- end -}}
+<a href="{{ $href | safeURL }}"{{ with .Title }} title="{{ . }}"{{ end }}{{ if hasPrefix $href "http" }} rel="noopener"{{ end }}>{{ .Text }}</a>
+{{- /**/ -}}

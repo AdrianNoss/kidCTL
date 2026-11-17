@@ -1,0 +1,9 @@
+{{- /* Wiki-Seiten in der Reihenfolge aus data/docs.yaml (aktuelle Sprache). Rückgabe: Liste von dict page/group. */ -}}
+{{- $out := slice }}
+{{- range hugo.Data.docs }}
+  {{- $group := . }}
+  {{- range .pages }}
+    {{- with site.GetPage (printf "/docs/%s" .) }}{{ $out = $out | append (dict "page" . "group" $group) }}{{ end }}
+  {{- end }}
+{{- end }}
+{{- return $out }}

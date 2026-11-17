@@ -1,0 +1,9 @@
+{{- /* GitHub-Alerts (> [!NOTE] …) als Hinweisboxen; übrige Zitate normal. */ -}}
+{{- if eq .Type "alert" }}
+<div class="alert alert-{{ .AlertType }}" role="note">
+  <p class="alert-title">{{ partial "icon.html" (index (dict "note" "info" "tip" "bulb" "important" "important" "warning" "warn" "caution" "warn") .AlertType) }}{{ T (printf "alert_%s" .AlertType) }}</p>
+  {{ .Text }}
+</div>
+{{- else }}
+<blockquote>{{ .Text }}</blockquote>
+{{- end }}

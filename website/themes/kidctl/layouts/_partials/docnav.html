@@ -1,0 +1,12 @@
+{{- /* Navigation des Wikis aus data/docs.yaml. Kontext: aktuelle Seite. */ -}}
+{{- $cur := . }}
+{{- range hugo.Data.docs }}
+  <p class="docnav-group">{{ partial "tr.html" .title }}</p>
+  <ul>
+  {{- range .pages }}
+    {{- with site.GetPage (printf "/docs/%s" .) }}
+    <li><a href="{{ .RelPermalink }}"{{ if eq .RelPermalink $cur.RelPermalink }} aria-current="page"{{ end }}>{{ partial "pagetitle.html" . }}</a></li>
+    {{- end }}
+  {{- end }}
+  </ul>
+{{- end }}

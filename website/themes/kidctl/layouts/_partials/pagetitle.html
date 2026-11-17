@@ -1,0 +1,6 @@
+{{- /* Titel einer Seite; Wiki-Seiten (docs/ ohne Frontmatter) haben ihn als erste #-Überschrift. */ -}}
+{{- $t := .Title }}
+{{- if and (not $t) .File }}
+  {{- with findRESubmatch `(?m)^#[ \t]+(.+?)[ \t]*$` .RawContent 1 }}{{ $t = index (index . 0) 1 | replaceRE "`" "" | plainify }}{{ end }}
+{{- end }}
+{{- return $t }}

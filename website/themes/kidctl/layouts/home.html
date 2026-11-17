@@ -141,7 +141,10 @@
       </div>
     {{- end }}
     </div>
-    <p style="margin-top:1.5rem">{{ T "install_more" (dict "install" (printf "%s/installation.md" $docs) "harden" (printf "%s/haertung.md" $docs)) | safeHTML }}</p>
+    <div class="actions" style="margin-top:1.5rem">
+      <a class="btn" href="{{ printf "%sinstallation/" $docs | relLangURL }}">{{ partial "icon.html" "book" }}{{ T "btn_docs_full" }}</a>
+      <a class="btn secondary" href="{{ printf "%shardening/" $docs | relLangURL }}">{{ partial "icon.html" "shield" }}{{ T "btn_docs_harden" }}</a>
+    </div>
   </div>
 </section>
 
