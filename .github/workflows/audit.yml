@@ -1,0 +1,41 @@
+# Sicherheitsprüfung der mitgebrachten Python-Pakete des Windows-Installers (packaging/windows/vendor.lock), die
+# Dependabot nicht kennt: pip-audit gegen die Advisory-Datenbank, Fund → Workflow schlägt fehl.
+# Python (embeddable) und Unbound prüft das nicht – deren Versionen beim Aktualisieren von vendor.lock von Hand prüfen.
+
+name: Abhängigkeiten prüfen
+
+on:
+  schedule:
+    - cron: "17 5 * * 1"   # montags
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["packaging/windows/vendor.lock", ".github/workflows/audit.yml"]
+
+permissions:
+  contents: read
+
+env:
+  PIP_AUDIT_VERSION: "2.10.1"
+
+jobs:
+  vendor-lock:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: pip-audit installieren
+        run: |
+          python3 -m venv "$RUNNER_TEMP/audit"
+          "$RUNNER_TEMP/audit/bin/pip" install -q "pip-audit==${PIP_AUDIT_VERSION}"
+
+      - name: vendor.lock prüfen
+        run: |
+          # „wheel <name> <version> <datei> <sha256>“ → name==version (Wheels sind für Windows, daher ohne Auflösung)
+          awk '$1 == "wheel" { print $2 "==" $3 }' packaging/windows/vendor.lock > "$RUNNER_TEMP/vendor.txt"
+          cat "$RUNNER_TEMP/vendor.txt"
+          "$RUNNER_TEMP/audit/bin/pip-audit" --requirement "$RUNNER_TEMP/vendor.txt" --no-deps --disable-pip --strict \
+            --desc on

@@ -2283,3 +2283,10 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Issues; README DE/EN mit Abschnitt „Sicherheit“/„Security“; `docs/limitations*` verlinkt die Richtlinie. Getestet:
   Paritäts-Check und pytest grün, Linkprüfung Repo (44 Dateien) und Seite (2728 Links) ohne Fehler, Wiki-Seite DE
   mit umgeschriebenen Links (Härtung, Grenzen) und Bearbeiten-Link auf `SECURITY.de.md`.
+- 2026-11-17: Sicherheitsrichtlinie Etappe 10 (GitHub): `.github/dependabot.yml` – wöchentlich (montags), je
+  Ökosystem ein gruppierter PR für `pip` (`/server`) und `github-actions` (`/`). `.github/workflows/audit.yml` –
+  montags, von Hand und bei Änderung von `vendor.lock`: `pip-audit` 2.10.1 (venv) gegen die Wheels aus
+  `packaging/windows/vendor.lock` (`--no-deps --disable-pip --strict`), Fund → Fehlschlag; `actions/checkout` per
+  Commit-SHA gepinnt. Python (embeddable) und Unbound deckt das nicht ab (Hinweis im Workflow). Getestet: beide
+  YAML-Dateien gültig; pip-audit lokal mit derselben Befehlszeile – „No known vulnerabilities found“, Exit 0;
+  Gegenprobe mit `websockets==9.0` meldet PYSEC-2021-95, Exit 1.
