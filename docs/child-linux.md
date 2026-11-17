@@ -80,6 +80,9 @@ Without a repository (e.g. to try it out) you can also install directly from the
 
 1. Web interface → "Devices" → "Add device" with a name, e.g. "Laptop Max". A
    pairing code is shown (8 characters, valid for 10 minutes).
+
+   ![Pairing code in the web interface with the commands for Windows and Linux](img/en/pair.webp)
+
 2. On the child's computer:
 
    ```bash
@@ -92,8 +95,14 @@ Without a repository (e.g. to try it out) you can also install directly from the
 ## Create and assign the child
 
 1. Web interface → "Children" → "Add child".
+
+   ![List of children with the "Add child" form](img/en/children.webp)
+
 2. Web interface → device → "User assignment": assign the reported Linux accounts to the child. Unassigned accounts stay
    unrestricted.
+
+   ![User assignment of a device](img/en/device-mapping.webp)
+
 3. Reboot the child's computer so that all protections take effect (noexec home, tray app in
    autostart, sign-in screen).
 

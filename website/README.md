@@ -29,5 +29,5 @@ im Container `kidctl-pg` von `dev/devserver.sh`, die danach wieder gelöscht wir
 ```bash
 ~/.local/share/kidctl-dev/venv/bin/pip install playwright pillow
 ~/.local/share/kidctl-dev/venv/bin/python -m playwright install chromium
-~/.local/share/kidctl-dev/venv/bin/python dev/screenshots.py            # alle; --only stats,chat --lang de
+~/.local/share/kidctl-dev/venv/bin/python dev/screenshots.py            # alle (Seite + docs/img); --only stats,pair --lang de
 ```

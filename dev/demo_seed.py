@@ -190,7 +190,8 @@ async def seed(base: str, database_url: str, secret: str, lang: str = "de") -> t
     ids = {}
     for name in ("Lena", "Max"):
         await web.post("/children", {"name": name})
-        ids[name] = db.one("select id from child where name = :n", n=name)
+        # Namen sind je Familie verschlüsselt – die frisch angelegte Datenbank vergibt die IDs in Reihenfolge
+        ids[name] = db.one("select max(id) from child")
     await web.post(f"/children/{ids['Lena']}/schedule", {
         "quota_wd": "120", "start_wd": "08:00", "end_wd": "20:30", "games_wd": "45",
         "quota_we": "180", "start_we": "09:00", "end_we": "21:00", "games_we": "90"})
@@ -220,8 +221,11 @@ async def seed(base: str, database_url: str, secret: str, lang: str = "de") -> t
     await asyncio.sleep(0.5)
     for key, mapping in (("laptop", {"lena": ids["Lena"]}), ("pc", {"lena": ids["Lena"], "max": ids["Max"]})):
         dev_id = agents[key].device_id
-        form = {f"user_{uid}": str(mapping.get(u, "")) for uid, u in
-                db.execute("select id, username from device_user where device_id = :d", {"d": dev_id})}
+        # Benutzernamen sind verschlüsselt gespeichert – Zuordnung aus der Geräteseite lesen (wie das Formular)
+        page = (await web.c.get(f"/devices/{dev_id}")).text
+        rows = re.findall(r'<tr[^>]*>\s*<td>(\w+)[^<]*</td>\s*(?:<td>\d+</td>\s*)?<td>\s*<select name="(user_\d+)"', page)
+        form = {field: str(mapping.get(u, "")) for u, field in rows}
+        assert form, f"keine Benutzer auf Gerät {dev_id}"
         await web.post(f"/devices/{dev_id}/mapping", form)
 
     # Programme und Website-Filter

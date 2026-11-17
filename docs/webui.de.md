@@ -9,6 +9,9 @@ Je Kind (Seite des Kindes):
   vorher, danach werden Spiele geschlossen; der restliche Rechner bleibt nutzbar. Leer = kein Limit.
   Weitere Apps zählen als Spiel, wenn in der Programmliste das Kästchen „Spiel“ neben der App angehakt ist
   (z. B. Roblox oder der Minecraft-Launcher; Apps der Gruppe „Spiele“ sind immer Spiele).
+
+  ![Wochenvorlage mit Zeitfenstern und „davon Spiele“](img/de/game-limit.webp)
+
 - **Zeit gutschreiben**: zusätzliche Minuten, ein längeres Zeitfenster oder zusätzliche Spielzeit für
   ein bestimmtes Datum. Verlängerungs- und Spielzeit-Anfragen aus der Tray-App lassen sich auch direkt
   im Chat genehmigen.
@@ -17,18 +20,26 @@ Je Kind (Seite des Kindes):
   - **Nur protokollieren**: zum Einstieg empfohlen, um zu sehen, was genutzt wird.
   - **Sperren**: nur freigegebene Programme. Der Katalog füllt sich mit dem, was der Rechner
     meldet. Steam wird nur als Ganzes freigegeben.
+
+  ![Programmkontrolle im Modus „Sperren“ mit Katalog nach Gruppen](img/de/programs.webp)
+
 - **Internet** (Website-Filter):
   - **Aus**
   - **Whitelist**: nur Freigegebenes. Dafür gibt es Bundles wie YouTube, Wikipedia, Lern-Apps oder
     Microsoft 365.
   - **Blacklist**: Sperrlisten, z. B. HaGeZi Multi + NSFW, plus eigene Sperren und Ausnahmen.
   - SafeSearch je Kind.
+
+  ![Website-Filter mit freigegebenen Diensten und eigenen Domains](img/de/web-filter.webp)
+
 - **Statistik**: Nutzung der letzten 14 Tage und Zeit pro Programm.
 - **Freigabe-Anfragen**: Wird ein Programm gesperrt, hat die Meldung beim Kind den Knopf
   „Freigabe anfragen“. Gesperrte Websites fragt das Kind über das Tray-Menü „Gesperrt – Freigabe
   anfragen …“ an. Die Anfrage erscheint im Chat (mit Push) mit **Dauerhaft erlauben**, **Nur heute**
   (gilt bis Mitternacht) oder **Ablehnen**. Dauerhafte Freigaben stehen danach in der Programm- bzw.
   Website-Liste und lassen sich dort zurücknehmen.
+
+  ![Chat mit Freigabe- und Spielzeit-Anfrage](img/de/access-request.webp)
 
 Je Gerät: Alarm, wenn das Gerät länger als X Stunden offline ist (Standard 48 h).
 

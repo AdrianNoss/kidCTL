@@ -6,8 +6,9 @@ Entwicklungsdatenbank bleibt unberührt), Temp-Datenverzeichnis, eigener Server 
 Eltern-Account per CLI, Demo-Daten mit dev/demo_seed.py (simulierte Agenten bleiben verbunden), Anmeldung mit TOTP,
 dann Playwright: mobil 390×844 und Desktop 1280×800, hell und dunkel.
 Ausgabe: website/static/img/screenshots/<lang>/<light|dark>/<name>-<mobile|desktop>.webp
+Dazu Motive für die Anleitungen (hell, Desktop): docs/img/<lang>/<name>.webp – auch auf GitHub sichtbar.
 
-    dev/screenshots.py [--lang de,en] [--only dashboard,stats] [--out DIR] [--keep]
+    dev/screenshots.py [--lang de,en] [--only dashboard,pair] [--out DIR] [--docs-out DIR] [--keep]
 
 Braucht im Dev-venv (~/.local/share/kidctl-dev/venv): playwright (+ `python -m playwright install chromium`), pillow.
 """
@@ -52,6 +53,17 @@ PAGES = {
     "blocked": "/children/{lena}/protokoll",
     "devices": "/devices",
 }
+# Anleitungsmotive (docs/img/<lang>/<name>.webp): Name -> (Pfad, Aktion). Abgestimmt mit Adrian 2026-11-17.
+DOC_PAGES = {
+    "pair": ("/devices", "pair"),
+    "children": ("/children", None),
+    "device-mapping": ("/devices/{pc}", "mapping"),
+    "programs": ("/children/{lena}/programme", None),
+    "web-filter": ("/children/{lena}/internet", None),
+    "game-limit": ("/children/{lena}/zeiten", None),
+    "access-request": ("/children/{max}/chat", "bottom"),
+}
+PAIR_NAME = {"de": "Laptop Max", "en": "Max's laptop"}
 
 
 def fresh_database() -> None:
@@ -100,7 +112,46 @@ def start_server(data: Path, lang: str) -> tuple[subprocess.Popen, str]:
     raise SystemExit("Server startet nicht")
 
 
-async def shoot(lang: str, out: Path, only: set[str], keep: bool) -> None:
+def save(png: bytes, target: Path, w: int, h: int) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    img = Image.open(io.BytesIO(png))
+    img = img.resize((w * 3 // 2, h * 3 // 2), Image.LANCZOS)  # 1,5-fach: scharf, aber klein
+    img.save(target, "WEBP", quality=82, method=6)
+    print(f"{target}  {target.stat().st_size // 1024} KB")
+
+
+async def shoot_docs(browser, cookies: list, web, agents: list, lang: str, docs_out: Path, only: set[str]) -> None:
+    w, h = SIZES["desktop"]
+    ctx = await browser.new_context(viewport={"width": w, "height": h}, device_scale_factor=2, color_scheme="light",
+                                    locale="de-DE" if lang == "de" else "en-US", timezone_id="Europe/Berlin")
+    await ctx.add_cookies(cookies)
+    page = await ctx.new_page()
+    ids = {"lena": web.ids["Lena"], "max": web.ids["Max"], "pc": agents[1].device_id}
+    for name, (path, action) in DOC_PAGES.items():
+        if only and name not in only:
+            continue
+        await page.goto(BASE + path.format(**ids), wait_until="networkidle")
+        if action == "pair":   # Kopplungscode erzeugen (Formular „Gerät hinzufügen“)
+            # Per HTTP wie das Formular (der Browser käme von 127.0.0.1, der Demo-Server erwartet die Herkunft seiner
+            # BASE_URL); die Antwortseite zeigt der Browser unter einer Hilfsadresse an (Stylesheets vom Server).
+            async with httpx.AsyncClient(base_url=BASE, headers={"Accept-Language": lang},
+                                         cookies={c["name"]: c["value"] for c in cookies}) as http:
+                csrf = re.search(r'name="csrf_token" value="([^"]+)"', (await http.get("/devices")).text).group(1)
+                html = (await http.post("/devices/pair", data={"csrf_token": csrf, "name": PAIR_NAME[lang]})).text
+            await page.route(BASE + "/__pair", lambda route: route.fulfill(body=html, content_type="text/html"))
+            await page.goto(BASE + "/__pair", wait_until="networkidle")
+        elif action == "mapping":
+            await page.locator('select[name^="user_"]').first.scroll_into_view_if_needed()
+            await page.evaluate("document.querySelector('select[name^=\"user_\"]').closest('section, .card, form')"
+                                ".scrollIntoView({block: 'center'})")
+        elif action == "bottom":
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        await page.wait_for_timeout(300)
+        save(await page.screenshot(), docs_out / lang / f"{name}.webp", w, h)
+    await ctx.close()
+
+
+async def shoot(lang: str, out: Path, docs_out: Path, only: set[str], keep: bool) -> None:
     data = Path(tempfile.mkdtemp(prefix=f"kidctl-shots-{lang}-"))
     fresh_database()
     proc, secret = start_server(data, lang)
@@ -129,14 +180,9 @@ async def shoot(lang: str, out: Path, only: set[str], keep: bool) -> None:
                         if name == "chat":  # Chat scrollt ans Ende
                             await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
                         await page.wait_for_timeout(300)
-                        png = await page.screenshot()
-                        target = out / lang / theme / f"{name}-{size}.webp"
-                        target.parent.mkdir(parents=True, exist_ok=True)
-                        img = Image.open(io.BytesIO(png))
-                        img = img.resize((w * 3 // 2, h * 3 // 2), Image.LANCZOS)  # 1,5-fach: scharf, aber klein
-                        img.save(target, "WEBP", quality=82, method=6)
-                        print(f"{target}  {target.stat().st_size // 1024} KB")
+                        save(await page.screenshot(), out / lang / theme / f"{name}-{size}.webp", w, h)
                     await ctx.close()
+            await shoot_docs(browser, cookies, web, agents, lang, docs_out, only)
             await browser.close()
     finally:
         for a in agents:
@@ -153,15 +199,16 @@ async def shoot(lang: str, out: Path, only: set[str], keep: bool) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lang", default="de,en")
-    ap.add_argument("--only", default="", help="nur diese Seiten (Komma-Liste): " + ",".join(PAGES))
+    ap.add_argument("--only", default="", help="nur diese Motive (Komma-Liste): " + ",".join([*PAGES, *DOC_PAGES]))
     ap.add_argument("--out", type=Path, default=REPO / "website/static/img/screenshots")
+    ap.add_argument("--docs-out", type=Path, default=REPO / "docs/img")
     ap.add_argument("--keep", action="store_true", help="Datenverzeichnis und Datenbank behalten (Fehlersuche)")
     a = ap.parse_args()
     only = {x for x in a.only.split(",") if x}
-    if unknown := only - PAGES.keys():
+    if unknown := only - PAGES.keys() - DOC_PAGES.keys():
         raise SystemExit(f"Unbekannte Seite(n): {', '.join(sorted(unknown))}")
     for lang in a.lang.split(","):
-        asyncio.run(shoot(lang, a.out, only, a.keep))
+        asyncio.run(shoot(lang, a.out, a.docs_out, only, a.keep))
 
 
 if __name__ == "__main__":

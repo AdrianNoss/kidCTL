@@ -2305,3 +2305,14 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   (einmalig)“ in `updates`, Abschnitt „Aufbewahrung“ als eigene Seite `retention` („Aufbewahrung“/„Data retention“,
   Gruppe Betrieb, inkl. „Chat leeren“ und `cli delete-family`). Getestet: Paritäts-Check (17 Paare), pytest
   `dev/tests`, Linkprüfung Repo und Seite, `hugo --minify --panicOnWarning` ohne Warnungen.
+- 2026-11-17: Wiki Etappe 5 (Screenshots in der Doku): `dev/screenshots.py` erzeugt zusätzlich sieben Anleitungsmotive
+  (hell, Desktop 1280×800, 1,5-fach WebP) nach `docs/img/<de|en>/` – Motive mit Adrian abgestimmt: `pair`
+  (Kopplungscode), `children` (Kind anlegen), `device-mapping` (Benutzer-Zuordnung), `programs`, `web-filter`,
+  `game-limit` (Zeiten mit „davon Spiele“), `access-request` (Chat mit Freigabe- und Spielzeit-Anfrage); eingebunden in
+  `child-linux` und `webui` (DE/EN, auch auf GitHub sichtbar). Kopplungscode per HTTP erzeugt und die Antwortseite im
+  Browser angezeigt (die CSRF-Herkunftsprüfung lässt den Browser-Request von 127.0.0.1 nicht zu). `dev/demo_seed.py`
+  an die Verschlüsselung der SaaS-Etappe 2 angepasst (Kind-IDs ohne Namenssuche, Benutzer-Zuordnung aus der
+  Geräteseite statt per SQL). Seitenbilder neu erzeugt (Chat zeigt jetzt „Chat leeren“ und die Aufbewahrungsfrist).
+  Getestet: kompletter Lauf DE+EN (Demo-Datenbank danach entfernt), Sichtprüfung aller Motive, Paritäts-Check (Bilder
+  bis auf den Sprachordner gleich), Linkprüfung Repo und Seite (2936 Links inkl. Bilder), Wiki-Seiten mit Bildern
+  Desktop hell/Handy dunkel ohne Überlauf, alle Bilder laden.

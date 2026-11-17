@@ -80,6 +80,9 @@ Ohne Repository (z. B. zum Ausprobieren) geht es auch direkt aus dem Git-Checkou
 
 1. WebUI → „Geräte“ → „Gerät hinzufügen“ mit Namen, z. B. „Laptop Max“. Angezeigt wird ein
    Kopplungscode (8 Zeichen, 10 Minuten gültig).
+
+   ![Kopplungscode im WebUI mit den Befehlen für Windows und Linux](img/de/pair.webp)
+
 2. Auf dem Kinderrechner:
 
    ```bash
@@ -92,8 +95,14 @@ Ohne Repository (z. B. zum Ausprobieren) geht es auch direkt aus dem Git-Checkou
 ## Kind anlegen und zuordnen
 
 1. WebUI → „Kinder“ → Kind anlegen.
+
+   ![Kinderliste mit dem Formular „Kind anlegen“](img/de/children.webp)
+
 2. WebUI → Gerät → „Benutzer-Zuordnung“: die gemeldeten Linux-Accounts dem Kind zuordnen. Nicht zugeordnete Accounts bleiben
    uneingeschränkt.
+
+   ![Benutzer-Zuordnung eines Geräts](img/de/device-mapping.webp)
+
 3. Den Kinderrechner neu starten, damit alle Schutzmaßnahmen greifen (noexec-Home, Tray-App im
    Autostart, Anmeldebildschirm).
 
