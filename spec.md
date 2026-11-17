@@ -2274,3 +2274,12 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   die Seite; Verweise auf `docs/haertung.md` in der Spec auf `hardening.de.md`. Getestet: Abgleich aller 34
   Restlücken der alten Liste gegen `limitations.de.md` per Stichwort (0 fehlend), Paritäts-Check (15 Paare),
   Linkprüfung Repo (42 Dateien) und Seite (2502 Links), `hugo --minify --panicOnWarning` ohne Warnungen.
+- 2026-11-17: Sicherheitsrichtlinie Etappe 7: `SECURITY.de.md` und `SECURITY.md` im Repo-Root nach Spec (Meldeweg
+  Private Vulnerability Reporting bzw. security@nossco.de, kein PGP, nie öffentlich; nur neueste Version; Rahmen und
+  Ausschlüsse mit Links auf Härtung und Grenzen; Fristen 7/14/30/90 Tage; Advisory, CVE ab mittlerer Schwere, kein
+  Bug-Bounty; Testregeln; Safe Harbor – Formulierung noch bei der Anwaltsprüfung prüfen). Paritäts-Check (16 Paare);
+  per Einzeldatei-Mount Wiki-Seite `security` (Gruppe Sicherheit, „Bearbeiten“ auf die Datei im Root, Links auf
+  `docs/` werden zu Wiki-Links). „Reporting“/„Meldungen“ in `docs/code-signing*` verweist auf die Richtlinie statt auf
+  Issues; README DE/EN mit Abschnitt „Sicherheit“/„Security“; `docs/limitations*` verlinkt die Richtlinie. Getestet:
+  Paritäts-Check und pytest grün, Linkprüfung Repo (44 Dateien) und Seite (2728 Links) ohne Fehler, Wiki-Seite DE
+  mit umgeschriebenen Links (Härtung, Grenzen) und Bearbeiten-Link auf `SECURITY.de.md`.

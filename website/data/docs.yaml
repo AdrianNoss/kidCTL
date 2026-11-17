@@ -23,4 +23,5 @@
   pages:
     - hardening
     - limitations
+    - security
     - code-signing

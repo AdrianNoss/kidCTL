@@ -155,6 +155,11 @@ zuerst in `spec.md` beschrieben und im Changelog datiert. Konventionen stehen in
 Oberfläche liegen in `server/app/locale/en.po`, `agent/kidctl_agent/locale/en.po` und
 `tray/kidctl_tray/locale/en.po`; Tests prüfen, dass jeder markierte Text übersetzt ist.
 
+## Sicherheit
+
+Sicherheitslücken bitte **vertraulich** melden (GitHub „Report a vulnerability“ oder security@nossco.de), nie als
+öffentliches Issue: [Sicherheitsrichtlinie](SECURITY.de.md).
+
 ## Code-Signatur
 
 Die Windows-Installer sind derzeit **nicht signiert**, Windows SmartScreen fragt deshalb beim ersten

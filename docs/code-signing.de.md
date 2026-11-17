@@ -47,5 +47,5 @@ Firewall-Regeln und Daten.
 
 ## Meldungen
 
-Sicherheitsprobleme: bitte ein Issue auf [GitHub](https://github.com/AdrianNoss/kidCTL/issues) eröffnen oder den
-oben genannten Maintainer kontaktieren.
+Sicherheitsprobleme bitte vertraulich melden, wie in der [Sicherheitsrichtlinie](../SECURITY.de.md) beschrieben –
+nie als öffentliches Issue.

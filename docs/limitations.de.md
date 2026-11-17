@@ -5,7 +5,7 @@ offen, was KidCTL bewusst nicht kann und wo bekannte Lücken sind. Sie ist die v
 steht im README.
 
 > [!NOTE]
-> Was hier steht, gilt nicht als Sicherheitslücke im Sinne der Sicherheitsrichtlinie. Neue
+> Was hier steht, gilt nicht als Sicherheitslücke im Sinne der [Sicherheitsrichtlinie](../SECURITY.de.md). Neue
 > Wege, wie ein Kind ohne Admin-Rechte Zeitlimit, Programm- oder Website-Filter umgeht, bitte vertraulich melden.
 
 ## Überall

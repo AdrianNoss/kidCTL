@@ -48,5 +48,5 @@ locked and removes the service, firewall rules and data.
 
 ## Reporting
 
-Security issues: please open an issue on
-[GitHub](https://github.com/AdrianNoss/kidCTL/issues) or contact the maintainer listed above.
+Security issues: please report them confidentially as described in the [security policy](../SECURITY.md) –
+never as a public issue.

@@ -5,7 +5,7 @@ page openly lists what KidCTL deliberately doesn't do and where known gaps are. 
 version is in the README.
 
 > [!NOTE]
-> What is listed here does not count as a security vulnerability under the security policy. Please report new
+> What is listed here does not count as a security vulnerability under the [security policy](../SECURITY.md). Please report new
 > ways in which a child without admin rights gets around the time limit, app control or web filter confidentially.
 
 ## Everywhere

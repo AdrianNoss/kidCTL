@@ -43,6 +43,13 @@ disableKinds = ["taxonomy", "term"]
   source = "../docs"
   target = "content/docs"
   files = ["! img/**"]
+# Sicherheitsrichtlinie aus dem Repo-Root als Wiki-Seite „security“
+[[module.mounts]]
+  source = "../SECURITY.md"
+  target = "content/docs/security.md"
+[[module.mounts]]
+  source = "../SECURITY.de.md"
+  target = "content/docs/security.de.md"
 [[module.mounts]]
   source = "static"
   target = "static"
