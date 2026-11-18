@@ -1,7 +1,11 @@
-<a href="https://adriannoss.github.io/kidCTL/"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/en/banner-dark.webp">
-  <img src="docs/img/en/banner-light.webp" alt="KidCTL – parental control that stays at home: self-hosted for Windows and Linux" width="1280">
-</picture></a>
+<div align="center">
+<a href="https://adriannoss.github.io/kidCTL/">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="docs/img/en/banner-dark.webp">
+<img src="docs/img/en/banner-light.webp" alt="KidCTL – parental control that stays at home: self-hosted for Windows and Linux" width="1280">
+</picture>
+</a>
+</div>
 
 # KidCTL
 
