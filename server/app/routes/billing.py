@@ -55,6 +55,8 @@ async def webhook(event: WebhookEvent, request: Request):
             f = db.get(Family, event.family_id)
         if f is None or f.wrapped_key is None:
             raise HTTPException(404, "Familie nicht gefunden")
+        from .. import audit
+        before = audit.snapshot(f, billing.AUDIT_FIELDS)
         if event.customer:
             f.billing_customer = event.customer
         if event.provider:
@@ -64,6 +66,7 @@ async def webhook(event: WebhookEvent, request: Request):
         if event.status == "active" and paid is None:
             f.paid_until = None   # aktiv ohne Datum = ohne Ende
         billing.set_status(f, event.status, paid)
+        audit.changes(db, audit.WEBHOOK, "subscription", before, f, family_id=f.id)
         family_id = f.id
         db.commit()
     log.info("Webhook: Familie %s → %s (bis %s)", family_id, event.status, event.paid_until)

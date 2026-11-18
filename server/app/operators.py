@@ -80,6 +80,22 @@ async def operator_csrf(request: Request, sess: OperatorSession = Depends(requir
     return sess
 
 
+ROLES = {"admin": "Admin", "support": "Support"}
+
+
+def require_admin(sess: OperatorSession = Depends(require_operator)) -> OperatorSession:
+    """Nur Rolle *Admin*: Abo, Einladungscodes, Rechnungen, Familienname ändern."""
+    if sess.operator.role != "admin":
+        raise HTTPException(403, "Nur für Admins")
+    return sess
+
+
+async def admin_csrf(sess: OperatorSession = Depends(operator_csrf)) -> OperatorSession:
+    if sess.operator.role != "admin":
+        raise HTTPException(403, "Nur für Admins")
+    return sess
+
+
 # ---------- Einladungscodes ----------
 
 def normalize_code(code: str) -> str:

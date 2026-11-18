@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Protokoll") }} – KidCTL{% endblock %}
+{% block content %}
+{% set heading = _("Verwaltungsprotokoll") %}{% include "_admin_head.html" %}
+<form method="get" action="/admin/log" class="card row">
+  <label>{{ _("Familie") }} <input name="family" value="{{ f.family }}" inputmode="numeric" placeholder="#12" size="6"></label>
+  <label>{{ _("Wer") }} <select name="actor"><option value="">{{ _("alle") }}</option>{% for a in actors %}<option{% if a == f.actor %} selected{% endif %}>{{ a }}</option>{% endfor %}</select></label>
+  <label>{{ _("Was") }} <select name="obj"><option value="">{{ _("alles") }}</option>{% for k, label in objects.items() %}<option value="{{ k }}"{% if k == f.obj %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select></label>
+  <button type="submit" class="secondary">{{ _("Filtern") }}</button>
+</form>
+<section class="card">
+  <p class="muted"><small>{{ ngettext("{n} Eintrag", "{n} Einträge", total).format(n=total) }} · {{ _("für Familien nicht sichtbar") }}</small></p>
+  {% if entries %}
+  <table class="responsive">
+    <tr><th>{{ _("Zeit") }}</th><th>{{ _("Wer") }}</th><th>{{ _("Familie") }}</th><th>{{ _("Was") }}</th><th>{{ _("Änderung") }}</th></tr>
+    {% for e in entries %}
+    <tr>
+      <td>{{ e.at | localtime }}</td>
+      <td data-label="{{ _('Wer') }}">{{ e.actor }}</td>
+      <td data-label="{{ _('Familie') }}">{% if e.family_id %}<a href="/admin/families/{{ e.family_id }}">#{{ e.family_id }}</a>{% else %}–{% endif %}</td>
+      <td data-label="{{ _('Was') }}">{{ _(objects.get(e.object, e.object)) }}{% if e.field %} · <code>{{ e.field }}</code>{% endif %}</td>
+      <td data-label="{{ _('Änderung') }}">{{ e.old or "–" }} → {{ e.new or "–" }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% if pages > 1 %}<p class="row">{% if page > 1 %}<a class="btn secondary small" href="?{{ query }}{{ '&' if query }}page={{ page - 1 }}">{{ _("Zurück") }}</a>{% endif %}
+    <span class="muted">{{ _("Seite {page} von {pages}").format(page=page, pages=pages) }}</span>
+    {% if page < pages %}<a class="btn secondary small" href="?{{ query }}{{ '&' if query }}page={{ page + 1 }}">{{ _("Weiter") }}</a>{% endif %}</p>{% endif %}
+  {% else %}<p class="muted">{{ _("Keine Einträge.") }}</p>{% endif %}
+</section>
+{% endblock %}

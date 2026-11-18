@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Profil") }} – KidCTL{% endblock %}
+{% block content %}
+{% set heading = _("Profil") %}{% include "_admin_head.html" %}
+{% if saved %}<p class="success">{{ _("Gespeichert.") }}</p>{% endif %}
+<form method="post" action="/admin/profile" class="card">
+  <p>{{ _("Rolle: {role}").format(role=roles.get(operator.role, operator.role)) }}</p>
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <label>{{ _("E-Mail-Adresse") }} <input type="email" name="email" maxlength="255" value="{{ operator.email }}" autocomplete="email"></label>
+  <label class="option"><input type="checkbox" name="ticket_mails" value="1"{% if operator.ticket_mails %} checked{% endif %}> {{ _("Ticket-Mails erhalten") }}</label>
+  <button type="submit">{{ _("Speichern") }}</button>
+  <p class="muted"><small>{{ _("Ticket-Mails enthalten nur einen Hinweis und einen Link, keinen Inhalt. Die Rolle ändert ein Admin per Kommandozeile (set-operator-role).") }}</small></p>
+</form>
+{% endblock %}

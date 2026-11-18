@@ -1,11 +1,14 @@
-<div class="page-head"><div><span class="eyebrow">{{ _("Verwaltung") }} · {{ operator.username }}</span><h1>{{ heading }}</h1></div>
+<div class="page-head"><div><span class="eyebrow">{{ _("Verwaltung") }} · <a href="/admin/profile">{{ operator.username }}</a> · {{ operator.role | capitalize }}</span><h1>{{ heading }}</h1></div>
   <form method="post" action="/admin/logout" class="inline">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <button type="submit" class="secondary small">{{ _("Abmelden") }}</button>
   </form>
 </div>
 <nav class="tabs" aria-label="{{ _('Verwaltung') }}">
-  {% for href, label in [("/admin", _("Familien")), ("/admin/codes", _("Einladungscodes"))] %}
+  {% set tabs = [("/admin", _("Familien"))] %}
+  {% if operator.role == "admin" %}{% set tabs = tabs + [("/admin/codes", _("Einladungscodes"))] %}{% endif %}
+  {% set tabs = tabs + [("/admin/log", _("Protokoll"))] %}
+  {% for href, label in tabs %}
   <a href="{{ href }}" class="tab{% if path == href %} active{% endif %}"{% if path == href %} aria-current="page"{% endif %}>{{ label }}</a>
   {% endfor %}
 </nav>

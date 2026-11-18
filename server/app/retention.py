@@ -16,6 +16,7 @@ from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
 from .models import (
+    AdminLog,
     AppUsage, BlockedEvent, GameSession, LoginAttempt, Message, OperatorSession, PairingCode, SupportAccess, SupportGrant, SupportSession, ParentSession, ParentToken,
     UsageRecord,
 )
@@ -31,6 +32,7 @@ class Rule:
     column: str        # Zeitstempel bzw. Tag
     days: int
     label: str         # für die Doku
+    where: object = None   # zusätzliche Bedingung (z. B. Protokoll ohne Rechnungs-Einträge)
 
 
 RULES = [
@@ -45,6 +47,8 @@ RULES = [
     Rule("SUPPORT_LOG", SupportAccess, "at", 730, "Protokoll der Support-Zugriffe (2 Jahre)"),
     Rule("SUPPORT_GRANTS", SupportGrant, "expires_at", 730, "Support-Freigaben (2 Jahre nach Ablauf)"),
     Rule("SUPPORT_SESSIONS", SupportSession, "expires_at", 1, "abgelaufene Support-Ansichten (nach Ablauf)"),
+    Rule("ADMIN_LOG", AdminLog, "at", 730, "Verwaltungsprotokoll (2 Jahre; Rechnungs-Einträge wie die Rechnung)",
+         AdminLog.object != "invoice"),
     Rule("TOKENS", ParentToken, "expires_at", 30, "abgelaufene Links (nach Ablauf)"),
     Rule("PAIRING", PairingCode, "expires_at", 1, "abgelaufene Kopplungscodes (nach Ablauf)"),
 ]
@@ -64,7 +68,10 @@ def prune_all(db: Session, now: datetime | None = None) -> dict[str, int]:
         cutoff = now - timedelta(days=days(rule))
         if col.type.python_type is date:
             cutoff = cutoff.date()
-        n = db.execute(delete(rule.model).where(col < cutoff)).rowcount or 0
+        stmt = delete(rule.model).where(col < cutoff)
+        if rule.where is not None:
+            stmt = stmt.where(rule.where)
+        n = db.execute(stmt).rowcount or 0
         if n:
             out[rule.name] = n
     db.commit()

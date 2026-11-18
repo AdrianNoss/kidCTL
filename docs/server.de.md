@@ -92,6 +92,13 @@ docker compose exec kidctl python -m app.cli create-operator
 Benutzername und Passwort eingeben, den QR-Code mit der Authenticator-App scannen. Passwort oder Authenticator
 verloren: derselbe Befehl mit `--reset` setzt beides neu und beendet alle Sitzungen dieses Accounts.
 
+Es gibt zwei **Rollen**: *Admin* (alles) und *Support* (Familien ansehen, Support-Ansicht, später Tickets – kein Abo,
+keine Einladungscodes, keine Rechnungen). Neue Accounts sind *Admin*, sonst `--role support`; ändern mit
+`python -m app.cli set-operator-role <name> admin|support`. Unter `/admin/profile` hinterlegt jeder Betreiber seine
+E-Mail-Adresse und schaltet „Ticket-Mails erhalten“ ein. Jede Änderung durch Betreiber, Webhook oder Hintergrundjobs
+(Familienname, Abo, Ruhemodus, Einladungscodes, Löschung) steht im **Verwaltungsprotokoll** unter `/admin/log`
+(filterbar nach Familie, Akteur und Art, für Familien unsichtbar, 2 Jahre aufbewahrt).
+
 Der Bereich zeigt nur Metadaten: Familien mit Anzahl Eltern, Kinder und Geräte, Agent-Versionen, letzte Aktivität
 und Auffälligkeiten (Geräte offline, Agent zu alt, Ruhemodus). Namen und Inhalte sind mit dem Schlüssel der jeweiligen
 Familie verschlüsselt und dort nicht lesbar. Außerdem erzeugst du hier **Einladungscodes** für die Registrierung

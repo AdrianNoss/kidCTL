@@ -13,6 +13,7 @@ Every 6 hours the server deletes what is older than:
 | Expired sessions and links | 30 days after expiry | `KIDCTL_KEEP_SESSIONS_DAYS`, `KIDCTL_KEEP_ADMIN_SESSIONS_DAYS`, `KIDCTL_KEEP_TOKENS_DAYS` |
 | Expired pairing codes | 1 day after expiry | `KIDCTL_KEEP_PAIRING_DAYS` |
 | Support access log | 2 years (730 days) | `KIDCTL_KEEP_SUPPORT_LOG_DAYS` |
+| Administration log (without invoice entries) | 2 years (730 days) | `KIDCTL_KEEP_ADMIN_LOG_DAYS` |
 | Support access grants | 2 years after expiry | `KIDCTL_KEEP_SUPPORT_GRANTS_DAYS` |
 
 Parents can delete a child's chat at any time under **Chat → Clear chat**. To delete a family permanently

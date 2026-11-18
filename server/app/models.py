@@ -141,6 +141,26 @@ class Operator(Base):
     totp_secret: Mapped[str] = mapped_column(String(64))
     totp_last_step: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    role: Mapped[str] = mapped_column(String(16), default="admin", server_default="admin")   # admin | support
+    email: Mapped[str] = mapped_column(String(255), default="", server_default="")
+    ticket_mails: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+
+
+class AdminLog(Base):
+    """Verwaltungsprotokoll: jede Änderung durch Betreiber, Webhook oder Hintergrundjob (für Familien unsichtbar).
+    Bleibt beim Löschen einer Familie erhalten (``family_id`` ohne Fremdschlüssel); Werte mit dem Plattform-Schlüssel."""
+    __tablename__ = "admin_log"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    actor: Mapped[str] = mapped_column(String(64))                  # Betreiber-Name | Webhook | System
+    operator_id: Mapped[int | None] = mapped_column(ForeignKey("operator.id", ondelete="SET NULL"), nullable=True)
+    family_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    object: Mapped[str] = mapped_column(String(32))                 # family | subscription | code | ticket | invoice …
+    object_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    field: Mapped[str] = mapped_column(String(64), default="")
+    old: Mapped[str] = mapped_column(PlatformSealed("admin_log.old"), default="")
+    new: Mapped[str] = mapped_column(PlatformSealed("admin_log.new"), default="")
 
 
 class OperatorSession(Base):

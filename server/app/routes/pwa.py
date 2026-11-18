@@ -190,6 +190,9 @@ async def family_delete(request: Request, current_password: str = Form(""), conf
     db.get(Family, family_id).paused_at = utcnow()
     db.commit()
     await policy.push_policies(db, set(db.scalars(select(Device.id).where(Device.revoked_at.is_(None)))))
+    from .. import audit
+    audit.record(db, "Familie", "family", "gelöscht", "durch den Inhaber", None, family_id=family_id)
+    db.commit()
     counts = delete_family(db, family_id)
     log.warning("Familie %s durch den Inhaber gelöscht: %s", family_id, counts)
     resp = RedirectResponse("/login?msg=family_deleted", status_code=303)

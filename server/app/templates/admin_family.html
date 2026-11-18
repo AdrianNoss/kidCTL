@@ -11,11 +11,13 @@
      {% elif st.phase == "grace" %}<span class="pill warn">{{ _("Schonfrist") }}</span> {{ _("Ruhemodus ab {date}").format(date=fmt_date(st.grace_end.date())) }}
      {% else %}<span class="pill ok">{{ _("ok") }}</span>{% if st.until %} {{ _("bis {date}").format(date=fmt_date(st.until.date())) }}{% endif %}{% endif %}</p>
 </section>
+{% if operator.role == "admin" %}
 <form method="post" action="/admin/families/{{ f.id }}/name" class="card row">
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
   <label>{{ _("Name der Familie") }} <input name="name" maxlength="128" value="{{ f.name }}"></label>
   <button type="submit" class="secondary">{{ _("Speichern") }}</button>
 </form>
+{% endif %}
 <section class="card">
   <h2>{{ _("Rechnungsangaben") }}</h2>
   {% if address %}
@@ -26,6 +28,7 @@
   {% else %}<p class="muted">{{ _("Noch keine Rechnungsangaben hinterlegt.") }}</p>{% endif %}
   {% if row and row.address_missing %}<p class="warn"><small>{{ _("Werden für das Abo gebraucht – die Familie sieht einen Hinweis.") }}</small></p>{% endif %}
 </section>
+{% if operator.role == "admin" %}
 <form method="post" action="/admin/families/{{ f.id }}" class="card">
   <h2>{{ _("Abo") }}</h2>
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
@@ -38,4 +41,5 @@
   <button type="submit">{{ _("Speichern") }}</button>
   <p class="muted"><small>{{ _("Wirkt sofort: Ist die Familie danach nicht mehr abgelaufen, endet ein Ruhemodus und die Computer bekommen ihre Regeln zurück.") }}</small></p>
 </form>
+{% endif %}
 {% endblock %}

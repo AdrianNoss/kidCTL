@@ -110,12 +110,12 @@ def test_cli_create_operator(client, monkeypatch, capsys):
     from app import cli
     monkeypatch.setenv("KIDCTL_OPERATOR_USER", "admin")
     monkeypatch.setenv("KIDCTL_OPERATOR_PASSWORD", "x" * 12)
-    assert cli.create_operator(Namespace(reset=False)) == 0
-    assert cli.create_operator(Namespace(reset=False)) == 1                 # existiert
+    assert cli.create_operator(Namespace(reset=False, role=None, email=None)) == 0
+    assert cli.create_operator(Namespace(reset=False, role=None, email=None)) == 1                 # existiert
     with platform_db() as db:
         old = db.query(Operator).filter_by(username="admin").one().totp_secret
-    assert cli.create_operator(Namespace(reset=True)) == 0
+    assert cli.create_operator(Namespace(reset=True, role=None, email=None)) == 0
     with platform_db() as db:
         assert db.query(Operator).filter_by(username="admin").one().totp_secret != old
     monkeypatch.setenv("KIDCTL_OPERATOR_PASSWORD", "kurz")
-    assert cli.create_operator(Namespace(reset=True)) == 1
+    assert cli.create_operator(Namespace(reset=True, role=None, email=None)) == 1

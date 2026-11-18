@@ -6,7 +6,8 @@ Per Env-Var:  KIDCTL_BOOTSTRAP_USER=… [KIDCTL_BOOTSTRAP_EMAIL=…] KIDCTL_BOOT
 Notfall:      python -m app.cli reset-password <benutzer> | reset-totp <benutzer>
 VAPID:        python -m app.cli vapid-keys >> .env
 Hauptschlüssel: python -m app.cli master-key >> .env   (einmalig; getrennt sichern!)
-Betreiber:    python -m app.cli create-operator [--reset]   (Verwaltungsbereich /admin, Passwort + TOTP)
+Betreiber:    python -m app.cli create-operator [--role admin|support] [--email …] [--reset]   (/admin, Passwort + TOTP)
+              python -m app.cli set-operator-role <name> admin|support
 Umstieg:      python -m app.cli import-sqlite /data/kidctl.db [--apply]   (SQLite bis 0.32.x -> PostgreSQL)
 """
 
@@ -108,8 +109,12 @@ def create_operator(args: argparse.Namespace) -> int:
             print(f"Betreiber {username!r} gibt es nicht.", file=sys.stderr)
             return 1
         if op is None:
-            op = Operator(username=username)
+            op = Operator(username=username, role=args.role or "admin", email=(args.email or "").strip())
             db.add(op)
+        elif args.role:
+            op.role = args.role
+        if args.email is not None and op.id is not None:
+            op.email = args.email.strip()
         op.password_hash, op.totp_secret, op.totp_last_step = hash_password(password), new_totp_secret(), 0
         db.flush()
         from sqlalchemy import delete
@@ -118,6 +123,23 @@ def create_operator(args: argparse.Namespace) -> int:
         uri, secret = totp_uri(op), op.totp_secret
     print(f"\nBetreiber {username!r} {'zurückgesetzt' if args.reset else 'angelegt'} – Anmeldung unter /admin.")
     _print_totp(uri, secret)
+    return 0
+
+
+def set_operator_role(args: argparse.Namespace) -> int:
+    init_db()
+    from . import audit
+    from .models import Operator
+    with platform_session() as db:
+        op = db.scalar(select(Operator).where(Operator.username == args.username))
+        if op is None:
+            print(f"Betreiber {args.username!r} gibt es nicht.", file=sys.stderr)
+            return 1
+        if op.role != args.role:
+            audit.record(db, audit.SYSTEM, "operator", "role", op.role, args.role, object_id=op.id)
+            op.role = args.role
+        db.commit()
+    print(f"Betreiber {args.username!r}: Rolle {args.role}.")
     return 0
 
 
@@ -265,7 +287,13 @@ def main() -> int:
     df.set_defaults(func=delete_family)
     co = sub.add_parser("create-operator", help="Betreiber-Account für den Verwaltungsbereich /admin anlegen")
     co.add_argument("--reset", action="store_true", help="Passwort und Authenticator eines bestehenden neu setzen")
+    co.add_argument("--role", choices=["admin", "support"], help="Rolle (Standard admin)")
+    co.add_argument("--email", help="E-Mail-Adresse (z. B. für Ticket-Mails)")
     co.set_defaults(func=create_operator)
+    sr = sub.add_parser("set-operator-role", help="Rolle eines Betreiber-Accounts ändern")
+    sr.add_argument("username")
+    sr.add_argument("role", choices=["admin", "support"])
+    sr.set_defaults(func=set_operator_role)
     ip = sub.add_parser("import-sqlite", help="SQLite-Datenbank (bis 0.32.x) nach PostgreSQL übernehmen")
     ip.add_argument("path", help="Pfad zur kidctl.db")
     ip.add_argument("--apply", action="store_true", help="wirklich übernehmen (sonst Probelauf)")

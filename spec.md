@@ -2567,3 +2567,15 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-18: Anforderungen Verwaltungsbereich 2 per /grill-me abgestimmt (Betreiber-Rollen, Verwaltungsprotokoll,
   Übersicht mit Suche/Sortierung/Kacheln, Detailansicht mit Bearbeiten pro Karte, Tickets, manuelle Rechnungen mit
   Archiv). Noch keine Umsetzung.
+- 2026-11-18: Verwaltungsbereich 2, Etappe 1 (Rollen, Verwaltungsprotokoll): `operator.role` (admin | support, Bestand →
+  admin), `email`, `ticket_mails`; Tabelle `admin_log` (Akteur, Familie ohne Fremdschlüssel, Objekt, Feld, alt/neu mit
+  Plattform-Schlüssel; Migration 0015). Rollenprüfung als Abhängigkeit (`operators.require_admin`/`admin_csrf`):
+  Einladungscodes, Familienname und Abo ändern nur Admin; Support sieht Familien, Protokoll, Profil, Support-Ansicht.
+  `app/audit.py` (record/changes); protokolliert: Familienname, Abo-Felder (Betreiber und Webhook), Ruhemodus an/aus
+  und automatische Löschung (System), Löschung durch den Inhaber, Codes angelegt/gelöscht, Rollenwechsel per CLI.
+  `/admin/log` (Filter Familie/Akteur/Art, 50 je Seite, Parameter in der URL), `/admin/profile` (E-Mail, Ticket-Mails),
+  CLI `create-operator --role --email`, `set-operator-role`. Aufbewahrung 2 Jahre, Rechnungs-Einträge ausgenommen.
+  Getestet (pytest, 7 neue Tests): jede Admin-Route mit beiden Rollen (10 Routen), Bearbeiten/Codes-Reiter nur für
+  Admin; Protokolleinträge für Name, Abo, Code, Webhook („Webhook“) und Ruhemodus („System“); Filter; Familie ohne
+  Zugriff; Aufbewahrung behält Rechnungs-Einträge; CLI-Rollen; Profil. Seiten im Browser (Desktop, Handy) angesehen.
+  Server 218 Tests grün.

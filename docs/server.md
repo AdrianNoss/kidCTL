@@ -92,6 +92,13 @@ docker compose exec kidctl python -m app.cli create-operator
 Enter a user name and password, scan the QR code with the authenticator app. Password or authenticator lost: the
 same command with `--reset` sets both again and ends all sessions of that account.
 
+There are two **roles**: *Admin* (everything) and *Support* (view families, support view, tickets later – no
+subscription, no invitation codes, no invoices). New accounts are *Admin*, otherwise `--role support`; change it with
+`python -m app.cli set-operator-role <name> admin|support`. Under `/admin/profile` each operator enters their email
+address and turns on "Receive ticket emails". Every change by an operator, the webhook or background jobs (family
+name, subscription, pause, invitation codes, deletion) is listed in the **administration log** at `/admin/log`
+(filterable by family, actor and kind, invisible to families, kept for 2 years).
+
 The area shows metadata only: families with the number of parents, children and devices, agent versions, last
 activity and issues (devices offline, agent too old, paused). Names and content are encrypted with each family's key
 and cannot be read there. You also create **invitation codes** for sign-up here (single use, valid for 30 days, with

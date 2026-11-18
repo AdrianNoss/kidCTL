@@ -2330,3 +2330,67 @@ msgstr "e.g. The Smiths"
 
 msgid "zuletzt geändert {date}"
 msgstr "last changed {date}"
+
+# Verwaltungsbereich 2 – Rollen, Protokoll
+msgid "Filtern"
+msgstr "Filter"
+
+msgid "Für Ticket-Mails bitte eine E-Mail-Adresse angeben."
+msgstr "Please enter an email address for ticket emails."
+
+msgid "Keine Einträge."
+msgstr "No entries."
+
+msgid "Preisliste"
+msgstr "Price list"
+
+msgid "Rechnung"
+msgstr "Invoice"
+
+msgid "Rechnungs-Einstellungen"
+msgstr "Invoice settings"
+
+msgid "Rolle: {role}"
+msgstr "Role: {role}"
+
+msgid "Seite {page} von {pages}"
+msgstr "Page {page} of {pages}"
+
+msgid "Ticket"
+msgstr "Ticket"
+
+msgid "Ticket-Mails enthalten nur einen Hinweis und einen Link, keinen Inhalt. Die Rolle ändert ein Admin per Kommandozeile (set-operator-role)."
+msgstr "Ticket emails only contain a notice and a link, no content. An admin changes the role on the command line (set-operator-role)."
+
+msgid "Ticket-Mails erhalten"
+msgstr "Receive ticket emails"
+
+msgid "Verwaltungsprotokoll"
+msgstr "Administration log"
+
+msgid "Was"
+msgstr "What"
+
+msgid "Weiter"
+msgstr "Next"
+
+msgid "Wer"
+msgstr "Who"
+
+msgid "Zeit"
+msgstr "Time"
+
+msgid "Zurück"
+msgstr "Back"
+
+msgid "alle"
+msgstr "all"
+
+msgid "alles"
+msgstr "everything"
+
+msgid "für Familien nicht sichtbar"
+msgstr "not visible to families"
+
+msgid "Änderung"
+msgstr "Change"

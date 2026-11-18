@@ -32,6 +32,7 @@ log = logging.getLogger("kidctl.billing")
 PLANS = {"free": N_("Kostenlos"), "standard": N_("Standard")}
 MAX_CHILDREN: dict[str, int | None] = {"free": None, "standard": None}   # Stufen kommen mit den Preisen
 STATUSES = {"trial": N_("Testphase"), "active": N_("aktiv"), "canceled": N_("gekündigt"), "past_due": N_("überfällig")}
+AUDIT_FIELDS = ["plan", "billing_status", "trial_ends_at", "paid_until", "billing_provider", "billing_customer"]
 GRACE_DAYS = 14
 DELETE_DAYS = 90
 GRACE_WARN = (14, 7, 1)     # Tage bis zum Ruhemodus
@@ -168,7 +169,9 @@ def check_family(db: Session, family_id: int, now: datetime | None = None) -> st
     st = state(f, now)
     result = ""
     notes: list[tuple[str, str, dict]] = []
+    from . import audit
     if st.phase != "paused" and f.paused_at is not None:
+        audit.record(db, audit.SYSTEM, "subscription", "paused_at", f.paused_at, None, family_id=family_id)
         f.paused_at, f.billing_notified, result = None, "", "resumed"
         notes.append((N_("Abo aktiv"), N_("Danke! KidCTL ist wieder aktiv, die Regeln gelten ab sofort wieder."), {}))
     elif st.phase == "grace":
@@ -184,6 +187,7 @@ def check_family(db: Session, family_id: int, now: datetime | None = None) -> st
                 break
     elif st.phase == "paused":
         if f.paused_at is None:
+            audit.record(db, audit.SYSTEM, "subscription", "paused_at", None, now, family_id=family_id)
             f.paused_at, result = now, "paused"
             st = state(f, now)
             notes.append((N_("KidCTL pausiert"), N_("KidCTL ist pausiert: Die Computer eurer Kinder heben alle "
@@ -191,6 +195,8 @@ def check_family(db: Session, family_id: int, now: datetime | None = None) -> st
                           "Daten am {date} gelöscht."), {"date": st.delete_at}))
         elif now >= st.delete_at:
             from .tenant import delete_family
+            audit.record(db, audit.SYSTEM, "family", "gelöscht", f"{DELETE_DAYS} Tage Ruhemodus", None,
+                         family_id=family_id)
             db.commit()
             counts = delete_family(db, family_id)
             log.warning("Familie %s nach %d Tagen Ruhemodus gelöscht: %s", family_id, DELETE_DAYS, counts)

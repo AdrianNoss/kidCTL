@@ -13,6 +13,7 @@ Der Server löscht alle 6 Stunden, was älter ist als:
 | Abgelaufene Sitzungen und Links | 30 Tage nach Ablauf | `KIDCTL_KEEP_SESSIONS_DAYS`, `KIDCTL_KEEP_ADMIN_SESSIONS_DAYS`, `KIDCTL_KEEP_TOKENS_DAYS` |
 | Abgelaufene Kopplungscodes | 1 Tag nach Ablauf | `KIDCTL_KEEP_PAIRING_DAYS` |
 | Protokoll der Support-Zugriffe | 2 Jahre (730 Tage) | `KIDCTL_KEEP_SUPPORT_LOG_DAYS` |
+| Verwaltungsprotokoll (ohne Rechnungs-Einträge) | 2 Jahre (730 Tage) | `KIDCTL_KEEP_ADMIN_LOG_DAYS` |
 | Support-Freigaben | 2 Jahre nach Ablauf | `KIDCTL_KEEP_SUPPORT_GRANTS_DAYS` |
 
 Den Chat eines Kindes können Eltern jederzeit unter **Chat → Chat leeren** löschen. Eine Familie endgültig löschen
