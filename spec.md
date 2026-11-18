@@ -1002,6 +1002,110 @@ Self-Hosting bleibt erhalten.
   Plattform-Schlüssel (HKDF aus dem Hauptschlüssel) verschlüsselt: für den Betreiber lesbar – Ausnahme vom Grundsatz
   „nur Metadaten“ –, nicht in einer Datenbankkopie allein; mit der Familie gelöscht, nicht im Familien-Export.
 
+### Verwaltungsbereich 2 (entschieden 2026-11-18 per /grill-me, noch nicht umgesetzt)
+
+Ziel: Verwaltungsbereich bei vielen Familien handhabbar und gut lesbar; Support-Tickets; manuelle Rechnungen.
+
+#### Betreiber-Rollen und Verwaltungsprotokoll
+- **Rollen:** *Admin* (alles) und *Support* (Familien sehen, Tickets bearbeiten; kein Abo ändern, keine Rechnungen,
+  keine Einladungscodes, keine Rechnungs-Einstellungen). Rolle je Betreiber-Account; anlegen/ändern per CLI
+  (`create-operator --role admin|support`, `set-operator-role`). Bestehende Accounts werden bei der Migration *Admin*.
+  Rollenprüfung zentral (Abhängigkeit je Route), nicht im Template.
+- Betreiber-Accounts bekommen eine **E-Mail-Adresse** und den Schalter **„Ticket-Mails erhalten“** (im eigenen
+  Profil unter `/admin`). Optional `SUPPORT_NOTIFY_EMAIL` (Sammeladresse, erhält alle Ticket-Benachrichtigungen).
+- **Verwaltungsprotokoll:** jede Änderung durch Betreiber oder Webhook an einer Familie bzw. Plattform-Einstellung:
+  Zeit, Betreiber (bzw. „Webhook“/„System“), Familie, Objekt, Feld alt → neu. Erfasst: Familienname, Abo-Felder,
+  Ticket-Status, Rechnungen (angelegt, ausgestellt, bezahlt, storniert, erneut gesendet), Rechnungs-Einstellungen,
+  Preisliste. Anzeige als Karte „Verlauf“ in der Familien-Detailansicht und unter `/admin/log` (filterbar). Für die
+  Familie nicht sichtbar. Aufbewahrung 2 Jahre; Einträge zu Rechnungen so lange wie die Rechnung.
+
+#### Übersicht (`/admin`)
+- **Kennzahl-Kacheln** (Klick = Filter): Familien · Kinder · Geräte · in Testphase · Testphase endet ≤ 7 Tage ·
+  im Ruhemodus · offene Tickets · letztes Backup (grün/rot).
+- **Suchzeile:** Freitext (ID, Familienname; Teilwort, ohne Groß/Klein) und Filter-Chips: Status (Testphase, aktiv,
+  überfällig, gekündigt, Ruhemodus), Tarif (Kostenlos, Standard), Probleme (Geräte offline, Agent veraltet,
+  Rechnungsangaben fehlen, offenes Ticket, Support-Freigabe aktiv).
+- **Tabelle**, jede Zelle einzeilig, alle Spalten sortierbar: **ID** · Familie · Seit · Kinder / Geräte · Agent
+  (älteste Version, ⚠ wenn veraltet) · Letzte Aktivität (relativ, genaues Datum als `title`; jüngere von Gerät und
+  Eltern) · Abo (Tarif · Status · Datum) · Zustand (Abzeichen). Spalte „Eltern“ entfällt. Mobil als Karten.
+- **Umsetzung im Server:** Metadaten aller Familien laden, Namen entschlüsseln, filtern, sortieren, 50 je Seite;
+  Parameter in der URL (`q`, `sort`, `status`, `plan`, `issue`, `page`), lesezeichenfähig, ohne JavaScript.
+  Standard-Sortierung: ID aufsteigend.
+
+#### Familien-Detailansicht (`/admin/families/<id>`)
+- **Karten-Raster** (Material 3, mobil einspaltig): Kopf (ID, Name, Status-Abzeichen, seit) · **Abo** · **Rechnungsangaben**
+  (nur lesen, gepflegt von der Familie; Markierung wenn fehlend) · **Nutzung** (Eltern, Kinder, Geräte mit Plattform,
+  Agent-Version, zuletzt gesehen – nur Metadaten) · **Support** (Freigabe, Zugriffsprotokoll, Tickets der Familie) ·
+  **Rechnungen** · **Verlauf**.
+- **Bearbeiten pro Karte:** änderbare Karten (Name, Abo) zeigen zunächst nur Werte und einen Button „Bearbeiten“;
+  `?edit=<karte>` rendert die Karte als Formular mit „Speichern“/„Abbrechen“, eigenes Formular mit CSRF. Hinweis bei
+  Abo-Änderungen bleibt („Wirkt sofort …“). Rolle *Support* sieht keinen Bearbeiten-Button.
+
+#### Tickets
+- **Nur im SaaS-Betrieb.** Eltern-WebUI: neuer Menüpunkt **„Support“** (auch im Ruhemodus erreichbar). Alle Eltern
+  der Familie dürfen Tickets anlegen und sehen alle Tickets der Familie.
+- **Ticket:** Betreff, Kategorie (*Technik*, *Abo & Rechnung*, *Sonstiges*), Nachrichtenverlauf; keine Anhänge.
+  Beim Anlegen automatisch angehängte Metadaten (für Support sichtbar): Agent-Versionen, Plattformen der Geräte,
+  Abo-Status, Sprache.
+- **Status:** *neu*, *in Bearbeitung*, *wartend*, *geschlossen*.
+  - Familie legt an → *neu*.
+  - Support antwortet → *wartend* (beim Antworten wählbar: *in Bearbeitung*).
+  - Familie antwortet → *in Bearbeitung*; Antwort auf *geschlossen* öffnet wieder, nur bis 14 Tage nach Schließen
+    (danach Hinweis „bitte neues Ticket“).
+  - *wartend* ohne Antwort der Familie 14 Tage → *geschlossen* (Hinweis an die Familie).
+  - Familie kann ihr Ticket schließen; Support kann jeden Status setzen.
+- **Interne Notizen:** Support-Nachrichten mit „intern“ sieht nur der Support (farblich abgesetzt).
+- **Benachrichtigungen:** nur Hinweis + Link, **ohne Inhalt**. Neues Ticket / Antwort der Familie → Betreiber mit
+  „Ticket-Mails“ und `SUPPORT_NOTIFY_EMAIL`. Antwort des Supports / automatisches Schließen → alle Eltern der Familie
+  per Mail und Push. Interne Notizen lösen nichts aus.
+- **Verwaltung:** Reiter **„Tickets“** neben „Familien“ und „Einladungscodes“: Liste im Server sortier-/filterbar
+  (Status, Kategorie, Familie, Freitext im Betreff), Standard „offen“ (alles außer *geschlossen*), älteste zuerst;
+  Ticketseite mit Verlauf, Antwortfeld, intern-Schalter, Statusauswahl, Link zur Familie, „zuletzt bearbeitet von“.
+- **Speicherung:** Betreff und Nachrichten mit dem **Plattform-Schlüssel** (HKDF aus dem Hauptschlüssel, wie
+  Rechnungsangaben) – zweite dokumentierte Ausnahme von „nur Metadaten“. Status, Kategorie, Zeitstempel, IDs
+  unverschlüsselt. Hinweis im Formular: „Diese Nachricht kann der Support lesen. Für Einsicht in deine Einstellungen
+  gib zusätzlich eine Support-Freigabe.“
+- **Aufbewahrung:** geschlossene Tickets 12 Monate nach Schließen (`TICKET_RETENTION_DAYS`), mit der Familie gelöscht,
+  nicht im Familien-Export.
+
+#### Rechnungen
+- **Grundsatz:** Merchant of Record oder Zahlungsdienstleister ist offen (Steuerberater). Jetzt **manueller
+  Generator** nach den Pflichtregeln (§ 14 UStG); Automatik per Webhook erst nach der Entscheidung.
+- **Steuermodus** `INVOICE_TAX_MODE=small_business|standard` (Standard `small_business`): Kleinunternehmer ohne
+  USt-Ausweis mit Hinweis „Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.“; Regelbesteuerung Netto + 19 % USt +
+  Brutto mit Steuersatz und -betrag. Modus wird **je Rechnung gespeichert**. Nur Kunden in Deutschland (kein OSS),
+  Ausgabe PDF (keine E-Rechnung).
+- **Nummernkreis** `INVOICE_NUMBER_FORMAT` (Standard `RE-{YYYY}-{NNNN}`): fortlaufend, lückenlos, je Jahr ab 0001,
+  Vergabe erst beim Ausstellen, transaktionssicher (Sperre/Sequenz). Storno-Rechnungen im selben Kreis.
+- **Fälligkeit** `INVOICE_DUE_DAYS` (Standard 14).
+- **Einstellungen → Rechnungen** (nur *Admin*, in der Datenbank, protokolliert – Ausnahme von „Konfiguration nur über
+  `.env`“): Absender (Name/Firma, Anschrift, Steuernummer oder USt-IdNr., Kontakt), Bankverbindung (Inhaber, IBAN,
+  BIC), Fußzeile/Zahlungshinweis, **Preisliste** (Bezeichnung, Betrag, Laufzeit in Monaten, aktiv). Ausstellen erst
+  möglich, wenn alle Pflichtfelder gesetzt sind.
+- **Erstellen** (Detailansicht → „Rechnung erstellen“, nur *Admin*): Vorlage aus der Preisliste wählen → Position und
+  Leistungszeitraum vorausgefüllt (Beginn = Tag nach „bezahlt bis“, sonst heute; Ende = Beginn + Laufzeit − 1 Tag);
+  Positionen frei änderbar und ergänzbar (Text, Menge, Einzelpreis; negative Beträge für Rabatt). Rechnungsadresse
+  aus den Rechnungsangaben der Familie; fehlen sie, kein Ausstellen.
+- **Lebenszyklus:** *Entwurf* (änderbar, löschbar, keine Nummer) → **Ausstellen** (Nummer, Rechnungsdatum, Kopie der
+  Rechnungsadresse, Beträge und Steuermodus eingefroren, PDF erzeugt und gespeichert, unveränderlich) → *offen* →
+  *bezahlt* (mit Zahlungsdatum). **Storno** nur per Storno-Rechnung (eigene Nummer, Bezug auf Original, negative
+  Beträge); Original bleibt.
+- **Kopplung mit dem Abo:** „Als bezahlt markieren“ setzt Abo-Status *aktiv* und „bezahlt bis“ auf das Ende des
+  Leistungszeitraums, falls später als der bisherige Wert; ein Ruhemodus endet sofort (Policy an die Agenten). Storno
+  einer bezahlten Rechnung ändert das Abo nicht, sondern zeigt „Abo prüfen“. Alles im Verwaltungsprotokoll.
+  Dieselbe Logik nutzt später der Webhook.
+- **Versand:** beim Ausstellen Mail an die Rechnungs-E-Mail der Familie mit PDF-Anhang und Zahlungsinformationen
+  (Betrag, Fälligkeit, IBAN, Verwendungszweck = Rechnungsnummer); „Erneut senden“ im Verwaltungsbereich. Eltern sehen
+  ihre Rechnungen unter *Einstellungen → Abo* (Nummer, Datum, Betrag, Status, PDF).
+- **Archiv und Aufbewahrung:** Rechnungsadress-Kopie und PDF mit dem **Plattform-Schlüssel**; Rechnungen hängen nicht
+  am Familienschlüssel und **überleben das Löschen der Familie** (Bezug wird „gelöschte Familie #<id>“). Automatische
+  Löschung nach Ablauf der Aufbewahrungsfrist: 8 Jahre ab Ende des Ausstellungsjahres (§ 14b UStG, § 147 AO; Frist
+  als Konstante). Nicht im Familien-Export.
+- **`/admin/invoices`** (nur *Admin*): alle Rechnungen, filterbar (Jahr, Status, Familie), Summen je Jahr; **Export
+  je Jahr** als CSV (Nummer, Datum, Familie, Leistungszeitraum, Netto/USt/Brutto, Status, Zahlungsdatum, Storno-Bezug)
+  und ZIP mit allen PDFs.
+- **PDF** mit ReportLab (keine Systembibliotheken im Image); Layout schlicht, DIN-5008-nah; Sprache Deutsch.
+
 ### Missbrauch
 - Nur offener Betrieb: Tray-Symbol auf jedem verwalteten Account sichtbar, Hinweis beim ersten Anmelden nach der
   Zuordnung („Dieser Account wird von KidCTL verwaltet. Erfasst wird: …“), unter Windows Eintrag als installiertes
@@ -1018,6 +1122,9 @@ Self-Hosting bleibt erhalten.
   Programmnutzung 90 Tage; Bildschirmzeit je Tag 13 Monate; Chat 12 Monate (Eltern können ihn jederzeit leeren);
   Anmeldeversuche 30 Tage; abgelaufene Sitzungen/Tokens 30 Tage; Protokoll der Support-Zugriffe 2 Jahre; gelöschte
   Familien sofort (Schlüssel verworfen).
+- Ergänzt 2026-11-18: Tickets 12 Monate nach Schließen; Verwaltungsprotokoll 2 Jahre; **Rechnungen 8 Jahre** ab Ende
+  des Ausstellungsjahres – sie bleiben nach dem Löschen einer Familie erhalten (gesetzliche Aufbewahrungspflicht,
+  Art. 17 Abs. 3 lit. b DSGVO) und werden danach automatisch gelöscht. Datenschutzerklärung entsprechend ergänzen.
 
 ### Hosting und Umzug
 - Start auf srv02 unter `kids.nossco.de`; die bestehende Installation wird erster Mandant (bisherige Eltern:
@@ -2457,3 +2564,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   verschlüsselt, Banner weg, Anzeige beim Betreiber; Markierung in der Übersicht; Einzelbetrieb 404; Löschen der Familie
   entfernt sie. Migration 0014 auf der Entwicklungsdatenbank mit Klartext-Namen hin und zurück geprüft. Im Browser im
   SaaS-Modus angesehen. Server 211 Tests grün.
+- 2026-11-18: Anforderungen Verwaltungsbereich 2 per /grill-me abgestimmt (Betreiber-Rollen, Verwaltungsprotokoll,
+  Übersicht mit Suche/Sortierung/Kacheln, Detailansicht mit Bearbeiten pro Karte, Tickets, manuelle Rechnungen mit
+  Archiv). Noch keine Umsetzung.

@@ -113,6 +113,24 @@ CLAUDE.md
 - Keine Geheimnisse ins Repo (GPG-/Signaturschlüssel, Tokens, `.env`); Push Protection ist aktiv – Treffer nie
   per Ausnahme freigeben, sondern Geheimnis entfernen und ggf. austauschen.
 
+## Verwaltungsbereich (`/admin`)
+
+- Rollen *Admin*/*Support*: Rechte immer serverseitig per Route prüfen, Tests für jede Admin-Route mit beiden Rollen.
+- Jede ändernde Aktion eines Betreibers, des Webhooks oder eines Hintergrundjobs an Familien, Tickets, Rechnungen oder
+  Rechnungs-Einstellungen schreibt einen Eintrag ins Verwaltungsprotokoll.
+- Listen (Familien, Tickets, Rechnungen, Protokoll): Suche/Sortierung/Filter/Blättern im Server, Parameter in der URL,
+  ohne JavaScript.
+- Ausnahme von „Konfiguration nur über `.env`“: Absender, Bankverbindung, Fußzeile und Preisliste der Rechnungen
+  liegen in der Datenbank (Admin-Seite, protokolliert). Steuermodus, Nummernformat und Fälligkeit bleiben in `.env`.
+
+## Rechnungen
+
+- Ausgestellte Rechnungen sind unveränderlich – nie per Migration, Skript oder Code ändern; Korrektur nur per
+  Storno-Rechnung. Nummern lückenlos (Vergabe in derselben Transaktion wie das Ausstellen).
+- Rechnungen und ihre PDFs nie mit dem Familienschlüssel verschlüsseln und nie beim Löschen einer Familie entfernen;
+  Löschung nur über die Aufbewahrungsfrist.
+- Beträge als ganze Cent (Integer), nie als Float.
+
 ## Tests & Verifikation
 
 - Jede Funktion vor Auslieferung end-to-end smoke-testen und im Changelog vermerken, was getestet
