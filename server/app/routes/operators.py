@@ -114,23 +114,41 @@ def overview(request: Request, q: str = "", status: str = "", plan: str = "", is
 
 # ---------- Abo einer Familie ----------
 
-def _family_page(request, db, sess, family_id, status_code=200, **ctx):
-    from ..models import Family
+EDIT_CARDS = ("name", "abo")
+
+
+def _family_page(request, db, sess, family_id, status_code=200, edit: str = "", **ctx):
+    """Detailansicht: Karten Kopf, Abo, Rechnungsangaben, Nutzung, Support, Rechnungen, Verlauf (nur Metadaten außer
+    Name und Rechnungsangaben). ``edit`` = Karte als Formular (nur Admin)."""
+    from ..models import AdminLog, BillingAddress, Device, Family, SupportAccess, SupportGrant
     f = db.get(Family, family_id)
     if f is None or f.wrapped_key is None:
         raise HTTPException(404)
-    from ..models import BillingAddress
-    row = next((r for r in opr.families(db) if r.id == family_id), None)
-    address = db.scalar(select(BillingAddress).where(BillingAddress.family_id == family_id))
-    return _render(request, "admin_family.html", sess, status_code, f=f, row=row, st=billing.state(f), address=address,
-                   granted=support.granted_families(db).get(family_id),
+    rows = opr.families(db, only=family_id)
+    devices = db.execute(select(Device.id, Device.platform, Device.agent_version, Device.last_seen_at,
+                                Device.revoked_at, Device.protocol_unsupported)
+                         .where(Device.family_id == family_id).order_by(Device.revoked_at.is_not(None), Device.id)).all()
+    accesses = db.execute(select(SupportAccess.at, SupportAccess.operator, SupportAccess.path)
+                          .where(SupportAccess.family_id == family_id)
+                          .order_by(SupportAccess.at.desc()).limit(10)).all()
+    last_grant = db.execute(select(SupportGrant.created_at, SupportGrant.expires_at, SupportGrant.revoked_at)
+                            .where(SupportGrant.family_id == family_id)
+                            .order_by(SupportGrant.created_at.desc()).limit(1)).first()
+    history = db.scalars(select(AdminLog).where(AdminLog.family_id == family_id)
+                         .order_by(AdminLog.at.desc(), AdminLog.id.desc()).limit(15)).all()
+    is_admin = sess.operator.role == "admin"
+    return _render(request, "admin_family.html", sess, status_code, f=f, row=rows[0] if rows else None,
+                   st=billing.state(f), devices=devices, accesses=accesses, last_grant=last_grant, history=history,
+                   address=db.scalar(select(BillingAddress).where(BillingAddress.family_id == family_id)),
+                   granted=support.granted_families(db).get(family_id), is_admin=is_admin,
+                   edit=edit if is_admin and edit in EDIT_CARDS else "", log_objects=LOG_OBJECTS,
                    plans=billing.PLANS, statuses=billing.STATUSES, **ctx)
 
 
 @router.get("/families/{family_id}")
-def family_detail(family_id: int, request: Request, sess: OperatorSession = Depends(opr.require_operator),
-                  db: Session = Depends(get_platform_db)):
-    return _family_page(request, db, sess, family_id, saved=request.query_params.get("saved"))
+def family_detail(family_id: int, request: Request, edit: str = "",
+                  sess: OperatorSession = Depends(opr.require_operator), db: Session = Depends(get_platform_db)):
+    return _family_page(request, db, sess, family_id, edit=edit, saved=request.query_params.get("saved"))
 
 
 def _date(value: str):
@@ -150,7 +168,7 @@ def family_name(family_id: int, name: str = Form(""), sess: OperatorSession = De
     f.name = name.strip()[:128]
     audit.changes(db, audit.actor_of(sess), "family", before, f, family_id=family_id)
     db.commit()
-    return RedirectResponse(f"/admin/families/{family_id}?saved=1", status_code=303)
+    return RedirectResponse(f"/admin/families/{family_id}?saved=1#kopf", status_code=303)
 
 
 @router.post("/families/{family_id}")
@@ -168,7 +186,7 @@ async def family_billing(family_id: int, request: Request, plan: str = Form(...)
             raise ValueError
         trial, paid = _date(trial_ends), _date(paid_until)
     except ValueError:
-        return _family_page(request, db, sess, family_id, 400, error=_("Ungültige Eingabe."))
+        return _family_page(request, db, sess, family_id, 400, edit="abo", error=_("Ungültige Eingabe."))
     before = audit.snapshot(f, billing.AUDIT_FIELDS)
     f.plan, f.trial_ends_at, f.paid_until = plan, trial, paid
     f.billing_provider, f.billing_customer = provider.strip()[:32], customer.strip()[:128]
@@ -179,7 +197,7 @@ async def family_billing(family_id: int, request: Request, plan: str = Form(...)
     logging.getLogger("kidctl.billing").info("Familie %s: Abo gesetzt von %s (%s, %s)", family_id,
                                               sess.operator.username, plan, status)
     await billing.apply(family_id)
-    return RedirectResponse(f"/admin/families/{family_id}?saved=1", status_code=303)
+    return RedirectResponse(f"/admin/families/{family_id}?saved=1#abo", status_code=303)
 
 
 # ---------- Support-Ansicht (nur mit Freigabe der Familie) ----------

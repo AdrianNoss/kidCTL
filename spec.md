@@ -2593,3 +2593,15 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Lastmessung (`tests/perf_admin_overview.py`, 5.000 Familien, 20.000 Geräte, 10.000 Kinder): Übersicht ~155 ms je
   Aufruf (vorher ~430 ms), Suche/Filter/Sortierung/Seite 50 gleich schnell. Im Browser Desktop und Handy angesehen.
   Server 231 Tests grün.
+- 2026-11-18: Verwaltungsbereich 2, Etappe 3 (Detailansicht): Karten-Raster (mobil einspaltig) Kopf · Abo ·
+  Rechnungsangaben (lesend) · Nutzung (Eltern/Kinder/Geräte, je Gerät Nummer, Plattform, Agent, zuletzt gesehen – ohne
+  Namen) · Support (Freigabe, „Ansehen“, letzte Freigabe, Zugriffsprotokoll; Tickets ab Etappe 4) · Rechnungen
+  (Platzhalter) · Verlauf (letzte 15 Protokolleinträge, Link zu `/admin/log?family=`). Name und Abo zeigen Werte und
+  „Bearbeiten“; `?edit=name|abo` macht die Karte zum Formular mit Speichern/Abbrechen (eigenes Formular, CSRF), nach dem
+  Speichern zurück zur Karte. Support sieht keinen Bearbeiten-Knopf, `?edit` wird für ihn ignoriert. Die Detailansicht
+  lädt nur noch die Metadaten der einen Familie (`operators.families(only=…)`).
+  Getestet (pytest, 4 neue Tests): ohne `?edit` keine Eingabefelder, mit `?edit=name|abo` genau die Felder, ungültige
+  Karte ignoriert; Speichern je Karte mit Rücksprung, Abo-Änderung beendet den Ruhemodus sofort, Policy-Push, Einträge
+  im Verlauf (Betreiber und System), Fehler lässt das Formular offen; Support ohne Bearbeiten (auch per URL/POST);
+  Support-Karte mit Freigabe, „Ansehen“ und Zugriffsprotokoll. Rollen-Test angepasst. Im Browser Desktop und Handy
+  angesehen. Server 235 Tests grün.

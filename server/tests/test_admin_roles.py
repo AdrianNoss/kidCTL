@@ -75,7 +75,8 @@ def test_route_permissions(client, role):
     page = client.get("/admin").text
     assert ('href="/admin/codes"' in page) == (role == "admin")
     detail = client.get("/admin/families/1").text
-    assert ('action="/admin/families/1"' in detail) == (role == "admin")
+    assert ('href="?edit=abo#abo"' in detail) == (role == "admin")
+    assert ('action="/admin/families/1"' in client.get("/admin/families/1?edit=abo").text) == (role == "admin")
 
 
 def test_changes_are_logged(client, monkeypatch, saas):

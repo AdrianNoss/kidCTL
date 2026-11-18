@@ -173,17 +173,22 @@ def open_tickets(db: Session) -> dict[int, int]:
     return dict(rows.all())
 
 
-def families(db: Session) -> list[FamilyRow]:
+def families(db: Session, only: int | None = None) -> list[FamilyRow]:
+    """Metadaten aller Familien (bzw. nur ``only``) für Übersicht und Detailansicht."""
     from . import billing, support
     from .models import BillingAddress
-    addresses = {a.family_id: a for a in db.scalars(select(BillingAddress))}
+
+    def scope(q, col):
+        return q.where(col == only) if only is not None else q
+    addresses = {a.family_id: a for a in db.scalars(scope(select(BillingAddress), BillingAddress.family_id))}
     rows = {f.id: FamilyRow(f.id, f.created_at, f.paused_at, plan=f.plan, billing_status=f.billing_status,
                             billing=billing.state(f), name=f.name,
                             address_missing=billing.address_needed(f, addresses.get(f.id)))
-            for f in db.scalars(select(Family).where(Family.wrapped_key.is_not(None)).order_by(Family.id))}
+            for f in db.scalars(scope(select(Family).where(Family.wrapped_key.is_not(None)), Family.id).order_by(Family.id))}
 
     def count(model, *where):
-        return db.execute(select(model.family_id, func.count()).where(*where).group_by(model.family_id))
+        return db.execute(scope(select(model.family_id, func.count()).where(*where), model.family_id)
+                          .group_by(model.family_id))
 
     for fid, n in count(Membership):
         if fid in rows:
@@ -194,9 +199,9 @@ def families(db: Session) -> list[FamilyRow]:
     active = Device.revoked_at.is_(None)
     stale = utcnow() - timedelta(hours=48)
     releases = {"linux": versions.latest(), "windows": versions.latest_windows()}
-    for fid, version, plat, unsupported, seen in db.execute(
+    for fid, version, plat, unsupported, seen in db.execute(scope(
             select(Device.family_id, Device.agent_version, Device.platform, Device.protocol_unsupported,
-                   Device.last_seen_at).where(active)):
+                   Device.last_seen_at).where(active), Device.family_id)):
         r = rows.get(fid)
         if r is None:
             continue
@@ -216,12 +221,13 @@ def families(db: Session) -> list[FamilyRow]:
             r.outdated = True
     for r in rows.values():
         r.versions.sort(key=versions._key)
-    for fid, seen in db.execute(select(Device.family_id, func.max(Device.last_seen_at)).group_by(Device.family_id)):
+    for fid, seen in db.execute(scope(select(Device.family_id, func.max(Device.last_seen_at)), Device.family_id)
+                                .group_by(Device.family_id)):
         if fid in rows:
             rows[fid].last_seen = seen
-    for fid, at in db.execute(select(Membership.family_id, func.max(ParentSession.created_at))
-                              .join(ParentSession, ParentSession.parent_id == Membership.parent_id)
-                              .group_by(Membership.family_id)):
+    for fid, at in db.execute(scope(select(Membership.family_id, func.max(ParentSession.created_at))
+                                    .join(ParentSession, ParentSession.parent_id == Membership.parent_id),
+                                    Membership.family_id).group_by(Membership.family_id)):
         if fid in rows:
             rows[fid].last_login = at
     for fid in support.granted_families(db):

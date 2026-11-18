@@ -3,53 +3,122 @@
 {% block content %}
 {% set heading = _("Familie #{id}").format(id=f.id) ~ (" · " ~ f.name if f.name else "") %}{% include "_admin_head.html" %}
 {% if saved %}<p class="success">{{ _("Gespeichert.") }}</p>{% endif %}
-<section class="card">
-  {% if row %}<p>{{ _("{parents} Eltern · {children} Kinder · {devices} Geräte").format(parents=row.parents, children=row.children, devices=row.devices) }}
-    · {{ _("seit {date}").format(date=fmt_date(f.created_at.date())) }}</p>{% endif %}
+<div class="card-grid">
+
+<section class="card" id="kopf">
+  <div class="card-head"><h2>{{ f.name or _("ohne Namen") }}</h2>
+    {% if is_admin and edit != "name" %}<a class="btn secondary small" href="?edit=name#kopf">{{ _("Bearbeiten") }}</a>{% endif %}</div>
+  {% if edit == "name" %}
+  <form method="post" action="/admin/families/{{ f.id }}/name">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>{{ _("Name der Familie") }} <input name="name" maxlength="128" value="{{ f.name }}" autofocus></label>
+    <div class="row"><button type="submit">{{ _("Speichern") }}</button><a class="btn secondary" href="/admin/families/{{ f.id }}#kopf">{{ _("Abbrechen") }}</a></div>
+  </form>
+  {% endif %}
+  <p>#{{ f.id }} · {{ _("seit {date}").format(date=fmt_date(f.created_at.date())) }}</p>
   <p>{% if st.phase == "paused" %}<span class="pill danger">{{ _("Ruhemodus") }}</span>
-       {{ _("seit {since}, Löschung am {date}").format(since=f.paused_at | localtime, date=fmt_date(st.delete_at.date())) }}
-     {% elif st.phase == "grace" %}<span class="pill warn">{{ _("Schonfrist") }}</span> {{ _("Ruhemodus ab {date}").format(date=fmt_date(st.grace_end.date())) }}
-     {% else %}<span class="pill ok">{{ _("ok") }}</span>{% if st.until %} {{ _("bis {date}").format(date=fmt_date(st.until.date())) }}{% endif %}{% endif %}</p>
+     {% elif st.phase == "grace" %}<span class="pill warn">{{ _("Schonfrist") }}</span>
+     {% elif not (row and (row.offline or row.outdated or row.address_missing)) %}<span class="pill ok">{{ _("ok") }}</span>{% endif %}
+     {% if row and row.offline %}<span class="pill danger">{{ ngettext("{n} Gerät offline", "{n} Geräte offline", row.offline).format(n=row.offline) }}</span>{% endif %}
+     {% if row and row.outdated %}<span class="pill warn">{{ _("Agent veraltet") }}</span>{% endif %}
+     {% if row and row.address_missing %}<span class="pill warn">{{ _("Rechnungsangaben fehlen") }}</span>{% endif %}</p>
 </section>
-{% if operator.role == "admin" %}
-<form method="post" action="/admin/families/{{ f.id }}/name" class="card row">
-  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-  <label>{{ _("Name der Familie") }} <input name="name" maxlength="128" value="{{ f.name }}"></label>
-  <button type="submit" class="secondary">{{ _("Speichern") }}</button>
-</form>
-{% endif %}
-{% if granted %}
-<section class="card">
-  <h2>{{ _("Support") }}</h2>
+
+<section class="card" id="abo">
+  <div class="card-head"><h2>{{ _("Abo") }}</h2>
+    {% if is_admin and edit != "abo" %}<a class="btn secondary small" href="?edit=abo#abo">{{ _("Bearbeiten") }}</a>{% endif %}</div>
+  {% if edit == "abo" %}
+  <form method="post" action="/admin/families/{{ f.id }}">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>{{ _("Tarif") }} <select name="plan">{% for k, label in plans.items() %}<option value="{{ k }}"{% if f.plan == k %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select></label>
+    <label>{{ _("Status") }} <select name="status">{% for k, label in statuses.items() %}<option value="{{ k }}"{% if f.billing_status == k %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select></label>
+    <label>{{ _("Testphase bis") }} <input type="date" name="trial_ends" value="{{ f.trial_ends_at.date().isoformat() if f.trial_ends_at else '' }}"></label>
+    <label>{{ _("Bezahlt bis") }} <span class="field-note">{{ _("leer bei „aktiv“ = ohne Ende") }}</span> <input type="date" name="paid_until" value="{{ f.paid_until.date().isoformat() if f.paid_until else '' }}"></label>
+    <label>{{ _("Zahlungsanbieter") }} <input name="provider" maxlength="32" value="{{ f.billing_provider }}"></label>
+    <label>{{ _("Kundennummer") }} <input name="customer" maxlength="128" value="{{ f.billing_customer }}"></label>
+    <div class="row"><button type="submit">{{ _("Speichern") }}</button><a class="btn secondary" href="/admin/families/{{ f.id }}#abo">{{ _("Abbrechen") }}</a></div>
+    <p class="muted"><small>{{ _("Wirkt sofort: Ist die Familie danach nicht mehr abgelaufen, endet ein Ruhemodus und die Computer bekommen ihre Regeln zurück.") }}</small></p>
+  </form>
+  {% else %}
+  <dl class="facts">
+    <dt>{{ _("Tarif") }}</dt><dd>{{ _(plans[f.plan]) }}</dd>
+    {% if f.plan != "free" %}
+    <dt>{{ _("Status") }}</dt><dd>{{ _(statuses[f.billing_status]) }}</dd>
+    {% if f.trial_ends_at %}<dt>{{ _("Testphase bis") }}</dt><dd>{{ fmt_date(f.trial_ends_at.date()) }}</dd>{% endif %}
+    <dt>{{ _("Bezahlt bis") }}</dt><dd>{{ fmt_date(f.paid_until.date()) if f.paid_until else "–" }}</dd>
+    {% endif %}
+    {% if st.phase == "grace" %}<dt>{{ _("Ruhemodus ab") }}</dt><dd>{{ fmt_date(st.grace_end.date()) }}</dd>{% endif %}
+    {% if st.phase == "paused" %}<dt>{{ _("Ruhemodus seit") }}</dt><dd>{{ f.paused_at | localtime }}</dd>
+    <dt>{{ _("Löschung am") }}</dt><dd>{{ fmt_date(st.delete_at.date()) }}</dd>{% endif %}
+    {% if f.billing_provider or f.billing_customer %}<dt>{{ _("Zahlungsanbieter") }}</dt><dd>{{ f.billing_provider or "–" }} · {{ f.billing_customer or "–" }}</dd>{% endif %}
+  </dl>
+  {% endif %}
+</section>
+
+<section class="card" id="rechnungsangaben">
+  <div class="card-head"><h2>{{ _("Rechnungsangaben") }}</h2>{% if row and row.address_missing %}<span class="pill warn">{{ _("fehlen") }}</span>{% endif %}</div>
+  {% if address %}
+  <p>{{ address.name }}<br>{{ address.street }}<br>{{ address.postal_code }} {{ address.city }}<br>{{ address.country }}</p>
+  <p>{{ address.email }}{% if address.vat_id %}<br>{{ _("USt-IdNr.") }} {{ address.vat_id }}{% endif %}</p>
+  <p class="muted"><small>{{ _("gepflegt von der Familie") }} · {{ _("zuletzt geändert {date}").format(date=address.updated_at | localtime) }}</small>
+    {% if not address.complete %} <span class="pill warn">{{ _("unvollständig") }}</span>{% endif %}</p>
+  {% else %}<p class="muted">{{ _("Noch keine Rechnungsangaben hinterlegt.") }}</p>{% endif %}
+</section>
+
+<section class="card" id="nutzung">
+  <div class="card-head"><h2>{{ _("Nutzung") }}</h2></div>
+  {% if row %}<p>{{ _("{parents} Eltern · {children} Kinder · {devices} Geräte").format(parents=row.parents, children=row.children, devices=row.devices) }}</p>{% endif %}
+  {% if devices %}
+  <table class="responsive">
+    <tr><th>{{ _("Gerät") }}</th><th>{{ _("Plattform") }}</th><th>{{ _("Agent") }}</th><th>{{ _("zuletzt gesehen") }}</th></tr>
+    {% for d in devices %}
+    <tr{% if d.revoked_at %} class="muted"{% endif %}>
+      <td>#{{ d.id }}{% if d.revoked_at %} <small>({{ _("getrennt") }})</small>{% endif %}</td>
+      <td data-label="{{ _('Plattform') }}">{{ {"linux": "Linux", "windows": "Windows"}.get(d.platform, d.platform) }}</td>
+      <td data-label="{{ _('Agent') }}">{{ d.agent_version or "–" }}{% if d.protocol_unsupported %} <span class="warn-mark" title="{{ _('Agent veraltet') }}">⚠</span>{% endif %}</td>
+      <td data-label="{{ _('zuletzt gesehen') }}"{% if d.last_seen_at %} title="{{ d.last_seen_at | localtime }}"{% endif %}>{{ fmt_relative(d.last_seen_at) }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="muted">{{ _("Noch keine Geräte gekoppelt.") }}</p>{% endif %}
+  <p class="muted"><small>{{ _("Nur Metadaten – Namen von Kindern und Geräten sind mit dem Schlüssel der Familie verschlüsselt.") }}</small></p>
+</section>
+
+<section class="card" id="support">
+  <div class="card-head"><h2>{{ _("Support") }}</h2>{% if granted %}<span class="pill play">{{ _("freigegeben") }}</span>{% endif %}</div>
+  {% if granted %}
   <p>{{ _("freigegeben bis {until}").format(until=granted[1] | localtime) }}</p>
   <form method="post" action="/admin/support/{{ f.id }}" class="inline">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <button type="submit" class="secondary">{{ _("Ansehen") }}</button>
   </form>
+  {% elif last_grant %}<p class="muted">{{ _("Letzte Freigabe: {date}").format(date=last_grant.created_at | localtime) }}</p>
+  {% else %}<p class="muted">{{ _("Keine Freigabe – die Familie gibt sie unter Einstellungen → Support-Zugriff.") }}</p>{% endif %}
+  {% if accesses %}
+  <details><summary>{{ _("Zugriffsprotokoll") }}</summary>
+    <table class="responsive">{% for a in accesses %}<tr><td>{{ a.at | localtime }}</td><td data-label="{{ _('Betreiber') }}">{{ a.operator }}</td><td data-label="{{ _('Seite') }}"><code>{{ a.path }}</code></td></tr>{% endfor %}</table>
+  </details>
+  {% endif %}
+  <p class="muted"><small>{{ _("Tickets der Familie erscheinen hier, sobald es Tickets gibt.") }}</small></p>
 </section>
-{% endif %}
-<section class="card">
-  <h2>{{ _("Rechnungsangaben") }}</h2>
-  {% if address %}
-  <p>{{ address.name }}<br>{{ address.street }}<br>{{ address.postal_code }} {{ address.city }}<br>{{ address.country }}</p>
-  <p>{{ address.email }}{% if address.vat_id %}<br>{{ _("USt-IdNr.") }} {{ address.vat_id }}{% endif %}</p>
-  <p class="muted"><small>{{ _("zuletzt geändert {date}").format(date=address.updated_at | localtime) }}</small>
-    {% if not address.complete %} <span class="pill warn">{{ _("unvollständig") }}</span>{% endif %}</p>
-  {% else %}<p class="muted">{{ _("Noch keine Rechnungsangaben hinterlegt.") }}</p>{% endif %}
-  {% if row and row.address_missing %}<p class="warn"><small>{{ _("Werden für das Abo gebraucht – die Familie sieht einen Hinweis.") }}</small></p>{% endif %}
+
+<section class="card" id="rechnungen">
+  <div class="card-head"><h2>{{ _("Rechnungen") }}</h2></div>
+  <p class="muted">{{ _("Noch keine Rechnungen.") }}</p>
 </section>
-{% if operator.role == "admin" %}
-<form method="post" action="/admin/families/{{ f.id }}" class="card">
-  <h2>{{ _("Abo") }}</h2>
-  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-  <label>{{ _("Tarif") }} <select name="plan">{% for k, label in plans.items() %}<option value="{{ k }}"{% if f.plan == k %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select></label>
-  <label>{{ _("Status") }} <select name="status">{% for k, label in statuses.items() %}<option value="{{ k }}"{% if f.billing_status == k %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select></label>
-  <label>{{ _("Testphase bis") }} <input type="date" name="trial_ends" value="{{ f.trial_ends_at.date().isoformat() if f.trial_ends_at else '' }}"></label>
-  <label>{{ _("Bezahlt bis") }} <span class="field-note">{{ _("leer bei „aktiv“ = ohne Ende") }}</span> <input type="date" name="paid_until" value="{{ f.paid_until.date().isoformat() if f.paid_until else '' }}"></label>
-  <label>{{ _("Zahlungsanbieter") }} <input name="provider" maxlength="32" value="{{ f.billing_provider }}"></label>
-  <label>{{ _("Kundennummer") }} <input name="customer" maxlength="128" value="{{ f.billing_customer }}"></label>
-  <button type="submit">{{ _("Speichern") }}</button>
-  <p class="muted"><small>{{ _("Wirkt sofort: Ist die Familie danach nicht mehr abgelaufen, endet ein Ruhemodus und die Computer bekommen ihre Regeln zurück.") }}</small></p>
-</form>
-{% endif %}
+
+<section class="card card-wide" id="verlauf">
+  <div class="card-head"><h2>{{ _("Verlauf") }}</h2><a class="btn secondary small" href="/admin/log?family={{ f.id }}">{{ _("Alle Einträge") }}</a></div>
+  {% if history %}
+  <table class="responsive">
+    {% for e in history %}
+    <tr><td>{{ e.at | localtime }}</td><td data-label="{{ _('Wer') }}">{{ e.actor }}</td>
+      <td data-label="{{ _('Was') }}">{{ _(log_objects.get(e.object, e.object)) }}{% if e.field %} · <code>{{ e.field }}</code>{% endif %}</td>
+      <td data-label="{{ _('Änderung') }}">{{ e.old or "–" }} → {{ e.new or "–" }}</td></tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="muted">{{ _("Noch keine Änderungen.") }}</p>{% endif %}
+</section>
+
+</div>
 {% endblock %}

@@ -2182,8 +2182,6 @@ msgstr "Deletion of your data"
 msgid "Ohne Abo werden eure KidCTL-Daten am {date} endgültig gelöscht. Vorher könnt ihr sie unter Einstellungen exportieren."
 msgstr "Without a subscription, your KidCTL data will be permanently deleted on {date}. You can export it under Settings before then."
 
-msgid "Ruhemodus ab {date}"
-msgstr "Paused from {date}"
 
 msgid "Schonfrist"
 msgstr "Grace period"
@@ -2233,8 +2231,6 @@ msgstr "empty with \"active\" = no end"
 msgid "pausiert"
 msgstr "paused"
 
-msgid "seit {since}, Löschung am {date}"
-msgstr "since {since}, deletion on {date}"
 
 msgid "{parents} Eltern · {children} Kinder · {devices} Geräte"
 msgstr "{parents} parents · {children} children · {devices} devices"
@@ -2303,8 +2299,6 @@ msgstr "Street and number"
 msgid "USt-IdNr."
 msgstr "VAT ID"
 
-msgid "Werden für das Abo gebraucht – die Familie sieht einen Hinweis."
-msgstr "Needed for the subscription – the family sees a notice."
 
 msgid "ohne Namen"
 msgstr "no name"
@@ -2457,3 +2451,67 @@ msgid "vor {n} Tag"
 msgid_plural "vor {n} Tagen"
 msgstr[0] "{n} day ago"
 msgstr[1] "{n} days ago"
+
+# Verwaltungsbereich 2 – Detailansicht
+msgid "Alle Einträge"
+msgstr "All entries"
+
+msgid "Bearbeiten"
+msgstr "Edit"
+
+msgid "Keine Freigabe – die Familie gibt sie unter Einstellungen → Support-Zugriff."
+msgstr "No access granted – the family grants it under Settings → Support access."
+
+msgid "Letzte Freigabe: {date}"
+msgstr "Last granted: {date}"
+
+msgid "Löschung am"
+msgstr "Deletion on"
+
+msgid "Noch keine Rechnungen."
+msgstr "No invoices yet."
+
+msgid "Noch keine Änderungen."
+msgstr "No changes yet."
+
+msgid "Nur Metadaten – Namen von Kindern und Geräten sind mit dem Schlüssel der Familie verschlüsselt."
+msgstr "Metadata only – names of children and devices are encrypted with the family's key."
+
+msgid "Nutzung"
+msgstr "Usage"
+
+msgid "Plattform"
+msgstr "Platform"
+
+msgid "Rechnungen"
+msgstr "Invoices"
+
+msgid "Ruhemodus ab"
+msgstr "Paused from"
+
+msgid "Ruhemodus seit"
+msgstr "Paused since"
+
+msgid "Tickets der Familie erscheinen hier, sobald es Tickets gibt."
+msgstr "The family's tickets will appear here once tickets exist."
+
+msgid "Verlauf"
+msgstr "History"
+
+msgid "Zugriffsprotokoll"
+msgstr "Access log"
+
+msgid "fehlen"
+msgstr "missing"
+
+msgid "freigegeben"
+msgstr "granted"
+
+msgid "gepflegt von der Familie"
+msgstr "maintained by the family"
+
+msgid "getrennt"
+msgstr "disconnected"
+
+msgid "zuletzt gesehen"
+msgstr "last seen"
