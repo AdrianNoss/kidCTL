@@ -2723,3 +2723,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Versand nur an zustimmende Familie mit Abmeldelink/Headern, Doppelversand/Ändern/Löschen danach 409, Sprachwahl
   mit Rückfall, Pflichtfelder und Support-Rolle 403), Server 283 Tests grün; Migration check und down/up; im Browser
   Entwurf, Versand-Karte und Einstellungskarte.
+- 2026-11-18: Version 0.35.0 (Agent, Pakete): Sammelversion für Familiensuche, Admin-Profil, Whitelabel, Newsletter
+  und den Fix der PWA-Leiste – keine Änderung am Agenten selbst. News 0.35 (DE/EN), Roadmap mit Version. Getestet:
+  Versionsabgleich PKGBUILD/Agent, `hugo --minify` fehlerfrei.
