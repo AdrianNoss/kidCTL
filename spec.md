@@ -2605,3 +2605,23 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   im Verlauf (Betreiber und System), Fehler lässt das Formular offen; Support ohne Bearbeiten (auch per URL/POST);
   Support-Karte mit Freigabe, „Ansehen“ und Zugriffsprotokoll. Rollen-Test angepasst. Im Browser Desktop und Handy
   angesehen. Server 235 Tests grün.
+- 2026-11-18: Verwaltungsbereich 2, Etappe 4 (Tickets, nur SaaS): Tabellen `ticket`, `ticket_message` (Familien-
+  bezogen, CASCADE; Betreff, Nachrichten, Autor, Metadaten mit dem Plattform-Schlüssel; Migration 0016), `app/tickets.py`.
+  Eltern: Menüpunkt „Support“ (auch im Ruhemodus) mit Liste, Anlegen (Betreff, Kategorie Technik/Abo & Rechnung/
+  Sonstiges, Nachricht, Hinweis zur Lesbarkeit und Support-Freigabe), Verlauf ohne interne Notizen, Antworten,
+  Schließen. Beim Anlegen angehängt: Agent-Versionen, Plattformen, Tarif/Status/Ruhemodus, Sprache. Status: neu →
+  wartend/in Bearbeitung (Support) → in Bearbeitung (Familie), Wiedereröffnen nur bis 14 Tage nach Schließen,
+  automatisch geschlossen nach 14 Tagen „wartend“ (stündlicher Job, Hinweis an die Familie). Verwaltung: Reiter
+  „Tickets“ (beide Rollen) mit Filter Status (Standard offen)/Kategorie/Familie/Betreff, Sortierung, 50 je Seite;
+  Ticketseite mit Metadaten, Verlauf inkl. interner Notizen (farbig), Antwort mit „intern“ und Status danach,
+  Statusauswahl, „zuletzt bearbeitet von“; Tickets in der Support-Karte der Familie, Kachel „offene Tickets“.
+  Benachrichtigungen nur Hinweis + Link: neu/Antwort der Familie → Betreiber mit Ticket-Mails und
+  `SUPPORT_NOTIFY_EMAIL`; Antwort des Supports/automatisches Schließen → alle Eltern per Mail und Push; interne Notizen
+  nichts. Statuswechsel im Verwaltungsprotokoll (Betreiber, „Familie“, „System“). Aufbewahrung 12 Monate nach Schließen
+  (`TICKET_RETENTION_DAYS`), mit der Familie gelöscht, nicht im Export. README ergänzt.
+  Getestet (pytest, 7 neue Tests): Menüpunkt nur im SaaS; Lebenszyklus mit allen Statusübergängen inkl.
+  Wiedereröffnen innerhalb/außerhalb 14 Tage, Support-Rolle antwortet, interne Notiz für Eltern unsichtbar und ohne
+  Benachrichtigung, Empfänger und Inhaltsfreiheit der Mails, Verschlüsselung in der Datenbank, Protokoll;
+  automatisches Schließen; Isolation zwischen Familien (Ansehen, Antworten, Schließen per ID → 404); Erreichbarkeit im
+  Ruhemodus; Liste mit Filtern/Sortierung, Kachel, Support-Karte; Aufbewahrung und Löschen mit der Familie.
+  Im Browser angesehen (Eltern-Verlauf, Ticketseite mit interner Notiz). Server 242 Tests grün.

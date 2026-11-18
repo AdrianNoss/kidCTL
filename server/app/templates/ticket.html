@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Ticket #{id}").format(id=t.id) }} – KidCTL{% endblock %}
+{% block content %}
+<div class="page-head"><div><span class="eyebrow"><a href="/support">{{ _("Support") }}</a> · #{{ t.id }} · {{ _(categories[t.category]) }}</span><h1>{{ t.subject }}</h1></div>
+  <span class="pill {{ 'ok' if t.status == 'closed' else ('warn' if t.status == 'waiting' else 'play') }}">{{ _(statuses[t.status]) }}</span></div>
+<section class="card ticket-thread">
+  {% for m in messages %}
+  <div class="ticket-msg{{ ' from-support' if m.from_support }}">
+    <div class="ticket-meta"><strong>{{ m.author if not m.from_support else _("Support") }}</strong> · <span title="{{ m.created_at | localtime }}">{{ fmt_relative(m.created_at) }}</span></div>
+    <div class="ticket-body">{{ m.body }}</div>
+  </div>
+  {% endfor %}
+  <span id="ende"></span>
+</section>
+{% if t.status == "closed" %}
+<p class="muted">{{ _("Geschlossen am {date}. Eine Antwort öffnet das Ticket wieder – bis {days} Tage nach dem Schließen, danach bitte ein neues Ticket anlegen.").format(date=t.closed_at | localtime, days=reopen_days) }}</p>
+{% endif %}
+<form method="post" action="/support/{{ t.id }}" class="card">
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <label>{{ _("Antwort") }} <textarea name="body" rows="4" maxlength="10000" required>{{ body or '' }}</textarea></label>
+  <p class="muted"><small>{{ _("Diese Nachricht kann der Support lesen. Für Einsicht in deine Einstellungen gib zusätzlich eine Support-Freigabe.") }}</small></p>
+  <div class="row"><button type="submit">{{ _("Antworten") }}</button></div>
+</form>
+{% if t.status != "closed" %}
+<form method="post" action="/support/{{ t.id }}/close" class="inline">
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <button type="submit" class="secondary">{{ _("Ticket schließen") }}</button>
+</form>
+{% endif %}
+{% endblock %}

@@ -39,7 +39,8 @@
 {% if current_parent %}
 <nav class="navbar" aria-label="{{ _('Hauptnavigation') }}">
   {% for href, label, ic in [("/", _("Übersicht"), "home"), ("/children", _("Kinder"), "child"), ("/devices", _("Geräte"), "devices"),
-                             ("/parents", _("Eltern"), "parents"), ("/settings", _("Einstellungen"), "settings")] %}
+                             ("/parents", _("Eltern"), "parents"), ("/settings", _("Einstellungen"), "settings")]
+                            + ([("/support", _("Support"), "support")] if SAAS else []) %}
   {% set active = (href == '/' and path == '/') or (href != '/' and path.startswith(href)) %}
   <a href="{{ href }}" class="nav-item{% if active %} active{% endif %}"{% if active %} aria-current="page"{% endif %}>
     <span class="nav-icon">{{ icon(ic) }}</span><span class="nav-label">{{ label }}</span></a>

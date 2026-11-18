@@ -163,11 +163,8 @@ class FamilyRow:
 
 
 def open_tickets(db: Session) -> dict[int, int]:
-    """Offene Tickets je Familie (Tickets folgen in Etappe 4 – bis dahin keine)."""
-    try:
-        from .models import Ticket
-    except ImportError:
-        return {}
+    """Offene Tickets (alles außer „geschlossen“) je Familie."""
+    from .models import Ticket
     rows = db.execute(select(Ticket.family_id, func.count()).where(Ticket.status != "closed")
                       .group_by(Ticket.family_id))
     return dict(rows.all())

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Ticket #{id}").format(id=t.id) }} – KidCTL{% endblock %}
+{% block content %}
+{% set heading = _("Ticket #{id}").format(id=t.id) %}{% include "_admin_head.html" %}
+<div class="card-grid">
+<section class="card">
+  <div class="card-head"><h2>{{ t.subject }}</h2><span class="pill {{ 'ok' if t.status == 'closed' else 'play' }}">{{ _(statuses[t.status]) }}</span></div>
+  <dl class="facts">
+    <dt>{{ _("Familie") }}</dt><dd><a href="/admin/families/{{ t.family_id }}">#{{ t.family_id }}{% if family and family.name %} {{ family.name }}{% endif %}</a></dd>
+    <dt>{{ _("Kategorie") }}</dt><dd>{{ _(categories[t.category]) }}</dd>
+    <dt>{{ _("Erstellt") }}</dt><dd>{{ t.created_at | localtime }}</dd>
+    <dt>{{ _("zuletzt bearbeitet von") }}</dt><dd>{{ t.last_operator or "–" }}</dd>
+    {% if meta %}<dt>{{ _("Agenten") }}</dt><dd>{{ meta.agents | join(", ") or "–" }} ({{ meta.platforms | join(", ") or "–" }})</dd>
+    <dt>{{ _("Abo") }}</dt><dd>{{ meta.plan }} · {{ meta.status }}{% if meta.paused %} · {{ _("Ruhemodus") }}{% endif %}</dd>
+    <dt>{{ _("Sprache") }}</dt><dd>{{ meta.language }}</dd>{% endif %}
+  </dl>
+</section>
+<form method="post" action="/admin/tickets/{{ t.id }}/status" class="card">
+  <h2>{{ _("Status") }}</h2>
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <label>{{ _("Status setzen") }} <select name="status">{% for k, label in statuses.items() %}<option value="{{ k }}"{% if t.status == k %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select></label>
+  <button type="submit" class="secondary">{{ _("Übernehmen") }}</button>
+</form>
+</div>
+<section class="card ticket-thread">
+  {% for m in t.messages %}
+  <div class="ticket-msg{{ ' from-support' if m.from_support }}{{ ' internal' if m.internal }}">
+    <div class="ticket-meta"><strong>{{ m.author }}</strong>{% if m.internal %} · {{ _("interne Notiz") }}{% endif %} · <span title="{{ m.created_at | localtime }}">{{ fmt_relative(m.created_at) }}</span></div>
+    <div class="ticket-body">{{ m.body }}</div>
+  </div>
+  {% endfor %}
+  <span id="ende"></span>
+</section>
+<form method="post" action="/admin/tickets/{{ t.id }}" class="card">
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <label>{{ _("Antwort") }} <textarea name="body" rows="5" maxlength="10000" required>{{ body or '' }}</textarea></label>
+  <label class="option"><input type="checkbox" name="internal" value="1"> {{ _("Interne Notiz (nur für den Support, keine Benachrichtigung)") }}</label>
+  <label>{{ _("Status danach") }} <select name="status">
+    <option value="waiting">{{ _("wartend (auf die Familie)") }}</option>
+    <option value="in_progress">{{ _("in Bearbeitung") }}</option>
+    <option value="closed">{{ _("geschlossen") }}</option></select></label>
+  <button type="submit">{{ _("Senden") }}</button>
+  <p class="muted"><small>{{ _("Die Familie bekommt nur einen Hinweis mit Link, nicht den Inhalt.") }}</small></p>
+</form>
+{% endblock %}

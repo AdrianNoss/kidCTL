@@ -42,6 +42,8 @@ child's computer the language of the desktop session is used.
   and what is recorded; the icon stays visible, there is no hidden mode.
 - **Your data**: export all of a family's data as a ZIP (readable, versioned) and import it on another KidCTL
   server – also for moving between self-hosting and hosted mode.
+- **Several families** (`KIDCTL_MODE=saas`): sign-up with an invitation code, subscription with a trial, support
+  tickets and an administration area for the operator (roles, log, search).
 - **Security**:
   - Parent sign-in only with TOTP, rate limiting, CSRF protection.
   - Names, chat, activity log, statistics and email addresses are stored encrypted on the server (one key

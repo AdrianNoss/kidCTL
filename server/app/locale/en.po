@@ -2492,8 +2492,6 @@ msgstr "Paused from"
 msgid "Ruhemodus seit"
 msgstr "Paused since"
 
-msgid "Tickets der Familie erscheinen hier, sobald es Tickets gibt."
-msgstr "The family's tickets will appear here once tickets exist."
 
 msgid "Verlauf"
 msgstr "History"
@@ -2515,3 +2513,150 @@ msgstr "disconnected"
 
 msgid "zuletzt gesehen"
 msgstr "last seen"
+
+# Verwaltungsbereich 2 – Tickets
+msgid "Abo & Rechnung"
+msgstr "Subscription & invoice"
+
+msgid "Agenten"
+msgstr "Agents"
+
+msgid "Alle Tickets der Familie"
+msgstr "All tickets of the family"
+
+msgid "Antwort"
+msgstr "Reply"
+
+msgid "Antworten"
+msgstr "Reply"
+
+msgid "Betreff"
+msgstr "Subject"
+
+msgid "Bitte Betreff, Kategorie und Nachricht angeben."
+msgstr "Please enter a subject, category and message."
+
+msgid "Bitte eine Nachricht eingeben."
+msgstr "Please enter a message."
+
+msgid "Der Support hat auf euer Ticket geantwortet."
+msgstr "Support has replied to your ticket."
+
+msgid "Die Familie bekommt nur einen Hinweis mit Link, nicht den Inhalt."
+msgstr "The family only gets a notice with a link, not the content."
+
+msgid "Diese Nachricht kann der Support lesen. Für Einsicht in deine Einstellungen gib zusätzlich eine Support-Freigabe."
+msgstr "Support can read this message. To let them see your settings, also grant support access."
+
+msgid "Dieses Ticket ist seit über {days} Tagen geschlossen. Bitte lege ein neues Ticket an."
+msgstr "This ticket has been closed for more than {days} days. Please create a new ticket."
+
+msgid "Erstellt"
+msgstr "Created"
+
+msgid "Euer Ticket wurde geschlossen, weil 14 Tage keine Antwort kam. Ihr könnt es noch 14 Tage lang mit einer Antwort wieder öffnen."
+msgstr "Your ticket was closed because there was no reply for 14 days. You can reopen it with a reply within the next 14 days."
+
+msgid "Familie #{family} hat auf ein Ticket geantwortet."
+msgstr "Family #{family} replied to a ticket."
+
+msgid "Familie #{family} hat ein neues Ticket angelegt."
+msgstr "Family #{family} created a new ticket."
+
+msgid "Geschlossen am {date}. Eine Antwort öffnet das Ticket wieder – bis {days} Tage nach dem Schließen, danach bitte ein neues Ticket anlegen."
+msgstr "Closed on {date}. A reply reopens the ticket – up to {days} days after closing; after that, please create a new ticket."
+
+msgid "Interne Notiz (nur für den Support, keine Benachrichtigung)"
+msgstr "Internal note (support only, no notification)"
+
+msgid "Kategorie"
+msgstr "Category"
+
+msgid "Keine Tickets."
+msgstr "No tickets."
+
+msgid "KidCTL: Antwort auf Ticket #{id}"
+msgstr "KidCTL: Reply to ticket #{id}"
+
+msgid "KidCTL: Neues Ticket #{id}"
+msgstr "KidCTL: New ticket #{id}"
+
+msgid "Nachricht"
+msgstr "Message"
+
+msgid "Neue Antwort auf Ticket #{id}"
+msgstr "New reply to ticket #{id}"
+
+msgid "Neues Ticket"
+msgstr "New ticket"
+
+msgid "Sortierung"
+msgstr "Sort by"
+
+msgid "Status danach"
+msgstr "Status afterwards"
+
+msgid "Status setzen"
+msgstr "Set status"
+
+msgid "Technik"
+msgstr "Technical"
+
+msgid "Ticket #{id}"
+msgstr "Ticket #{id}"
+
+msgid "Ticket #{id} geschlossen"
+msgstr "Ticket #{id} closed"
+
+msgid "Ticket schließen"
+msgstr "Close ticket"
+
+msgid "Ticket senden"
+msgstr "Send ticket"
+
+msgid "Tickets"
+msgstr "Tickets"
+
+msgid "Ungültiger Status."
+msgstr "Invalid status."
+
+msgid "geschlossen"
+msgstr "closed"
+
+msgid "in Bearbeitung"
+msgstr "in progress"
+
+msgid "interne Notiz"
+msgstr "internal note"
+
+msgid "neu"
+msgstr "new"
+
+msgid "neueste zuerst"
+msgstr "newest first"
+
+msgid "offen"
+msgstr "open"
+
+msgid "wartend"
+msgstr "waiting"
+
+msgid "wartend (auf die Familie)"
+msgstr "waiting (for the family)"
+
+msgid "zuletzt aktiv"
+msgstr "recently active"
+
+msgid "zuletzt bearbeitet von"
+msgstr "last handled by"
+
+msgid "Übernehmen"
+msgstr "Apply"
+
+msgid "älteste zuerst"
+msgstr "oldest first"
+
+msgid "{n} Ticket"
+msgid_plural "{n} Tickets"
+msgstr[0] "{n} ticket"
+msgstr[1] "{n} tickets"

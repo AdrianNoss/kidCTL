@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Tickets") }} – KidCTL{% endblock %}
+{% block content %}
+{% set heading = _("Tickets") %}{% include "_admin_head.html" %}
+<form method="get" action="/admin/tickets" class="card row">
+  <label>{{ _("Status") }} <select name="status">
+    <option value="open"{% if f.status == "open" %} selected{% endif %}>{{ _("offen") }}</option>
+    {% for k, label in statuses.items() %}<option value="{{ k }}"{% if f.status == k %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}
+    <option value="all"{% if f.status == "all" %} selected{% endif %}>{{ _("alle") }}</option></select></label>
+  <label>{{ _("Kategorie") }} <select name="category"><option value="">{{ _("alle") }}</option>{% for k, label in categories.items() %}<option value="{{ k }}"{% if f.category == k %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select></label>
+  <label>{{ _("Familie") }} <input name="family" value="{{ f.family }}" placeholder="#12" size="6"></label>
+  <label>{{ _("Betreff") }} <input type="search" name="q" value="{{ f.q }}"></label>
+  <label>{{ _("Sortierung") }} <select name="sort">
+    {% for k, label in [("created", _("älteste zuerst")), ("-created", _("neueste zuerst")), ("-updated", _("zuletzt aktiv"))] %}<option value="{{ k }}"{% if f.sort == k %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+  <button type="submit" class="secondary">{{ _("Filtern") }}</button>
+</form>
+<section class="card">
+  <p class="muted"><small>{{ ngettext("{n} Ticket", "{n} Tickets", total).format(n=total) }}</small></p>
+  {% if tickets %}
+  <table class="responsive">
+    <tr><th>{{ _("Ticket") }}</th><th>{{ _("Familie") }}</th><th>{{ _("Kategorie") }}</th><th>{{ _("Erstellt") }}</th><th>{{ _("Zuletzt") }}</th><th>{{ _("Status") }}</th></tr>
+    {% for t in tickets %}
+    <tr>
+      <td><a href="/admin/tickets/{{ t.id }}"><strong>#{{ t.id }}</strong> {{ t.subject }}</a></td>
+      <td data-label="{{ _('Familie') }}"><a href="/admin/families/{{ t.family_id }}">#{{ t.family_id }}{% if names.get(t.family_id) %} {{ names[t.family_id] }}{% endif %}</a></td>
+      <td data-label="{{ _('Kategorie') }}">{{ _(categories[t.category]) }}</td>
+      <td data-label="{{ _('Erstellt') }}" title="{{ t.created_at | localtime }}">{{ fmt_relative(t.created_at) }}</td>
+      <td data-label="{{ _('Zuletzt') }}" title="{{ t.updated_at | localtime }}">{{ fmt_relative(t.updated_at) }}{% if t.last_operator %} · {{ t.last_operator }}{% endif %}</td>
+      <td class="right"><span class="pill {{ 'ok' if t.status == 'closed' else ('warn' if t.status == 'new' else 'play') }}">{{ _(statuses[t.status]) }}</span></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% if pages > 1 %}<p class="row pager">{% if page > 1 %}<a class="btn secondary small" href="{{ url(page=page - 1) }}">{{ _("Zurück") }}</a>{% endif %}
+    <span class="muted">{{ _("Seite {page} von {pages}").format(page=page, pages=pages) }}</span>
+    {% if page < pages %}<a class="btn secondary small" href="{{ url(page=page + 1) }}">{{ _("Weiter") }}</a>{% endif %}</p>{% endif %}
+  {% else %}<p class="muted">{{ _("Keine Tickets.") }}</p>{% endif %}
+</section>
+{% endblock %}

@@ -200,7 +200,7 @@ class FamilyPaused(Exception):
     """Ruhemodus (Abo abgelaufen): main.py leitet zu den Einstellungen (Abo, Export, Löschen) um."""
 
 
-PAUSED_ALLOWED = ("/settings", "/profile", "/logout", "/push/")   # Abo, Export, Löschen; Push für Hinweise
+PAUSED_ALLOWED = ("/settings", "/profile", "/logout", "/push/", "/support")   # Abo, Export, Löschen; Push für Hinweise
 
 
 def _billing_gate(db: Session, request: Request, family_id: int) -> None:

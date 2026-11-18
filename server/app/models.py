@@ -248,6 +248,41 @@ class BillingAddress(FamilyScoped, Base):
         return all(getattr(self, f).strip() for f in self.REQUIRED)
 
 
+class Ticket(FamilyScoped, Base):
+    """Support-Ticket einer Familie (nur SaaS). Betreff und Metadaten mit dem Plattform-Schlüssel – der Support muss sie
+    lesen; mit der Familie gelöscht (CASCADE), nicht im Familien-Export."""
+    __tablename__ = "ticket"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    subject: Mapped[str] = mapped_column(PlatformSealed("ticket.subject"))
+    category: Mapped[str] = mapped_column(String(16))               # tech | billing | other
+    status: Mapped[str] = mapped_column(String(16), default="new", index=True)   # new | in_progress | waiting | closed
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)        # letzte Nachricht/Statusänderung
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("parent.id", ondelete="SET NULL"), nullable=True)
+    meta: Mapped[str] = mapped_column(PlatformSealed("ticket.meta"), default="")  # JSON: Agenten, Plattformen, Abo, Sprache
+    last_operator: Mapped[str] = mapped_column(String(64), default="")           # „zuletzt bearbeitet von“
+
+    messages: Mapped[list[TicketMessage]] = relationship(
+        back_populates="ticket", cascade="all, delete-orphan", order_by="TicketMessage.id")
+
+
+class TicketMessage(FamilyScoped, Base):
+    __tablename__ = "ticket_message"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    ticket_id: Mapped[int] = mapped_column(ForeignKey("ticket.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    from_support: Mapped[bool] = mapped_column(Boolean, default=False)
+    parent_id: Mapped[int | None] = mapped_column(ForeignKey("parent.id", ondelete="SET NULL"), nullable=True)
+    author: Mapped[str] = mapped_column(PlatformSealed("ticket_message.author"), default="")  # Anzeigename bzw. Betreiber
+    internal: Mapped[bool] = mapped_column(Boolean, default=False)   # interne Notiz: nur für den Support
+    body: Mapped[str] = mapped_column(PlatformSealed("ticket_message.body"))
+
+    ticket: Mapped[Ticket] = relationship(back_populates="messages")
+
+
 class LoginAttempt(Base):
     """Fehlgeschlagene Logins/Kopplungen für Rate-Limiting."""
     __tablename__ = "login_attempt"

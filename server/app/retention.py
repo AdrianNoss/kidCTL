@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from .models import (
     AdminLog,
-    AppUsage, BlockedEvent, GameSession, LoginAttempt, Message, OperatorSession, PairingCode, SupportAccess, SupportGrant, SupportSession, ParentSession, ParentToken,
+    AppUsage, BlockedEvent, GameSession, LoginAttempt, Message, OperatorSession, PairingCode, Ticket, SupportAccess, SupportGrant, SupportSession, ParentSession, ParentToken,
     UsageRecord,
 )
 
@@ -49,12 +49,16 @@ RULES = [
     Rule("SUPPORT_SESSIONS", SupportSession, "expires_at", 1, "abgelaufene Support-Ansichten (nach Ablauf)"),
     Rule("ADMIN_LOG", AdminLog, "at", 730, "Verwaltungsprotokoll (2 Jahre; Rechnungs-Einträge wie die Rechnung)",
          AdminLog.object != "invoice"),
+    Rule("TICKETS", Ticket, "closed_at", 365, "geschlossene Tickets (12 Monate nach Schließen; TICKET_RETENTION_DAYS)"),
     Rule("TOKENS", ParentToken, "expires_at", 30, "abgelaufene Links (nach Ablauf)"),
     Rule("PAIRING", PairingCode, "expires_at", 1, "abgelaufene Kopplungscodes (nach Ablauf)"),
 ]
 
 
 def days(rule: Rule) -> int:
+    if rule.name == "TICKETS":
+        from .config import settings
+        return settings.ticket_retention_days
     raw = os.environ.get(f"KIDCTL_KEEP_{rule.name}_DAYS", "").strip()
     return int(raw) if raw.isdigit() and int(raw) > 0 else rule.days
 

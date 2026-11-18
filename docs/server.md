@@ -34,6 +34,8 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # enter the outp
 | `REGISTRATION` | Only with `KIDCTL_MODE=saas`: `invite` (default, sign-up only with an invitation code from the administration area), `open` (anyone) or `closed`. Requires sending email (`SMTP_*`). Always closed in single mode. |
 | `KIDCTL_TRIAL_DAYS` | SaaS only: trial period of new families in days (default 30). |
 | `BILLING_WEBHOOK_SECRET` | SaaS only, optional: secret for the subscription webhook `POST /api/billing/webhook` (see below). Empty = webhook off. |
+| `SUPPORT_NOTIFY_EMAIL` | SaaS only, optional: shared address that gets a notice for every new ticket and every reply by a family (in addition to operators with "ticket emails"). |
+| `TICKET_RETENTION_DAYS` | SaaS only: delete closed tickets after this many days (default 365). |
 | `ADMIN_ALLOW_NETS` | Optional. Administration area `/admin` only from these networks, comma-separated (e.g. `192.168.1.0/24,2001:db8::/32`); from anywhere else it answers 404. Empty = from anywhere (password + authenticator are still required). |
 | `TOTP_ISSUER` | Name in the authenticator app (default `KidCTL`) |
 | `SOURCE_URL` | "Source code" link in the footer (AGPL-3.0 §13); set it to your own fork if you make changes. Default: the KidCTL repository |
@@ -131,6 +133,15 @@ curl -X POST https://kids.example.org/api/billing/webhook -H "Authorization: Bea
 ```
 
 `status` is `active`, `canceled` or `past_due`; after the first call, `customer` is enough instead of `family_id`.
+
+**Tickets:** Parents find their tickets in the "Support" menu (also while paused) and create new ones (subject,
+category technical, subscription & invoice or other, message). In the administration area they are under "Tickets"
+(default: open ones, oldest first; filterable by status, category, family and subject). Replies set the status to
+"waiting" (or optionally "in progress" or "closed"); an **internal note** is only visible to support. When the family
+replies, the ticket goes to "in progress", even a closed one – up to 14 days after closing. If a ticket waits for the
+family for 14 days, it is closed. Notices by email or push never contain the content, only a link. Subject and
+messages are encrypted with the platform key like the billing details; tickets are deleted with the family and are not
+part of the family export.
 
 **Support view:** The owner of a family grants access under "Settings → Support access" for 1, 24 or 72 hours; any
 parent can end it at any time. While it is valid, the overview shows "View" next to the family. You then see its

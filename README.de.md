@@ -42,6 +42,8 @@ gilt die Sprache der Desktop-Sitzung.
   verwaltet wird und was erfasst wird; das Symbol bleibt sichtbar, einen verdeckten Modus gibt es nicht.
 - **Eure Daten**: Export aller Daten einer Familie als ZIP (lesbar, versioniert) und Import auf einem anderen
   KidCTL-Server – auch für den Umzug zwischen Self-Hosting und gehostetem Betrieb.
+- **Mehrere Familien** (`KIDCTL_MODE=saas`): Registrierung mit Einladungscode, Abo mit Testphase, Support-Tickets
+  und ein Verwaltungsbereich für den Betreiber (Rollen, Protokoll, Suche).
 - **Sicherheit**:
   - Eltern-Login nur mit TOTP, Rate-Limiting, CSRF-Schutz.
   - Namen, Chat, Protokoll, Statistik und E-Mail-Adressen liegen auf dem Server verschlüsselt (eigener Schlüssel

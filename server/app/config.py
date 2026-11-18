@@ -45,6 +45,8 @@ class Settings:
     registration: str = "closed"   # REGISTRATION: open | invite | closed (Einzelbetrieb immer closed)
     trial_days: int = 30            # KIDCTL_TRIAL_DAYS: Testphase neuer Familien (SaaS)
     billing_webhook_secret: str = ""   # BILLING_WEBHOOK_SECRET: Webhook des Zahlungsanbieters (leer = aus)
+    support_notify_email: str = ""    # SUPPORT_NOTIFY_EMAIL: Sammeladresse für Ticket-Hinweise (optional)
+    ticket_retention_days: int = 365  # TICKET_RETENTION_DAYS: geschlossene Tickets danach löschen
     admin_allow_nets: tuple = ()   # ADMIN_ALLOW_NETS: Verwaltungsbereich nur aus diesen Netzen (leer = alle)
     relocate_to: str = ""  # KIDCTL_RELOCATE_TO: Server-Umzug – Agenten wechseln, wenn der neue Server sie anerkennt
 
@@ -147,6 +149,8 @@ def load_settings() -> Settings:
         master_key=_master_key(dev),
         relocate_to=_relocate_to(),
         admin_allow_nets=_admin_nets(),
+        support_notify_email=os.environ.get("SUPPORT_NOTIFY_EMAIL", "").strip(),
+        ticket_retention_days=int(os.environ.get("TICKET_RETENTION_DAYS", "365") or 365),
         trial_days=int(os.environ.get("KIDCTL_TRIAL_DAYS", "30") or 30),
         billing_webhook_secret=os.environ.get("BILLING_WEBHOOK_SECRET", "").strip(),
         vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY", ""),

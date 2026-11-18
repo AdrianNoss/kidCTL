@@ -99,7 +99,12 @@
     <table class="responsive">{% for a in accesses %}<tr><td>{{ a.at | localtime }}</td><td data-label="{{ _('Betreiber') }}">{{ a.operator }}</td><td data-label="{{ _('Seite') }}"><code>{{ a.path }}</code></td></tr>{% endfor %}</table>
   </details>
   {% endif %}
-  <p class="muted"><small>{{ _("Tickets der Familie erscheinen hier, sobald es Tickets gibt.") }}</small></p>
+  <h3>{{ _("Tickets") }}</h3>
+  {% if family_tickets %}<ul class="plain">{% for t in family_tickets %}
+    <li><a href="/admin/tickets/{{ t.id }}">#{{ t.id }} {{ t.subject }}</a> <span class="pill {{ 'ok' if t.status == 'closed' else 'play' }}">{{ _(ticket_statuses[t.status]) }}</span></li>
+  {% endfor %}</ul>
+  <p><a href="/admin/tickets?status=all&amp;family={{ f.id }}">{{ _("Alle Tickets der Familie") }}</a></p>
+  {% else %}<p class="muted">{{ _("Keine Tickets.") }}</p>{% endif %}
 </section>
 
 <section class="card" id="rechnungen">

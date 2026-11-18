@@ -7,7 +7,7 @@
 <nav class="tabs" aria-label="{{ _('Verwaltung') }}">
   {% set tabs = [("/admin", _("Familien"))] %}
   {% if operator.role == "admin" %}{% set tabs = tabs + [("/admin/codes", _("Einladungscodes"))] %}{% endif %}
-  {% set tabs = tabs + [("/admin/log", _("Protokoll"))] %}
+  {% set tabs = tabs + [("/admin/tickets", _("Tickets")), ("/admin/log", _("Protokoll"))] %}
   {% for href, label in tabs %}
   <a href="{{ href }}" class="tab{% if path == href %} active{% endif %}"{% if path == href %} aria-current="page"{% endif %}>{{ label }}</a>
   {% endfor %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Support") }} – KidCTL{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ _("Support") }}</h1></div>
+{% if tickets %}
+<section class="card">
+  <table class="responsive">
+    {% for t in tickets %}
+    <tr>
+      <td><a href="/support/{{ t.id }}"><strong>#{{ t.id }} {{ t.subject }}</strong></a><br><small class="muted">{{ _(categories[t.category]) }} · {{ fmt_relative(t.updated_at) }}</small></td>
+      <td class="right"><span class="pill {{ 'ok' if t.status == 'closed' else ('warn' if t.status == 'waiting' else 'play') }}">{{ _(statuses[t.status]) }}</span></td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endif %}
+<form method="post" action="/support" class="card">
+  <h2>{{ _("Neues Ticket") }}</h2>
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <label>{{ _("Betreff") }} <input name="subject" maxlength="200" required value="{{ form.subject or '' }}"></label>
+  <label>{{ _("Kategorie") }} <select name="category" required>{% for k, label in categories.items() %}<option value="{{ k }}"{% if form.category == k %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select></label>
+  <label>{{ _("Nachricht") }} <textarea name="body" rows="6" maxlength="10000" required>{{ form.body or '' }}</textarea></label>
+  <p class="muted"><small>{{ _("Diese Nachricht kann der Support lesen. Für Einsicht in deine Einstellungen gib zusätzlich eine Support-Freigabe.") }}
+    <a href="/settings#support">{{ _("Support-Zugriff") }}</a></small></p>
+  <button type="submit">{{ _("Ticket senden") }}</button>
+</form>
+{% endblock %}

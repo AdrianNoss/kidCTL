@@ -34,6 +34,8 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # Ausgabe als SE
 | `REGISTRATION` | Nur mit `KIDCTL_MODE=saas`: `invite` (Standard, Registrierung nur mit Einladungscode aus dem Verwaltungsbereich), `open` (jeder) oder `closed`. Braucht E-Mail-Versand (`SMTP_*`). Im Einzelbetrieb immer geschlossen. |
 | `KIDCTL_TRIAL_DAYS` | Nur SaaS: Testphase neuer Familien in Tagen (Standard 30). |
 | `BILLING_WEBHOOK_SECRET` | Nur SaaS, optional: Geheimnis für den Abo-Webhook `POST /api/billing/webhook` (siehe unten). Leer = Webhook aus. |
+| `SUPPORT_NOTIFY_EMAIL` | Nur SaaS, optional: Sammeladresse, die bei jedem neuen Ticket und jeder Antwort einer Familie einen Hinweis bekommt (zusätzlich zu Betreibern mit „Ticket-Mails“). |
+| `TICKET_RETENTION_DAYS` | Nur SaaS: geschlossene Tickets nach so vielen Tagen löschen (Standard 365). |
 | `ADMIN_ALLOW_NETS` | Optional. Verwaltungsbereich `/admin` nur aus diesen Netzen, kommagetrennt (z. B. `192.168.1.0/24,2001:db8::/32`); von anderswo antwortet er mit 404. Leer = von überall (Passwort + Authenticator bleiben Pflicht). |
 | `TOTP_ISSUER` | Name in der Authenticator-App (Standard `KidCTL`) |
 | `SOURCE_URL` | Link „Quellcode“ in der Fußzeile (AGPL-3.0 §13); bei eigenen Änderungen auf den eigenen Fork setzen. Standard: das KidCTL-Repo |
@@ -132,6 +134,15 @@ curl -X POST https://kids.example.org/api/billing/webhook -H "Authorization: Bea
 ```
 
 `status` ist `active`, `canceled` oder `past_due`; nach dem ersten Aufruf genügt `customer` statt `family_id`.
+
+**Tickets:** Eltern finden im Menü „Support“ (auch im Ruhemodus) ihre Tickets und legen neue an (Betreff, Kategorie
+Technik, Abo & Rechnung oder Sonstiges, Nachricht). Im Verwaltungsbereich stehen sie unter „Tickets“ (Standard:
+offene, älteste zuerst; filterbar nach Status, Kategorie, Familie und Betreff). Antworten setzen den Status auf
+„wartend“ (wählbar „in Bearbeitung“ oder „geschlossen“); eine **interne Notiz** sieht nur der Support. Antwortet die
+Familie, geht das Ticket auf „in Bearbeitung“, auch ein geschlossenes – bis 14 Tage nach dem Schließen. Wartet ein
+Ticket 14 Tage auf die Familie, wird es geschlossen. Hinweise per Mail bzw. Push enthalten nie den Inhalt, nur einen
+Link. Betreff und Nachrichten sind wie die Rechnungsangaben mit dem Plattform-Schlüssel verschlüsselt; Tickets werden mit
+der Familie gelöscht und sind nicht im Familien-Export.
 
 **Support-Ansicht:** Der Inhaber einer Familie gibt unter „Einstellungen → Support-Zugriff“ für 1, 24 oder 72 Stunden
 frei; jedes Elternteil kann die Freigabe jederzeit beenden. Solange sie gilt, steht in der Übersicht bei der Familie

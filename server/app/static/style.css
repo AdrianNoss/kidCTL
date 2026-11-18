@@ -550,3 +550,11 @@ dl.facts { display:grid; grid-template-columns:max-content 1fr; gap:.25rem 1rem;
 dl.facts dt { color:var(--on-surface-variant); }
 dl.facts dd { margin:0; }
 @media (max-width: 720px) { .card-grid { grid-template-columns:1fr; } }
+/* Tickets: Verlauf (Familie links, Support abgesetzt; interne Notizen nur im Verwaltungsbereich) */
+.ticket-thread { display:flex; flex-direction:column; gap:.75rem; }
+.ticket-msg { background:var(--surface-container); border-radius:var(--shape-md); padding:.75rem 1rem; max-width:46rem; }
+.ticket-msg.from-support { background:var(--secondary-container); color:var(--on-secondary-container); align-self:flex-end; }
+.ticket-msg.internal { background:var(--warning-container); color:var(--on-warning-container); border:1px dashed currentColor; }
+.ticket-meta { font-size:.8125rem; color:inherit; opacity:.8; margin-bottom:.25rem; }
+.ticket-body { white-space:pre-wrap; overflow-wrap:anywhere; }
+ul.plain { list-style:none; padding:0; margin:0 0 .5rem; display:flex; flex-direction:column; gap:.375rem; }
