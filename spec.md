@@ -2651,11 +2651,11 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-18: Version 0.34.0 (Agent, Pakete): Sammelversion für SaaS-Etappe 4/5, Familienname, Rechnungsangaben und
   Verwaltungsbereich 2 – keine Änderung am Agenten selbst. News 0.34 (DE/EN). Getestet: Versionsabgleich
   PKGBUILD/Agent, `hugo --minify` fehlerfrei.
-- 2026-11-18: Code-Scanning (CodeQL) ausgewertet: Offene Weiterleitung im Sprachumschalter `/lang/<code>?next=` behoben –
-  `/\host` (von Browsern wie `//host` gelesen) wurde nicht abgewiesen. Neu `web.is_local_path`/`local_redirect`: nur
-  lokale Pfade (kein `//`, kein Backslash, keine Steuerzeichen, ohne Schema/Host); alle Weiterleitungen in Eltern-,
-  Betreiber- und Ticket-Routen laufen darüber. Test zum Bericht prüft die Domain per Regex statt Teilstring. Übrige
-  Befunde bewertet: Weiterleitungen mit ganzzahligen IDs (kein Angriffsweg), CLI-Ausgaben des TOTP-Schlüssels beim
-  Einrichten (gewollt, nur Terminal) und Fehlermeldungen der Passwortprüfung (enthalten das Passwort nicht).
-  Getestet (pytest, 2 neue Tests): lokale/fremde Ziele inkl. `/\`, `//`, Schema, Steuerzeichen; Sprachumschalter
-  leitet fremde Ziele auf `/login`. Server 260 Tests grün.
+- 2026-11-18: Code-Scanning (CodeQL) ausgewertet, Sicherheitsfix 0.34.1 (Schwere niedrig, betroffen 0.26.0–0.34.0):
+  Weiterleitungen nach dem Sprachumschalter konnten auf eine fremde Adresse zeigen. Neu `web.is_local_path`/
+  `local_redirect`: nur lokale Pfade; alle Weiterleitungen in Eltern-, Betreiber- und Ticket-Routen laufen darüber.
+  Test zum Bericht prüft die Domain per Regex statt Teilstring. Übrige Befunde bewertet und mit Begründung geschlossen:
+  Weiterleitungen mit ganzzahligen IDs (kein Angriffsweg), CLI zeigt den TOTP-Schlüssel beim Einrichten im Terminal
+  (gewollt), Fehlermeldungen der Passwortprüfung enthalten das Passwort nicht. News 0.34.1 (DE/EN) mit Verweis auf das
+  Security Advisory. Getestet (pytest, 2 neue Tests): lokale und fremde Ziele; Sprachumschalter leitet fremde Ziele auf
+  `/login`. Server 260 Tests grün, Versionsabgleich PKGBUILD/Agent.
