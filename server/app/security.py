@@ -72,8 +72,9 @@ def new_totp_secret() -> str:
 
 
 def totp_uri(parent: Parent) -> str:
+    from . import branding
     return pyotp.TOTP(parent.totp_secret).provisioning_uri(
-        name=parent.username, issuer_name=settings.totp_issuer)
+        name=parent.username, issuer_name=branding.totp_issuer())
 
 
 def totp_qr_svg(uri: str) -> str:

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_brand.html" import brand_mark %}
+{% block title %}{{ _("Erscheinungsbild") }} – {{ brand().name }}{% endblock %}
+{% block content %}
+{% set heading = _("Erscheinungsbild") %}{% include "_admin_head.html" %}
+{% if saved %}<p class="success">{{ _("Gespeichert. Familien sehen die Änderung nach spätestens einer Minute.") }}</p>{% endif %}
+<div class="card-grid">
+<section class="card">
+  <h2>{{ _("Vorschau") }}</h2>
+  <div class="brand-preview"><span class="brand">{{ brand_mark() }}</span></div>
+  <div class="brand-preview-icon">
+    <img src="{{ b.icon_url(192) }}" alt="" width="48" height="48">
+    <span class="muted"><small>{{ _("App-Icon und Favicon") }}</small></span>
+  </div>
+  <p class="muted"><small>{{ _("Gilt für die Eltern-Oberfläche, die App auf dem Handy, Anmeldung und Registrierung sowie alle Mails an Familien. Mit eigenem Namen steht überall „powered by KidCTL“. Die Programme auf den Computern der Kinder heißen weiterhin KidCTL.") }}</small></p>
+</section>
+
+<form method="post" action="/admin/branding" enctype="multipart/form-data" class="card">
+  <h2>{{ _("Name und Bilder") }}</h2>
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <label>{{ _("Name") }} <input name="name" maxlength="64" value="{{ row.name if row else '' }}" placeholder="KidCTL"></label>
+  <label>{{ _("Logo") }} <input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/gif"></label>
+  {% if b.has_logo %}
+  <label class="option"><input type="checkbox" name="logo_only" value="1"{% if row.logo_only %} checked{% endif %}> {{ _("Nur das Logo zeigen (es enthält den Namen)") }}</label>
+  <label class="option"><input type="checkbox" name="remove_logo" value="1"> {{ _("Logo entfernen") }}</label>
+  {% endif %}
+  <label>{{ _("App-Icon / Favicon (quadratisch)") }} <input type="file" name="icon" accept="image/png,image/jpeg,image/webp,image/gif,image/x-icon"></label>
+  {% if b.has_icon %}
+  <label class="option"><input type="checkbox" name="remove_icon" value="1"> {{ _("App-Icon entfernen") }}</label>
+  {% endif %}
+  <p class="muted"><small>{{ _("PNG, JPEG, WebP, GIF oder ICO, höchstens {mb} MB. Das Logo wird auf höchstens 512 × 128 Pixel verkleinert, das Icon auf 512 × 512 (am besten quadratisch, mindestens 512 Pixel). Leerer Name: KidCTL.").format(mb=max_mb) }}</small></p>
+  <div class="row"><button type="submit">{{ _("Speichern") }}</button></div>
+</form>
+</div>
+{% endblock %}

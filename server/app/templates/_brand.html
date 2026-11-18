@@ -1,0 +1,5 @@
+{# Marke: eigenes Logo bzw. Standard-Zeichen, Name und – bei eigenem Namen – immer „powered by KidCTL“ #}
+{% macro brand_mark() %}{% set b = brand() %}
+  {%- if b.has_logo %}<img class="brand-logo" src="{{ b.logo_url() }}" alt="{{ b.name if b.logo_only else '' }}">{% else %}<span class="mark" aria-hidden="true"></span>{% endif -%}
+  <span class="brand-text">{% if not b.logo_only %}<span class="brand-name">{{ b.name }}</span>{% endif %}{% if b.custom %}<small class="powered">{{ b.powered_by }}</small>{% endif %}</span>
+{%- endmacro %}

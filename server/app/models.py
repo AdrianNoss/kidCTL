@@ -283,6 +283,20 @@ class TicketMessage(FamilyScoped, Base):
     ticket: Mapped[Ticket] = relationship(back_populates="messages")
 
 
+class Branding(Base):
+    """Whitelabel (eine Zeile, id=1): eigener Name, Logo und App-Icon für Eltern-WebUI, PWA und Mails. Im
+    Verwaltungsbereich gepflegt und protokolliert (Ausnahme von „Konfiguration nur über .env“). Bilder als PNG,
+    beim Hochladen normalisiert; „powered by KidCTL“ bleibt immer sichtbar."""
+    __tablename__ = "branding"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(64), default="", server_default="")
+    logo_only: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+    logo: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)       # PNG, höchstens 512×128
+    icon: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)       # PNG 512×512 (Favicon, App-Icon)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+
+
 class InvoiceSettings(Base):
     """Absender, Bankverbindung, Fußzeile der Rechnungen (eine Zeile, id=1). Ausnahme von „Konfiguration nur über
     .env“: im Verwaltungsbereich gepflegt und protokolliert."""

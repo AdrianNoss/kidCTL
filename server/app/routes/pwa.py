@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from .. import backup, family_export, support
+from .. import backup, branding, family_export, support
 from ..i18n import N_, _
 from ..config import settings
 from ..db import get_db
@@ -35,7 +35,44 @@ def service_worker():
 
 @router.get("/manifest.webmanifest", include_in_schema=False)
 def manifest():
-    return FileResponse(STATIC / "manifest.webmanifest", media_type="application/manifest+json")
+    """PWA-Manifest mit Name und Icons aus dem Branding (Whitelabel)."""
+    import json
+    from fastapi.responses import Response
+    from .. import branding
+    b = branding.current()
+    data = json.loads((STATIC / "manifest.webmanifest").read_text())
+    data["name"] = b.name
+    data["short_name"] = b.name[:12]
+    data["icons"] = [{"src": b.icon_url(size), "sizes": f"{size}x{size}", "type": "image/png",
+                      "purpose": "any" if b.has_icon else "any maskable"} for size in (192, 512)]
+    return Response(json.dumps(data, ensure_ascii=False), media_type="application/manifest+json",
+                    headers={"Cache-Control": "no-cache"})
+
+
+_DEFAULT_ICONS = {512: "icon-512.png", 192: "icon-192.png", 180: "apple-touch-icon.png", 32: "icon-192.png"}
+
+
+@router.get("/brand/icon-{size}.png", include_in_schema=False)
+def brand_icon(size: int):
+    """App-Icon/Favicon: eigenes Icon in der gewünschten Größe, sonst das KidCTL-Icon."""
+    from fastapi.responses import Response
+    from .. import branding
+    if size not in branding.ICON_SIZES:
+        raise HTTPException(404)
+    if branding.current().has_icon and (data := branding.image("icon", size)):
+        return Response(data, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+    return FileResponse(STATIC / _DEFAULT_ICONS[size], media_type="image/png",
+                        headers={"Cache-Control": "public, max-age=86400"})
+
+
+@router.get("/brand/logo.png", include_in_schema=False)
+def brand_logo():
+    from fastapi.responses import Response
+    from .. import branding
+    data = branding.image("logo") if branding.current().has_logo else None
+    if not data:
+        raise HTTPException(404)
+    return Response(data, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
 
 
 @router.get("/settings")
@@ -312,6 +349,6 @@ def push_unsubscribe(sub: UnsubscribeIn, sess: ParentSession = Depends(csrf_prot
 
 @router.post("/push/test")
 def push_test(request: Request, sess: ParentSession = Depends(csrf_protect)):
-    n = send_to_parents_sync("KidCTL", lambda: _("Test-Benachrichtigung – Push funktioniert."), "/settings",
+    n = send_to_parents_sync(branding.name(), lambda: _("Test-Benachrichtigung – Push funktioniert."), "/settings",
                              tag="test", parent_id=sess.parent_id, family_id=request.state.family_id)
     return RedirectResponse(f"/settings?sent={n}", status_code=303)

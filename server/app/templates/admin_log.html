@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ _("Protokoll") }} – KidCTL{% endblock %}
+{% block title %}{{ _("Protokoll") }} – {{ brand().name }}{% endblock %}
 {% block content %}
 {% set heading = _("Verwaltungsprotokoll") %}{% include "_admin_head.html" %}
 <form method="get" action="/admin/log" class="card row">

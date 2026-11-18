@@ -12,7 +12,7 @@ import logging
 from pywebpush import WebPushException, webpush
 from sqlalchemy import delete, select
 
-from . import i18n
+from . import branding, i18n
 from .config import settings
 from .tenant import family_ids, family_session, platform_session
 from .models import Parent, PushSubscription
@@ -63,7 +63,8 @@ def send_to_parents_sync(title, body, url: str = "/", tag: str | None = None, pa
         for pid in {s.parent_id for s in subs}:
             parent = db.get(Parent, pid)
             with i18n.use(i18n.parent_language(parent) if parent else "de"):
-                payloads[pid] = json.dumps({"title": _text(title), "body": _text(body)[:300], "url": url, "tag": tag})
+                payloads[pid] = json.dumps({"title": branding.apply(_text(title)), "body": branding.apply(_text(body))[:300],
+                                            "url": url, "tag": tag})
         gone = [s.id for s in subs if not _send_one(s, payloads[s.parent_id])]
         if gone:
             db.execute(delete(PushSubscription).where(PushSubscription.id.in_(gone)))

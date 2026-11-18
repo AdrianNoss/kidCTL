@@ -11,7 +11,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from .. import accounts, i18n, operators, signup
+from .. import accounts, branding, i18n, operators, signup
 from ..config import settings
 from ..db import get_platform_db
 from ..i18n import _
@@ -66,7 +66,7 @@ def signup_request(request: Request, background: BackgroundTasks, email: str = F
 
 
 def _confirm_page(request, token, email, secret, status_code=200, error=None, form=None):
-    uri = pyotp.TOTP(secret).provisioning_uri(name=email, issuer_name=settings.totp_issuer)
+    uri = pyotp.TOTP(secret).provisioning_uri(name=email, issuer_name=branding.totp_issuer())
     return render_anon(request, "signup_confirm.html", status_code=status_code, token=token, email=email,
                        secret=secret, qr_svg=totp_qr_svg(uri), error=error, form=form or {})
 

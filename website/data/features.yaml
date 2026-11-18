@@ -138,3 +138,10 @@
   text:
     de: "Export aller Daten der Familie als ZIP, Import auf einem anderen KidCTL-Server – auch zwischen Self-Hosting und gehostet."
     en: "Export all of your family's data as a ZIP and import it on another KidCTL server – also between self-hosting and hosted."
+- id: whitelabel
+  icon: edit
+  small: true
+  title: { de: "Eigenes Erscheinungsbild", en: "Your own branding" }
+  text:
+    de: "Eigener Name, Logo und App-Icon für Weboberfläche, App und Mails – mit dem Hinweis „powered by KidCTL“."
+    en: "Your own name, logo and app icon for the web interface, app and emails – with a \"powered by KidCTL\" note."

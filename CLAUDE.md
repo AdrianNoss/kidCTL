@@ -120,7 +120,7 @@ CLAUDE.md
   Rechnungs-Einstellungen schreibt einen Eintrag ins Verwaltungsprotokoll.
 - Listen (Familien, Tickets, Rechnungen, Protokoll): Suche/Sortierung/Filter/Blättern im Server, Parameter in der URL,
   ohne JavaScript.
-- Ausnahme von „Konfiguration nur über `.env`“: Absender, Bankverbindung, Fußzeile und Preisliste der Rechnungen
+- Ausnahme von „Konfiguration nur über `.env`“: Erscheinungsbild (Name, Logo, App-Icon; Whitelabel) sowie Absender, Bankverbindung, Fußzeile und Preisliste der Rechnungen
   liegen in der Datenbank (Admin-Seite, protokolliert). Steuermodus, Nummernformat und Fälligkeit bleiben in `.env`.
 
 ## Rechnungen

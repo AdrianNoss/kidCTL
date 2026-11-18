@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ _("Verwaltung") }} – KidCTL{% endblock %}
+{% block title %}{{ _("Verwaltung") }} – {{ brand().name }}{% endblock %}
 {% block content %}
 {% set heading = _("Familien") %}{% include "_admin_head.html" %}
 {% set backup_ok = backups and not backup_error and backups[0].at.date() >= today_minus(1) %}

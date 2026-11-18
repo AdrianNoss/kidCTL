@@ -1,22 +1,22 @@
-{% from "_icons.html" import icon %}{% set path = request.url.path %}{% set theme = request.cookies.get("kidctl_theme") if request.cookies.get("kidctl_theme") in ("light", "dark") else "auto" %}<!doctype html>
+{% from "_brand.html" import brand_mark %}{% from "_icons.html" import icon %}{% set path = request.url.path %}{% set theme = request.cookies.get("kidctl_theme") if request.cookies.get("kidctl_theme") in ("light", "dark") else "auto" %}<!doctype html>
 <html lang="{{ lang() }}" data-theme="{{ theme }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>{% block title %}KidCTL{% endblock %}</title>
+  <title>{% block title %}{{ brand().name }}{% endblock %}</title>
   <link rel="stylesheet" href="{{ asset('style.css') }}">
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="color-scheme" content="{{ {'light': 'light', 'dark': 'dark'}.get(theme, 'light dark') }}">
   {% if theme != "dark" %}<meta name="theme-color" content="#f3f3fa"{% if theme == "auto" %} media="(prefers-color-scheme: light)"{% endif %}>{% endif %}
   {% if theme != "light" %}<meta name="theme-color" content="#1e1f25"{% if theme == "auto" %} media="(prefers-color-scheme: dark)"{% endif %}>{% endif %}
-  <link rel="icon" href="/static/icon-192.png">
-  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <link rel="icon" href="{{ brand().icon_url(192) }}">
+  <link rel="apple-touch-icon" href="{{ brand().icon_url(180) }}">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <script src="{{ asset('app.js') }}" defer></script>
 </head>
 <body class="{{ 'has-nav' if current_parent else 'no-nav' }}{{ ' support-view' if support_view }}">
 <header class="appbar">
-  <a href="/" class="brand"><span class="mark" aria-hidden="true"></span>KidCTL</a>
+  <a href="/" class="brand">{{ brand_mark() }}</a>
   <div class="appbar-actions">
     <button type="button" class="icon-btn theme-toggle" data-theme-toggle hidden
             data-label-auto="{{ _('Darstellung: automatisch (wie das System)') }}"
@@ -50,8 +50,8 @@
 <main>
 {% if support_view %}<p class="warn support-banner">{{ _("Support-Ansicht (nur lesend) · Familie #{family} · {operator} · bis {until}").format(family=support_view.family_id, operator=support_view.operator, until=support_view.expires_at | localtime) }}</p>{% endif %}
 {% if billing_banner %}<p class="{{ 'error' if billing_banner.kind == 'paused' else 'warn' }} billing-banner">
-  {% if billing_banner.kind == "paused" %}{{ _("KidCTL ist pausiert – die Computer eurer Kinder sind ohne Einschränkungen. Ohne Abo werden eure Daten am {date} gelöscht.").format(date=fmt_date(billing_banner.date.date())) }}
-  {% elif billing_banner.kind == "grace" %}{{ _("Euer Abo ist abgelaufen. Ab {date} ist KidCTL pausiert.").format(date=fmt_date(billing_banner.date.date())) }}
+  {% if billing_banner.kind == "paused" %}{{ _("KidCTL ist pausiert – die Computer eurer Kinder sind ohne Einschränkungen. Ohne Abo werden eure Daten am {date} gelöscht.").format(date=fmt_date(billing_banner.date.date())) | brand }}
+  {% elif billing_banner.kind == "grace" %}{{ _("Euer Abo ist abgelaufen. Ab {date} ist KidCTL pausiert.").format(date=fmt_date(billing_banner.date.date())) | brand }}
   {% elif billing_banner.kind == "address" %}{{ _("Bitte hinterlegt eure Rechnungsangaben.") }}
   {% else %}{{ _("Die Testphase endet am {date}.").format(date=fmt_date(billing_banner.date.date())) }}{% if billing_banner.address %} {{ _("Bitte hinterlegt eure Rechnungsangaben.") }}{% endif %}{% endif %}
   <a href="/settings#abo">{{ _("Zum Abo") }}</a></p>{% endif %}

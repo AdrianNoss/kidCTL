@@ -40,7 +40,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # enter the outp
 | `INVOICE_NUMBER_FORMAT` | Invoice number, default `RE-{YYYY}-{NNNN}` (consecutive per year, without gaps). |
 | `INVOICE_DUE_DAYS` | Payment term in days (default 14). |
 | `ADMIN_ALLOW_NETS` | Optional. Administration area `/admin` only from these networks, comma-separated (e.g. `192.168.1.0/24,2001:db8::/32`); from anywhere else it answers 404. Empty = from anywhere (password + authenticator are still required). |
-| `TOTP_ISSUER` | Name in the authenticator app (default `KidCTL`) |
+| `TOTP_ISSUER` | Name in the authenticator app (default: the name from "Appearance", otherwise `KidCTL`) |
 | `SOURCE_URL` | "Source code" link in the footer (AGPL-3.0 §13); set it to your own fork if you make changes. Default: the KidCTL repository |
 | `TZ_HOME` | Time zone for daily allowances and allowed hours (default `Europe/Berlin`) |
 | `SECURITY_CONTACT` | Optional. Your own security contact (email address or https URL) for `/.well-known/security.txt`; listed before the project contact |
@@ -158,6 +158,13 @@ until" to the end of the service period – a pause ends immediately. Parents se
 Subscription". The "Invoices" list shows totals per year and exports a year as CSV or a ZIP with all PDFs. Invoices
 are kept when a family is deleted and are deleted automatically once the retention period has expired (8 years from
 the end of the year of issue).
+
+**Appearance** (*Admin* only): Under "Appearance" you set your own name, a logo and an app icon (PNG, JPEG, WebP, GIF
+or ICO; the logo is scaled to 512 × 128, the icon to 512 × 512 pixels). This applies to the parent interface, the app
+on the phone, sign-in and sign-up, push notifications and all emails to families; with a custom name, "powered by
+KidCTL" is shown everywhere, in emails as a footer. The programs on the children's computers are still called KidCTL.
+Set the sender name of the emails in `SMTP_FROM` (e.g. `Family Guard <noreply@example.org>`). Changes are logged and
+visible everywhere within a minute.
 
 > [!IMPORTANT]
 > The invoice template has not been reviewed by a tax advisor yet. `python dev/sample_invoices.py` creates samples

@@ -138,6 +138,13 @@ body.no-nav .brand { visibility:hidden; }   /* Anmeldeseiten zeigen das Logo in 
 .narrow { max-width:26rem; margin:4vh auto 0; }
 .login-brand { display:flex; align-items:center; gap:.75rem; font-size:1.75rem; line-height:2.25rem; font-weight:400; margin-bottom:1.5rem; }
 .login-brand .mark { width:2.25rem; height:2.25rem; border-radius:var(--shape-md); }
+/* Whitelabel: eigenes Logo, Name und „powered by KidCTL“ */
+.brand-logo { height:1.75rem; width:auto; max-width:10rem; object-fit:contain; flex:none; }
+.login-brand .brand-logo { height:2.5rem; max-width:14rem; }
+.brand-text { display:inline-flex; flex-direction:column; min-width:0; }
+.brand-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.brand .powered, .login-brand .powered { font-size:.6875rem; line-height:1rem; font-weight:400; color:var(--on-surface-variant);
+  letter-spacing:.02em; }
 .locked-card { border-color:var(--error); }
 
 /* ---------- Buttons (auch Links mit .btn): filled, .secondary = outlined, .ghost = text, .danger, .tonal ---------- */
@@ -587,3 +594,8 @@ ul.plain { list-style:none; padding:0; margin:0 0 .5rem; display:flex; flex-dire
 .invoice-lines input { margin:0; }
 .price-row { align-items:flex-end; border-bottom:1px solid var(--outline-variant); padding-bottom:.5rem; margin-bottom:.5rem; }
 button[disabled] { opacity:.5; cursor:not-allowed; }
+/* Verwaltung: Vorschau Erscheinungsbild */
+.brand-preview { padding:1rem; border-radius:var(--shape-md); background:var(--surface-container); margin-bottom:.75rem; }
+body.no-nav .brand-preview .brand { visibility:visible; }
+.brand-preview-icon { display:flex; align-items:center; gap:.75rem; margin-bottom:.75rem; }
+.brand-preview-icon img { border-radius:var(--shape-md); background:var(--surface-container); }

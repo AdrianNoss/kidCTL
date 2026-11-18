@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ _("Internet") }} {{ child.name }} – KidCTL{% endblock %}
+{% block title %}{{ _("Internet") }} {{ child.name }} – {{ brand().name }}{% endblock %}
 {% block content %}
 {% include "_child_head.html" %}
 {% if request.query_params.get("web") %}<p class="success">{{ _("Internet-Einstellungen gespeichert.") }}</p>{% endif %}

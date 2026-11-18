@@ -40,7 +40,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # Ausgabe als SE
 | `INVOICE_NUMBER_FORMAT` | Rechnungsnummer, Standard `RE-{YYYY}-{NNNN}` (fortlaufend je Jahr, lückenlos). |
 | `INVOICE_DUE_DAYS` | Zahlungsziel in Tagen (Standard 14). |
 | `ADMIN_ALLOW_NETS` | Optional. Verwaltungsbereich `/admin` nur aus diesen Netzen, kommagetrennt (z. B. `192.168.1.0/24,2001:db8::/32`); von anderswo antwortet er mit 404. Leer = von überall (Passwort + Authenticator bleiben Pflicht). |
-| `TOTP_ISSUER` | Name in der Authenticator-App (Standard `KidCTL`) |
+| `TOTP_ISSUER` | Name in der Authenticator-App (Standard: Name aus „Erscheinungsbild“, sonst `KidCTL`) |
 | `SOURCE_URL` | Link „Quellcode“ in der Fußzeile (AGPL-3.0 §13); bei eigenen Änderungen auf den eigenen Fork setzen. Standard: das KidCTL-Repo |
 | `TZ_HOME` | Zeitzone für Tageskontingente und Zeitfenster (Standard `Europe/Berlin`) |
 | `SECURITY_CONTACT` | Optional. Eigener Sicherheitskontakt (E-Mail-Adresse oder https-URL) für `/.well-known/security.txt`; wird vor dem Projektkontakt genannt |
@@ -160,6 +160,13 @@ markieren“ setzt das Abo aktiv und „bezahlt bis“ auf das Ende des Leistung
 Eltern sehen ihre Rechnungen unter „Einstellungen → Abo“. Die Liste „Rechnungen“ zeigt Summen je Jahr und exportiert
 ein Jahr als CSV bzw. ZIP mit allen PDFs. Rechnungen bleiben beim Löschen einer Familie erhalten und werden
 automatisch gelöscht, wenn die Aufbewahrungsfrist abgelaufen ist (8 Jahre ab Ende des Ausstellungsjahres).
+
+**Erscheinungsbild** (nur *Admin*): Unter „Erscheinungsbild“ legst du einen eigenen Namen, ein Logo und ein App-Icon
+fest (PNG, JPEG, WebP, GIF oder ICO; Logo wird auf 512 × 128, das Icon auf 512 × 512 Pixel gebracht). Das gilt für die
+Eltern-Oberfläche, die App auf dem Handy, Anmeldung und Registrierung, Push-Nachrichten und alle Mails an Familien; mit
+eigenem Namen steht überall „powered by KidCTL“, in Mails als Fußzeile. Die Programme auf den Kinderrechnern heißen
+weiterhin KidCTL. Den Absendernamen der Mails setzt du in `SMTP_FROM` (z. B. `Familienwächter <noreply@example.org>`).
+Änderungen werden protokolliert und sind nach spätestens einer Minute überall sichtbar.
 
 > [!IMPORTANT]
 > Die Rechnungsvorlage ist noch nicht steuerlich geprüft. Muster beider Steuermodi erzeugt

@@ -159,7 +159,7 @@ def load_settings() -> Settings:
         cookie_secure=_bool("COOKIE_SECURE", not dev),
         base_url=os.environ.get("BASE_URL", "https://kids.nossco.de").rstrip("/"),
         timezone=os.environ.get("TZ_HOME", "Europe/Berlin"),
-        totp_issuer=os.environ.get("TOTP_ISSUER", "KidCTL"),
+        totp_issuer=os.environ.get("TOTP_ISSUER", ""),   # leer: Name aus dem Branding
         source_url=os.environ.get("SOURCE_URL", "https://github.com/AdrianNoss/kidCTL"),
         mode=_mode(),
         registration=_registration(_mode()),

@@ -19,6 +19,8 @@ def send(to: str, subject: str, body: str, html: str | None = None,
          attachments: list[tuple[str, bytes, str]] | None = None) -> bool:
     """Mail senden (``html``: zusätzlich als HTML-Alternative; ``attachments``: (Dateiname, Inhalt, MIME-Typ));
     ``False`` bei Fehler oder ohne SMTP (Fehler werden geloggt, nie an Nutzer gezeigt)."""
+    from . import branding
+    subject, body, html = branding.mail_parts(subject, body, html)   # eigener Name + „powered by KidCTL“
     if not settings.mail_enabled:
         if settings.dev:
             log.info("Mail (nicht gesendet, KIDCTL_DEV) an %s: %s\n%s", to, subject, body)

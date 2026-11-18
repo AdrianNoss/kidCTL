@@ -3000,3 +3000,46 @@ msgid "Du bist noch an {n} weiteren Gerät angemeldet."
 msgid_plural "Du bist noch an {n} weiteren Geräten angemeldet."
 msgstr[0] "You are also signed in on {n} other device."
 msgstr[1] "You are also signed in on {n} other devices."
+
+# Verwaltung: Erscheinungsbild (Whitelabel)
+msgid "App-Icon / Favicon (quadratisch)"
+msgstr "App icon / favicon (square)"
+
+msgid "App-Icon entfernen"
+msgstr "Remove app icon"
+
+msgid "App-Icon und Favicon"
+msgstr "App icon and favicon"
+
+msgid "Bitte ein Bild als PNG, JPEG, WebP, GIF oder ICO hochladen."
+msgstr "Please upload an image as PNG, JPEG, WebP, GIF or ICO."
+
+msgid "Das Bild ist zu groß (höchstens 2 MB und 25 Megapixel)."
+msgstr "The image is too large (at most 2 MB and 25 megapixels)."
+
+msgid "Erscheinungsbild"
+msgstr "Appearance"
+
+msgid "Gespeichert. Familien sehen die Änderung nach spätestens einer Minute."
+msgstr "Saved. Families see the change within a minute."
+
+msgid "Gilt für die Eltern-Oberfläche, die App auf dem Handy, Anmeldung und Registrierung sowie alle Mails an Familien. Mit eigenem Namen steht überall „powered by KidCTL“. Die Programme auf den Computern der Kinder heißen weiterhin KidCTL."
+msgstr "Applies to the parent interface, the app on the phone, sign-in and sign-up, and all emails to families. With a custom name, \"powered by KidCTL\" is shown everywhere. The programs on the children's computers are still called KidCTL."
+
+msgid "Logo"
+msgstr "Logo"
+
+msgid "Logo entfernen"
+msgstr "Remove logo"
+
+msgid "Name und Bilder"
+msgstr "Name and images"
+
+msgid "Nur das Logo zeigen (es enthält den Namen)"
+msgstr "Show only the logo (it contains the name)"
+
+msgid "PNG, JPEG, WebP, GIF oder ICO, höchstens {mb} MB. Das Logo wird auf höchstens 512 × 128 Pixel verkleinert, das Icon auf 512 × 512 (am besten quadratisch, mindestens 512 Pixel). Leerer Name: KidCTL."
+msgstr "PNG, JPEG, WebP, GIF or ICO, at most {mb} MB. The logo is scaled down to at most 512 × 128 pixels, the icon to 512 × 512 (ideally square, at least 512 pixels). Empty name: KidCTL."
+
+msgid "entfernt"
+msgstr "removed"

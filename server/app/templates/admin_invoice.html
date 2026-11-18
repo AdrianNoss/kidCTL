@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ inv.number or _("Rechnungsentwurf") }} – KidCTL{% endblock %}
+{% block title %}{{ inv.number or _("Rechnungsentwurf") }} – {{ brand().name }}{% endblock %}
 {% block content %}
 {% set heading = (_("Stornorechnung") if inv.storno_of else _("Rechnung")) ~ " " ~ (inv.number or _("(Entwurf)")) %}{% include "_admin_head.html" %}
 {% if saved == "issued" %}<p class="success">{{ _("Ausgestellt. Die Rechnung geht mit PDF an die Rechnungs-E-Mail der Familie.") }}</p>

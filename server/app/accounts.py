@@ -18,7 +18,7 @@ import pyotp
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from . import i18n
+from . import branding, i18n
 from .i18n import _
 from . import mail
 from .config import settings
@@ -167,7 +167,7 @@ def totp_step(secret: str, code: str) -> int | None:
 
 
 def totp_uri_for(secret: str, username: str) -> str:
-    return pyotp.TOTP(secret).provisioning_uri(name=username, issuer_name=settings.totp_issuer)
+    return pyotp.TOTP(secret).provisioning_uri(name=username, issuer_name=branding.totp_issuer())
 
 
 # ---------- Einmal-Links ----------

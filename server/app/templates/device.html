@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ device.name }} – KidCTL{% endblock %}
+{% block title %}{{ device.name }} – {{ brand().name }}{% endblock %}
 {% block content %}
 <div class="page-head">
   <div><span class="eyebrow">{{ _("Gerät") }}</span><h1>{{ device.name }}</h1></div>

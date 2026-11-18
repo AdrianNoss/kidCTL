@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ _("Ticket #{id}").format(id=t.id) }} – KidCTL{% endblock %}
+{% block title %}{{ _("Ticket #{id}").format(id=t.id) }} – {{ brand().name }}{% endblock %}
 {% block content %}
 {% set heading = _("Ticket #{id}").format(id=t.id) %}{% include "_admin_head.html" %}
 <div class="card-grid">

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ _("Ticket #{id}").format(id=t.id) }} – KidCTL{% endblock %}
+{% block title %}{{ _("Ticket #{id}").format(id=t.id) }} – {{ brand().name }}{% endblock %}
 {% block content %}
 <div class="page-head"><div><span class="eyebrow"><a href="/support">{{ _("Support") }}</a> · #{{ t.id }} · {{ _(categories[t.category]) }}</span><h1>{{ t.subject }}</h1></div>
   <span class="pill {{ 'ok' if t.status == 'closed' else ('warn' if t.status == 'waiting' else 'play') }}">{{ _(statuses[t.status]) }}</span></div>

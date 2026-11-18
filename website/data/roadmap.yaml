@@ -62,6 +62,18 @@
   text:
     de: "KidCTL nutzen, ohne einen eigenen Server zu betreiben. Self-Hosting bleibt vollständig und kostenlos (AGPL-3.0)."
     en: "Use KidCTL without running your own server. Self-hosting stays complete and free of charge (AGPL-3.0)."
+- id: whitelabel
+  status: done
+  title: { de: "Eigenes Erscheinungsbild", en: "Your own branding" }
+  text:
+    de: "Eigener Name, Logo und App-Icon für Weboberfläche, App und Mails, mit „powered by KidCTL“."
+    en: "Your own name, logo and app icon for the web interface, app and emails, with \"powered by KidCTL\"."
+- id: newsletter
+  status: planned
+  title: { de: "Neuigkeiten per Mail", en: "News by email" }
+  text:
+    de: "Betreiber informieren Familien über neue Versionen und Funktionen – nur mit Zustimmung der Familie."
+    en: "Operators tell families about new versions and features – only with the family's consent."
 - id: desktops
   status: planned
   title: { de: "Weitere Linux-Desktops", en: "More Linux desktops" }

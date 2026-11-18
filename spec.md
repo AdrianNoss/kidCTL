@@ -2692,3 +2692,15 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Kinder-Clients bleiben KidCTL. **Newsletter** – Bereich im Verwaltungsbereich zum Versand an alle Familien;
   Opt-in je Familie (Standard aus, Schalter in den Einstellungen und bei der Registrierung, Abmeldelink in jeder Mail);
   Betreff und Text je Newsletter Deutsch und optional Englisch, jedes Elternteil bekommt seine Sprache.
+- 2026-11-18: **Whitelabel** umgesetzt: Verwaltungsbereich „Erscheinungsbild“ (nur Admin, Tabelle `branding`,
+  Migration 0018) mit Name, Logo (PNG, auf ≤ 512×128 verkleinert, Option „nur Logo“) und App-Icon (quadratisch
+  512×512, daraus 192/180/32 px); Upload per Pillow geprüft (PNG/JPEG/WebP/GIF/ICO, ≤ 2 MB, ≤ 25 MP, kein SVG) und
+  neu als PNG gespeichert; jede Änderung im Verwaltungsprotokoll (Objekt „Erscheinungsbild“, Bilder nur „neu“/„entfernt“).
+  Wirkung: Kopfzeile und Anmeldeseiten (Logo + Name + „powered by KidCTL“), Seitentitel, Abo-Hinweise, PWA-Manifest
+  und Icons (`/brand/icon-<n>.png`, `/brand/logo.png`, ohne eigenes Icon das KidCTL-Icon), Push-Titel/-Texte, alle
+  Mails zentral in `mail.send` (Name statt „KidCTL“, Fußzeile „<Name> · powered by KidCTL“), Nutzungsbericht-Mail,
+  Authenticator-Name (`TOTP_ISSUER` jetzt optional, Standard: Name). Kinder-Clients, Installer-Hinweise und
+  Export-Texte bleiben KidCTL. Branding 30 s zwischengespeichert (mehrere Worker). Getestet: pytest (6 neue Tests:
+  Standard, Name/Logo/Icon inkl. Skalierung und Protokoll, Ablehnung von Nicht-Bildern, Support-Rolle 403, Entfernen,
+  Mail-Fußzeile über echten `mail.send` mit Fake-SMTP, Authenticator-Name), Server 277 Tests grün; Migration check
+  und down/up; im Browser Admin-Seite, Eltern-Oberfläche desktop und mobil mit Testlogo.

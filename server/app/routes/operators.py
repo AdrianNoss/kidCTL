@@ -285,7 +285,8 @@ def code_delete(code_id: int, sess: OperatorSession = Depends(opr.admin_csrf),
 LOG_PAGE = 50
 LOG_OBJECTS = {"family": N_("Familie"), "subscription": N_("Abo"), "code": N_("Einladungscode"),
                "ticket": N_("Ticket"), "invoice": N_("Rechnung"), "invoice_settings": N_("Rechnungs-Einstellungen"),
-               "price": N_("Preisliste"), "operator": N_("Betreiber-Zugang")}
+               "price": N_("Preisliste"), "operator": N_("Betreiber-Zugang"),
+               "branding": N_("Erscheinungsbild")}
 
 
 def log_query(family: str = "", actor: str = "", obj: str = ""):
@@ -842,3 +843,71 @@ def invoice_pdf(invoice_id: int, sess: OperatorSession = Depends(opr.require_adm
     return Response(invoices.pdf_bytes(inv), media_type="application/pdf",
                     headers={"Content-Disposition": f'inline; filename="{inv.number}.pdf"', "Cache-Control": "no-store"})
 
+
+
+# ---------- Erscheinungsbild (Whitelabel) ----------
+
+BRAND_ERRORS = {"too_big": N_("Das Bild ist zu groß (höchstens 2 MB und 25 Megapixel)."),
+                "format": N_("Bitte ein Bild als PNG, JPEG, WebP, GIF oder ICO hochladen.")}
+
+
+def _branding_row(db: Session):
+    from ..models import Branding
+    row = db.get(Branding, 1)
+    if row is None:
+        row = Branding(id=1, name="")
+        db.add(row)
+        db.flush()
+    return row
+
+
+def _branding_page(request, db, sess, status_code: int = 200, **ctx):
+    from .. import branding
+    from ..models import Branding
+    row = db.get(Branding, 1)
+    return _render(request, "admin_branding.html", sess, status_code, row=row, b=branding.current(),
+                   max_mb=branding.MAX_UPLOAD // (1024 * 1024), saved=request.query_params.get("saved"), **ctx)
+
+
+@router.get("/branding")
+def branding_page(request: Request, sess: OperatorSession = Depends(opr.require_admin),
+                  db: Session = Depends(get_platform_db)):
+    return _branding_page(request, db, sess)
+
+
+@router.post("/branding")
+async def branding_save(request: Request, sess: OperatorSession = Depends(opr.admin_csrf),
+                        db: Session = Depends(get_platform_db)):
+    """Name, Logo und App-Icon speichern; jede Änderung ins Verwaltungsprotokoll (Bilder nur als „neu“/„entfernt“)."""
+    from .. import branding
+    form = await request.form()
+    row = _branding_row(db)
+    actor = audit.actor_of(sess)
+    name = " ".join(str(form.get("name", "")).split())[:64]
+    if name != row.name:
+        audit.record(db, actor, "branding", "name", row.name, name)
+        row.name = name
+    logo_only = bool(form.get("logo_only"))
+    images = {}
+    for kind, normalize in (("logo", branding.normalize_logo), ("icon", branding.normalize_icon)):
+        upload = form.get(kind)
+        data = await upload.read(branding.MAX_UPLOAD + 1) if upload is not None and hasattr(upload, "read") else b""
+        if data:
+            try:
+                images[kind] = normalize(data)
+            except branding.ImageError as e:
+                db.rollback()
+                return _branding_page(request, db, sess, 400, error=_(BRAND_ERRORS[str(e)]))
+        elif form.get(f"remove_{kind}") and getattr(row, kind) is not None:
+            images[kind] = None
+    for kind, data in images.items():
+        audit.record(db, actor, "branding", kind, None, _("neu") if data else _("entfernt"))
+        setattr(row, kind, data)
+    logo_only = logo_only and row.logo is not None
+    if logo_only != row.logo_only:
+        audit.record(db, actor, "branding", "logo_only", row.logo_only, logo_only)
+        row.logo_only = logo_only
+    row.updated_at = utcnow()
+    db.commit()
+    branding.invalidate()
+    return RedirectResponse("/admin/branding?saved=1", status_code=303)

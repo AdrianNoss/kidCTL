@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ _("Einstellungen") }} – KidCTL{% endblock %}
+{% block title %}{{ _("Einstellungen") }} – {{ brand().name }}{% endblock %}
 {% block content %}
 <div class="page-head"><h1>{{ _("Einstellungen") }}</h1></div>
 
@@ -25,9 +25,9 @@
   <p>{{ _("Tarif: {plan}").format(plan=_(plan_label[family.plan])) }}
     {% if family.plan != "free" %}· {{ _(status_label[family.billing_status]) }}{% if billing_state.until %} · {{ _("bis {date}").format(date=fmt_date(billing_state.until.date())) }}{% endif %}{% endif %}</p>
   {% if billing_state.phase == "paused" %}
-  <p class="error">{{ _("KidCTL ist pausiert: Die Computer eurer Kinder heben alle Einschränkungen auf. Mit einem Abo gelten eure Regeln sofort wieder. Ohne Abo werden eure Daten am {date} gelöscht – vorher könnt ihr sie unten exportieren.").format(date=fmt_date(billing_state.delete_at.date())) }}</p>
+  <p class="error">{{ _("KidCTL ist pausiert: Die Computer eurer Kinder heben alle Einschränkungen auf. Mit einem Abo gelten eure Regeln sofort wieder. Ohne Abo werden eure Daten am {date} gelöscht – vorher könnt ihr sie unten exportieren.").format(date=fmt_date(billing_state.delete_at.date())) | brand }}</p>
   {% elif billing_state.phase == "grace" %}
-  <p class="warn">{{ _("Ab {date} ist KidCTL pausiert, falls das Abo nicht verlängert wird.").format(date=fmt_date(billing_state.grace_end.date())) }}</p>
+  <p class="warn">{{ _("Ab {date} ist KidCTL pausiert, falls das Abo nicht verlängert wird.").format(date=fmt_date(billing_state.grace_end.date())) | brand }}</p>
   {% endif %}
   {% if family_invoices %}
   <h3>{{ _("Rechnungen") }}</h3>

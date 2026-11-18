@@ -1,8 +1,8 @@
-{% extends "base.html" %}
-{% block title %}{{ _("Passwort vergessen") }} – KidCTL{% endblock %}
+{% from "_brand.html" import brand_mark %}{% extends "base.html" %}
+{% block title %}{{ _("Passwort vergessen") }} – {{ brand().name }}{% endblock %}
 {% block content %}
 <div class="card narrow">
-  <div class="login-brand"><span class="mark" aria-hidden="true"></span>KidCTL</div>
+  <div class="login-brand">{{ brand_mark() }}</div>
   <h2>{{ _("Passwort vergessen") }}</h2>
   {% if sent %}
   <p class="success">{{ _("Falls ein Account mit hinterlegter E-Mail-Adresse existiert, ist ein Link unterwegs. Er ist 30 Minuten gültig.") }}</p>

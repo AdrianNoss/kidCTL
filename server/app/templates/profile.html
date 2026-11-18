@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ _("Profil") }} – KidCTL{% endblock %}
+{% block title %}{{ _("Profil") }} – {{ brand().name }}{% endblock %}
 {% block content %}
 {% set f = form or {"username": parent.username, "display_name": parent.display_name, "email": parent.email, "language": parent.language} %}
 <div class="page-head"><div><span class="eyebrow">{{ _("Profil") }}</span><h1>{{ parent.display_name or parent.username }}</h1></div></div>

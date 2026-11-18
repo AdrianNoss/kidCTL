@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ _("Rechnungen") }} – KidCTL{% endblock %}
+{% block title %}{{ _("Rechnungen") }} – {{ brand().name }}{% endblock %}
 {% block content %}
 {% set heading = _("Rechnungen") %}{% include "_admin_head.html" %}
 {% if settings_missing %}<p class="warn">{{ _("Die Rechnungs-Einstellungen sind unvollständig – ausstellen geht erst danach.") }} <a href="/admin/invoice-settings">{{ _("Einstellungen") }}</a></p>{% endif %}

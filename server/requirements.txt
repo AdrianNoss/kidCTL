@@ -18,5 +18,7 @@ cryptography==50.0.2
 httpx==0.28.1
 # Rechnungs-PDFs (reines Python, keine Systembibliotheken im Image)
 reportlab==4.4.10
+# Whitelabel: Logo/App-Icon prüfen und skalieren (ohnehin Abhängigkeit von reportlab)
+pillow==13.0.0
 # Zeitzonen-Daten für zoneinfo (das schlanke Debian-Image bringt tzdata nicht zuverlässig mit)
 tzdata==2026.6

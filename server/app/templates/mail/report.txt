@@ -1,4 +1,4 @@
-{% autoescape false %}KidCTL – {{ period.title }} {{ period.label }}
+{% autoescape false %}{{ brand().name }} – {{ period.title }} {{ period.label }}
 
 {{ _("Hallo {name},").format(name=parent.display_name or parent.username) }}
 {{ _("hier ist die Übersicht über die Nutzung der Woche.") if period.interval == "weekly" else _("hier ist die Übersicht über die Nutzung des Monats.") }}
