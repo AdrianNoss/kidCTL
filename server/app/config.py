@@ -47,6 +47,9 @@ class Settings:
     billing_webhook_secret: str = ""   # BILLING_WEBHOOK_SECRET: Webhook des Zahlungsanbieters (leer = aus)
     support_notify_email: str = ""    # SUPPORT_NOTIFY_EMAIL: Sammeladresse für Ticket-Hinweise (optional)
     ticket_retention_days: int = 365  # TICKET_RETENTION_DAYS: geschlossene Tickets danach löschen
+    invoice_tax_mode: str = "small_business"   # INVOICE_TAX_MODE: small_business | standard
+    invoice_number_format: str = "RE-{YYYY}-{NNNN}"   # INVOICE_NUMBER_FORMAT
+    invoice_due_days: int = 14        # INVOICE_DUE_DAYS
     admin_allow_nets: tuple = ()   # ADMIN_ALLOW_NETS: Verwaltungsbereich nur aus diesen Netzen (leer = alle)
     relocate_to: str = ""  # KIDCTL_RELOCATE_TO: Server-Umzug – Agenten wechseln, wenn der neue Server sie anerkennt
 
@@ -107,6 +110,20 @@ def _registration(mode: str) -> str:
     return value
 
 
+def _tax_mode() -> str:
+    mode = os.environ.get("INVOICE_TAX_MODE", "small_business").strip().lower() or "small_business"
+    if mode not in ("small_business", "standard"):
+        raise RuntimeError(f"INVOICE_TAX_MODE={mode!r} – erlaubt sind small_business und standard.")
+    return mode
+
+
+def _number_format() -> str:
+    fmt = os.environ.get("INVOICE_NUMBER_FORMAT", "").strip() or "RE-{YYYY}-{NNNN}"
+    if "{NNNN}" not in fmt or "{YYYY}" not in fmt or len(fmt) > 24:
+        raise RuntimeError("INVOICE_NUMBER_FORMAT braucht {YYYY} und {NNNN} (z. B. RE-{YYYY}-{NNNN}).")
+    return fmt
+
+
 def _admin_nets() -> tuple:
     import ipaddress
     raw = os.environ.get("ADMIN_ALLOW_NETS", "")
@@ -149,6 +166,9 @@ def load_settings() -> Settings:
         master_key=_master_key(dev),
         relocate_to=_relocate_to(),
         admin_allow_nets=_admin_nets(),
+        invoice_tax_mode=_tax_mode(),
+        invoice_number_format=_number_format(),
+        invoice_due_days=int(os.environ.get("INVOICE_DUE_DAYS", "14") or 14),
         support_notify_email=os.environ.get("SUPPORT_NOTIFY_EMAIL", "").strip(),
         ticket_retention_days=int(os.environ.get("TICKET_RETENTION_DAYS", "365") or 365),
         trial_days=int(os.environ.get("KIDCTL_TRIAL_DAYS", "30") or 30),

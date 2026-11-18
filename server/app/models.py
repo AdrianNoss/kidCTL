@@ -283,6 +283,96 @@ class TicketMessage(FamilyScoped, Base):
     ticket: Mapped[Ticket] = relationship(back_populates="messages")
 
 
+class InvoiceSettings(Base):
+    """Absender, Bankverbindung, Fußzeile der Rechnungen (eine Zeile, id=1). Ausnahme von „Konfiguration nur über
+    .env“: im Verwaltungsbereich gepflegt und protokolliert."""
+    __tablename__ = "invoice_settings"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    sender_name: Mapped[str] = mapped_column(String(128), default="")
+    sender_street: Mapped[str] = mapped_column(String(128), default="")
+    sender_postal_code: Mapped[str] = mapped_column(String(16), default="")
+    sender_city: Mapped[str] = mapped_column(String(64), default="")
+    sender_country: Mapped[str] = mapped_column(String(64), default="Deutschland")
+    tax_id: Mapped[str] = mapped_column(String(64), default="")      # Steuernummer oder USt-IdNr.
+    contact: Mapped[str] = mapped_column(String(255), default="")    # E-Mail/Telefon/Web
+    bank_holder: Mapped[str] = mapped_column(String(128), default="")
+    iban: Mapped[str] = mapped_column(String(64), default="")
+    bic: Mapped[str] = mapped_column(String(16), default="")
+    footer: Mapped[str] = mapped_column(Text, default="")             # Zahlungshinweis/Fußzeile
+
+    REQUIRED = ("sender_name", "sender_street", "sender_postal_code", "sender_city", "sender_country", "tax_id",
+                "contact", "bank_holder", "iban")
+
+
+class PriceItem(Base):
+    """Preisliste (Vorlagen für Rechnungspositionen); Betrag in Cent."""
+    __tablename__ = "price_item"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    label: Mapped[str] = mapped_column(String(200))
+    amount_cents: Mapped[int] = mapped_column(Integer)
+    months: Mapped[int] = mapped_column(Integer, default=12)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class InvoiceCounter(Base):
+    """Nummernkreis je Jahr: lückenlos, Vergabe unter Zeilensperre in der Transaktion des Ausstellens."""
+    __tablename__ = "invoice_counter"
+
+    year: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=False)
+    last: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class Invoice(Base):
+    """Rechnung. Hängt nicht am Familienschlüssel und überlebt das Löschen der Familie (``family_id`` ohne
+    Fremdschlüssel). Nach dem Ausstellen unveränderlich – Korrektur nur per Storno-Rechnung."""
+    __tablename__ = "invoice"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    family_id: Mapped[int] = mapped_column(Integer, index=True)
+    status: Mapped[str] = mapped_column(String(16), default="draft", index=True)   # draft | open | paid | canceled | storno
+    number: Mapped[str | None] = mapped_column(String(32), unique=True, nullable=True)
+    year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    seq: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    issue_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    service_start: Mapped[date | None] = mapped_column(Date, nullable=True)
+    service_end: Mapped[date | None] = mapped_column(Date, nullable=True)
+    tax_mode: Mapped[str] = mapped_column(String(16), default="")          # beim Ausstellen eingefroren
+    tax_rate: Mapped[int] = mapped_column(Integer, default=0)              # Prozent
+    net_cents: Mapped[int] = mapped_column(Integer, default=0)
+    tax_cents: Mapped[int] = mapped_column(Integer, default=0)
+    gross_cents: Mapped[int] = mapped_column(Integer, default=0)
+    family_label: Mapped[str] = mapped_column(PlatformSealed("invoice.family_label"), default="")
+    address: Mapped[str] = mapped_column(PlatformSealed("invoice.address"), default="")   # JSON-Kopie beim Ausstellen
+    sender: Mapped[str] = mapped_column(PlatformSealed("invoice.sender"), default="")     # JSON-Kopie beim Ausstellen
+    pdf: Mapped[str] = mapped_column(PlatformSealed("invoice.pdf"), default="")           # Base64
+    storno_of: Mapped[int | None] = mapped_column(ForeignKey("invoice.id", ondelete="SET NULL"), nullable=True)
+    reference: Mapped[str] = mapped_column(String(64), default="")   # Storno: Nummer und Datum des Originals
+    paid_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    issued_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    lines: Mapped[list[InvoiceLine]] = relationship(back_populates="invoice", cascade="all, delete-orphan",
+                                                    order_by="InvoiceLine.pos")
+
+
+class InvoiceLine(Base):
+    __tablename__ = "invoice_line"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    invoice_id: Mapped[int] = mapped_column(ForeignKey("invoice.id", ondelete="CASCADE"), index=True)
+    pos: Mapped[int] = mapped_column(Integer, default=1)
+    text: Mapped[str] = mapped_column(String(255))
+    quantity: Mapped[int] = mapped_column(Integer, default=1)
+    unit_cents: Mapped[int] = mapped_column(Integer)                 # negativ = Rabatt
+    total_cents: Mapped[int] = mapped_column(Integer)
+
+    invoice: Mapped[Invoice] = relationship(back_populates="lines")
+
+
 class LoginAttempt(Base):
     """Fehlgeschlagene Logins/Kopplungen für Rate-Limiting."""
     __tablename__ = "login_attempt"

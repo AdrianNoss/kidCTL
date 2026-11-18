@@ -107,10 +107,26 @@
   {% else %}<p class="muted">{{ _("Keine Tickets.") }}</p>{% endif %}
 </section>
 
+{% if is_admin %}
 <section class="card" id="rechnungen">
   <div class="card-head"><h2>{{ _("Rechnungen") }}</h2></div>
-  <p class="muted">{{ _("Noch keine Rechnungen.") }}</p>
+  {% if family_invoices %}
+  <table class="responsive">
+    {% for i in family_invoices %}
+    <tr><td><a href="/admin/invoices/{{ i.id }}">{{ i.number or _("Entwurf") }}</a>{% if i.issue_date %} <small class="muted">{{ fmt_date(i.issue_date) }}</small>{% endif %}</td>
+      <td data-label="{{ _('Betrag') }}" class="right">{{ eur(i.gross_cents) if i.number else "–" }}</td>
+      <td class="right"><span class="pill {{ {'paid': 'ok', 'open': 'warn', 'draft': '', 'canceled': 'danger', 'storno': 'danger'}[i.status] }}">{{ _(invoice_statuses[i.status]) }}</span></td></tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="muted">{{ _("Noch keine Rechnungen.") }}</p>{% endif %}
+  <form method="post" action="/admin/families/{{ f.id }}/invoices" class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>{{ _("Vorlage") }} <select name="price_item"><option value="">{{ _("ohne Vorlage") }}</option>
+      {% for p in price_items %}<option value="{{ p.id }}">{{ p.label }} · {{ eur(p.amount_cents) }}</option>{% endfor %}</select></label>
+    <button type="submit" class="secondary">{{ _("Rechnung erstellen") }}</button>
+  </form>
 </section>
+{% endif %}
 
 <section class="card card-wide" id="verlauf">
   <div class="card-head"><h2>{{ _("Verlauf") }}</h2><a class="btn secondary small" href="/admin/log?family={{ f.id }}">{{ _("Alle Einträge") }}</a></div>

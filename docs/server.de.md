@@ -36,6 +36,9 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # Ausgabe als SE
 | `BILLING_WEBHOOK_SECRET` | Nur SaaS, optional: Geheimnis für den Abo-Webhook `POST /api/billing/webhook` (siehe unten). Leer = Webhook aus. |
 | `SUPPORT_NOTIFY_EMAIL` | Nur SaaS, optional: Sammeladresse, die bei jedem neuen Ticket und jeder Antwort einer Familie einen Hinweis bekommt (zusätzlich zu Betreibern mit „Ticket-Mails“). |
 | `TICKET_RETENTION_DAYS` | Nur SaaS: geschlossene Tickets nach so vielen Tagen löschen (Standard 365). |
+| `INVOICE_TAX_MODE` | Rechnungen: `small_business` (Standard, Kleinunternehmer nach § 19 UStG, ohne USt) oder `standard` (19 % USt). Wird je Rechnung beim Ausstellen gespeichert. |
+| `INVOICE_NUMBER_FORMAT` | Rechnungsnummer, Standard `RE-{YYYY}-{NNNN}` (fortlaufend je Jahr, lückenlos). |
+| `INVOICE_DUE_DAYS` | Zahlungsziel in Tagen (Standard 14). |
 | `ADMIN_ALLOW_NETS` | Optional. Verwaltungsbereich `/admin` nur aus diesen Netzen, kommagetrennt (z. B. `192.168.1.0/24,2001:db8::/32`); von anderswo antwortet er mit 404. Leer = von überall (Passwort + Authenticator bleiben Pflicht). |
 | `TOTP_ISSUER` | Name in der Authenticator-App (Standard `KidCTL`) |
 | `SOURCE_URL` | Link „Quellcode“ in der Fußzeile (AGPL-3.0 §13); bei eigenen Änderungen auf den eigenen Fork setzen. Standard: das KidCTL-Repo |
@@ -143,6 +146,21 @@ Familie, geht das Ticket auf „in Bearbeitung“, auch ein geschlossenes – bi
 Ticket 14 Tage auf die Familie, wird es geschlossen. Hinweise per Mail bzw. Push enthalten nie den Inhalt, nur einen
 Link. Betreff und Nachrichten sind wie die Rechnungsangaben mit dem Plattform-Schlüssel verschlüsselt; Tickets werden mit
 der Familie gelöscht und sind nicht im Familien-Export.
+
+**Rechnungen** (nur *Admin*): Unter „Rechnungen → Rechnungs-Einstellungen“ trägst du Absender, Steuernummer bzw.
+USt-IdNr., Kontakt, Bankverbindung, Fußzeile und die Preisliste ein (protokolliert). Auf der Familienseite erstellst
+du mit „Rechnung erstellen“ einen Entwurf aus einer Vorlage: Leistungszeitraum ab dem Tag nach „bezahlt bis“, Positionen
+frei änderbar (negative Beträge für Rabatte). „Ausstellen und senden“ vergibt die nächste Nummer, friert Rechnungsadresse,
+Beträge und Steuermodus ein, erzeugt das PDF und schickt es an die Rechnungs-E-Mail der Familie. Danach ist die Rechnung
+unveränderlich; Korrekturen nur per „Stornieren“ (Storno-Rechnung mit eigener Nummer und Bezug). „Als bezahlt
+markieren“ setzt das Abo aktiv und „bezahlt bis“ auf das Ende des Leistungszeitraums – ein Ruhemodus endet sofort.
+Eltern sehen ihre Rechnungen unter „Einstellungen → Abo“. Die Liste „Rechnungen“ zeigt Summen je Jahr und exportiert
+ein Jahr als CSV bzw. ZIP mit allen PDFs. Rechnungen bleiben beim Löschen einer Familie erhalten und werden
+automatisch gelöscht, wenn die Aufbewahrungsfrist abgelaufen ist (8 Jahre ab Ende des Ausstellungsjahres).
+
+> [!IMPORTANT]
+> Die Rechnungsvorlage ist noch nicht steuerlich geprüft. Muster beider Steuermodi erzeugt
+> `python dev/sample_invoices.py` – vor der ersten echten Rechnung dem Steuerberater vorlegen.
 
 **Support-Ansicht:** Der Inhaber einer Familie gibt unter „Einstellungen → Support-Zugriff“ für 1, 24 oder 72 Stunden
 frei; jedes Elternteil kann die Freigabe jederzeit beenden. Solange sie gilt, steht in der Übersicht bei der Familie

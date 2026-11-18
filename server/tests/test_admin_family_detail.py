@@ -20,7 +20,8 @@ def saas(monkeypatch):
 
 
 def _inputs(html):
-    return re.findall(r"<(?:input|select)\b[^>]*name=\"(?!csrf_token)([a-z_]+)\"", html)
+    """Eingabefelder der bearbeitbaren Karten (ohne CSRF und ohne die Aktion „Rechnung erstellen“)."""
+    return [n for n in re.findall(r"<(?:input|select)\b[^>]*name=\"(?!csrf_token)([a-z_]+)\"", html) if n != "price_item"]
 
 
 def test_cards_without_edit_have_no_inputs(client, saas):
@@ -32,7 +33,7 @@ def test_cards_without_edit_have_no_inputs(client, saas):
     page = client.get("/admin/families/1").text
     for card in ("kopf", "abo", "rechnungsangaben", "nutzung", "support", "rechnungen", "verlauf"):
         assert f'id="{card}"' in page
-    assert _inputs(page) == []                                             # nur Werte, keine Felder
+    assert _inputs(page) == [] and 'name="price_item"' in page             # nur Werte; Aktion: Rechnung erstellen
     assert "Windows" in page and "0.33.0" in page and "gerade eben" in page
     assert "Geheimkind" not in page and "Geheimgerät" not in page         # Nutzung: nur Metadaten
     name_form = client.get("/admin/families/1?edit=name").text
@@ -92,7 +93,8 @@ def test_support_card_shows_grant_and_accesses(client, parent, saas):
     client.cookies.clear()
     _login(client, _operator("support"))
     page = client.get("/admin/families/1").text
-    support = page[page.index('id="support"'):page.index('id="rechnungen"')]
+    assert 'id="rechnungen"' not in page                                   # Support: keine Rechnungen
+    support = page[page.index('id="support"'):page.index('id="verlauf"')]
     assert "freigegeben bis" in support and 'action="/admin/support/1"' in support
     tok = csrf_from(page)
     client.post("/admin/support/1", data={"csrf_token": tok})

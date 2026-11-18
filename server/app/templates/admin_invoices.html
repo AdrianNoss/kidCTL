@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Rechnungen") }} – KidCTL{% endblock %}
+{% block content %}
+{% set heading = _("Rechnungen") %}{% include "_admin_head.html" %}
+{% if settings_missing %}<p class="warn">{{ _("Die Rechnungs-Einstellungen sind unvollständig – ausstellen geht erst danach.") }} <a href="/admin/invoice-settings">{{ _("Einstellungen") }}</a></p>{% endif %}
+<div class="card-grid">
+<section class="card">
+  <div class="card-head"><h2>{{ _("Summen je Jahr") }}</h2><a class="btn secondary small" href="/admin/invoice-settings">{{ _("Rechnungs-Einstellungen") }}</a></div>
+  {% if sums %}
+  <table class="responsive">
+    <tr><th>{{ _("Jahr") }}</th><th>{{ _("Anzahl") }}</th><th>{{ _("Netto") }}</th><th>{{ _("USt") }}</th><th>{{ _("Brutto") }}</th><th>{{ _("Export") }}</th></tr>
+    {% for y, n, net, tax, gross in sums %}
+    <tr><td><a href="{{ url(year=y) }}">{{ y }}</a></td><td data-label="{{ _('Anzahl') }}">{{ n }}</td>
+      <td data-label="{{ _('Netto') }}">{{ eur(net or 0) }}</td><td data-label="{{ _('USt') }}">{{ eur(tax or 0) }}</td>
+      <td data-label="{{ _('Brutto') }}"><strong>{{ eur(gross or 0) }}</strong></td>
+      <td class="right"><a class="btn secondary small" href="/admin/invoices/export/{{ y }}.csv">CSV</a> <a class="btn secondary small" href="/admin/invoices/export/{{ y }}.zip">ZIP</a></td></tr>
+    {% endfor %}
+  </table>
+  <p class="muted"><small>{{ _("Summen inklusive Stornorechnungen (negativ).") }}</small></p>
+  {% else %}<p class="muted">{{ _("Noch keine ausgestellten Rechnungen.") }}</p>{% endif %}
+</section>
+</div>
+<form method="get" action="/admin/invoices" class="card row">
+  <label>{{ _("Jahr") }} <input name="year" value="{{ f.year }}" inputmode="numeric" size="6"></label>
+  <label>{{ _("Status") }} <select name="status"><option value="">{{ _("alle") }}</option>{% for k, label in statuses.items() %}<option value="{{ k }}"{% if f.status == k %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select></label>
+  <label>{{ _("Familie") }} <input name="family" value="{{ f.family }}" placeholder="#12" size="6"></label>
+  <button type="submit" class="secondary">{{ _("Filtern") }}</button>
+</form>
+<section class="card">
+  <p class="muted"><small>{{ ngettext("{n} Rechnung", "{n} Rechnungen", total).format(n=total) }}</small></p>
+  {% if invoices %}
+  <table class="responsive">
+    <tr><th>{{ _("Nummer") }}</th><th>{{ _("Datum") }}</th><th>{{ _("Familie") }}</th><th>{{ _("Leistungszeitraum") }}</th><th>{{ _("Betrag") }}</th><th>{{ _("Status") }}</th></tr>
+    {% for i in invoices %}
+    <tr><td><a href="/admin/invoices/{{ i.id }}"><strong>{{ i.number or _("Entwurf") }}</strong></a></td>
+      <td data-label="{{ _('Datum') }}">{{ fmt_date(i.issue_date) if i.issue_date else "–" }}</td>
+      <td data-label="{{ _('Familie') }}"><a href="/admin/families/{{ i.family_id }}">#{{ i.family_id }}{% if i.family_label %} {{ i.family_label }}{% endif %}</a></td>
+      <td data-label="{{ _('Leistungszeitraum') }}">{% if i.service_start %}{{ fmt_date(i.service_start) }} – {{ fmt_date(i.service_end) if i.service_end else "…" }}{% endif %}</td>
+      <td data-label="{{ _('Betrag') }}">{{ eur(i.gross_cents) if i.number else "–" }}</td>
+      <td class="right"><span class="pill {{ {'paid': 'ok', 'open': 'warn', 'draft': '', 'canceled': 'danger', 'storno': 'danger'}[i.status] }}">{{ _(statuses[i.status]) }}</span></td></tr>
+    {% endfor %}
+  </table>
+  {% if pages > 1 %}<p class="row pager">{% if page > 1 %}<a class="btn secondary small" href="{{ url(page=page - 1) }}">{{ _("Zurück") }}</a>{% endif %}
+    <span class="muted">{{ _("Seite {page} von {pages}").format(page=page, pages=pages) }}</span>
+    {% if page < pages %}<a class="btn secondary small" href="{{ url(page=page + 1) }}">{{ _("Weiter") }}</a>{% endif %}</p>{% endif %}
+  {% else %}<p class="muted">{{ _("Keine Rechnungen.") }}</p>{% endif %}
+</section>
+{% endblock %}

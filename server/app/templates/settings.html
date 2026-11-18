@@ -29,6 +29,16 @@
   {% elif billing_state.phase == "grace" %}
   <p class="warn">{{ _("Ab {date} ist KidCTL pausiert, falls das Abo nicht verlängert wird.").format(date=fmt_date(billing_state.grace_end.date())) }}</p>
   {% endif %}
+  {% if family_invoices %}
+  <h3>{{ _("Rechnungen") }}</h3>
+  <table class="responsive">
+    {% for i in family_invoices %}
+    <tr><td><a href="/settings/invoices/{{ i.id }}.pdf" target="_blank" rel="noopener">{{ i.number }}</a> <small class="muted">{{ fmt_date(i.issue_date) }}</small></td>
+      <td data-label="{{ _('Betrag') }}" class="right">{{ eur(i.gross_cents) }}</td>
+      <td class="right"><span class="pill {{ {'paid': 'ok', 'open': 'warn', 'canceled': 'danger', 'storno': 'danger'}[i.status] }}">{{ _(invoice_statuses[i.status]) }}</span></td></tr>
+    {% endfor %}
+  </table>
+  {% endif %}
   {% if family.plan != "free" %}
   <h3>{{ _("Rechnungsangaben") }}</h3>
   {% if saved == "billing" %}<p class="success">{{ _("Gespeichert.") }}</p>{% endif %}

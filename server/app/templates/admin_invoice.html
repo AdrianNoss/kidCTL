@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{{ inv.number or _("Rechnungsentwurf") }} – KidCTL{% endblock %}
+{% block content %}
+{% set heading = (_("Stornorechnung") if inv.storno_of else _("Rechnung")) ~ " " ~ (inv.number or _("(Entwurf)")) %}{% include "_admin_head.html" %}
+{% if saved == "issued" %}<p class="success">{{ _("Ausgestellt. Die Rechnung geht mit PDF an die Rechnungs-E-Mail der Familie.") }}</p>
+{% elif saved == "paid" %}<p class="success">{{ _("Als bezahlt markiert – Abo aktualisiert.") }}</p>
+{% elif saved == "storno_paid" %}<p class="warn">{{ _("Storno ausgestellt. Die stornierte Rechnung war bezahlt: Abo prüfen.") }} <a href="/admin/families/{{ inv.family_id }}?edit=abo#abo">{{ _("Zum Abo") }}</a></p>
+{% elif saved == "storno" %}<p class="success">{{ _("Storno ausgestellt.") }}</p>
+{% elif saved == "sent" %}<p class="success">{{ _("Erneut gesendet.") }}</p>
+{% elif saved %}<p class="success">{{ _("Gespeichert.") }}</p>{% endif %}
+<div class="card-grid">
+<section class="card">
+  <div class="card-head"><h2>{{ _("Übersicht") }}</h2><span class="pill {{ {'paid': 'ok', 'open': 'warn', 'draft': '', 'canceled': 'danger', 'storno': 'danger'}[inv.status] }}">{{ _(statuses[inv.status]) }}</span></div>
+  <dl class="facts">
+    <dt>{{ _("Familie") }}</dt><dd>{% if family %}<a href="/admin/families/{{ inv.family_id }}">#{{ inv.family_id }} {{ family.name }}</a>{% else %}{{ _("gelöschte Familie #{id}").format(id=inv.family_id) }}{% endif %}</dd>
+    {% if inv.number %}<dt>{{ _("Rechnungsdatum") }}</dt><dd>{{ fmt_date(inv.issue_date) }}</dd>
+    {% if not inv.storno_of %}<dt>{{ _("Fällig bis") }}</dt><dd>{{ fmt_date(inv.due_date) }}</dd>{% endif %}
+    <dt>{{ _("Steuermodus") }}</dt><dd>{{ _("Kleinunternehmer") if inv.tax_mode == "small_business" else _("19 % USt") }}</dd>
+    {% if inv.paid_on %}<dt>{{ _("Bezahlt am") }}</dt><dd>{{ fmt_date(inv.paid_on) }}</dd>{% endif %}
+    {% if inv.sent_at %}<dt>{{ _("Gesendet") }}</dt><dd>{{ inv.sent_at | localtime }}</dd>{% endif %}
+    <dt>{{ _("Aufbewahren bis") }}</dt><dd>{{ fmt_date(expires) }}</dd>{% endif %}
+    {% for r in related %}<dt>{{ _("Storno") if r.storno_of == inv.id else _("Storno zu") }}</dt><dd><a href="/admin/invoices/{{ r.id }}">{{ r.number }}</a></dd>{% endfor %}
+  </dl>
+  {% if inv.number %}<p><a class="btn secondary small" href="/admin/invoices/{{ inv.id }}/pdf" target="_blank" rel="noopener">PDF</a></p>{% endif %}
+</section>
+<section class="card">
+  <h2>{{ _("Rechnungsadresse") }}</h2>
+  {% if address %}<p>{{ address.name }}<br>{{ address.street }}<br>{{ address.postal_code }} {{ address.city }}<br>{{ address.country }}<br><small class="muted">{{ address.email }}</small></p>
+  {% elif inv.status == "draft" %}<p class="muted">{{ _("Wird beim Ausstellen aus den Rechnungsangaben der Familie übernommen.") }}</p>{% endif %}
+</section>
+</div>
+
+{% if inv.status == "draft" %}
+<form method="post" action="/admin/invoices/{{ inv.id }}" class="card">
+  <h2>{{ _("Entwurf bearbeiten") }}</h2>
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <div class="row"><label>{{ _("Leistung von") }} <input type="date" name="service_start" value="{{ inv.service_start.isoformat() if inv.service_start else '' }}"></label>
+    <label>{{ _("bis") }} <input type="date" name="service_end" value="{{ inv.service_end.isoformat() if inv.service_end else '' }}"></label></div>
+  <table class="responsive invoice-lines">
+    <tr><th>{{ _("Leistung") }}</th><th>{{ _("Menge") }}</th><th>{{ _("Einzelpreis (€)") }}</th></tr>
+    {% for l in inv.lines + [None, None] %}
+    <tr><td><input name="line_text" maxlength="255" value="{{ l.text if l else '' }}" aria-label="{{ _('Leistung') }}"{% if not l %} placeholder="{{ _('weitere Position (z. B. Rabatt mit negativem Betrag)') }}"{% endif %}></td>
+      <td data-label="{{ _('Menge') }}"><input name="line_qty" inputmode="numeric" size="3" value="{{ l.quantity if l else 1 }}" aria-label="{{ _('Menge') }}"></td>
+      <td data-label="{{ _('Einzelpreis (€)') }}"><input name="line_price" inputmode="decimal" size="8" value="{{ ('%.2f' % (l.unit_cents / 100)).replace('.', ',') if l else '' }}" aria-label="{{ _('Einzelpreis (€)') }}"></td></tr>
+    {% endfor %}
+  </table>
+  <p>{{ _("Vorschau") }}: {% if preview[0] %}{{ _("netto") }} {{ eur(preview[1]) }} + {{ preview[0] }} % {{ _("USt") }} {{ eur(preview[2]) }} = {% endif %}<strong>{{ eur(preview[3]) }}</strong></p>
+  <div class="row"><button type="submit" class="secondary">{{ _("Entwurf speichern") }}</button></div>
+</form>
+<div class="card">
+  {% if problems %}<p class="warn">{{ problems | join(" ") }}</p>{% endif %}
+  <div class="row">
+    <form method="post" action="/admin/invoices/{{ inv.id }}/issue" class="inline" data-confirm="{{ _('Rechnung ausstellen? Danach ist sie unveränderlich und geht per Mail an die Familie.') }}">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <button type="submit"{% if problems %} disabled{% endif %}>{{ _("Ausstellen und senden") }}</button>
+    </form>
+    <form method="post" action="/admin/invoices/{{ inv.id }}/delete" class="inline" data-confirm="{{ _('Entwurf löschen?') }}">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <button type="submit" class="danger">{{ _("Entwurf löschen") }}</button>
+    </form>
+  </div>
+</div>
+{% else %}
+<section class="card">
+  <table class="responsive invoice-lines">
+    <tr><th>{{ _("Pos.") }}</th><th>{{ _("Leistung") }}</th><th>{{ _("Menge") }}</th><th>{{ _("Einzelpreis") }}</th><th>{{ _("Betrag") }}</th></tr>
+    {% for l in inv.lines %}<tr><td>{{ l.pos }}</td><td data-label="{{ _('Leistung') }}">{{ l.text }}</td><td data-label="{{ _('Menge') }}">{{ l.quantity }}</td>
+      <td data-label="{{ _('Einzelpreis') }}">{{ eur(l.unit_cents) }}</td><td data-label="{{ _('Betrag') }}" class="right">{{ eur(l.total_cents) }}</td></tr>{% endfor %}
+  </table>
+  <p class="right">{% if inv.tax_mode == "standard" %}{{ _("netto") }} {{ eur(inv.net_cents) }} · {{ inv.tax_rate }} % {{ _("USt") }} {{ eur(inv.tax_cents) }} · {% endif %}<strong>{{ eur(inv.gross_cents) }}</strong></p>
+  <p class="muted"><small>{{ _("Ausgestellte Rechnungen sind unveränderlich – Korrektur nur per Storno-Rechnung.") }}</small></p>
+</section>
+<div class="card row">
+  {% if inv.status == "open" %}
+  <form method="post" action="/admin/invoices/{{ inv.id }}/paid" class="row inline">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>{{ _("Zahlungsdatum") }} <input type="date" name="paid_on" value="{{ today.isoformat() }}"></label>
+    <button type="submit">{{ _("Als bezahlt markieren") }}</button>
+  </form>
+  {% endif %}
+  {% if inv.status in ("open", "paid") %}
+  <form method="post" action="/admin/invoices/{{ inv.id }}/storno" class="inline" data-confirm="{{ _('Storno-Rechnung ausstellen? Sie hebt diese Rechnung vollständig auf.') }}">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <button type="submit" class="danger">{{ _("Stornieren") }}</button>
+  </form>
+  {% endif %}
+  <form method="post" action="/admin/invoices/{{ inv.id }}/resend" class="inline">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <button type="submit" class="secondary">{{ _("Erneut senden") }}</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

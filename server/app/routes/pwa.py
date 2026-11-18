@@ -71,7 +71,12 @@ def _support_ctx(db: Session, sess) -> dict:
     from ..models import BillingAddress
     family = db.scalar(select(Family))
     address = db.scalar(select(BillingAddress))
-    return {"billing_address": address, "address_needed": billing.address_needed(family, address) if family else False,
+    from .. import invoices
+    from ..models import Invoice
+    family_invoices = db.scalars(select(Invoice).where(Invoice.family_id == family.id, Invoice.status.in_(invoices.ISSUED))
+                                 .order_by(Invoice.issue_date.desc(), Invoice.seq.desc())).all() if family else []
+    return {"family_invoices": family_invoices, "eur": invoices.eur, "invoice_statuses": invoices.STATUSES,
+            "billing_address": address, "address_needed": billing.address_needed(family, address) if family else False,
             "support_grant": support.active_grant(db), "support_log": support.log(db),
             "support_durations": support.DURATIONS,
             "billing_state": billing.state(family) if family else None,
@@ -91,6 +96,21 @@ def _owner_with_password(request: Request, db: Session, sess, password: str) -> 
     if error:
         db.commit()   # Fehlversuch zählt
     return error
+
+
+# ---------- Rechnungen der Familie ----------
+
+@router.get("/settings/invoices/{invoice_id}.pdf")
+def family_invoice_pdf(invoice_id: int, request: Request, sess: ParentSession = Depends(require_session),
+                       db: Session = Depends(get_db)):
+    """PDF einer ausgestellten Rechnung – nur der eigenen Familie (Rechnungen sind nicht familienbezogen gefiltert)."""
+    from .. import invoices
+    from ..models import Invoice
+    inv = db.get(Invoice, invoice_id)
+    if inv is None or inv.family_id != request.state.family_id or inv.status not in invoices.ISSUED:
+        raise HTTPException(404)
+    return Response(invoices.pdf_bytes(inv), media_type="application/pdf",
+                    headers={"Content-Disposition": f'inline; filename="{inv.number}.pdf"', "Cache-Control": "no-store"})
 
 
 # ---------- Familienname, Rechnungsangaben ----------

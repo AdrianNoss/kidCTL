@@ -558,3 +558,6 @@ dl.facts dd { margin:0; }
 .ticket-meta { font-size:.8125rem; color:inherit; opacity:.8; margin-bottom:.25rem; }
 .ticket-body { white-space:pre-wrap; overflow-wrap:anywhere; }
 ul.plain { list-style:none; padding:0; margin:0 0 .5rem; display:flex; flex-direction:column; gap:.375rem; }
+.invoice-lines input { margin:0; }
+.price-row { align-items:flex-end; border-bottom:1px solid var(--outline-variant); padding-bottom:.5rem; margin-bottom:.5rem; }
+button[disabled] { opacity:.5; cursor:not-allowed; }

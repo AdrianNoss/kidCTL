@@ -2625,3 +2625,26 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   automatisches Schließen; Isolation zwischen Familien (Ansehen, Antworten, Schließen per ID → 404); Erreichbarkeit im
   Ruhemodus; Liste mit Filtern/Sortierung, Kachel, Support-Karte; Aufbewahrung und Löschen mit der Familie.
   Im Browser angesehen (Eltern-Verlauf, Ticketseite mit interner Notiz). Server 242 Tests grün.
+- 2026-11-18: Verwaltungsbereich 2, Etappe 5 (Rechnungen, nur Admin): Tabellen `invoice_settings`, `price_item`,
+  `invoice_counter`, `invoice`, `invoice_line` (Migration 0017); `app/invoices.py`, PDF mit ReportLab 4.4.10 (neu in
+  `requirements.txt`). Beträge in Cent; Position = Menge × Einzelpreis; Regelbesteuerung: USt einmal auf die
+  Nettosumme, kaufmännisch gerundet (halbe Cent vom Nullpunkt weg). Rechnungs-Einstellungen (Absender, Steuernummer,
+  Kontakt, Bank, Fußzeile) und Preisliste in der Datenbank, protokolliert; `INVOICE_TAX_MODE`, `INVOICE_NUMBER_FORMAT`,
+  `INVOICE_DUE_DAYS` aus `.env` (ungültig → Start bricht ab). Entwurf aus der Preisliste (Leistung ab Tag nach
+  „bezahlt bis“), Positionen frei (negativ = Rabatt) → Ausstellen: Nummer aus dem Jahreszähler unter Zeilensperre,
+  Datum, Fälligkeit, Kopie von Rechnungsadresse und Absender, Beträge und Steuermodus eingefroren, PDF (Plattform-
+  Schlüssel), Mail mit PDF-Anhang und Zahlungsinformationen (Verwendungszweck = Nummer); „Erneut senden“. Bezahlt →
+  Abo aktiv, „bezahlt bis“ = Ende des Leistungszeitraums (wenn später), Ruhemodus endet sofort. Storno-Rechnung
+  (eigene Nummer, „Storno zu Rechnung … vom …“, negative Beträge), Original „storniert“; Storno einer bezahlten zeigt
+  „Abo prüfen“, Abo unverändert. Unveränderlichkeit auch per Route (409). `/admin/invoices` (Filter Jahr/Status/
+  Familie, Summen je Jahr, CSV-/ZIP-Export), Karte „Rechnungen“ in der Detailansicht, Eltern unter Einstellungen → Abo
+  mit PDF (nur eigene Familie). Familie löschen: nur Entwürfe weg, ausgestellte bleiben („gelöschte Familie #…“);
+  Löschung nach 8 Jahren ab Ende des Ausstellungsjahres samt Protokolleinträgen. `mail.send` kann Anhänge. Muster
+  beider Steuermodi und Storno: `dev/sample_invoices.py` → `dev/musterrechnung-*.pdf`.
+  Getestet (pytest, 21 neue Tests): Geldformat/-eingabe; beide Steuermodi und Rundung; Vorbelegung aus der Preisliste;
+  Ausstellen friert ein, Nummern lückenlos, auch bei 6 gleichzeitigen Ausstellungen; Pflichtangaben; bezahlt ↔ Abo und
+  Ruhemodus; Storno; Familie löschen → Rechnungen lesbar; Frist; Export; voller Ablauf über die Oberfläche inkl. Mail
+  mit PDF; Unveränderlichkeit per manipulierter Anfrage; jede Rechnungs-Route mit beiden Rollen; fremde Familie ohne
+  PDF-Zugriff. Migrationen 0015–0017 gegen eine Datenbank mit Stand 0014 und Bestandsdaten (Familie, Betreiber →
+  Admin) hoch/runter/hoch geprüft. Muster-PDFs angesehen, Seiten im Browser (Desktop, Handy). Server 258, Agent 274
+  Tests grün.

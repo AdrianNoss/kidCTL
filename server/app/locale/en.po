@@ -2660,3 +2660,255 @@ msgid "{n} Ticket"
 msgid_plural "{n} Tickets"
 msgstr[0] "{n} ticket"
 msgstr[1] "{n} tickets"
+
+# Verwaltungsbereich 2 – Rechnungen
+msgid "(Entwurf)"
+msgstr "(draft)"
+
+msgid "19 % USt"
+msgstr "19 % VAT"
+
+msgid "Absender"
+msgstr "Sender"
+
+msgid "Als bezahlt markieren"
+msgstr "Mark as paid"
+
+msgid "Als bezahlt markiert – Abo aktualisiert."
+msgstr "Marked as paid – subscription updated."
+
+msgid "Aufbewahren bis"
+msgstr "Keep until"
+
+msgid "Aus der Server-Konfiguration"
+msgstr "From the server configuration"
+
+msgid "Ausgestellt. Die Rechnung geht mit PDF an die Rechnungs-E-Mail der Familie."
+msgstr "Issued. The invoice is sent with the PDF to the family's billing email."
+
+msgid "Ausgestellte Rechnungen sind unveränderlich – Korrektur nur per Storno-Rechnung."
+msgstr "Issued invoices cannot be changed – corrections only via a cancellation invoice."
+
+msgid "Ausstellen und senden"
+msgstr "Issue and send"
+
+msgid "Bankverbindung"
+msgstr "Bank details"
+
+msgid "Betrag"
+msgstr "Amount"
+
+msgid "Beträge netto bei Regelbesteuerung, sonst Endbetrag."
+msgstr "Amounts are net with standard taxation, otherwise final amounts."
+
+msgid "Bezahlt am"
+msgstr "Paid on"
+
+msgid "Bezeichnung"
+msgstr "Description"
+
+msgid "Bitte Bezeichnung, Betrag und Laufzeit (1–120 Monate) angeben."
+msgstr "Please enter a description, amount and term (1–120 months)."
+
+msgid "Bitte Datum, Menge und Betrag prüfen."
+msgstr "Please check date, quantity and amount."
+
+msgid "Brutto"
+msgstr "Gross"
+
+msgid "Die Rechnungs-Einstellungen sind unvollständig – ausstellen geht erst danach."
+msgstr "The invoice settings are incomplete – issuing is only possible afterwards."
+
+msgid "Einzelpreis"
+msgstr "Unit price"
+
+msgid "Einzelpreis (€)"
+msgstr "Unit price (€)"
+
+msgid "Entwurf"
+msgstr "Draft"
+
+msgid "Entwurf bearbeiten"
+msgstr "Edit draft"
+
+msgid "Entwurf löschen"
+msgstr "Delete draft"
+
+msgid "Entwurf löschen?"
+msgstr "Delete draft?"
+
+msgid "Entwurf speichern"
+msgstr "Save draft"
+
+msgid "Erneut gesendet."
+msgstr "Sent again."
+
+msgid "Erneut senden"
+msgstr "Send again"
+
+msgid "Export"
+msgstr "Export"
+
+msgid "Fußzeile / Zahlungshinweis"
+msgstr "Footer / payment note"
+
+msgid "Fällig bis"
+msgstr "Due by"
+
+msgid "Fälligkeit"
+msgstr "Payment term"
+
+msgid "Für das Ausstellen fehlen noch Pflichtangaben."
+msgstr "Required details for issuing are still missing."
+
+msgid "Gesendet"
+msgstr "Sent"
+
+msgid "Hinzufügen"
+msgstr "Add"
+
+msgid "Jahr"
+msgstr "Year"
+
+msgid "Keine Rechnungen."
+msgstr "No invoices."
+
+msgid "Kleinunternehmer"
+msgstr "Small business"
+
+msgid "Kleinunternehmer (§ 19 UStG)"
+msgstr "Small business (§ 19 UStG)"
+
+msgid "Kontakt (E-Mail, Telefon, Web)"
+msgstr "Contact (email, phone, web)"
+
+msgid "Kontoinhaber"
+msgstr "Account holder"
+
+msgid "Leistung"
+msgstr "Service"
+
+msgid "Leistung von"
+msgstr "Service from"
+
+msgid "Leistungszeitraum"
+msgstr "Service period"
+
+msgid "Mail konnte nicht gesendet werden (SMTP prüfen)."
+msgstr "The email could not be sent (check SMTP)."
+
+msgid "Menge"
+msgstr "Quantity"
+
+msgid "Monate"
+msgstr "Months"
+
+msgid "Netto"
+msgstr "Net"
+
+msgid "Noch keine ausgestellten Rechnungen."
+msgstr "No issued invoices yet."
+
+msgid "Nummer"
+msgstr "Number"
+
+msgid "Nummernformat"
+msgstr "Number format"
+
+msgid "Pos."
+msgstr "Pos."
+
+msgid "Rechnung ausstellen? Danach ist sie unveränderlich und geht per Mail an die Familie."
+msgstr "Issue the invoice? Afterwards it cannot be changed and is emailed to the family."
+
+msgid "Rechnung erstellen"
+msgstr "Create invoice"
+
+msgid "Rechnungsadresse"
+msgstr "Billing address"
+
+msgid "Rechnungsdatum"
+msgstr "Invoice date"
+
+msgid "Rechnungsentwurf"
+msgstr "Invoice draft"
+
+msgid "Regelbesteuerung, 19 % USt"
+msgstr "Standard taxation, 19 % VAT"
+
+msgid "Steuermodus"
+msgstr "Tax mode"
+
+msgid "Steuernummer oder USt-IdNr."
+msgstr "Tax number or VAT ID"
+
+msgid "Stornieren"
+msgstr "Cancel invoice"
+
+msgid "Storno"
+msgstr "Cancellation"
+
+msgid "Storno ausgestellt."
+msgstr "Cancellation issued."
+
+msgid "Storno ausgestellt. Die stornierte Rechnung war bezahlt: Abo prüfen."
+msgstr "Cancellation issued. The cancelled invoice was paid: check the subscription."
+
+msgid "Storno zu"
+msgstr "Cancels"
+
+msgid "Storno-Rechnung ausstellen? Sie hebt diese Rechnung vollständig auf."
+msgstr "Issue a cancellation invoice? It fully cancels this invoice."
+
+msgid "Stornorechnung"
+msgstr "Cancellation invoice"
+
+msgid "Summen inklusive Stornorechnungen (negativ)."
+msgstr "Totals including cancellation invoices (negative)."
+
+msgid "Summen je Jahr"
+msgstr "Totals per year"
+
+msgid "USt"
+msgstr "VAT"
+
+msgid "Vorlage"
+msgstr "Template"
+
+msgid "Wird beim Ausstellen aus den Rechnungsangaben der Familie übernommen."
+msgstr "Taken from the family's billing details when issued."
+
+msgid "Zahlungsdatum"
+msgstr "Payment date"
+
+msgid "gelöschte Familie #{id}"
+msgstr "deleted family #{id}"
+
+msgid "netto"
+msgstr "net"
+
+msgid "ohne Vorlage"
+msgstr "no template"
+
+msgid "optional, bis 4 Zeilen"
+msgstr "optional, up to 4 lines"
+
+msgid "weitere Position (z. B. Rabatt mit negativem Betrag)"
+msgstr "another item (e.g. discount with a negative amount)"
+
+msgid "z. B. KidCTL Jahresabo"
+msgstr "e.g. KidCTL annual subscription"
+
+msgid "Ändern über INVOICE_TAX_MODE, INVOICE_NUMBER_FORMAT und INVOICE_DUE_DAYS in der .env. Der Steuermodus wird je Rechnung beim Ausstellen gespeichert."
+msgstr "Change via INVOICE_TAX_MODE, INVOICE_NUMBER_FORMAT and INVOICE_DUE_DAYS in .env. The tax mode is stored per invoice when issued."
+
+msgid "bezahlt"
+msgstr "paid"
+
+msgid "storniert"
+msgstr "cancelled"
+
+msgid "{n} Rechnung"
+msgid_plural "{n} Rechnungen"
+msgstr[0] "{n} invoice"
+msgstr[1] "{n} invoices"

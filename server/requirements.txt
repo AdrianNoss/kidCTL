@@ -16,5 +16,7 @@ pywebpush==2.5.0
 # Verschlüsselung je Familie (AES-GCM, AES-SIV, HKDF); ohnehin Abhängigkeit von pywebpush
 cryptography==50.0.2
 httpx==0.28.1
+# Rechnungs-PDFs (reines Python, keine Systembibliotheken im Image)
+reportlab==4.4.10
 # Zeitzonen-Daten für zoneinfo (das schlanke Debian-Image bringt tzdata nicht zuverlässig mit)
 tzdata==2026.6

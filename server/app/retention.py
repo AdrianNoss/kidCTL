@@ -79,6 +79,9 @@ def prune_all(db: Session, now: datetime | None = None) -> dict[str, int]:
         if n:
             out[rule.name] = n
     db.commit()
+    from .invoices import purge_expired
+    if n := purge_expired(db, now.date()):
+        out["INVOICES"] = n
     if out:
         log.info("Aufbewahrung: gelöscht %s", ", ".join(f"{k}={v}" for k, v in out.items()))
     return out

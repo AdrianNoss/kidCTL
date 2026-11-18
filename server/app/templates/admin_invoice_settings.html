@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Rechnungs-Einstellungen") }} – KidCTL{% endblock %}
+{% block content %}
+{% set heading = _("Rechnungs-Einstellungen") %}{% include "_admin_head.html" %}
+{% if saved %}<p class="success">{{ _("Gespeichert.") }}</p>{% endif %}
+{% if missing %}<p class="warn">{{ _("Für das Ausstellen fehlen noch Pflichtangaben.") }}</p>{% endif %}
+<div class="card-grid">
+<form method="post" action="/admin/invoice-settings" class="card">
+  <h2>{{ _("Absender") }}</h2>
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <label>{{ _("Name bzw. Firma") }} <input name="sender_name" maxlength="128" value="{{ s.sender_name }}"></label>
+  <label>{{ _("Straße und Hausnummer") }} <input name="sender_street" maxlength="128" value="{{ s.sender_street }}"></label>
+  <div class="row"><label>{{ _("PLZ") }} <input name="sender_postal_code" maxlength="16" value="{{ s.sender_postal_code }}"></label>
+    <label>{{ _("Ort") }} <input name="sender_city" maxlength="64" value="{{ s.sender_city }}"></label></div>
+  <label>{{ _("Land") }} <input name="sender_country" maxlength="64" value="{{ s.sender_country }}"></label>
+  <label>{{ _("Steuernummer oder USt-IdNr.") }} <input name="tax_id" maxlength="64" value="{{ s.tax_id }}"></label>
+  <label>{{ _("Kontakt (E-Mail, Telefon, Web)") }} <input name="contact" maxlength="255" value="{{ s.contact }}"></label>
+  <h2>{{ _("Bankverbindung") }}</h2>
+  <label>{{ _("Kontoinhaber") }} <input name="bank_holder" maxlength="128" value="{{ s.bank_holder }}"></label>
+  <label>IBAN <input name="iban" maxlength="64" value="{{ s.iban }}"></label>
+  <label>BIC <span class="field-note">{{ _("optional") }}</span> <input name="bic" maxlength="16" value="{{ s.bic }}"></label>
+  <label>{{ _("Fußzeile / Zahlungshinweis") }} <span class="field-note">{{ _("optional, bis 4 Zeilen") }}</span> <textarea name="footer" rows="3" maxlength="2000">{{ s.footer }}</textarea></label>
+  <button type="submit">{{ _("Speichern") }}</button>
+</form>
+<section class="card">
+  <h2>{{ _("Aus der Server-Konfiguration") }}</h2>
+  <dl class="facts">
+    <dt>{{ _("Steuermodus") }}</dt><dd>{{ _("Kleinunternehmer (§ 19 UStG)") if tax_mode == "small_business" else _("Regelbesteuerung, 19 % USt") }}</dd>
+    <dt>{{ _("Nummernformat") }}</dt><dd><code>{{ number_format }}</code></dd>
+    <dt>{{ _("Fälligkeit") }}</dt><dd>{{ ngettext("{n} Tag", "{n} Tage", due_days).format(n=due_days) }}</dd>
+  </dl>
+  <p class="muted"><small>{{ _("Ändern über INVOICE_TAX_MODE, INVOICE_NUMBER_FORMAT und INVOICE_DUE_DAYS in der .env. Der Steuermodus wird je Rechnung beim Ausstellen gespeichert.") }}</small></p>
+</section>
+<section class="card card-wide" id="preise">
+  <h2>{{ _("Preisliste") }}</h2>
+  {% if price_error %}<p class="error">{{ price_error }}</p>{% endif %}
+  <p class="muted"><small>{{ _("Beträge netto bei Regelbesteuerung, sonst Endbetrag.") }}</small></p>
+  {% for p in prices + [None] %}
+  <form method="post" action="/admin/invoice-settings/prices" class="row price-row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <input type="hidden" name="item_id" value="{{ p.id if p else '' }}">
+    <label>{{ _("Bezeichnung") }} <input name="label" maxlength="200" value="{{ p.label if p else '' }}"{% if not p %} placeholder="{{ _('z. B. KidCTL Jahresabo') }}"{% endif %}></label>
+    <label>{{ _("Betrag") }} <input name="amount" inputmode="decimal" size="8" value="{{ ('%.2f' % (p.amount_cents / 100)).replace('.', ',') if p else '' }}"></label>
+    <label>{{ _("Monate") }} <input name="months" inputmode="numeric" size="4" value="{{ p.months if p else 12 }}"></label>
+    <label class="option"><input type="checkbox" name="active" value="1"{% if not p or p.active %} checked{% endif %}> {{ _("aktiv") }}</label>
+    <button type="submit" class="secondary small">{{ _("Speichern") if p else _("Hinzufügen") }}</button>
+  </form>
+  {% endfor %}
+</section>
+</div>
+{% endblock %}

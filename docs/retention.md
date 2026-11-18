@@ -15,6 +15,7 @@ Every 6 hours the server deletes what is older than:
 | Support access log | 2 years (730 days) | `KIDCTL_KEEP_SUPPORT_LOG_DAYS` |
 | Administration log (without invoice entries) | 2 years (730 days) | `KIDCTL_KEEP_ADMIN_LOG_DAYS` |
 | Closed tickets | 12 months after closing | `TICKET_RETENTION_DAYS` |
+| Invoices (also after the family is deleted) | 8 years from the end of the year of issue | fixed (§ 14b UStG, § 147 AO) |
 | Support access grants | 2 years after expiry | `KIDCTL_KEEP_SUPPORT_GRANTS_DAYS` |
 
 Parents can delete a child's chat at any time under **Chat → Clear chat**. To delete a family permanently

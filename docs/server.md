@@ -36,6 +36,9 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # enter the outp
 | `BILLING_WEBHOOK_SECRET` | SaaS only, optional: secret for the subscription webhook `POST /api/billing/webhook` (see below). Empty = webhook off. |
 | `SUPPORT_NOTIFY_EMAIL` | SaaS only, optional: shared address that gets a notice for every new ticket and every reply by a family (in addition to operators with "ticket emails"). |
 | `TICKET_RETENTION_DAYS` | SaaS only: delete closed tickets after this many days (default 365). |
+| `INVOICE_TAX_MODE` | Invoices: `small_business` (default, small business under § 19 UStG, no VAT) or `standard` (19 % VAT). Stored per invoice when issued. |
+| `INVOICE_NUMBER_FORMAT` | Invoice number, default `RE-{YYYY}-{NNNN}` (consecutive per year, without gaps). |
+| `INVOICE_DUE_DAYS` | Payment term in days (default 14). |
 | `ADMIN_ALLOW_NETS` | Optional. Administration area `/admin` only from these networks, comma-separated (e.g. `192.168.1.0/24,2001:db8::/32`); from anywhere else it answers 404. Empty = from anywhere (password + authenticator are still required). |
 | `TOTP_ISSUER` | Name in the authenticator app (default `KidCTL`) |
 | `SOURCE_URL` | "Source code" link in the footer (AGPL-3.0 §13); set it to your own fork if you make changes. Default: the KidCTL repository |
@@ -142,6 +145,21 @@ replies, the ticket goes to "in progress", even a closed one – up to 14 days a
 family for 14 days, it is closed. Notices by email or push never contain the content, only a link. Subject and
 messages are encrypted with the platform key like the billing details; tickets are deleted with the family and are not
 part of the family export.
+
+**Invoices** (*Admin* only): Under "Invoices → Invoice settings" you enter the sender, tax number or VAT ID,
+contact, bank details, footer and the price list (logged). On the family page, "Create invoice" creates a draft from
+a template: service period from the day after "paid until", items freely editable (negative amounts for discounts).
+"Issue and send" assigns the next number, freezes the billing address, amounts and tax mode, creates the PDF and sends
+it to the family's billing email. Afterwards the invoice cannot be changed; corrections only via "Cancel invoice" (a
+cancellation invoice with its own number and reference). "Mark as paid" sets the subscription to active and "paid
+until" to the end of the service period – a pause ends immediately. Parents see their invoices under "Settings →
+Subscription". The "Invoices" list shows totals per year and exports a year as CSV or a ZIP with all PDFs. Invoices
+are kept when a family is deleted and are deleted automatically once the retention period has expired (8 years from
+the end of the year of issue).
+
+> [!IMPORTANT]
+> The invoice template has not been reviewed by a tax advisor yet. `python dev/sample_invoices.py` creates samples
+> of both tax modes – show them to a tax advisor before the first real invoice.
 
 **Support view:** The owner of a family grants access under "Settings → Support access" for 1, 24 or 72 hours; any
 parent can end it at any time. While it is valid, the overview shows "View" next to the family. You then see its

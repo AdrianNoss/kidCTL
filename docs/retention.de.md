@@ -15,6 +15,7 @@ Der Server löscht alle 6 Stunden, was älter ist als:
 | Protokoll der Support-Zugriffe | 2 Jahre (730 Tage) | `KIDCTL_KEEP_SUPPORT_LOG_DAYS` |
 | Verwaltungsprotokoll (ohne Rechnungs-Einträge) | 2 Jahre (730 Tage) | `KIDCTL_KEEP_ADMIN_LOG_DAYS` |
 | Geschlossene Tickets | 12 Monate nach Schließen | `TICKET_RETENTION_DAYS` |
+| Rechnungen (auch nach Löschen der Familie) | 8 Jahre ab Ende des Ausstellungsjahres | fest (§ 14b UStG, § 147 AO) |
 | Support-Freigaben | 2 Jahre nach Ablauf | `KIDCTL_KEEP_SUPPORT_GRANTS_DAYS` |
 
 Den Chat eines Kindes können Eltern jederzeit unter **Chat → Chat leeren** löschen. Eine Familie endgültig löschen
