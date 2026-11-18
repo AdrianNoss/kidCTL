@@ -2674,3 +2674,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   saubere Adresse um; ungültige Daten werden ignoriert. Getestet: pytest (2 neue Tests: Zeitraum-/Inaktivitätsfilter,
   ungültiges Datum, Umleitung, Chip-Links), Server 262 Tests grün; im Browser Desktop und mobil (zwei Spalten,
   Absenden über „Filter anwenden“ → `/admin?plan=free`).
+- 2026-11-18: Rechnungs-Detail: Aktionsleiste (Zahlungsdatum, „Als bezahlt markieren“, „Stornieren“, „Erneut senden“)
+  unten bündig (`.row.bottom`), damit alle Buttons auf einer Linie stehen. Getestet im Browser: Unterkanten von
+  Datumsfeld und allen Buttons identisch.

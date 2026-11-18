@@ -193,6 +193,7 @@ select { appearance:none; padding-right:2.5rem; background-color:transparent;
   background-position:calc(100% - 20px) 55%, calc(100% - 15px) 55%; background-size:5px 5px; background-repeat:no-repeat; }
 select option { background:var(--surface-container-high); color:var(--on-surface); }
 .row { display:flex; gap:.75rem; align-items:center; flex-wrap:wrap; }
+.row.bottom { align-items:flex-end; }   /* Buttons auf einer Linie mit Feldern, die ein Label darüber haben */
 .row > label { display:grid; margin:0; }
 .row > label input, .row > label select { width:auto; }
 .row > input:not([type]), .row > input[type=text], .row > textarea { flex:1; min-width:12rem; width:auto; }

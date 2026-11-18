@@ -70,7 +70,7 @@
   <p class="right">{% if inv.tax_mode == "standard" %}{{ _("netto") }} {{ eur(inv.net_cents) }} · {{ inv.tax_rate }} % {{ _("USt") }} {{ eur(inv.tax_cents) }} · {% endif %}<strong>{{ eur(inv.gross_cents) }}</strong></p>
   <p class="muted"><small>{{ _("Ausgestellte Rechnungen sind unveränderlich – Korrektur nur per Storno-Rechnung.") }}</small></p>
 </section>
-<div class="card row">
+<div class="card row bottom">
   {% if inv.status == "open" %}
   <form method="post" action="/admin/invoices/{{ inv.id }}/paid" class="row inline">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
