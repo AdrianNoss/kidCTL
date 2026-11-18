@@ -2648,3 +2648,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   PDF-Zugriff. Migrationen 0015–0017 gegen eine Datenbank mit Stand 0014 und Bestandsdaten (Familie, Betreiber →
   Admin) hoch/runter/hoch geprüft. Muster-PDFs angesehen, Seiten im Browser (Desktop, Handy). Server 258, Agent 274
   Tests grün.
+- 2026-11-18: Version 0.34.0 (Agent, Pakete): Sammelversion für SaaS-Etappe 4/5, Familienname, Rechnungsangaben und
+  Verwaltungsbereich 2 – keine Änderung am Agenten selbst. News 0.34 (DE/EN). Getestet: Versionsabgleich
+  PKGBUILD/Agent, `hugo --minify` fehlerfrei.
