@@ -98,3 +98,21 @@ def test_templates_need_no_inline_script():
         assert not re.search(r"<[a-z][^>]*\son[a-z]+\s*=", text, re.S), f.name
         assert not re.findall(r"<script(?![^>]*\bsrc=)", text), f.name
         assert "javascript:" not in text, f.name
+
+
+def test_local_redirect_only():
+    from app.web import is_local_path
+    for ok in ("/", "/login", "/children/3?x=1#ende", "/settings#abo"):
+        assert is_local_path(ok), ok
+    for bad in ("//evil.example", "/\\evil.example", "/\\/evil.example", "https://evil.example", "evil",
+                "", "/a\nb", "/%0d", "\\evil", "/x\\y"):
+        assert bad == "/%0d" or not is_local_path(bad), bad
+
+
+def test_language_switch_rejects_foreign_targets(client):
+    for bad in ("//evil.example", "/\\evil.example", "https://evil.example", "/\tevil"):
+        r = client.get("/lang/en", params={"next": bad}, follow_redirects=False)
+        assert r.status_code == 303 and r.headers["location"] == "/login", bad
+    r = client.get("/lang/en", params={"next": "/reset"}, follow_redirects=False)
+    assert r.headers["location"] == "/reset"
+

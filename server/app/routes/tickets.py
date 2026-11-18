@@ -13,7 +13,7 @@ from ..config import settings
 from ..db import get_db
 from ..models import Parent, ParentSession, Ticket, TicketMessage
 from ..security import csrf_protect, require_session
-from ..web import render
+from ..web import local_redirect, render
 
 router = APIRouter(prefix="/support")
 
@@ -57,7 +57,7 @@ def ticket_create(request: Request, background: BackgroundTasks, subject: str = 
                       statuses=tickets.STATUSES, error=str(e),
                       form={"subject": subject, "category": category, "body": body})
     background.add_task(tickets.notify_support, t.id, t.family_id, True)
-    return RedirectResponse(f"/support/{t.id}", status_code=303)
+    return local_redirect(f"/support/{t.id}", status_code=303)
 
 
 @router.get("/{ticket_id}", dependencies=[Depends(_saas)])
@@ -75,10 +75,10 @@ def ticket_reply(ticket_id: int, request: Request, background: BackgroundTasks, 
     except tickets.TicketError as e:
         return _page(request, db, t, 400, error=str(e), body=body)
     background.add_task(tickets.notify_support, t.id, t.family_id, False)
-    return RedirectResponse(f"/support/{t.id}#ende", status_code=303)
+    return local_redirect(f"/support/{t.id}#ende", status_code=303)
 
 
 @router.post("/{ticket_id}/close", dependencies=[Depends(_saas)])
 def ticket_close(ticket_id: int, sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
     tickets.family_close(db, _ticket(db, ticket_id))
-    return RedirectResponse(f"/support/{ticket_id}", status_code=303)
+    return local_redirect(f"/support/{ticket_id}", status_code=303)

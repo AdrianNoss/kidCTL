@@ -1,6 +1,7 @@
 """Nutzungsbericht per E-Mail: Zeiträume, Fälligkeit, Inhalt, Versand, Profil-Einstellungen."""
 
 from datetime import date, datetime, time, timedelta
+import re
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -118,7 +119,8 @@ def test_content(client, parent):
         subject, text, html = report.render(db, db.get(Parent, parent.id), WEEK)
     assert subject == "KidCTL: Wochenbericht 12.10.–18.10.2026"
     assert "Lea &amp; Tom" in html and "Lea & Tom" in text and "&amp;" not in text
-    assert "Portal 2" in html and "tiktok.com" in html and "/children/%d/stats" % cid in html
+    assert "Portal 2" in html and "/children/%d/stats" % cid in html
+    assert re.search(r"\btiktok\.com\b", html)                             # Domain im Bericht (kein URL-Check)
     assert "Di 13.10. (+30 min)" in html and "Di 13.10. (+30 min)" in text
     assert "+175 % ggü. Vorwoche" in html
 

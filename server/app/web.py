@@ -87,6 +87,22 @@ templates.env.globals["REGISTRATION"] = settings.registration   # open | invite 
 templates.env.globals["SAAS"] = settings.saas            # Betriebsart: viele Familien, Anmeldung nur per E-Mail
 
 
+def is_local_path(url: str) -> bool:
+    """Nur Pfade auf diesem Server: beginnt mit „/“, nicht „//“ oder „/\\“ (Browser lesen das als fremde Adresse),
+    ohne Schema/Host und ohne Steuerzeichen."""
+    from urllib.parse import urlsplit
+    if not url.startswith("/") or url[1:2] in ("/", "\\") or any(ord(ch) < 32 for ch in url) or "\\" in url:
+        return False
+    parts = urlsplit(url)
+    return not parts.scheme and not parts.netloc
+
+
+def local_redirect(url: str, fallback: str = "/", status_code: int = 303):
+    """Weiterleitung nur auf lokale Pfade (sonst ``fallback``) – Schutz vor offenen Weiterleitungen."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url if is_local_path(url) else fallback, status_code=status_code)
+
+
 def render(request: Request, template: str, status_code: int = 200, **ctx):
     sess = getattr(request.state, "session", None)
     ctx.setdefault("current_parent", sess.parent if sess else None)

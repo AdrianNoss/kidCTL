@@ -28,14 +28,14 @@ from ..security import (
     client_ip, csrf_protect, hash_password, is_rate_limited, new_pairing_code, new_totp_secret, record_failure,
     require_session, token_hash, totp_qr_svg, totp_uri, verify_password,
 )
-from ..web import render
+from ..web import local_redirect, render
 from ..ws import manager
 
 router = APIRouter(dependencies=[Depends(require_session)])
 
 
 def _redirect(url: str) -> RedirectResponse:
-    return RedirectResponse(url, status_code=303)
+    return local_redirect(url)
 
 
 def _get_or_404(db: Session, model, obj_id: int):

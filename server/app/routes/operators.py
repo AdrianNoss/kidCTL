@@ -17,7 +17,7 @@ from ..security import (
     client_ip, csrf_protect_anon, dummy_verify, is_rate_limited, record_failure, totp_locked,
     verify_password, verify_totp,
 )
-from ..web import render_anon, templates
+from ..web import local_redirect, render_anon, templates
 
 router = APIRouter(prefix="/admin", dependencies=[Depends(opr.check_network)])
 
@@ -179,7 +179,7 @@ def family_name(family_id: int, name: str = Form(""), sess: OperatorSession = De
     f.name = name.strip()[:128]
     audit.changes(db, audit.actor_of(sess), "family", before, f, family_id=family_id)
     db.commit()
-    return RedirectResponse(f"/admin/families/{family_id}?saved=1#kopf", status_code=303)
+    return local_redirect(f"/admin/families/{family_id}?saved=1#kopf", status_code=303)
 
 
 @router.post("/families/{family_id}")
@@ -208,7 +208,7 @@ async def family_billing(family_id: int, request: Request, plan: str = Form(...)
     logging.getLogger("kidctl.billing").info("Familie %s: Abo gesetzt von %s (%s, %s)", family_id,
                                               sess.operator.username, plan, status)
     await billing.apply(family_id)
-    return RedirectResponse(f"/admin/families/{family_id}?saved=1#abo", status_code=303)
+    return local_redirect(f"/admin/families/{family_id}?saved=1#abo", status_code=303)
 
 
 # ---------- Support-Ansicht (nur mit Freigabe der Familie) ----------
@@ -416,7 +416,7 @@ def ticket_reply(ticket_id: int, request: Request, background: BackgroundTasks, 
         return _ticket_page(request, db, sess, t, 400, error=str(e), body=body)
     if notify:
         background.add_task(tickets.notify_family, t.family_id, t.id, False)
-    return RedirectResponse(f"/admin/tickets/{t.id}#ende", status_code=303)
+    return local_redirect(f"/admin/tickets/{t.id}#ende", status_code=303)
 
 
 @router.post("/tickets/{ticket_id}/status")
@@ -427,7 +427,7 @@ def ticket_status(ticket_id: int, request: Request, status: str = Form(""),
         tickets.support_status(db, t, audit.actor_of(sess), status)
     except tickets.TicketError as e:
         return _ticket_page(request, db, sess, t, 400, error=str(e))
-    return RedirectResponse(f"/admin/tickets/{t.id}", status_code=303)
+    return local_redirect(f"/admin/tickets/{t.id}", status_code=303)
 
 
 # ---------- Rechnungen (nur Admin) ----------
@@ -562,7 +562,7 @@ def invoice_create(family_id: int, price_item: str = Form(""), sess: OperatorSes
         raise HTTPException(404)
     item = db.get(PriceItem, int(price_item)) if price_item.isdigit() else None
     inv = invoices.create_draft(db, f, item, audit.actor_of(sess))
-    return RedirectResponse(f"/admin/invoices/{inv.id}", status_code=303)
+    return local_redirect(f"/admin/invoices/{inv.id}", status_code=303)
 
 
 def _invoice_page(request, db, sess, inv, status_code=200, **ctx):
@@ -604,7 +604,7 @@ async def invoice_save(invoice_id: int, request: Request, sess: OperatorSession 
         db.rollback()
         msg = str(e) if isinstance(e, invoices.InvoiceError) else _("Bitte Datum, Menge und Betrag prüfen.")
         return _invoice_page(request, db, sess, _invoice(db, invoice_id), 400, error=msg)
-    return RedirectResponse(f"/admin/invoices/{inv.id}?saved=1", status_code=303)
+    return local_redirect(f"/admin/invoices/{inv.id}?saved=1", status_code=303)
 
 
 @router.post("/invoices/{invoice_id}/delete")
@@ -616,7 +616,7 @@ def invoice_delete(invoice_id: int, sess: OperatorSession = Depends(opr.admin_cs
         invoices.delete_draft(db, inv, audit.actor_of(sess))
     except invoices.InvoiceError as e:
         raise HTTPException(409, str(e))
-    return RedirectResponse(f"/admin/families/{family_id}#rechnungen", status_code=303)
+    return local_redirect(f"/admin/families/{family_id}#rechnungen", status_code=303)
 
 
 def _send_later(invoice_id: int, actor: tuple, again: bool) -> None:
@@ -642,7 +642,7 @@ def invoice_issue(invoice_id: int, request: Request, background: BackgroundTasks
         db.rollback()
         return _invoice_page(request, db, sess, _invoice(db, invoice_id), 400, error=str(e))
     background.add_task(_send_later, inv.id, audit.actor_of(sess), False)
-    return RedirectResponse(f"/admin/invoices/{inv.id}?saved=issued", status_code=303)
+    return local_redirect(f"/admin/invoices/{inv.id}?saved=issued", status_code=303)
 
 
 @router.post("/invoices/{invoice_id}/paid")
@@ -657,7 +657,7 @@ async def invoice_paid(invoice_id: int, request: Request, paid_on: str = Form(""
         return _invoice_page(request, db, sess, _invoice(db, invoice_id), 400, error=str(e))
     if family_id:
         await billing.apply(family_id)          # Ruhemodus endet sofort, Policies an die Agenten
-    return RedirectResponse(f"/admin/invoices/{inv.id}?saved=paid", status_code=303)
+    return local_redirect(f"/admin/invoices/{inv.id}?saved=paid", status_code=303)
 
 
 @router.post("/invoices/{invoice_id}/storno")
@@ -671,7 +671,7 @@ def invoice_storno(invoice_id: int, request: Request, background: BackgroundTask
         db.rollback()
         return _invoice_page(request, db, sess, _invoice(db, invoice_id), 400, error=str(e))
     background.add_task(_send_later, s.id, audit.actor_of(sess), False)
-    return RedirectResponse(f"/admin/invoices/{s.id}?saved={'storno_paid' if was_paid else 'storno'}", status_code=303)
+    return local_redirect(f"/admin/invoices/{s.id}?saved={'storno_paid' if was_paid else 'storno'}", status_code=303)
 
 
 @router.post("/invoices/{invoice_id}/resend")
@@ -684,7 +684,7 @@ def invoice_resend(invoice_id: int, request: Request, sess: OperatorSession = De
         return _invoice_page(request, db, sess, inv, 400, error=str(e))
     if not ok:
         return _invoice_page(request, db, sess, inv, 502, error=_("Mail konnte nicht gesendet werden (SMTP prüfen)."))
-    return RedirectResponse(f"/admin/invoices/{inv.id}?saved=sent", status_code=303)
+    return local_redirect(f"/admin/invoices/{inv.id}?saved=sent", status_code=303)
 
 
 @router.get("/invoices/{invoice_id}/pdf")

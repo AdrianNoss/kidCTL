@@ -17,7 +17,7 @@ from ..security import (
     get_session, hash_password, is_rate_limited, record_failure, set_cookie, totp_locked, totp_qr_svg,
     verify_password, verify_totp,
 )
-from ..web import render_anon
+from ..web import local_redirect, render_anon
 
 router = APIRouter()
 
@@ -49,9 +49,7 @@ def email_verify(token: str, db: Session = Depends(get_platform_db)):
 @router.get("/lang/{code}")
 def set_language(code: str, request: Request, next: str = "/login"):
     """Umschalter „Deutsch · English“ auf Seiten ohne Anmeldung (Cookie, 1 Jahr)."""
-    if not next.startswith("/") or next.startswith("//"):
-        next = "/login"
-    resp = RedirectResponse(next, status_code=303)
+    resp = local_redirect(next, fallback="/login")   # auch „/\\host“ und Steuerzeichen abgewiesen
     if code in i18n.LANGS:
         set_cookie(resp, i18n.LANG_COOKIE, code, max_age=365 * 86400)
     return resp
