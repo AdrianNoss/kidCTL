@@ -2659,3 +2659,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   (gewollt), Fehlermeldungen der Passwortprüfung enthalten das Passwort nicht. News 0.34.1 (DE/EN) mit Verweis auf das
   Security Advisory. Getestet (pytest, 2 neue Tests): lokale und fremde Ziele; Sprachumschalter leitet fremde Ziele auf
   `/login`. Server 260 Tests grün, Versionsabgleich PKGBUILD/Agent.
+- 2026-11-18: README-Banner im Design der Projektseite: `dev/banner.py` (Dry-Run, `--apply` schreibt) rendert mit
+  Playwright das Theme-CSS, die Texte aus `website/i18n/` und WebUI-Screenshots nach
+  `docs/img/<de|en>/banner-<light|dark>.webp`; README.md/README.de.md binden es per `<picture>` (hell/dunkel) mit
+  Link auf die Projektseite ein. Getestet: alle vier Bilder gerendert und angesehen, Doku-Parität ok.
