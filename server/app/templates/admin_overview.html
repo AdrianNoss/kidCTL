@@ -20,23 +20,52 @@
   </div>
 </nav>
 
-<form method="get" action="/admin" class="card admin-search">
-  <input type="search" name="q" value="{{ f.q }}" placeholder="{{ _('ID oder Familienname') }}" aria-label="{{ _('Suche') }}">
-  {% for k in ("status", "plan", "issue") %}{% if f[k] %}<input type="hidden" name="{{ k }}" value="{{ f[k] }}">{% endif %}{% endfor %}
-  {% if sort != "id" %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
-  <button type="submit" class="secondary">{{ _("Suchen") }}</button>
-  <div class="chip-groups">
-    {% for group, options in [("status", [("trial", _("Testphase")), ("active", _("aktiv")), ("past_due", _("überfällig")), ("canceled", _("gekündigt")), ("paused", _("Ruhemodus"))]),
-                              ("plan", [("free", _("Kostenlos")), ("standard", _("Standard"))]),
-                              ("issue", [("offline", _("Geräte offline")), ("outdated", _("Agent veraltet")), ("address", _("Rechnungsangaben fehlen")), ("ticket", _("offenes Ticket")), ("support", _("Support-Freigabe aktiv"))])] %}
-    <div class="segmented">
-      {% for value, label in options %}
-      {% set on = f[group] == value %}
-      <a href="{{ url(**{group: '' if on else value}) }}"{% if on %} class="active" aria-current="true"{% endif %}>{{ label }}</a>
-      {% endfor %}
+{% set filter_options = {
+  "status": (_("Status"), [("trial", _("Testphase")), ("trial_ending", _("Testphase endet ≤ 7 Tage")), ("active", _("aktiv")),
+             ("past_due", _("überfällig")), ("canceled", _("gekündigt")), ("paused", _("Ruhemodus"))]),
+  "plan": (_("Tarif"), [("free", _("Kostenlos")), ("standard", _("Standard"))]),
+  "issue": (_("Auffälligkeit"), [("offline", _("Geräte offline")), ("outdated", _("Agent veraltet")),
+            ("address", _("Rechnungsangaben fehlen")), ("ticket", _("offenes Ticket")), ("support", _("Support-Freigabe aktiv"))]),
+  "idle": (_("Ohne Aktivität seit"), [("7", _("über 7 Tagen")), ("30", _("über 30 Tagen")), ("90", _("über 90 Tagen"))]),
+} %}
+{% set active = [] %}
+{% for k, (title, options) in filter_options.items() %}{% for value, label in options %}{% if f[k] == value %}{% set ignored = active.append((title, label, url(**{k: ''}))) %}{% endif %}{% endfor %}{% endfor %}
+{% if f.since %}{% set ignored = active.append((_("Registriert ab"), fmt_date(parse_day(f.since)), url(since=''))) %}{% endif %}
+{% if f.until %}{% set ignored = active.append((_("Registriert bis"), fmt_date(parse_day(f.until)), url(until=''))) %}{% endif %}
+<form method="get" action="/admin" class="card admin-search" role="search">
+  <div class="search-bar">
+    <div class="search-field">
+      <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M9.5 3a6.5 6.5 0 0 1 5.17 10.44l5.45 5.44-1.42 1.42-5.44-5.45A6.5 6.5 0 1 1 9.5 3Zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9Z"/></svg>
+      <input type="search" name="q" value="{{ f.q }}" placeholder="{{ _('Familie suchen – Name oder #ID') }}" aria-label="{{ _('Suche') }}">
     </div>
-    {% endfor %}
+    <button type="submit">{{ _("Suchen") }}</button>
   </div>
+  {% if sort != "id" %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+  <details class="search-advanced">
+    <summary>{{ _("Erweitert") }}{% if active %} <span class="count">{{ active | length }}</span>{% endif %}</summary>
+    <div class="filter-grid">
+      {% for k, (title, options) in filter_options.items() %}
+      <label>{{ title }}
+        <select name="{{ k }}">
+          <option value="">{{ _("alle") if k != "idle" else _("egal") }}</option>
+          {% for value, label in options %}<option value="{{ value }}"{% if f[k] == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select></label>
+      {% endfor %}
+      <label>{{ _("Registriert ab") }} <input type="date" name="since" value="{{ f.since }}"></label>
+      <label>{{ _("Registriert bis") }} <input type="date" name="until" value="{{ f.until }}"></label>
+    </div>
+    <div class="row filter-actions">
+      <button type="submit">{{ _("Filter anwenden") }}</button>
+      {% if active %}<a class="btn ghost" href="{{ url(status='', plan='', issue='', idle='', since='', until='') }}">{{ _("Filter zurücksetzen") }}</a>{% endif %}
+    </div>
+  </details>
+  {% if active or f.q %}
+  <ul class="active-filters" aria-label="{{ _('Aktive Filter') }}">
+    {% if f.q %}<li><a href="{{ url(q='') }}" title="{{ _('Filter entfernen') }}"><span class="muted">{{ _("Suche") }}:</span> {{ f.q }} <span aria-hidden="true">×</span></a></li>{% endif %}
+    {% for title, label, link in active %}<li><a href="{{ link }}" title="{{ _('Filter entfernen') }}"><span class="muted">{{ title }}:</span> {{ label }} <span aria-hidden="true">×</span></a></li>{% endfor %}
+    {% if (active | length) + (1 if f.q else 0) > 1 %}<li><a class="clear" href="{{ url(q='', status='', plan='', issue='', idle='', since='', until='') }}">{{ _("Alle entfernen") }}</a></li>{% endif %}
+  </ul>
+  {% endif %}
 </form>
 
 <section class="card">

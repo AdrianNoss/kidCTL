@@ -104,8 +104,9 @@ E-Mail-Adresse und schaltet „Ticket-Mails erhalten“ ein. Jede Änderung durc
 (Familienname, Abo, Ruhemodus, Einladungscodes, Löschung) steht im **Verwaltungsprotokoll** unter `/admin/log`
 (filterbar nach Familie, Akteur und Art, für Familien unsichtbar, 2 Jahre aufbewahrt).
 
-Die Übersicht zeigt Kennzahlen (Klick filtert), eine Suche nach Familiennummer oder -name, Filter nach Abo-Status,
-Tarif und Problemen sowie eine sortierbare Tabelle (50 je Seite; Filter und Sortierung stehen in der Adresse und
+Die Übersicht zeigt Kennzahlen (Klick filtert), eine Suche nach Familiennummer oder -name, unter **Erweitert**
+Filter nach Abo-Status, Tarif, Auffälligkeit, Inaktivität (über 7/30/90 Tage) und Registrierungszeitraum (aktive
+Filter stehen als Chips unter der Suche und lassen sich einzeln entfernen) sowie eine sortierbare Tabelle (50 je Seite; Filter und Sortierung stehen in der Adresse und
 lassen sich als Lesezeichen speichern). Außer Familienname und Rechnungsangaben sind das nur Metadaten: Anzahl Kinder
 und Geräte, älteste Agent-Version, letzte Aktivität, Abo und Auffälligkeiten (Geräte offline, Agent veraltet,
 Ruhemodus). Namen und Inhalte sind mit dem Schlüssel der jeweiligen

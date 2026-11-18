@@ -242,6 +242,7 @@ PAGE_SIZE = 50
 STATUS_FILTERS = ("trial", "trial_ending", "active", "past_due", "canceled", "paused")
 PLAN_FILTERS = ("free", "standard")
 ISSUE_FILTERS = ("offline", "outdated", "address", "ticket", "support")
+IDLE_FILTERS = ("7", "30", "90")       # Tage ohne Aktivität (Geräte oder Eltern); nie aktiv zählt mit
 SORTS = {
     "id": lambda r: r.id,
     "name": lambda r: (r.name or "").casefold(),
@@ -259,8 +260,17 @@ def _issue(r: FamilyRow, issue: str) -> bool:
             "ticket": r.tickets > 0, "support": r.support}[issue]
 
 
+def parse_day(value: str):
+    """Datum aus dem Filter (JJJJ-MM-TT); Ungültiges zählt als nicht gesetzt."""
+    from datetime import date
+    try:
+        return date.fromisoformat(value) if value else None
+    except ValueError:
+        return None
+
+
 def select_rows(rows: list[FamilyRow], q: str = "", status: str = "", plan: str = "", issue: str = "",
-                sort: str = "id") -> list[FamilyRow]:
+                sort: str = "id", since: str = "", until: str = "", idle: str = "") -> list[FamilyRow]:
     q = q.strip().casefold()
     if q:
         num = q.lstrip("#")
@@ -273,5 +283,12 @@ def select_rows(rows: list[FamilyRow], q: str = "", status: str = "", plan: str 
         rows = [r for r in rows if r.plan == plan]
     if issue in ISSUE_FILTERS:
         rows = [r for r in rows if _issue(r, issue)]
+    if (day := parse_day(since)):
+        rows = [r for r in rows if r.created_at.date() >= day]
+    if (day := parse_day(until)):
+        rows = [r for r in rows if r.created_at.date() <= day]
+    if idle in IDLE_FILTERS:
+        cutoff = utcnow() - timedelta(days=int(idle))
+        rows = [r for r in rows if not r.activity or r.activity < cutoff]
     key = sort.lstrip("-")
     return sorted(rows, key=SORTS.get(key, SORTS["id"]), reverse=sort.startswith("-") and key in SORTS)

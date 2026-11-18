@@ -104,8 +104,9 @@ address and turns on "Receive ticket emails". Every change by an operator, the w
 name, subscription, pause, invitation codes, deletion) is listed in the **administration log** at `/admin/log`
 (filterable by family, actor and kind, invisible to families, kept for 2 years).
 
-The overview shows key figures (a click filters), a search by family number or name, filters by subscription
-status, plan and issues, and a sortable table (50 per page; filters and sorting are part of the address and can be
+The overview shows key figures (a click filters), a search by family number or name, under **Advanced**
+filters by subscription status, plan, issue, inactivity (more than 7/30/90 days) and registration period (active
+filters appear as chips below the search and can be removed one by one), and a sortable table (50 per page; filters and sorting are part of the address and can be
 bookmarked). Apart from the family name and billing details, this is metadata only: number of children and devices,
 oldest agent version, last activity, subscription and issues (devices offline, agent outdated, paused). Names and content are encrypted with each family's key
 and cannot be read there. You also create **invitation codes** for sign-up here (single use, valid for 30 days, with

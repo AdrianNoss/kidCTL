@@ -2386,8 +2386,6 @@ msgstr "Devices offline"
 msgid "ID"
 msgstr "ID"
 
-msgid "ID oder Familienname"
-msgstr "ID or family name"
 
 msgid "Keine Familie passt zur Suche."
 msgstr "No family matches the search."
@@ -2912,3 +2910,49 @@ msgid "{n} Rechnung"
 msgid_plural "{n} Rechnungen"
 msgstr[0] "{n} invoice"
 msgstr[1] "{n} invoices"
+
+# Verwaltung: Suche mit „Erweitert“
+msgid "Familie suchen – Name oder #ID"
+msgstr "Search families – name or #ID"
+
+msgid "Auffälligkeit"
+msgstr "Issue"
+
+msgid "Ohne Aktivität seit"
+msgstr "No activity for"
+
+msgid "über 7 Tagen"
+msgstr "more than 7 days"
+
+msgid "über 30 Tagen"
+msgstr "more than 30 days"
+
+msgid "über 90 Tagen"
+msgstr "more than 90 days"
+
+msgid "Registriert ab"
+msgstr "Registered from"
+
+msgid "Registriert bis"
+msgstr "Registered until"
+
+msgid "Erweitert"
+msgstr "Advanced"
+
+msgid "egal"
+msgstr "any"
+
+msgid "Filter anwenden"
+msgstr "Apply filters"
+
+msgid "Filter zurücksetzen"
+msgstr "Reset filters"
+
+msgid "Aktive Filter"
+msgstr "Active filters"
+
+msgid "Filter entfernen"
+msgstr "Remove filter"
+
+msgid "Alle entfernen"
+msgstr "Remove all"

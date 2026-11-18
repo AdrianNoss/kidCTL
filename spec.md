@@ -2667,3 +2667,10 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   an die folgende Karte stößt (Rechnungs- und Ticket-Detail); Formular „Als bezahlt markieren“ behält das
   Flex-Layout (`form.row.inline`), Button steht neben dem Datum; Rechnungssumme rechtsbündig (`p.right`).
   Getestet im Browser (Dev-Server, Markup von Rechnungs- und Ticket-Detail): Abstände und Ausrichtung korrekt.
+- 2026-11-18: Verwaltungsbereich, Familienübersicht: Suche neu gestaltet – Suchfeld mit Lupe und „Suchen“, darunter
+  aufklappbar **Erweitert** (ohne JavaScript, `<details>`) mit Auswahllisten für Status, Tarif, Auffälligkeit und neu
+  „Ohne Aktivität seit“ (über 7/30/90 Tage, nie aktiv zählt mit) sowie „Registriert ab/bis“; aktive Filter als
+  entfernbare Chips („Alle entfernen“), Zähler am „Erweitert“. Leere Formularfelder leitet der Server auf eine
+  saubere Adresse um; ungültige Daten werden ignoriert. Getestet: pytest (2 neue Tests: Zeitraum-/Inaktivitätsfilter,
+  ungültiges Datum, Umleitung, Chip-Links), Server 262 Tests grün; im Browser Desktop und mobil (zwei Spalten,
+  Absenden über „Filter anwenden“ → `/admin?plan=free`).

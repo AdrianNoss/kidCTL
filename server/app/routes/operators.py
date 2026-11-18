@@ -79,22 +79,16 @@ def logout(sess: OperatorSession = Depends(opr.operator_csrf), db: Session = Dep
 # ---------- Übersicht ----------
 
 @router.get("")
-def overview(request: Request, q: str = "", status: str = "", plan: str = "", issue: str = "", sort: str = "id",
-             page: int = 1, sess: OperatorSession = Depends(opr.require_operator),
-             db: Session = Depends(get_platform_db)):
-    """Familien: Kacheln, Suche, Filter, Sortierung, 50 je Seite – alles im Server, Parameter in der URL."""
+def overview(request: Request, q: str = "", status: str = "", plan: str = "", issue: str = "", since: str = "",
+             until: str = "", idle: str = "", sort: str = "id", page: int = 1,
+             sess: OperatorSession = Depends(opr.require_operator), db: Session = Depends(get_platform_db)):
+    """Familien: Kacheln, Suche, Filter (einfach und „Erweitert“), Sortierung, 50 je Seite – alles im Server,
+    Parameter in der URL."""
     from urllib.parse import urlencode
-    rows = opr.families(db)
-    backups = backup.backups()
-    tiles = {"families": len(rows), "children": sum(r.children for r in rows), "devices": sum(r.devices for r in rows),
-             "trial": sum(1 for r in rows if r.status == "trial"),
-             "trial_ending": sum(1 for r in rows if r.trial_ending),
-             "paused": sum(1 for r in rows if r.status == "paused"),
-             "tickets": sum(r.tickets for r in rows)}
-    selected = opr.select_rows(rows, q, status, plan, issue, sort)
-    pages = max(1, -(-len(selected) // opr.PAGE_SIZE))
-    page = min(max(1, page), pages)
-    params = {k: v for k, v in {"q": q.strip(), "status": status, "plan": plan, "issue": issue}.items() if v}
+    since = since if opr.parse_day(since) else ""
+    until = until if opr.parse_day(until) else ""
+    params = {k: v for k, v in {"q": q.strip(), "status": status, "plan": plan, "issue": issue, "since": since,
+                                "until": until, "idle": idle}.items() if v}
 
     def url(**change):
         merged = {**params, "sort": sort, "page": 1, **change}
@@ -102,13 +96,29 @@ def overview(request: Request, q: str = "", status: str = "", plan: str = "", is
                   and not (k == "page" and v == 1)}
         return "/admin" + (f"?{urlencode(merged)}" if merged else "")
 
+    # Das Suchformular schickt auch leere Felder mit – auf eine saubere Adresse umleiten (teilbar, lesbar)
+    if any(not v for v in request.query_params.values()):
+        return RedirectResponse(url(page=page), status_code=303)
+
+    rows = opr.families(db)
+    backups = backup.backups()
+    tiles = {"families": len(rows), "children": sum(r.children for r in rows), "devices": sum(r.devices for r in rows),
+             "trial": sum(1 for r in rows if r.status == "trial"),
+             "trial_ending": sum(1 for r in rows if r.trial_ending),
+             "paused": sum(1 for r in rows if r.status == "paused"),
+             "tickets": sum(r.tickets for r in rows)}
+    selected = opr.select_rows(rows, q, status, plan, issue, sort, since=since, until=until, idle=idle)
+    pages = max(1, -(-len(selected) // opr.PAGE_SIZE))
+    page = min(max(1, page), pages)
+
     def sort_url(key):
         return url(sort=f"-{key}" if sort == key else key)
 
     return _render(request, "admin_overview.html", sess, families=selected[(page - 1) * opr.PAGE_SIZE:page * opr.PAGE_SIZE],
                    total=len(selected), all_total=len(rows), tiles=tiles, page=page, pages=pages, url=url,
-                   sort_url=sort_url, sort=sort, f={"q": q, "status": status, "plan": plan, "issue": issue},
-                   backups=backups, backup_error=backup.last_error(), plans=billing.PLANS, statuses=billing.STATUSES,
+                   sort_url=sort_url, sort=sort, f={"q": q.strip(), "status": status, "plan": plan, "issue": issue,
+                                                    "since": since, "until": until, "idle": idle},
+                   parse_day=opr.parse_day, backups=backups, backup_error=backup.last_error(), plans=billing.PLANS, statuses=billing.STATUSES,
                    granted=support.granted_families(db))
 
 

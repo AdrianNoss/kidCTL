@@ -76,8 +76,32 @@ def test_filters_and_combinations(client, operator, data):  # noqa: F811
     assert _ids(client.get("/admin?issue=offline").text) == [data[0]]
     assert _ids(client.get("/admin?issue=outdated").text) == [data[0]]
     assert _ids(client.get("/admin?issue=outdated&plan=free").text) == []
-    page = client.get("/admin?status=trial&plan=standard").text           # Chip-Links behalten andere Filter
-    assert 'href="/admin?status=trial&amp;plan=free"' in page and 'href="/admin?plan=standard"' in page
+    page = client.get("/admin?status=trial&plan=standard").text           # Entfernen-Chips behalten andere Filter
+    assert 'href="/admin?plan=standard"' in page and 'href="/admin?status=trial"' in page
+    assert '<option value="trial" selected>' in page and '<option value="standard" selected>' in page
+
+
+def test_advanced_filters(client, operator, data):  # noqa: F811
+    admin_login(client, operator)
+    with platform_db() as db:                              # Meier registriert vor 40 Tagen, Zett vor 100
+        for fid, days in ((data[1], 40), (data[3], 100)):
+            db.get(Family, fid).created_at = utcnow() - timedelta(days=days)
+        db.commit()
+    day = (utcnow() - timedelta(days=50)).date().isoformat()
+    assert _ids(client.get(f"/admin?until={day}").text) == [data[3]]
+    assert data[3] not in _ids(client.get(f"/admin?since={day}").text)
+    assert _ids(client.get("/admin?since=kaputt").text) == [1, *data]    # ungültiges Datum wird ignoriert
+    idle = _ids(client.get("/admin?idle=7").text)                         # Meier gerade gesehen, Müller vor 3 Tagen
+    assert data[1] not in idle and data[0] not in idle and data[3] in idle
+
+
+def test_empty_form_fields_redirect_to_clean_url(client, operator, data):  # noqa: F811
+    admin_login(client, operator)
+    r = client.get("/admin?q=&status=&plan=free&issue=&idle=&since=&until=", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/admin?plan=free"
+    page = client.get("/admin?q=zett&plan=free").text
+    assert 'href="/admin?plan=free"' in page and 'href="/admin?q=zett"' in page   # Chips entfernen je einen Filter
+    assert "Alle entfernen" in page
 
 
 @pytest.mark.parametrize("key", list(operators.SORTS))
