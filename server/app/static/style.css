@@ -572,6 +572,7 @@ td.nowrap { white-space:nowrap; }
 .card-grid > .card { margin-bottom:0; }
 .card-grid > .card-wide { grid-column:1 / -1; }
 dl.facts { display:grid; grid-template-columns:max-content 1fr; gap:.25rem 1rem; margin:0; }
+dl.facts:not(:last-child) { margin-bottom:1rem; }
 dl.facts dt { color:var(--on-surface-variant); }
 dl.facts dd { margin:0; }
 @media (max-width: 720px) { .card-grid { grid-template-columns:1fr; } }

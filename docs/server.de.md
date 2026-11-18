@@ -100,7 +100,9 @@ verloren: derselbe Befehl mit `--reset` setzt beides neu und beendet alle Sitzun
 Es gibt zwei **Rollen**: *Admin* (alles) und *Support* (Familien ansehen, Support-Ansicht, später Tickets – kein Abo,
 keine Einladungscodes, keine Rechnungen). Neue Accounts sind *Admin*, sonst `--role support`; ändern mit
 `python -m app.cli set-operator-role <name> admin|support`. Unter `/admin/profile` hinterlegt jeder Betreiber seine
-E-Mail-Adresse und schaltet „Ticket-Mails erhalten“ ein. Jede Änderung durch Betreiber, Webhook oder Hintergrundjobs
+E-Mail-Adresse, schaltet „Ticket-Mails erhalten“ ein, ändert sein Passwort, richtet einen neuen Authenticator ein und
+meldet andere Sitzungen ab (Passwort- und Authenticator-Änderungen tun das automatisch, werden protokolliert und per
+Mail gemeldet). Jede Änderung durch Betreiber, Webhook oder Hintergrundjobs
 (Familienname, Abo, Ruhemodus, Einladungscodes, Löschung) steht im **Verwaltungsprotokoll** unter `/admin/log`
 (filterbar nach Familie, Akteur und Art, für Familien unsichtbar, 2 Jahre aufbewahrt).
 

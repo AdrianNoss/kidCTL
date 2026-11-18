@@ -2334,8 +2334,6 @@ msgstr "Invoice"
 msgid "Rechnungs-Einstellungen"
 msgstr "Invoice settings"
 
-msgid "Rolle: {role}"
-msgstr "Role: {role}"
 
 msgid "Seite {page} von {pages}"
 msgstr "Page {page} of {pages}"
@@ -2343,8 +2341,6 @@ msgstr "Page {page} of {pages}"
 msgid "Ticket"
 msgstr "Ticket"
 
-msgid "Ticket-Mails enthalten nur einen Hinweis und einen Link, keinen Inhalt. Die Rolle ändert ein Admin per Kommandozeile (set-operator-role)."
-msgstr "Ticket emails only contain a notice and a link, no content. An admin changes the role on the command line (set-operator-role)."
 
 msgid "Ticket-Mails erhalten"
 msgstr "Receive ticket emails"
@@ -2956,3 +2952,51 @@ msgstr "Remove filter"
 
 msgid "Alle entfernen"
 msgstr "Remove all"
+
+# Verwaltung: eigenes Profil (Passwort, Authenticator, Sitzungen)
+msgid "Alle anderen Sitzungen abmelden?"
+msgstr "Sign out all other sessions?"
+
+msgid "Alle anderen Sitzungen wurden abgemeldet."
+msgstr "All other sessions have been signed out."
+
+msgid "An diese Adresse gehen auch Sicherheitshinweise (Passwort oder Authenticator geändert). Ticket-Mails enthalten nur einen Hinweis und einen Link, keinen Inhalt."
+msgstr "Security notices (password or authenticator changed) are also sent to this address. Ticket emails only contain a notice and a link, no content."
+
+msgid "Andere Sitzungen abmelden"
+msgstr "Sign out other sessions"
+
+msgid "Benutzername und Rolle ändert ein Admin per Kommandozeile (create-operator --reset, set-operator-role)."
+msgstr "An admin changes username and role on the command line (create-operator --reset, set-operator-role)."
+
+msgid "Betreiber-Zugang"
+msgstr "Operator account"
+
+msgid "Du bist nur hier angemeldet."
+msgstr "You are only signed in here."
+
+msgid "Falls du das nicht warst, setze den Zugang sofort per Kommandozeile zurück (create-operator --reset) und prüfe das Verwaltungsprotokoll."
+msgstr "If this wasn't you, reset the account on the command line right away (create-operator --reset) and check the activity log."
+
+msgid "Konto"
+msgstr "Account"
+
+msgid "Rolle"
+msgstr "Role"
+
+msgid "Neues Handy oder App verloren? Richte einen neuen Authenticator ein. Der bisherige gilt, bis du den neuen mit einem Code bestätigt hast."
+msgstr "New phone or lost the app? Set up a new authenticator. The current one stays valid until you confirm the new one with a code."
+
+msgid "Passwort- und Authenticator-Änderungen melden alle anderen Sitzungen ab."
+msgstr "Changing the password or authenticator signs out all other sessions."
+
+msgid "das Passwort deines Betreiber-Zugangs wurde geändert."
+msgstr "the password of your operator account was changed."
+
+msgid "für deinen Betreiber-Zugang wurde ein neuer Authenticator eingerichtet."
+msgstr "a new authenticator was set up for your operator account."
+
+msgid "Du bist noch an {n} weiteren Gerät angemeldet."
+msgid_plural "Du bist noch an {n} weiteren Geräten angemeldet."
+msgstr[0] "You are also signed in on {n} other device."
+msgstr[1] "You are also signed in on {n} other devices."

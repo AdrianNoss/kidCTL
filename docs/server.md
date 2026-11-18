@@ -100,7 +100,8 @@ same command with `--reset` sets both again and ends all sessions of that accoun
 There are two **roles**: *Admin* (everything) and *Support* (view families, support view, tickets later – no
 subscription, no invitation codes, no invoices). New accounts are *Admin*, otherwise `--role support`; change it with
 `python -m app.cli set-operator-role <name> admin|support`. Under `/admin/profile` each operator enters their email
-address and turns on "Receive ticket emails". Every change by an operator, the webhook or background jobs (family
+address, turns on "Receive ticket emails", changes their password, sets up a new authenticator and signs out other
+sessions (changing the password or authenticator does this automatically, is logged and reported by email). Every change by an operator, the webhook or background jobs (family
 name, subscription, pause, invitation codes, deletion) is listed in the **administration log** at `/admin/log`
 (filterable by family, actor and kind, invisible to families, kept for 2 years).
 

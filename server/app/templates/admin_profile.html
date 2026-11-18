@@ -2,13 +2,53 @@
 {% block title %}{{ _("Profil") }} – KidCTL{% endblock %}
 {% block content %}
 {% set heading = _("Profil") %}{% include "_admin_head.html" %}
-{% if saved %}<p class="success">{{ _("Gespeichert.") }}</p>{% endif %}
+{% if message %}<p class="success">{{ message }}</p>{% endif %}
+<div class="card-grid">
 <form method="post" action="/admin/profile" class="card">
-  <p>{{ _("Rolle: {role}").format(role=roles.get(operator.role, operator.role)) }}</p>
+  <h2>{{ _("Konto") }}</h2>
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <dl class="facts">
+    <dt>{{ _("Benutzername") }}</dt><dd>{{ operator.username }}</dd>
+    <dt>{{ _("Rolle") }}</dt><dd>{{ roles.get(operator.role, operator.role) }}</dd>
+  </dl>
   <label>{{ _("E-Mail-Adresse") }} <input type="email" name="email" maxlength="255" value="{{ operator.email }}" autocomplete="email"></label>
   <label class="option"><input type="checkbox" name="ticket_mails" value="1"{% if operator.ticket_mails %} checked{% endif %}> {{ _("Ticket-Mails erhalten") }}</label>
-  <button type="submit">{{ _("Speichern") }}</button>
-  <p class="muted"><small>{{ _("Ticket-Mails enthalten nur einen Hinweis und einen Link, keinen Inhalt. Die Rolle ändert ein Admin per Kommandozeile (set-operator-role).") }}</small></p>
+  <p class="muted"><small>{{ _("An diese Adresse gehen auch Sicherheitshinweise (Passwort oder Authenticator geändert). Ticket-Mails enthalten nur einen Hinweis und einen Link, keinen Inhalt.") }}</small></p>
+  <div class="row"><button type="submit">{{ _("Speichern") }}</button></div>
 </form>
+
+<form method="post" action="/admin/profile/password" class="card" id="password">
+  <h2>{{ _("Passwort ändern") }}</h2>
+  {% if card == "password" %}<p class="error">{{ card_error }}</p>{% endif %}
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <input type="text" name="username" value="{{ operator.username }}" autocomplete="username" hidden>
+  <label>{{ _("Aktuelles Passwort") }} <input type="password" name="current_password" required autocomplete="current-password"></label>
+  <label>{{ _("Neues Passwort") }} <input type="password" name="password" required minlength="12" autocomplete="new-password"></label>
+  <label>{{ _("Neues Passwort wiederholen") }} <input type="password" name="repeat" required minlength="12" autocomplete="new-password"></label>
+  <div class="row"><button type="submit">{{ _("Passwort ändern") }}</button></div>
+</form>
+
+<section class="card" id="totp">
+  <h2>{{ _("Authenticator") }}</h2>
+  {% if card == "totp" %}<p class="error">{{ card_error }}</p>{% endif %}
+  <p>{{ _("Neues Handy oder App verloren? Richte einen neuen Authenticator ein. Der bisherige gilt, bis du den neuen mit einem Code bestätigt hast.") }}</p>
+  <form method="post" action="/admin/profile/totp" class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <button type="submit" class="secondary">{{ _("Neuen Authenticator einrichten") }}</button>
+  </form>
+</section>
+
+<section class="card" id="sessions">
+  <h2>{{ _("Sitzungen") }}</h2>
+  <p>{% if other_sessions %}{{ ngettext("Du bist noch an {n} weiteren Gerät angemeldet.", "Du bist noch an {n} weiteren Geräten angemeldet.", other_sessions).format(n=other_sessions) }}{% else %}{{ _("Du bist nur hier angemeldet.") }}{% endif %}
+    {{ _("Passwort- und Authenticator-Änderungen melden alle anderen Sitzungen ab.") }}</p>
+  {% if other_sessions %}
+  <form method="post" action="/admin/profile/sessions" class="row" data-confirm="{{ _('Alle anderen Sitzungen abmelden?') }}">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <button type="submit" class="secondary">{{ _("Andere Sitzungen abmelden") }}</button>
+  </form>
+  {% endif %}
+</section>
+</div>
+<p class="muted"><small>{{ _("Benutzername und Rolle ändert ein Admin per Kommandozeile (create-operator --reset, set-operator-role).") }}</small></p>
 {% endblock %}

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from .. import operators as opr
@@ -285,7 +285,7 @@ def code_delete(code_id: int, sess: OperatorSession = Depends(opr.admin_csrf),
 LOG_PAGE = 50
 LOG_OBJECTS = {"family": N_("Familie"), "subscription": N_("Abo"), "code": N_("Einladungscode"),
                "ticket": N_("Ticket"), "invoice": N_("Rechnung"), "invoice_settings": N_("Rechnungs-Einstellungen"),
-               "price": N_("Preisliste")}
+               "price": N_("Preisliste"), "operator": N_("Betreiber-Zugang")}
 
 
 def log_query(family: str = "", actor: str = "", obj: str = ""):
@@ -320,27 +320,162 @@ def admin_log(request: Request, family: str = "", actor: str = "", obj: str = ""
 
 # ---------- Eigenes Profil ----------
 
+TOTP_CHANGE_MINUTES = 15
+PROFILE_MESSAGES = {"1": N_("Gespeichert."), "password": N_("Passwort geändert. Andere Sitzungen wurden abgemeldet."),
+                    "totp": N_("Neuer Authenticator eingerichtet. Andere Sitzungen wurden abgemeldet."),
+                    "sessions": N_("Alle anderen Sitzungen wurden abgemeldet.")}
+
+
+def _profile(request: Request, sess: OperatorSession, db: Session, status_code: int = 200, **ctx):
+    others = db.scalar(select(func.count()).select_from(OperatorSession).where(
+        OperatorSession.operator_id == sess.operator_id, OperatorSession.id != sess.id,
+        OperatorSession.expires_at > utcnow()))
+    msg = PROFILE_MESSAGES.get(request.query_params.get("saved", ""))
+    return _render(request, "admin_profile.html", sess, status_code, roles=opr.ROLES, other_sessions=others,
+                   message=_(msg) if msg else None, **ctx)
+
+
+def _check_operator_password(db: Session, request: Request, op: Operator, password: str) -> str | None:
+    """Aktuelles Passwort prüfen – mit demselben Fehlversuchszähler wie die Betreiber-Anmeldung."""
+    ip, key = client_ip(request), f"op:{op.username}"[:64]
+    if is_rate_limited(db, "admin", ip, key):
+        return _("Zu viele Fehlversuche. Bitte später erneut versuchen.")
+    if not verify_password(password, op.password_hash):
+        record_failure(db, "admin", ip, key)
+        db.commit()
+        return _("Aktuelles Passwort ist falsch.")
+    return None
+
+
+def _end_other_sessions(db: Session, sess: OperatorSession) -> None:
+    db.execute(delete(OperatorSession).where(OperatorSession.operator_id == sess.operator_id,
+                                             OperatorSession.id != sess.id))
+
+
+def _notify_operator(op: Operator, subject: str, text: str) -> None:
+    """Sicherheitshinweis an die hinterlegte Adresse des Betreibers (falls vorhanden)."""
+    from .. import mail
+    if op.email:
+        mail.send(op.email, f"KidCTL: {_(subject)}",
+                  _("Hallo {name},").format(name=op.username) + f"\n\n{_(text)}\n\n"
+                  + _("Falls du das nicht warst, setze den Zugang sofort per Kommandozeile zurück "
+                      "(create-operator --reset) und prüfe das Verwaltungsprotokoll.") + "\n")
+
+
+def _totp_token(op_id: int, secret: str, expires: int) -> str:
+    """Signiert den vorbereiteten Schlüssel für das Bestätigungsformular (kein Serverzustand nötig)."""
+    import hashlib
+    import hmac
+    sig = hmac.new(settings.secret_key.encode(), f"op-totp:{op_id}:{secret}:{expires}".encode(),
+                   hashlib.sha256).hexdigest()
+    return f"{secret}.{expires}.{sig}"
+
+
+def _totp_from_token(op_id: int, token: str) -> str | None:
+    import hmac
+    import time
+    try:
+        secret, expires, _sig = token.split(".")
+        expires_at = int(expires)
+    except ValueError:
+        return None
+    if expires_at < time.time() or not hmac.compare_digest(_totp_token(op_id, secret, expires_at), token):
+        return None
+    return secret
+
+
+def _totp_page(request, sess, token: str, secret: str, status_code: int = 200, error: str | None = None):
+    from .. import accounts
+    from ..security import totp_qr_svg
+    uri = accounts.totp_uri_for(secret, sess.operator.username)
+    return _render(request, "admin_profile_totp.html", sess, status_code, token=token, secret=secret,
+                   qr_svg=totp_qr_svg(uri), minutes=TOTP_CHANGE_MINUTES, error=error)
+
+
 @router.get("/profile")
-def profile(request: Request, sess: OperatorSession = Depends(opr.require_operator)):
-    return _render(request, "admin_profile.html", sess, saved=request.query_params.get("saved"),
-                   roles=opr.ROLES)
+def profile(request: Request, sess: OperatorSession = Depends(opr.require_operator),
+            db: Session = Depends(get_platform_db)):
+    return _profile(request, sess, db)
 
 
 @router.post("/profile")
 def profile_save(request: Request, email: str = Form(""), ticket_mails: str = Form(""),
                  sess: OperatorSession = Depends(opr.operator_csrf), db: Session = Depends(get_platform_db)):
     from .. import accounts
-    from ..models import Operator
     email = email.strip()[:255]
     if email and (err := accounts.email_error(email)):
-        return _render(request, "admin_profile.html", sess, 400, error=err, roles=opr.ROLES)
+        return _profile(request, sess, db, 400, error=err)
     if ticket_mails and not email:
-        return _render(request, "admin_profile.html", sess, 400, roles=opr.ROLES,
-                       error=_("Für Ticket-Mails bitte eine E-Mail-Adresse angeben."))
+        return _profile(request, sess, db, 400, error=_("Für Ticket-Mails bitte eine E-Mail-Adresse angeben."))
     op = db.get(Operator, sess.operator_id)
+    old_email = op.email
     op.email, op.ticket_mails = email, bool(ticket_mails)
+    if old_email != email:
+        audit.record(db, audit.actor_of(sess), "operator", "email", old_email, email, object_id=op.id)
     db.commit()
     return RedirectResponse("/admin/profile?saved=1", status_code=303)
+
+
+@router.post("/profile/password")
+def profile_password(request: Request, current_password: str = Form(""), password: str = Form(""),
+                     repeat: str = Form(""), sess: OperatorSession = Depends(opr.operator_csrf),
+                     db: Session = Depends(get_platform_db)):
+    from .. import accounts
+    from ..security import hash_password
+    op = db.get(Operator, sess.operator_id)
+    error = _check_operator_password(db, request, op, current_password) or accounts.password_error(password, repeat)
+    if error:
+        return _profile(request, sess, db, 400, card_error=error, card="password")
+    op.password_hash = hash_password(password)
+    _end_other_sessions(db, sess)
+    audit.record(db, audit.actor_of(sess), "operator", "password", object_id=op.id)
+    db.commit()
+    _notify_operator(op, N_("Passwort geändert"), N_("das Passwort deines Betreiber-Zugangs wurde geändert."))
+    return RedirectResponse("/admin/profile?saved=password", status_code=303)
+
+
+@router.post("/profile/totp")
+def profile_totp_start(request: Request, sess: OperatorSession = Depends(opr.operator_csrf)):
+    """Neuen Authenticator vorbereiten – der alte gilt, bis der neue bestätigt ist."""
+    import time
+    from ..security import new_totp_secret
+    secret = new_totp_secret()
+    return _totp_page(request, sess, _totp_token(sess.operator_id, secret, int(time.time()) + TOTP_CHANGE_MINUTES * 60),
+                      secret)
+
+
+@router.post("/profile/totp/confirm")
+def profile_totp_confirm(request: Request, token: str = Form(""), current_password: str = Form(""),
+                         totp: str = Form(""), sess: OperatorSession = Depends(opr.operator_csrf),
+                         db: Session = Depends(get_platform_db)):
+    from .. import accounts
+    op = db.get(Operator, sess.operator_id)
+    secret = _totp_from_token(op.id, token)
+    if secret is None:
+        return _profile(request, sess, db, 400, card_error=_("Die Einrichtung ist abgelaufen. Bitte neu starten."),
+                        card="totp")
+    error = _check_operator_password(db, request, op, current_password)
+    step = accounts.totp_step(secret, totp)
+    if not error and step is None:
+        error = _("Der Code passt nicht zum neuen QR-Code.")
+    if error:
+        return _totp_page(request, sess, token, secret, 400, error)
+    op.totp_secret, op.totp_last_step = secret, step
+    _end_other_sessions(db, sess)
+    audit.record(db, audit.actor_of(sess), "operator", "totp", object_id=op.id)
+    db.commit()
+    _notify_operator(op, N_("Authenticator geändert"),
+                     N_("für deinen Betreiber-Zugang wurde ein neuer Authenticator eingerichtet."))
+    return RedirectResponse("/admin/profile?saved=totp", status_code=303)
+
+
+@router.post("/profile/sessions")
+def profile_sessions(sess: OperatorSession = Depends(opr.operator_csrf), db: Session = Depends(get_platform_db)):
+    """Alle anderen Sitzungen dieses Betreibers beenden (z. B. vergessener Rechner)."""
+    _end_other_sessions(db, sess)
+    audit.record(db, audit.actor_of(sess), "operator", "sessions", object_id=sess.operator_id)
+    db.commit()
+    return RedirectResponse("/admin/profile?saved=sessions", status_code=303)
 
 
 # ---------- Tickets ----------

@@ -2677,3 +2677,18 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-18: Rechnungs-Detail: Aktionsleiste (Zahlungsdatum, „Als bezahlt markieren“, „Stornieren“, „Erneut senden“)
   unten bündig (`.row.bottom`), damit alle Buttons auf einer Linie stehen. Getestet im Browser: Unterkanten von
   Datumsfeld und allen Buttons identisch.
+- 2026-11-18: Verwaltungsbereich, eigenes Profil (`/admin/profile`, beide Rollen): Karten Konto (Benutzername, Rolle,
+  E-Mail, Ticket-Mails), Passwort ändern (aktuelles Passwort, Fehlversuche zählen wie bei der Betreiber-Anmeldung),
+  neuer Authenticator (QR-Code + Schlüssel, Bestätigung mit Passwort und Code; vorbereiteter Schlüssel per HMAC
+  signiert, 15 Minuten gültig, alter gilt bis zur Bestätigung) und Sitzungen (Anzahl, „Andere Sitzungen abmelden“).
+  Passwort-/Authenticator-Wechsel beenden alle anderen Sitzungen, schreiben ins Verwaltungsprotokoll (Objekt
+  „Betreiber-Zugang“, ohne Werte) und melden sich per Mail; E-Mail-Änderungen werden protokolliert. Benutzername und
+  Rolle bleiben Kommandozeile. Getestet: pytest (9 neue Tests, je Rolle admin/support: E-Mail, Passwort inkl. falsches
+  Passwort/zu kurz/Wiederholung, Authenticator inkl. falscher Code, gefälschtes Token, Anmeldung mit neuem Code,
+  Sitzungen abmelden, CSRF, ohne Anmeldung), Server 271 Tests grün; im Browser Profilseite angesehen.
+- 2026-11-18: Anforderungen abgestimmt (noch nicht umgesetzt): **Whitelabel** – eigener Name, Logo und Favicon,
+  eingestellt im Verwaltungsbereich (Logo-Upload, DB, protokolliert; Ausnahme von „Konfiguration nur über `.env`“),
+  wirkt auf Eltern-WebUI, PWA, Anmeldung/Registrierung und alle Mails; Untertitel immer „powered by KidCTL“;
+  Kinder-Clients bleiben KidCTL. **Newsletter** – Bereich im Verwaltungsbereich zum Versand an alle Familien;
+  Opt-in je Familie (Standard aus, Schalter in den Einstellungen und bei der Registrierung, Abmeldelink in jeder Mail);
+  Betreff und Text je Newsletter Deutsch und optional Englisch, jedes Elternteil bekommt seine Sprache.
