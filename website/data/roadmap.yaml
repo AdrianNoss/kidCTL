@@ -69,7 +69,7 @@
     de: "Eigener Name, Logo und App-Icon für Weboberfläche, App und Mails, mit „powered by KidCTL“."
     en: "Your own name, logo and app icon for the web interface, app and emails, with \"powered by KidCTL\"."
 - id: newsletter
-  status: planned
+  status: done
   title: { de: "Neuigkeiten per Mail", en: "News by email" }
   text:
     de: "Betreiber informieren Familien über neue Versionen und Funktionen – nur mit Zustimmung der Familie."

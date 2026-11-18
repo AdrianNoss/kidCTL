@@ -20,6 +20,7 @@
     <div class="qr">{{ qr_svg | safe }}</div>
     <p class="muted"><small>{{ _("Ohne Kamera: Schlüssel") }} <code>{{ secret }}</code></small></p>
     <label>{{ _("Code aus der App") }} <input name="totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
+    <label class="option"><input type="checkbox" name="newsletter" value="1"{% if form.newsletter %} checked{% endif %}> {{ _("Neuigkeiten per E-Mail erhalten (neue Versionen und Funktionen, selten; jederzeit abbestellbar)") }}</label>
     <button type="submit" style="width:100%">{{ _("Account anlegen") }}</button>
   </form>
   {% endif %}

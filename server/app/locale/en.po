@@ -3043,3 +3043,149 @@ msgstr "PNG, JPEG, WebP, GIF or ICO, at most {mb} MB. The logo is scaled down to
 
 msgid "entfernt"
 msgstr "removed"
+
+# Navigation: Kurzform Einstellungen (6 Einträge)
+msgid "Optionen"
+msgstr "Settings"
+
+# Newsletter (Verwaltung, Opt-in, Abmeldung)
+msgid "(Testversand – an Familien steht hier der Abmeldelink.)"
+msgstr "(Test send – emails to families contain the unsubscribe link here.)"
+
+msgid "(ohne Betreff)"
+msgstr "(no subject)"
+
+msgid "Abbestellen"
+msgstr "Unsubscribe"
+
+msgid "Abbestellen: {url}"
+msgstr "Unsubscribe: {url}"
+
+msgid "Abbestellt"
+msgstr "Unsubscribed"
+
+msgid "Abonniert seit {date}."
+msgstr "Subscribed since {date}."
+
+msgid "Alle Newsletter"
+msgstr "All newsletters"
+
+msgid "Bitte mindestens Betreff und Text auf Deutsch angeben."
+msgstr "Please enter at least a German subject and text."
+
+msgid "Danach lässt sich der Newsletter nicht mehr ändern."
+msgstr "The newsletter cannot be changed afterwards."
+
+msgid "Der Versand läuft im Hintergrund. Die Zahlen erscheinen, sobald er fertig ist."
+msgstr "Sending runs in the background. The numbers appear once it is done."
+
+msgid "Deutsch"
+msgstr "German"
+
+msgid "Du bekommst diese Mail, weil eure Familie Neuigkeiten per E-Mail abonniert hat."
+msgstr "You are receiving this email because your family subscribed to news by email."
+
+msgid "Empfänger"
+msgstr "Recipients"
+
+msgid "Englisch"
+msgstr "English"
+
+msgid "Englisch bitte mit Betreff und Text – oder beides leer lassen."
+msgstr "For English, please enter both subject and text – or leave both empty."
+
+msgid "Eure Familie bekommt dann keine Neuigkeiten mehr per E-Mail. Wichtige Mails zu eurem Account (z. B. Sicherheitshinweise, Rechnungen) kommen weiterhin."
+msgstr "Your family will no longer receive news by email. Important emails about your account (e.g. security notices, invoices) will still be sent."
+
+msgid "Eure Familie bekommt keine Neuigkeiten per E-Mail mehr. Wieder anmelden könnt ihr in den Einstellungen."
+msgstr "Your family no longer receives news by email. You can subscribe again in the settings."
+
+msgid "Für den Testversand bitte im Profil eine E-Mail-Adresse hinterlegen."
+msgstr "For a test send, please add an email address in your profile."
+
+msgid "Gespeichert und als Test an {email} gesendet."
+msgstr "Saved and sent as a test to {email}."
+
+msgid "Mails"
+msgstr "Emails"
+
+msgid "Neuer Newsletter"
+msgstr "New newsletter"
+
+msgid "Neuigkeiten abbestellen"
+msgstr "Unsubscribe from news"
+
+msgid "Neuigkeiten an Familien"
+msgstr "News to families"
+
+msgid "Neuigkeiten erhalten"
+msgstr "Receive news"
+
+msgid "Neuigkeiten per E-Mail"
+msgstr "News by email"
+
+msgid "Neuigkeiten per E-Mail erhalten (neue Versionen und Funktionen, selten; jederzeit abbestellbar)"
+msgstr "Receive news by email (new versions and features, rarely; unsubscribe at any time)"
+
+msgid "Newsletter"
+msgstr "Newsletter"
+
+msgid "Noch kein Newsletter."
+msgstr "No newsletter yet."
+
+msgid "Reiner Text, Links werden im Mailprogramm klickbar. Anrede („Hallo …“), Abmeldehinweis und – bei eigenem Erscheinungsbild – „powered by KidCTL“ fügt das System hinzu. Ohne englischen Text bekommen alle die deutsche Fassung."
+msgstr "Plain text; links become clickable in the email program. The greeting (\"Hello …\"), the unsubscribe note and – with custom branding – \"powered by KidCTL\" are added by the system. Without an English text, everyone gets the German version."
+
+msgid "Selten und kurz: neue Versionen, neue Funktionen und wichtige Hinweise zum Dienst. Die Mail geht an alle Eltern eurer Familie mit bestätigter Adresse, jeweils in ihrer Sprache. Abbestellen geht jederzeit hier oder über den Link in jeder Mail."
+msgstr "Rare and short: new versions, new features and important notes about the service. The email goes to all parents in your family with a confirmed address, each in their language. You can unsubscribe at any time here or via the link in every email."
+
+msgid "Speichern und Test an mich"
+msgstr "Save and send test to me"
+
+msgid "Text"
+msgstr "Text"
+
+msgid "Ungesicherte Änderungen oben bitte vorher speichern."
+msgstr "Please save unsaved changes above first."
+
+msgid "Versand"
+msgstr "Sending"
+
+msgid "an"
+msgstr "on"
+
+msgid "gesendet"
+msgstr "sent"
+
+msgid "wird gesendet"
+msgstr "sending"
+
+msgid "Geht an alle Eltern mit bestätigter Adresse in {n} Familie mit Zustimmung."
+msgid_plural "Geht an alle Eltern mit bestätigter Adresse in {n} Familien mit Zustimmung."
+msgstr[0] "Goes to all parents with a confirmed address in {n} family that opted in."
+msgstr[1] "Goes to all parents with a confirmed address in {n} families that opted in."
+
+msgid "Jetzt an {n} Familie senden?"
+msgid_plural "Jetzt an {n} Familien senden?"
+msgstr[0] "Send to {n} family now?"
+msgstr[1] "Send to {n} families now?"
+
+msgid "An {n} Familie senden"
+msgid_plural "An {n} Familien senden"
+msgstr[0] "Send to {n} family"
+msgstr[1] "Send to {n} families"
+
+msgid "{n} Mail"
+msgid_plural "{n} Mails"
+msgstr[0] "{n} email"
+msgstr[1] "{n} emails"
+
+msgid "{n} Familie"
+msgid_plural "{n} Familien"
+msgstr[0] "{n} family"
+msgstr[1] "{n} families"
+
+msgid "{n} Familie hat Neuigkeiten per E-Mail abonniert (Opt-in in den Einstellungen bzw. bei der Registrierung)."
+msgid_plural "{n} Familien haben Neuigkeiten per E-Mail abonniert (Opt-in in den Einstellungen bzw. bei der Registrierung)."
+msgstr[0] "{n} family has subscribed to news by email (opt-in in the settings or at sign-up)."
+msgstr[1] "{n} families have subscribed to news by email (opt-in in the settings or at sign-up)."

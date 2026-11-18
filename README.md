@@ -54,6 +54,7 @@ child's computer the language of the desktop session is used.
 - **Several families** (`KIDCTL_MODE=saas`): sign-up with an invitation code, subscription with a trial, support
   tickets and an administration area for the operator (roles, log, search).
 - **Your own branding:** name, logo and app icon for the web interface, app and emails, with "powered by KidCTL".
+- **Newsletter:** news to all families that opted in – in German and English, with an unsubscribe link.
 - **Security**:
   - Parent sign-in only with TOTP, rate limiting, CSRF protection.
   - Names, chat, activity log, statistics and email addresses are stored encrypted on the server (one key

@@ -41,6 +41,8 @@ class Family(Base):
     billing_provider: Mapped[str] = mapped_column(String(32), default="", server_default="")   # neutral
     billing_customer: Mapped[str] = mapped_column(String(128), default="", server_default="")  # Kundennummer dort
     billing_notified: Mapped[str] = mapped_column(String(255), default="", server_default="")  # gesendete Hinweise
+    # Newsletter (Opt-in): Zeitpunkt der Zustimmung; NULL = keine Neuigkeiten per Mail
+    newsletter_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class FamilyScoped:
@@ -281,6 +283,25 @@ class TicketMessage(FamilyScoped, Base):
     body: Mapped[str] = mapped_column(PlatformSealed("ticket_message.body"))
 
     ticket: Mapped[Ticket] = relationship(back_populates="messages")
+
+
+class Newsletter(Base):
+    """Neuigkeiten an alle Familien mit Zustimmung (Verwaltungsbereich). Betreff/Text deutsch, optional englisch;
+    jedes Elternteil bekommt seine Sprache (ohne Englisch: Deutsch). Versendete bleiben als Archiv erhalten."""
+    __tablename__ = "newsletter"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    status: Mapped[str] = mapped_column(String(16), default="draft")          # draft | sending | sent
+    subject_de: Mapped[str] = mapped_column(String(200), default="")
+    body_de: Mapped[str] = mapped_column(Text, default="")
+    subject_en: Mapped[str] = mapped_column(String(200), default="")
+    body_en: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    created_by: Mapped[str] = mapped_column(String(64), default="")
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    sent_by: Mapped[str] = mapped_column(String(64), default="")
+    families: Mapped[int] = mapped_column(Integer, default=0)                 # Familien mit Zustimmung beim Versand
+    recipients: Mapped[int] = mapped_column(Integer, default=0)               # zugestellte Mails
 
 
 class Branding(Base):

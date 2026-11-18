@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Newsletter") }} – {{ brand().name }}{% endblock %}
+{% block content %}
+{% set heading = nl.subject_de or _("Neuer Newsletter") %}{% include "_admin_head.html" %}
+{% if saved == "test" %}<p class="success">{{ _("Gespeichert und als Test an {email} gesendet.").format(email=operator.email) }}</p>
+{% elif saved == "sending" %}<p class="success">{{ _("Der Versand läuft im Hintergrund. Die Zahlen erscheinen, sobald er fertig ist.") }}</p>
+{% elif saved %}<p class="success">{{ _("Gespeichert.") }}</p>{% endif %}
+<p><a href="/admin/newsletter">← {{ _("Alle Newsletter") }}</a> · <span class="pill{{ ' ok' if nl.status == 'sent' else '' }}">{{ _(statuses[nl.status]) }}</span></p>
+
+{% if nl.status == "draft" %}
+<form method="post" action="/admin/newsletter/{{ nl.id }}" class="card">
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <div class="card-grid newsletter-langs">
+    <div>
+      <h2>{{ _("Deutsch") }}</h2>
+      <label>{{ _("Betreff") }} <input name="subject_de" maxlength="200" value="{{ nl.subject_de }}" required></label>
+      <label>{{ _("Text") }} <textarea name="body_de" rows="14" maxlength="20000">{{ nl.body_de }}</textarea></label>
+    </div>
+    <div>
+      <h2>{{ _("Englisch") }} <span class="field-note">{{ _("optional") }}</span></h2>
+      <label>{{ _("Betreff") }} <input name="subject_en" maxlength="200" value="{{ nl.subject_en }}"></label>
+      <label>{{ _("Text") }} <textarea name="body_en" rows="14" maxlength="20000">{{ nl.body_en }}</textarea></label>
+    </div>
+  </div>
+  <p class="muted"><small>{{ _("Reiner Text, Links werden im Mailprogramm klickbar. Anrede („Hallo …“), Abmeldehinweis und – bei eigenem Erscheinungsbild – „powered by KidCTL“ fügt das System hinzu. Ohne englischen Text bekommen alle die deutsche Fassung.") }}</small></p>
+  <div class="row">
+    <button type="submit" name="action" value="save" class="secondary">{{ _("Entwurf speichern") }}</button>
+    <button type="submit" name="action" value="test" class="secondary">{{ _("Speichern und Test an mich") }}</button>
+  </div>
+</form>
+<section class="card">
+  <h2>{{ _("Versand") }}</h2>
+  <p>{{ ngettext("Geht an alle Eltern mit bestätigter Adresse in {n} Familie mit Zustimmung.", "Geht an alle Eltern mit bestätigter Adresse in {n} Familien mit Zustimmung.", families).format(n=families) }}
+    {{ _("Danach lässt sich der Newsletter nicht mehr ändern.") }}</p>
+  <div class="row">
+    <form method="post" action="/admin/newsletter/{{ nl.id }}/send" class="inline" data-confirm="{{ ngettext('Jetzt an {n} Familie senden?', 'Jetzt an {n} Familien senden?', families).format(n=families) }}">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <button type="submit"{% if not families or not nl.subject_de %} disabled{% endif %}>{{ ngettext("An {n} Familie senden", "An {n} Familien senden", families).format(n=families) }}</button>
+    </form>
+    <form method="post" action="/admin/newsletter/{{ nl.id }}/delete" class="inline" data-confirm="{{ _('Entwurf löschen?') }}">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <button type="submit" class="danger">{{ _("Entwurf löschen") }}</button>
+    </form>
+  </div>
+  <p class="muted"><small>{{ _("Ungesicherte Änderungen oben bitte vorher speichern.") }}</small></p>
+</section>
+{% else %}
+<section class="card">
+  <dl class="facts">
+    <dt>{{ _("Erstellt") }}</dt><dd>{{ nl.created_at | localtime }} · {{ nl.created_by }}</dd>
+    <dt>{{ _("Gesendet") }}</dt><dd>{% if nl.sent_at %}{{ nl.sent_at | localtime }}{% else %}{{ _(statuses[nl.status]) }}{% endif %} · {{ nl.sent_by }}</dd>
+    {% if nl.status == "sent" %}<dt>{{ _("Empfänger") }}</dt><dd>{{ ngettext("{n} Mail", "{n} Mails", nl.recipients).format(n=nl.recipients) }} · {{ ngettext("{n} Familie", "{n} Familien", nl.families).format(n=nl.families) }}</dd>{% endif %}
+  </dl>
+</section>
+<div class="card-grid">
+  <section class="card"><h2>{{ _("Deutsch") }}</h2><p><strong>{{ nl.subject_de }}</strong></p><div class="ticket-body">{{ nl.body_de }}</div></section>
+  {% if nl.subject_en %}<section class="card"><h2>{{ _("Englisch") }}</h2><p><strong>{{ nl.subject_en }}</strong></p><div class="ticket-body">{{ nl.body_en }}</div></section>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

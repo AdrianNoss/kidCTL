@@ -43,7 +43,7 @@
                             + ([("/support", _("Support"), "support")] if SAAS else []) %}
   {% set active = (href == '/' and path == '/') or (href != '/' and path.startswith(href)) %}
   <a href="{{ href }}" class="nav-item{% if active %} active{% endif %}"{% if active %} aria-current="page"{% endif %}>
-    <span class="nav-icon">{{ icon(ic) }}</span><span class="nav-label">{{ label }}</span></a>
+    <span class="nav-icon">{{ icon(ic) }}</span><span class="nav-label">{% if href == "/settings" and SAAS %}<span class="nav-long">{{ label }}</span><span class="nav-short" aria-hidden="true">{{ _("Optionen") }}</span>{% else %}{{ label }}{% endif %}</span></a>
   {% endfor %}
 </nav>
 {% endif %}

@@ -17,6 +17,19 @@
 </section>
 
 {% if SAAS and family %}
+<section class="card" id="newsletter">
+  <div class="card-head"><h2>{{ _("Neuigkeiten per E-Mail") }}</h2>
+    <span class="pill{{ ' ok' if family.newsletter_at }}">{{ _("an") if family.newsletter_at else _("aus") }}</span></div>
+  {% if saved == "newsletter" %}<p class="success">{{ _("Gespeichert.") }}</p>{% endif %}
+  <p>{{ _("Selten und kurz: neue Versionen, neue Funktionen und wichtige Hinweise zum Dienst. Die Mail geht an alle Eltern eurer Familie mit bestätigter Adresse, jeweils in ihrer Sprache. Abbestellen geht jederzeit hier oder über den Link in jeder Mail.") }}</p>
+  <form method="post" action="/settings/newsletter" class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    {% if family.newsletter_at %}<button type="submit" class="secondary">{{ _("Abbestellen") }}</button>
+    {% else %}<input type="hidden" name="subscribe" value="1"><button type="submit">{{ _("Neuigkeiten erhalten") }}</button>{% endif %}
+  </form>
+  {% if family.newsletter_at %}<p class="muted"><small>{{ _("Abonniert seit {date}.").format(date=fmt_date(family.newsletter_at.date())) }}</small></p>{% endif %}
+</section>
+
 <section class="card" id="abo">
   <div class="card-head"><h2>{{ _("Abo") }}</h2>
     {% if billing_state.phase == "paused" %}<span class="pill danger">{{ _("pausiert") }}</span>

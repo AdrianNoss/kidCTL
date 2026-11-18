@@ -16,7 +16,7 @@ TIMEOUT = 20
 
 
 def send(to: str, subject: str, body: str, html: str | None = None,
-         attachments: list[tuple[str, bytes, str]] | None = None) -> bool:
+         attachments: list[tuple[str, bytes, str]] | None = None, headers: dict[str, str] | None = None) -> bool:
     """Mail senden (``html``: zusätzlich als HTML-Alternative; ``attachments``: (Dateiname, Inhalt, MIME-Typ));
     ``False`` bei Fehler oder ohne SMTP (Fehler werden geloggt, nie an Nutzer gezeigt)."""
     from . import branding
@@ -29,6 +29,8 @@ def send(to: str, subject: str, body: str, html: str | None = None,
     msg["From"], msg["To"], msg["Subject"] = settings.smtp_from, to, subject
     msg["Date"] = formatdate(localtime=True)
     msg["Message-ID"] = make_msgid(domain=settings.smtp_from.rsplit("@", 1)[-1].strip(" >") or None)
+    for key, value in (headers or {}).items():   # z. B. List-Unsubscribe beim Newsletter
+        msg[key] = value
     msg.set_content(body)
     if html:
         msg.add_alternative(html, subtype="html")

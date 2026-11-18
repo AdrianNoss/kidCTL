@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Newsletter") }} – {{ brand().name }}{% endblock %}
+{% block content %}
+{% set heading = _("Newsletter") %}{% include "_admin_head.html" %}
+<section class="card">
+  <div class="card-head"><h2>{{ _("Neuigkeiten an Familien") }}</h2>
+    <form method="post" action="/admin/newsletter" class="inline">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <button type="submit" class="small">{{ _("Neuer Newsletter") }}</button>
+    </form></div>
+  <p class="muted"><small>{{ ngettext("{n} Familie hat Neuigkeiten per E-Mail abonniert (Opt-in in den Einstellungen bzw. bei der Registrierung).", "{n} Familien haben Neuigkeiten per E-Mail abonniert (Opt-in in den Einstellungen bzw. bei der Registrierung).", families).format(n=families) }}</small></p>
+  {% if items %}
+  <table class="responsive">
+    <tr><th>{{ _("Betreff") }}</th><th>{{ _("Status") }}</th><th>{{ _("Erstellt") }}</th><th>{{ _("Gesendet") }}</th><th class="right">{{ _("Mails") }}</th></tr>
+    {% for n in items %}
+    <tr><td><a href="/admin/newsletter/{{ n.id }}">{{ n.subject_de or _("(ohne Betreff)") }}</a>{% if n.subject_en %} <span class="pill">EN</span>{% endif %}</td>
+      <td data-label="{{ _('Status') }}"><span class="pill{{ ' ok' if n.status == 'sent' else (' play' if n.status == 'sending' else '') }}">{{ _(statuses[n.status]) }}</span></td>
+      <td data-label="{{ _('Erstellt') }}">{{ n.created_at | localtime }} · {{ n.created_by }}</td>
+      <td data-label="{{ _('Gesendet') }}">{% if n.sent_at %}{{ n.sent_at | localtime }} · {{ n.sent_by }}{% else %}–{% endif %}</td>
+      <td data-label="{{ _('Mails') }}" class="right">{% if n.status == "sent" %}{{ n.recipients }} / {{ ngettext("{n} Familie", "{n} Familien", n.families).format(n=n.families) }}{% else %}–{% endif %}</td></tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="muted">{{ _("Noch kein Newsletter.") }}</p>{% endif %}
+</section>
+{% endblock %}

@@ -166,6 +166,15 @@ KidCTL" is shown everywhere, in emails as a footer. The programs on the children
 Set the sender name of the emails in `SMTP_FROM` (e.g. `Family Guard <noreply@example.org>`). Changes are logged and
 visible everywhere within a minute.
 
+**Newsletter** (*Admin* only, SaaS only): Under "Newsletter" you write news (new versions, features) with a subject
+and text in German, optionally in English. "Save and send test to me" sends both versions to the address in your
+profile. "Send to N families" sends in the background to all parents with a confirmed address in families that opted
+in – each in their language (without an English text: German), with a greeting and an unsubscribe link (including
+"one-click unsubscribe" in the email program). Afterwards the newsletter cannot be changed and stays in the archive
+with the number of families and emails; sending is recorded in the activity log. Families opt in themselves (off by
+default): at sign-up or under "Settings → News by email"; they unsubscribe there or via the link in every email.
+Existing families have not opted in.
+
 > [!IMPORTANT]
 > The invoice template has not been reviewed by a tax advisor yet. `python dev/sample_invoices.py` creates samples
 > of both tax modes – show them to a tax advisor before the first real invoice.

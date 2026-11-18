@@ -90,7 +90,7 @@ def start(db: Session, email: str, code: str, lang: str) -> bool:
 
 
 def complete(db: Session, email: str, code: str, display_name: str, password: str, totp_secret: str,
-             totp_last_step: int) -> Parent:
+             totp_last_step: int, newsletter: bool = False) -> Parent:
     """Familie und Inhaber-Account anlegen (eine Transaktion); der Code wird dabei eingelöst."""
     from . import billing
     code_id, code_plan = None, ""
@@ -103,7 +103,7 @@ def complete(db: Session, email: str, code: str, display_name: str, password: st
             db.rollback()
             raise SignupError(_("Der Einladungscode ist ungültig, abgelaufen oder schon eingelöst."))
         code_id, code_plan = row
-    family = Family()
+    family = Family(newsletter_at=utcnow() if newsletter else None)   # Opt-in nur per Häkchen
     if code_plan == "free":
         family.plan, family.billing_status = "free", "active"
     else:

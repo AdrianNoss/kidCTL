@@ -83,7 +83,7 @@ def signup_confirm_form(token: str, request: Request, db: Session = Depends(get_
 @router.post("/signup/{token}", dependencies=[Depends(_open), Depends(csrf_protect_anon)])
 def signup_confirm(token: str, request: Request, display_name: str = Form(""), password: str = Form(""),
                    repeat: str = Form(""), secret: str = Form(""), totp: str = Form(""),
-                   db: Session = Depends(get_platform_db)):
+                   newsletter: str = Form(""), db: Session = Depends(get_platform_db)):
     data = signup.read_token(token)
     error = signup.link_error(db, *data) if data else _("Dieser Link ist ungültig oder abgelaufen.")
     if error:
@@ -92,7 +92,7 @@ def signup_confirm(token: str, request: Request, display_name: str = Form(""), p
     ip = client_ip(request)
     if not SECRET_RE.match(secret):
         secret = new_totp_secret()
-    form = {"display_name": display_name}
+    form = {"display_name": display_name, "newsletter": bool(newsletter)}
     if is_rate_limited(db, "signup", ip):
         return _confirm_page(request, token, email, secret, 429, _("Zu viele Fehlversuche. Bitte später erneut versuchen."), form)
     if error := accounts.password_error(password, repeat):
@@ -103,7 +103,8 @@ def signup_confirm(token: str, request: Request, display_name: str = Form(""), p
         return _confirm_page(request, token, email, secret, 400,
                              _("Der Code passt nicht. Bitte die Uhrzeit des Handys prüfen und den aktuellen Code eingeben."), form)
     try:
-        parent = signup.complete(db, email, code, display_name, password, secret, probe.totp_last_step)
+        parent = signup.complete(db, email, code, display_name, password, secret, probe.totp_last_step,
+                                 newsletter=bool(newsletter))
     except signup.SignupError as e:
         return render_anon(request, "signup_confirm.html", status_code=409, invalid=str(e))
     except IntegrityError:                         # gleichzeitig mit derselben Adresse registriert

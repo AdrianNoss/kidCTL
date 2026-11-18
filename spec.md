@@ -2704,3 +2704,22 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Standard, Name/Logo/Icon inkl. Skalierung und Protokoll, Ablehnung von Nicht-Bildern, Support-Rolle 403, Entfernen,
   Mail-Fußzeile über echten `mail.send` mit Fake-SMTP, Authenticator-Name), Server 277 Tests grün; Migration check
   und down/up; im Browser Admin-Seite, Eltern-Oberfläche desktop und mobil mit Testlogo.
+- 2026-11-18: Fix Eltern-WebUI/PWA (SaaS): Die untere Navigationsleiste hatte fest 5 Spalten, der sechste Eintrag
+  „Support“ rutschte halb abgeschnitten in eine zweite Zeile. Jetzt so viele Spalten wie Einträge, Icon-Fläche
+  schrumpft mit; „Einstellungen“ heißt in der unteren Leiste im SaaS kurz „Optionen“ (für Screenreader weiter
+  „Einstellungen“, Seitenleiste ab 840 px unverändert). Self-Hosting (5 Einträge) unverändert. Getestet im Browser:
+  375 px alle sechs Einträge vollständig in einer Zeile, 1100 px Seitenleiste mit „Einstellungen“.
+- 2026-11-18: **Newsletter** umgesetzt (nur SaaS): Familie stimmt zu (Opt-in, `Family.newsletter_at`, Standard aus,
+  Bestand ohne Zustimmung) per Häkchen bei der Registrierung oder Karte „Neuigkeiten per E-Mail“ in den
+  Einstellungen (jedes Elternteil, auch im Ruhemodus). Verwaltungsbereich „Newsletter“ (nur Admin, Tabelle
+  `newsletter`, Migration 0019): Entwürfe mit Betreff/Text Deutsch und optional Englisch (nur beides oder keins),
+  „Speichern und Test an mich“ (beide Sprachen an die Profiladresse), „An N Familien senden“ (Statuswechsel atomar,
+  nur einmal; Versand im Hintergrund an alle Eltern mit bestätigter Adresse, Sprache je Elternteil, ohne Englisch
+  Deutsch; Anrede, Abmeldehinweis mit HMAC-signiertem Link, Header `List-Unsubscribe`/`List-Unsubscribe-Post`),
+  danach unveränderlich im Archiv mit Zahl der Familien und Mails, Versand im Verwaltungsprotokoll. Abmeldeseite
+  `/newsletter/unsubscribe/<Familie>/<Signatur>`: GET bestätigt nur (Mail-Scanner), POST bestellt ab (auch RFC 8058).
+  `mail.send` kann zusätzliche Header. Getestet: pytest (6 neue Tests: Schalter in den Einstellungen inkl. CSRF,
+  Registrierung mit/ohne Häkchen, Abmeldelink inkl. falscher Signatur und GET ohne Wirkung, Testversand DE+EN und
+  Versand nur an zustimmende Familie mit Abmeldelink/Headern, Doppelversand/Ändern/Löschen danach 409, Sprachwahl
+  mit Rückfall, Pflichtfelder und Support-Rolle 403), Server 283 Tests grün; Migration check und down/up; im Browser
+  Entwurf, Versand-Karte und Einstellungskarte.

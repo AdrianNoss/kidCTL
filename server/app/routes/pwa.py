@@ -163,6 +163,43 @@ def family_rename(name: str = Form(""), sess: ParentSession = Depends(csrf_prote
     return RedirectResponse("/settings?saved=family#family", status_code=303)
 
 
+# ---------- Newsletter (Opt-in je Familie) ----------
+
+@router.post("/settings/newsletter")
+def newsletter_toggle(subscribe: str = Form(""), sess: ParentSession = Depends(csrf_protect),
+                      db: Session = Depends(get_db)):
+    """Neuigkeiten per Mail für die ganze Familie an- oder abbestellen (jedes Elternteil darf das)."""
+    from ..models import Family, utcnow
+    family = db.scalar(select(Family))
+    if subscribe and family.newsletter_at is None:
+        family.newsletter_at = utcnow()
+    elif not subscribe:
+        family.newsletter_at = None
+    db.commit()
+    return RedirectResponse("/settings?saved=newsletter#newsletter", status_code=303)
+
+
+@router.get("/newsletter/unsubscribe/{family_id}/{sig}", include_in_schema=False)
+def newsletter_unsubscribe_page(family_id: int, sig: str, request: Request):
+    """Abmeldelink aus der Mail: erst bestätigen (Mail-Scanner rufen Links auf, ohne zu klicken)."""
+    from .. import newsletter
+    from ..web import render_anon
+    if not newsletter.valid_signature(family_id, sig):
+        raise HTTPException(404)
+    return render_anon(request, "newsletter_unsubscribe.html", family_id=family_id, sig=sig)
+
+
+@router.post("/newsletter/unsubscribe/{family_id}/{sig}", include_in_schema=False)
+def newsletter_unsubscribe(family_id: int, sig: str, request: Request):
+    """Abmelden – auch „mit einem Klick“ aus dem Mailprogramm (RFC 8058, ohne Formular-Token; die Signatur genügt)."""
+    from .. import newsletter
+    from ..web import render_anon
+    if not newsletter.valid_signature(family_id, sig):
+        raise HTTPException(404)
+    newsletter.unsubscribe(family_id)
+    return render_anon(request, "newsletter_unsubscribe.html", done=True)
+
+
 BILLING_FIELDS = {"name": 128, "street": 128, "postal_code": 16, "city": 64, "country": 64, "email": 255, "vat_id": 32}
 
 

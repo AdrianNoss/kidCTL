@@ -113,12 +113,14 @@ body.no-nav .brand { visibility:hidden; }   /* Anmeldeseiten zeigen das Logo in 
 
 /* ---------- Navigationsleiste (unten; ab 840 px links als Rail) ---------- */
 .navbar { position:fixed; z-index:20; left:0; right:0; bottom:0; height:calc(var(--nav-h) + env(safe-area-inset-bottom));
-          padding-bottom:env(safe-area-inset-bottom); display:grid; grid-template-columns:repeat(5, minmax(0, 1fr));
+          padding-bottom:env(safe-area-inset-bottom); display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0, 1fr);   /* 5 oder 6 Einträge (Support nur SaaS) */
           background:var(--surface-container); }
 .nav-item { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-width:0;
             color:var(--on-surface-variant); text-decoration:none; font-size:.75rem; line-height:1rem; font-weight:500; }
-.nav-icon { display:grid; place-items:center; width:64px; height:32px; border-radius:var(--shape-full); transition:background-color .15s; }
+.nav-icon { display:grid; place-items:center; width:min(64px, calc(100% - .5rem)); height:32px; border-radius:var(--shape-full); transition:background-color .15s; }
 .nav-label { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:clamp(.6875rem, 3vw, .75rem); }
+.nav-long { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }   /* für Screenreader; untere Leiste mit 6 Einträgen: Kurzform, damit nichts abgeschnitten wird */
+.nav-short { display:inline; }
 .nav-item:hover .nav-icon { background:color-mix(in srgb, var(--on-surface) 8%, transparent); }
 .nav-item.active { color:var(--on-surface); font-weight:700; }
 .nav-item.active .nav-icon { background:var(--secondary-container); color:var(--on-secondary-container); }
@@ -525,6 +527,8 @@ body.no-nav .save-bar { bottom:0; }
             display:flex; flex-direction:column; align-items:center; gap:.75rem; background:var(--surface); z-index:19; }
   .nav-item { width:100%; gap:4px; }
   .nav-icon { width:56px; }
+  .nav-long { position:static; width:auto; height:auto; overflow:visible; clip-path:none; }
+  .nav-short { display:none; }
   .save-bar { bottom:0; }
   main { padding:1rem 2rem 3rem; }
 }
@@ -599,3 +603,5 @@ button[disabled] { opacity:.5; cursor:not-allowed; }
 body.no-nav .brand-preview .brand { visibility:visible; }
 .brand-preview-icon { display:flex; align-items:center; gap:.75rem; margin-bottom:.75rem; }
 .brand-preview-icon img { border-radius:var(--shape-md); background:var(--surface-container); }
+.newsletter-langs h2 .field-note { font-size:.8125rem; font-weight:400; }
+.newsletter-langs textarea { font-family:inherit; }

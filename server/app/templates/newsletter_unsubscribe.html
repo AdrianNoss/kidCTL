@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_brand.html" import brand_mark %}
+{% block title %}{{ _("Neuigkeiten abbestellen") }} – {{ brand().name }}{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <div class="login-brand">{{ brand_mark() }}</div>
+  {% if done %}
+  <h1>{{ _("Abbestellt") }}</h1>
+  <p>{{ _("Eure Familie bekommt keine Neuigkeiten per E-Mail mehr. Wieder anmelden könnt ihr in den Einstellungen.") }}</p>
+  {% else %}
+  <h1>{{ _("Neuigkeiten abbestellen") }}</h1>
+  <p>{{ _("Eure Familie bekommt dann keine Neuigkeiten mehr per E-Mail. Wichtige Mails zu eurem Account (z. B. Sicherheitshinweise, Rechnungen) kommen weiterhin.") }}</p>
+  <form method="post" action="/newsletter/unsubscribe/{{ family_id }}/{{ sig }}">
+    <button type="submit" style="width:100%">{{ _("Abbestellen") }}</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

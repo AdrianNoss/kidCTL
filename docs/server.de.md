@@ -168,6 +168,15 @@ eigenem Namen steht überall „powered by KidCTL“, in Mails als Fußzeile. Di
 weiterhin KidCTL. Den Absendernamen der Mails setzt du in `SMTP_FROM` (z. B. `Familienwächter <noreply@example.org>`).
 Änderungen werden protokolliert und sind nach spätestens einer Minute überall sichtbar.
 
+**Newsletter** (nur *Admin*, nur SaaS): Unter „Newsletter“ schreibst du Neuigkeiten (neue Versionen, Funktionen) mit
+Betreff und Text auf Deutsch, optional auf Englisch. „Speichern und Test an mich“ schickt beide Fassungen an die
+Adresse aus deinem Profil. „An N Familien senden“ verschickt im Hintergrund an alle Eltern mit bestätigter Adresse in
+Familien, die zugestimmt haben – jeweils in ihrer Sprache (ohne englischen Text: Deutsch), mit Anrede und Abmeldelink
+(auch „Abmelden mit einem Klick“ im Mailprogramm). Danach ist der Newsletter unveränderlich und bleibt mit Zahl der
+Familien und Mails im Archiv; der Versand steht im Verwaltungsprotokoll. Familien stimmen selbst zu (Opt-in, Standard
+aus): bei der Registrierung oder unter „Einstellungen → Neuigkeiten per E-Mail“; dort und über den Link in jeder Mail
+bestellen sie wieder ab. Bestehende Familien haben nicht zugestimmt.
+
 > [!IMPORTANT]
 > Die Rechnungsvorlage ist noch nicht steuerlich geprüft. Muster beider Steuermodi erzeugt
 > `python dev/sample_invoices.py` – vor der ersten echten Rechnung dem Steuerberater vorlegen.
