@@ -2579,3 +2579,17 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Admin; Protokolleinträge für Name, Abo, Code, Webhook („Webhook“) und Ruhemodus („System“); Filter; Familie ohne
   Zugriff; Aufbewahrung behält Rechnungs-Einträge; CLI-Rollen; Profil. Seiten im Browser (Desktop, Handy) angesehen.
   Server 218 Tests grün.
+- 2026-11-18: Verwaltungsbereich 2, Etappe 2 (Übersicht): Kacheln Familien · Kinder · Geräte · in Testphase · Testphase
+  endet ≤ 7 Tage · Ruhemodus · offene Tickets (bis Etappe 4: 0) · letztes Backup (grün/rot), Klick filtert. Suche
+  (ID bzw. `#ID`, Teilwort im entschlüsselten Namen, ohne Groß/klein), Filter-Chips Status/Tarif/Probleme (offline,
+  veraltet, Rechnungsangaben, Ticket, Support-Freigabe), Tabelle ID · Familie · Seit · Kinder / Geräte · Agent (älteste
+  Version, ⚠) · Letzte Aktivität (relativ, Datum im `title`) · Abo · Zustand; jede Spalte sortierbar (Klick dreht um),
+  50 je Seite, Parameter `q`/`status`/`plan`/`issue`/`sort`/`page` in der URL, ohne JavaScript; mobil als Karten.
+  „Ansehen“ (Support-Ansicht) jetzt auf der Familienseite. Abgeleitete Schlüssel werden zwischengespeichert; veraltete
+  Agenten gegen die einmal geladenen Releases geprüft (vorher Dateisystem-Suche je Gerät).
+  Getestet (pytest, 13 neue Tests): Kacheln, Suche (Teilwort, Groß/klein, #ID, ID, kein Treffer), Filter und
+  Kombinationen, Chip-Links behalten übrige Filter, jede Sortierung auf- und absteigend gegen die Referenz, älteste
+  Version und jüngste Aktivität, Blättern behält Parameter und begrenzt die Seite, relative Zeit mit/ohne Zeitzone.
+  Lastmessung (`tests/perf_admin_overview.py`, 5.000 Familien, 20.000 Geräte, 10.000 Kinder): Übersicht ~155 ms je
+  Aufruf (vorher ~430 ms), Suche/Filter/Sortierung/Seite 50 gleich schnell. Im Browser Desktop und Handy angesehen.
+  Server 231 Tests grün.

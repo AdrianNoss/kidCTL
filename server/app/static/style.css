@@ -521,3 +521,24 @@ body.no-nav .save-bar { bottom:0; }
 }
 /* Support-Ansicht (nur lesend): Aktionen sichtbar, aber nicht bedienbar – der Server lehnt sie ohnehin ab */
 .support-view main form[method="post"] { opacity:.55; pointer-events:none; }
+/* Verwaltungsbereich: Kennzahl-Kacheln, Suche, Familien-Tabelle */
+.admin-tiles { grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); }
+a.tile { color:inherit; text-decoration:none; }
+a.tile:hover { background:color-mix(in srgb, var(--on-surface) 8%, var(--surface-container)); }
+.tile.active { outline:2px solid var(--primary); }
+.tile-small { font-size:1rem; line-height:2rem; }
+.tile-ok .tile-value { color:var(--success); }
+.tile-bad .tile-value { color:var(--error); }
+.admin-search { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; }
+.admin-search input[type=search] { flex:1 1 220px; margin:0; }
+.admin-search .chip-groups { flex-basis:100%; display:flex; flex-wrap:wrap; gap:.5rem; }
+.admin-search .chip-groups .segmented { margin-bottom:0; }
+.admin-families td, .admin-families th { white-space:nowrap; }
+.admin-families th a.sort { color:inherit; text-decoration:none; }
+.admin-families th a.sort.active { color:var(--primary); }
+.warn-mark { color:var(--warning); }
+td.nowrap { white-space:nowrap; }
+@media (max-width: 700px) {
+  .admin-families td, .admin-families th { white-space:normal; }
+}
+

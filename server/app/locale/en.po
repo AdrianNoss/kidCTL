@@ -1875,8 +1875,6 @@ msgid "Über diesen Link legst du Passwort und Authenticator fest ({days} Tage g
 msgstr "Use this link to set your password and authenticator (valid for {days} days):"
 
 # Verwaltungsbereich (Etappe 4.2)
-msgid "Agent-Versionen"
-msgstr "Agent versions"
 
 msgid "Code erzeugen"
 msgstr "Create code"
@@ -1939,13 +1937,7 @@ msgstr "ok"
 msgid "seit {date}"
 msgstr "since {date}"
 
-msgid "{families} Familien · {children} Kinder · {devices} Geräte · {paused} im Ruhemodus"
-msgstr "{families} families · {children} children · {devices} devices · {paused} paused"
 
-msgid "{n} Agent zu alt"
-msgid_plural "{n} Agenten zu alt"
-msgstr[0] "{n} agent too old"
-msgstr[1] "{n} agents too old"
 
 msgid "{n} Gerät offline"
 msgid_plural "{n} Geräte offline"
@@ -2116,8 +2108,6 @@ msgstr "Import"
 msgid "Löscht eure Familie endgültig: alle Eltern-Accounts, Kinder, Geräte und Daten. Der Schlüssel der Familie wird verworfen, dadurch sind die Daten auch in Backups des Servers nicht mehr lesbar. Verbundene Agenten heben dabei alle Einschränkungen auf; Computer, die gerade aus sind, behalten die letzten Regeln – dort KidCTL deinstallieren."
 msgstr "Permanently deletes your family: all parent accounts, children, devices and data. The family's key is discarded, so the data can no longer be read even in the server's backups. Connected agents lift all restrictions; computers that are off keep the last rules – uninstall KidCTL there."
 
-msgid "Plattform-Backup"
-msgstr "Platform backup"
 
 msgid "Zur Bestätigung LÖSCHEN eingeben"
 msgstr "Type DELETE to confirm"
@@ -2394,3 +2384,76 @@ msgstr "not visible to families"
 
 msgid "Änderung"
 msgstr "Change"
+
+# Verwaltungsbereich 2 – Übersicht
+msgid "Geräte offline"
+msgstr "Devices offline"
+
+msgid "ID"
+msgstr "ID"
+
+msgid "ID oder Familienname"
+msgstr "ID or family name"
+
+msgid "Keine Familie passt zur Suche."
+msgstr "No family matches the search."
+
+msgid "Kennzahlen"
+msgstr "Key figures"
+
+msgid "Kinder / Geräte"
+msgstr "Children / devices"
+
+msgid "Letztes Backup"
+msgstr "Last backup"
+
+msgid "Seit"
+msgstr "Since"
+
+msgid "Suchen"
+msgstr "Search"
+
+msgid "Support-Freigabe aktiv"
+msgstr "Support access granted"
+
+msgid "Testphase endet ≤ 7 Tage"
+msgstr "Trial ends ≤ 7 days"
+
+msgid "im Ruhemodus"
+msgstr "paused"
+
+msgid "in Testphase"
+msgstr "in trial"
+
+msgid "keins"
+msgstr "none"
+
+msgid "offene Tickets"
+msgstr "open tickets"
+
+msgid "offenes Ticket"
+msgstr "open ticket"
+
+msgid "offline"
+msgstr "offline"
+
+msgid "{n} von {total} Familien"
+msgstr "{n} of {total} families"
+
+msgid "gerade eben"
+msgstr "just now"
+
+msgid "vor {n} Min."
+msgid_plural "vor {n} Min."
+msgstr[0] "{n} min ago"
+msgstr[1] "{n} min ago"
+
+msgid "vor {n} Std."
+msgid_plural "vor {n} Std."
+msgstr[0] "{n} h ago"
+msgstr[1] "{n} h ago"
+
+msgid "vor {n} Tag"
+msgid_plural "vor {n} Tagen"
+msgstr[0] "{n} day ago"
+msgstr[1] "{n} days ago"

@@ -2,43 +2,75 @@
 {% block title %}{{ _("Verwaltung") }} – KidCTL{% endblock %}
 {% block content %}
 {% set heading = _("Familien") %}{% include "_admin_head.html" %}
+{% set backup_ok = backups and not backup_error and backups[0].at.date() >= today_minus(1) %}
+<nav class="tiles admin-tiles" aria-label="{{ _('Kennzahlen') }}">
+  {% for key, label, link in [("families", _("Familien"), url(status="", plan="", issue="", q="")),
+                              ("children", _("Kinder"), None), ("devices", _("Geräte"), None),
+                              ("trial", _("in Testphase"), url(status="trial")),
+                              ("trial_ending", _("Testphase endet ≤ 7 Tage"), url(status="trial_ending")),
+                              ("paused", _("im Ruhemodus"), url(status="paused")),
+                              ("tickets", _("offene Tickets"), url(issue="ticket"))] %}
+  {% if link %}<a class="tile{% if (f.status and key == f.status) or (key == 'tickets' and f.issue == 'ticket') %} active{% endif %}" href="{{ link }}">{% else %}<div class="tile">{% endif %}
+    <div class="tile-label">{{ label }}</div><div class="tile-value">{{ tiles[key] }}</div>
+  {% if link %}</a>{% else %}</div>{% endif %}
+  {% endfor %}
+  <div class="tile {{ 'tile-ok' if backup_ok else 'tile-bad' }}" title="{{ backup_error or '' }}">
+    <div class="tile-label">{{ _("Letztes Backup") }}</div>
+    <div class="tile-value tile-small">{{ fmt_relative(backups[0].at) if backups else _("keins") }}</div>
+  </div>
+</nav>
+
+<form method="get" action="/admin" class="card admin-search">
+  <input type="search" name="q" value="{{ f.q }}" placeholder="{{ _('ID oder Familienname') }}" aria-label="{{ _('Suche') }}">
+  {% for k in ("status", "plan", "issue") %}{% if f[k] %}<input type="hidden" name="{{ k }}" value="{{ f[k] }}">{% endif %}{% endfor %}
+  {% if sort != "id" %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+  <button type="submit" class="secondary">{{ _("Suchen") }}</button>
+  <div class="chip-groups">
+    {% for group, options in [("status", [("trial", _("Testphase")), ("active", _("aktiv")), ("past_due", _("überfällig")), ("canceled", _("gekündigt")), ("paused", _("Ruhemodus"))]),
+                              ("plan", [("free", _("Kostenlos")), ("standard", _("Standard"))]),
+                              ("issue", [("offline", _("Geräte offline")), ("outdated", _("Agent veraltet")), ("address", _("Rechnungsangaben fehlen")), ("ticket", _("offenes Ticket")), ("support", _("Support-Freigabe aktiv"))])] %}
+    <div class="segmented">
+      {% for value, label in options %}
+      {% set on = f[group] == value %}
+      <a href="{{ url(**{group: '' if on else value}) }}"{% if on %} class="active" aria-current="true"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</form>
+
 <section class="card">
-  <p>{{ _("{families} Familien · {children} Kinder · {devices} Geräte · {paused} im Ruhemodus").format(**totals) }}</p>
-  <p>{{ _("Plattform-Backup") }}:
-    {% if backup_error %}<span class="pill danger">{{ _("Fehler") }}</span> <small>{{ backup_error }}</small>
-    {% elif backups %}{{ _("Letztes Backup: {when} ({size})").format(when=fmt_datetime(backups[0].at), size=fmt_size(backups[0].size)) }}
-      · {{ ngettext("{n} Backup vorhanden", "{n} Backups vorhanden", backups | length).format(n=backups | length) }}
-    {% else %}<span class="pill warn">{{ _("Noch kein Backup vorhanden.") }}</span>{% endif %}</p>
-  <p class="muted"><small>{{ _("Außer Familienname und Rechnungsangaben nur Metadaten: Namen der Kinder und alle Inhalte sind mit dem Schlüssel der Familie verschlüsselt und hier nicht lesbar.") }}</small></p>
-</section>
-<section class="card">
-  <table class="responsive">
-    <tr><th>{{ _("Familie") }}</th><th>{{ _("Eltern") }}</th><th>{{ _("Kinder") }}</th><th>{{ _("Geräte") }}</th>
-      <th>{{ _("Agent-Versionen") }}</th><th>{{ _("Letzte Aktivität") }}</th><th>{{ _("Abo") }}</th><th>{{ _("Zustand") }}</th><th>{{ _("Support") }}</th></tr>
-    {% for f in families %}
+  <p class="muted"><small>{{ _("{n} von {total} Familien").format(n=total, total=all_total) }} · {{ _("Außer Familienname und Rechnungsangaben nur Metadaten: Namen der Kinder und alle Inhalte sind mit dem Schlüssel der Familie verschlüsselt und hier nicht lesbar.") }}</small></p>
+  {% macro th(key, label) %}<th><a href="{{ sort_url(key) }}" class="sort{% if sort.lstrip('-') == key %} active{% endif %}">{{ label }}{% if sort == key %} ↑{% elif sort == '-' ~ key %} ↓{% endif %}</a></th>{% endmacro %}
+  {% if families %}
+  <table class="responsive admin-families">
+    <tr>{{ th("id", _("ID")) }}{{ th("name", _("Familie")) }}{{ th("since", _("Seit")) }}{{ th("children", _("Kinder / Geräte")) }}
+      {{ th("agent", _("Agent")) }}{{ th("activity", _("Letzte Aktivität")) }}{{ th("abo", _("Abo")) }}{{ th("state", _("Zustand")) }}</tr>
+    {% for r in families %}
     <tr>
-      <td><a href="/admin/families/{{ f.id }}"><strong>#{{ f.id }}</strong>{% if f.name %} {{ f.name }}{% endif %}</a><br><small class="muted">{{ _("seit {date}").format(date=fmt_date(f.created_at.date())) }}</small></td>
-      <td data-label="{{ _('Eltern') }}">{{ f.parents }}</td>
-      <td data-label="{{ _('Kinder') }}">{{ f.children }}</td>
-      <td data-label="{{ _('Geräte') }}">{{ f.devices }}</td>
-      <td data-label="{{ _('Agent-Versionen') }}">{{ f.versions | join(", ") }}</td>
-      <td data-label="{{ _('Letzte Aktivität') }}">{{ _("Gerät") }}: {{ f.last_seen | localtime }}<br>{{ _("Eltern") }}: {{ f.last_login | localtime }}</td>
-      <td data-label="{{ _('Abo') }}">{{ _(plans[f.plan]) }}{% if f.plan != "free" %} · {{ _(statuses[f.billing_status]) }}{% if f.billing.until %} {{ _("bis {date}").format(date=fmt_date(f.billing.until.date())) }}{% endif %}{% endif %}
-        {% if f.billing.phase == "grace" %}<span class="pill warn">{{ _("Schonfrist") }}</span>{% endif %}
-        {% if f.address_missing %}<span class="pill warn">{{ _("Rechnungsangaben fehlen") }}</span>{% endif %}</td>
-      <td class="right">
-        {% if f.paused_at %}<span class="pill warn">{{ _("Ruhemodus") }}</span>{% endif %}
-        {% if f.offline %}<span class="pill danger">{{ ngettext("{n} Gerät offline", "{n} Geräte offline", f.offline).format(n=f.offline) }}</span>{% endif %}
-        {% if f.unsupported %}<span class="pill danger">{{ ngettext("{n} Agent zu alt", "{n} Agenten zu alt", f.unsupported).format(n=f.unsupported) }}</span>{% endif %}
-        {% if not (f.paused_at or f.offline or f.unsupported) %}<span class="pill ok">{{ _("ok") }}</span>{% endif %}
+      <td><a href="/admin/families/{{ r.id }}"><strong>#{{ r.id }}</strong></a></td>
+      <td data-label="{{ _('Familie') }}"><a href="/admin/families/{{ r.id }}">{{ r.name or "–" }}</a></td>
+      <td data-label="{{ _('Seit') }}">{{ fmt_date(r.created_at.date()) }}</td>
+      <td data-label="{{ _('Kinder / Geräte') }}">{{ r.children }} / {{ r.devices }}</td>
+      <td data-label="{{ _('Agent') }}"{% if r.versions %} title="{{ r.versions | join(', ') }}"{% endif %}>{{ r.oldest or "–" }}{% if r.outdated %} <span class="warn-mark" title="{{ _('Agent veraltet') }}">⚠</span>{% endif %}</td>
+      <td data-label="{{ _('Letzte Aktivität') }}"{% if r.activity %} title="{{ r.activity | localtime }}"{% endif %}>{{ fmt_relative(r.activity) }}</td>
+      <td data-label="{{ _('Abo') }}">{{ _(plans[r.plan]) }}{% if r.plan != "free" %} · {{ _(statuses[r.billing_status]) }}{% if r.billing and r.billing.until %} · {{ fmt_date(r.billing.until.date()) }}{% endif %}{% endif %}</td>
+      <td class="right nowrap">
+        {% if r.status == "paused" %}<span class="pill danger">{{ _("Ruhemodus") }}</span>{% elif r.billing and r.billing.phase == "grace" %}<span class="pill warn">{{ _("Schonfrist") }}</span>{% endif %}
+        {% if r.offline %}<span class="pill danger" title="{{ ngettext('{n} Gerät offline', '{n} Geräte offline', r.offline).format(n=r.offline) }}">{{ _("offline") }} {{ r.offline }}</span>{% endif %}
+        {% if r.address_missing %}<span class="pill warn" title="{{ _('Rechnungsangaben fehlen') }}">{{ _("Rechnung") }}</span>{% endif %}
+        {% if r.tickets %}<span class="pill play" title="{{ _('offene Tickets') }}">{{ _("Ticket") }} {{ r.tickets }}</span>{% endif %}
+        {% if r.support %}<span class="pill play">{{ _("Support") }}</span>{% endif %}
+        {% if not (r.status == "paused" or r.offline or r.address_missing or r.tickets or r.support or (r.billing and r.billing.phase == "grace")) %}<span class="pill ok">{{ _("ok") }}</span>{% endif %}
       </td>
-      <td class="right">{% if f.id in granted %}
-        <form method="post" action="/admin/support/{{ f.id }}" class="inline">
-          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-          <button type="submit" class="secondary small" title="{{ _('freigegeben bis {until}').format(until=granted[f.id][1] | localtime) }}">{{ _("Ansehen") }}</button>
-        </form>{% endif %}</td>
     </tr>
     {% endfor %}
   </table>
+  {% if pages > 1 %}
+  <p class="row pager">{% if page > 1 %}<a class="btn secondary small" href="{{ url(sort=sort, page=page - 1) }}">{{ _("Zurück") }}</a>{% endif %}
+    <span class="muted">{{ _("Seite {page} von {pages}").format(page=page, pages=pages) }}</span>
+    {% if page < pages %}<a class="btn secondary small" href="{{ url(sort=sort, page=page + 1) }}">{{ _("Weiter") }}</a>{% endif %}</p>
+  {% endif %}
+  {% else %}<p class="muted">{{ _("Keine Familie passt zur Suche.") }}</p>{% endif %}
 </section>
 {% endblock %}

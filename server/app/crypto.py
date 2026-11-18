@@ -60,8 +60,16 @@ def _master() -> bytes:
     return key
 
 
+_derived: dict[tuple[bytes, str], bytes] = {}
+
+
 def _derive(info: bytes) -> bytes:
-    return HKDF(algorithm=hashes.SHA256(), length=32, salt=None, info=info).derive(_master())
+    """Abgeleiteter Schlüssel (zwischengespeichert je Hauptschlüssel – HKDF bei jedem Feld wäre unnötig teuer)."""
+    cache_key = (info, settings.master_key)
+    key = _derived.get(cache_key)
+    if key is None:
+        key = _derived[cache_key] = HKDF(algorithm=hashes.SHA256(), length=32, salt=None, info=info).derive(_master())
+    return key
 
 
 def new_master_key() -> str:

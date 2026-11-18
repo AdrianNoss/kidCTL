@@ -99,8 +99,10 @@ address and turns on "Receive ticket emails". Every change by an operator, the w
 name, subscription, pause, invitation codes, deletion) is listed in the **administration log** at `/admin/log`
 (filterable by family, actor and kind, invisible to families, kept for 2 years).
 
-The area shows metadata only: families with the number of parents, children and devices, agent versions, last
-activity and issues (devices offline, agent too old, paused). Names and content are encrypted with each family's key
+The overview shows key figures (a click filters), a search by family number or name, filters by subscription
+status, plan and issues, and a sortable table (50 per page; filters and sorting are part of the address and can be
+bookmarked). Apart from the family name and billing details, this is metadata only: number of children and devices,
+oldest agent version, last activity, subscription and issues (devices offline, agent outdated, paused). Names and content are encrypted with each family's key
 and cannot be read there. You also create **invitation codes** for sign-up here (single use, valid for 30 days, with
 a note). New families sign up at `/signup`: email address (and code) → confirmation link by email (24 h) →
 password and authenticator → their own family, owner account, signed in.

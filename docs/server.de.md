@@ -99,8 +99,11 @@ E-Mail-Adresse und schaltet „Ticket-Mails erhalten“ ein. Jede Änderung durc
 (Familienname, Abo, Ruhemodus, Einladungscodes, Löschung) steht im **Verwaltungsprotokoll** unter `/admin/log`
 (filterbar nach Familie, Akteur und Art, für Familien unsichtbar, 2 Jahre aufbewahrt).
 
-Der Bereich zeigt nur Metadaten: Familien mit Anzahl Eltern, Kinder und Geräte, Agent-Versionen, letzte Aktivität
-und Auffälligkeiten (Geräte offline, Agent zu alt, Ruhemodus). Namen und Inhalte sind mit dem Schlüssel der jeweiligen
+Die Übersicht zeigt Kennzahlen (Klick filtert), eine Suche nach Familiennummer oder -name, Filter nach Abo-Status,
+Tarif und Problemen sowie eine sortierbare Tabelle (50 je Seite; Filter und Sortierung stehen in der Adresse und
+lassen sich als Lesezeichen speichern). Außer Familienname und Rechnungsangaben sind das nur Metadaten: Anzahl Kinder
+und Geräte, älteste Agent-Version, letzte Aktivität, Abo und Auffälligkeiten (Geräte offline, Agent veraltet,
+Ruhemodus). Namen und Inhalte sind mit dem Schlüssel der jeweiligen
 Familie verschlüsselt und dort nicht lesbar. Außerdem erzeugst du hier **Einladungscodes** für die Registrierung
 (einmalig, 30 Tage gültig, mit Notiz). Neue Familien registrieren sich unter `/signup`: E-Mail-Adresse (und Code) →
 Bestätigungslink per Mail (24 h) → Passwort und Authenticator → eigene Familie, Inhaber-Account, angemeldet.

@@ -12,6 +12,7 @@ from fastapi import Request
 from fastapi.templating import Jinja2Templates
 
 from . import blocklog, i18n, integrity, versions
+from .i18n import _, ngettext
 from .config import settings
 from .security import CSRF_COOKIE, CSRF_FIELD, set_cookie
 
@@ -46,6 +47,27 @@ def asset(name: str) -> str:
 _assets: dict[str, str] = {}
 
 
+def fmt_relative(value: datetime | None) -> str:
+    """„vor 5 Min.“, „vor 3 Std.“, „vor 2 Tagen“; älter als 60 Tage: Datum. UTC aus der DB."""
+    if value is None:
+        return "–"
+    if value.tzinfo is not None:                     # z. B. Backup-Zeitpunkt mit Zeitzone
+        value = value.astimezone(timezone.utc).replace(tzinfo=None)
+    seconds = (datetime.now(timezone.utc).replace(tzinfo=None) - value).total_seconds()
+    if seconds < 60:
+        return _("gerade eben")
+    if seconds < 3600:
+        n = int(seconds // 60)
+        return ngettext("vor {n} Min.", "vor {n} Min.", n).format(n=n)
+    if seconds < 86400:
+        n = int(seconds // 3600)
+        return ngettext("vor {n} Std.", "vor {n} Std.", n).format(n=n)
+    n = int(seconds // 86400)
+    if n <= 60:
+        return ngettext("vor {n} Tag", "vor {n} Tagen", n).format(n=n)
+    return i18n.fmt_date(value.date())
+
+
 def _today_minus(days: int):
     from datetime import timedelta
     return datetime.now(_TZ).date() - timedelta(days=days)
@@ -59,7 +81,7 @@ templates.env.globals.update(_=i18n.gettext, gettext=i18n.gettext, ngettext=i18n
                              weekday=i18n.weekday, LANGUAGE_CHOICES=i18n.LANGUAGE_CHOICES,
                              integrity_label=integrity.label_for, blocked_detail=blocklog.detail,
                              update_for=versions.update_for, fmt_datetime=i18n.fmt_datetime, fmt_size=_fmt_size,
-                             today_minus=_today_minus, asset=asset)
+                             today_minus=_today_minus, asset=asset, fmt_relative=fmt_relative)
 templates.env.globals["SOURCE_URL"] = settings.source_url
 templates.env.globals["REGISTRATION"] = settings.registration   # open | invite | closed
 templates.env.globals["SAAS"] = settings.saas            # Betriebsart: viele Familien, Anmeldung nur per E-Mail

@@ -39,7 +39,8 @@ def test_owner_grants_operator_reads_only(client, parent, operator, saas):  # no
     client.cookies.clear()
 
     admin_login(client, operator)
-    assert "/admin/support/1" in client.get("/admin").text
+    assert "/admin/support/1" in client.get("/admin/families/1").text
+    assert "Support-Freigabe aktiv" in client.get("/admin").text and "/admin/families/1" in client.get("/admin?issue=support").text
     r = _open(client)
     assert r.status_code == 303 and "kidctl_support" in r.headers["set-cookie"]
     page = client.get("/children").text

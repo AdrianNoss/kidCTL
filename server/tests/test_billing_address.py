@@ -81,13 +81,13 @@ def test_billing_address_required_and_banner(client, parent, operator, saas):  #
     admin_login(client, operator)
     page = client.get("/admin/families/1").text
     assert "Hauptstraße 1" in page and "rechnung@example.org" in page
-    assert "Rechnungsangaben fehlen" not in client.get("/admin").text
+    assert 'title="Rechnungsangaben fehlen"' not in client.get("/admin").text
 
 
 def test_missing_address_shows_in_admin(client, parent, operator, saas):  # noqa: F811
     _family(plan="standard", billing_status="active")
     admin_login(client, operator)
-    assert "Rechnungsangaben fehlen" in client.get("/admin").text
+    assert 'title="Rechnungsangaben fehlen"' in client.get("/admin").text
 
 
 def test_billing_address_saas_only_and_owner_only(client, parent):

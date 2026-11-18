@@ -16,6 +16,7 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
+from . import versions
 from .config import settings
 from .db import get_platform_db
 from .models import (
@@ -137,10 +138,43 @@ class FamilyRow:
     billing: object = None               # billing.State
     name: str = ""                       # Name der Familie (Plattform-Schlüssel)
     address_missing: bool = False        # Rechnungsangaben gebraucht, aber unvollständig
+    oldest: str = ""                     # älteste Agent-Version der aktiven Geräte
+    outdated: bool = False               # mindestens ein Agent hat ein Update offen bzw. ist zu alt
+    support: bool = False                # Support-Freigabe aktiv
+    tickets: int = 0                     # offene Tickets
+
+    @property
+    def activity(self) -> datetime | None:
+        """Jüngere von Geräte- und Eltern-Aktivität."""
+        return max((t for t in (self.last_seen, self.last_login) if t), default=None)
+
+    @property
+    def status(self) -> str:
+        """trial | active | past_due | canceled | paused (für Filter und Sortierung)."""
+        if self.paused_at:
+            return "paused"
+        return "active" if self.plan == "free" else self.billing_status
+
+    @property
+    def trial_ending(self) -> bool:
+        st = self.billing
+        return (self.status == "trial" and st is not None and st.until is not None
+                and timedelta(0) <= st.until - utcnow() <= timedelta(days=7))
+
+
+def open_tickets(db: Session) -> dict[int, int]:
+    """Offene Tickets je Familie (Tickets folgen in Etappe 4 – bis dahin keine)."""
+    try:
+        from .models import Ticket
+    except ImportError:
+        return {}
+    rows = db.execute(select(Ticket.family_id, func.count()).where(Ticket.status != "closed")
+                      .group_by(Ticket.family_id))
+    return dict(rows.all())
 
 
 def families(db: Session) -> list[FamilyRow]:
-    from . import billing
+    from . import billing, support
     from .models import BillingAddress
     addresses = {a.family_id: a for a in db.scalars(select(BillingAddress))}
     rows = {f.id: FamilyRow(f.id, f.created_at, f.paused_at, plan=f.plan, billing_status=f.billing_status,
@@ -152,23 +186,89 @@ def families(db: Session) -> list[FamilyRow]:
         return db.execute(select(model.family_id, func.count()).where(*where).group_by(model.family_id))
 
     for fid, n in count(Membership):
-        rows[fid].parents = n
+        if fid in rows:
+            rows[fid].parents = n
     for fid, n in count(Child):
-        rows[fid].children = n
+        if fid in rows:
+            rows[fid].children = n
     active = Device.revoked_at.is_(None)
-    for fid, n in count(Device, active):
-        rows[fid].devices = n
-    for fid, n in count(Device, active, Device.last_seen_at < utcnow() - timedelta(hours=48)):
-        rows[fid].offline = n
-    for fid, n in count(Device, active, Device.protocol_unsupported.is_(True)):
-        rows[fid].unsupported = n
+    stale = utcnow() - timedelta(hours=48)
+    releases = {"linux": versions.latest(), "windows": versions.latest_windows()}
+    for fid, version, plat, unsupported, seen in db.execute(
+            select(Device.family_id, Device.agent_version, Device.platform, Device.protocol_unsupported,
+                   Device.last_seen_at).where(active)):
+        r = rows.get(fid)
+        if r is None:
+            continue
+        r.devices += 1
+        if seen is not None and seen < stale:
+            r.offline += 1
+        if unsupported:
+            r.unsupported += 1
+        if version:
+            if version not in r.versions:
+                r.versions.append(version)
+            if not r.oldest or versions._key(version) < versions._key(r.oldest):
+                r.oldest = version
+        release = releases.get(plat)   # einmal je Anfrage geladen; ohne Repo nur „Protokoll zu alt“
+        if unsupported or (release and version[:1].isdigit()
+                           and versions._key(version) < versions._key(release.version)):
+            r.outdated = True
+    for r in rows.values():
+        r.versions.sort(key=versions._key)
     for fid, seen in db.execute(select(Device.family_id, func.max(Device.last_seen_at)).group_by(Device.family_id)):
-        rows[fid].last_seen = seen
-    for fid, version in db.execute(select(Device.family_id, Device.agent_version).where(active, Device.agent_version != "")
-                                   .distinct().order_by(Device.family_id, Device.agent_version)):
-        rows[fid].versions.append(version)
+        if fid in rows:
+            rows[fid].last_seen = seen
     for fid, at in db.execute(select(Membership.family_id, func.max(ParentSession.created_at))
                               .join(ParentSession, ParentSession.parent_id == Membership.parent_id)
                               .group_by(Membership.family_id)):
-        rows[fid].last_login = at
+        if fid in rows:
+            rows[fid].last_login = at
+    for fid in support.granted_families(db):
+        if fid in rows:
+            rows[fid].support = True
+    for fid, n in open_tickets(db).items():
+        if fid in rows:
+            rows[fid].tickets = n
     return list(rows.values())
+
+
+# ---------- Filtern, Sortieren, Blättern (Übersicht) ----------
+
+PAGE_SIZE = 50
+STATUS_FILTERS = ("trial", "trial_ending", "active", "past_due", "canceled", "paused")
+PLAN_FILTERS = ("free", "standard")
+ISSUE_FILTERS = ("offline", "outdated", "address", "ticket", "support")
+SORTS = {
+    "id": lambda r: r.id,
+    "name": lambda r: (r.name or "").casefold(),
+    "since": lambda r: r.created_at,
+    "children": lambda r: (r.children, r.devices),
+    "agent": lambda r: (bool(r.oldest), versions._key(r.oldest)),
+    "activity": lambda r: r.activity or datetime.min,
+    "abo": lambda r: (r.plan, r.status, r.billing.until or datetime.max if r.billing else datetime.max),
+    "state": lambda r: (r.status == "paused", r.outdated, r.offline, r.tickets),
+}
+
+
+def _issue(r: FamilyRow, issue: str) -> bool:
+    return {"offline": r.offline > 0, "outdated": r.outdated, "address": r.address_missing,
+            "ticket": r.tickets > 0, "support": r.support}[issue]
+
+
+def select_rows(rows: list[FamilyRow], q: str = "", status: str = "", plan: str = "", issue: str = "",
+                sort: str = "id") -> list[FamilyRow]:
+    q = q.strip().casefold()
+    if q:
+        num = q.lstrip("#")
+        rows = [r for r in rows if (num.isdigit() and r.id == int(num)) or q in (r.name or "").casefold()]
+    if status == "trial_ending":
+        rows = [r for r in rows if r.trial_ending]
+    elif status in STATUS_FILTERS:
+        rows = [r for r in rows if r.status == status]
+    if plan in PLAN_FILTERS:
+        rows = [r for r in rows if r.plan == plan]
+    if issue in ISSUE_FILTERS:
+        rows = [r for r in rows if _issue(r, issue)]
+    key = sort.lstrip("-")
+    return sorted(rows, key=SORTS.get(key, SORTS["id"]), reverse=sort.startswith("-") and key in SORTS)

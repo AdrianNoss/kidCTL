@@ -18,6 +18,16 @@
   <button type="submit" class="secondary">{{ _("Speichern") }}</button>
 </form>
 {% endif %}
+{% if granted %}
+<section class="card">
+  <h2>{{ _("Support") }}</h2>
+  <p>{{ _("freigegeben bis {until}").format(until=granted[1] | localtime) }}</p>
+  <form method="post" action="/admin/support/{{ f.id }}" class="inline">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <button type="submit" class="secondary">{{ _("Ansehen") }}</button>
+  </form>
+</section>
+{% endif %}
 <section class="card">
   <h2>{{ _("Rechnungsangaben") }}</h2>
   {% if address %}
