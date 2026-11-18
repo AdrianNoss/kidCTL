@@ -2663,3 +2663,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Playwright das Theme-CSS, die Texte aus `website/i18n/` und WebUI-Screenshots nach
   `docs/img/<de|en>/banner-<light|dark>.webp`; README.md/README.de.md binden es per `<picture>` (hell/dunkel) mit
   Link auf die Projektseite ein. Getestet: alle vier Bilder gerendert und angesehen, Doku-Parität ok.
+- 2026-11-18: Layoutfix Verwaltungsbereich: Karten-Raster (`.card-grid`) bekommt Abstand nach unten, damit es nicht
+  an die folgende Karte stößt (Rechnungs- und Ticket-Detail); Formular „Als bezahlt markieren“ behält das
+  Flex-Layout (`form.row.inline`), Button steht neben dem Datum; Rechnungssumme rechtsbündig (`p.right`).
+  Getestet im Browser (Dev-Server, Markup von Rechnungs- und Ticket-Detail): Abstände und Ausrichtung korrekt.

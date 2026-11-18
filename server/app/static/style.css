@@ -163,6 +163,7 @@ button:disabled { opacity:.38; cursor:default; }
 .count, .btn .count { display:inline-grid; place-items:center; min-width:1.25rem; height:1.25rem; padding:0 .3rem; border-radius:var(--shape-full);
   background:var(--error); color:var(--on-error); font-size:.6875rem; font-weight:500; line-height:1; }
 form.inline { display:inline; }
+form.row.inline { display:inline-flex; align-items:flex-end; }   /* .row behält Flex-Layout (Label + Button nebeneinander) */
 
 /* Segmentierte Schaltfläche */
 .segmented { display:inline-flex; max-width:100%; border:1px solid var(--outline); border-radius:var(--shape-full); overflow-x:auto; scrollbar-width:none; margin-bottom:.75rem; }
@@ -236,7 +237,7 @@ table { width:100%; border-collapse:collapse; margin-bottom:.75rem; }
 th { text-align:left; font-size:.8125rem; font-weight:500; color:var(--on-surface-variant); padding:.5rem; border-bottom:1px solid var(--outline-variant); }
 td { text-align:left; padding:.75rem .5rem; border-bottom:1px solid var(--outline-variant); vertical-align:middle; }
 tr:last-child td { border-bottom:0; }
-td.right, th.right { text-align:right; }
+td.right, th.right, p.right { text-align:right; }
 td .actions { justify-content:flex-end; }
 tr.muted td { color:var(--on-surface-variant); }
 .entity { font-weight:500; color:var(--on-surface); text-decoration:none; }
@@ -543,7 +544,7 @@ td.nowrap { white-space:nowrap; }
 }
 
 /* Detailansicht im Verwaltungsbereich: Karten-Raster (mobil einspaltig) */
-.card-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:.75rem; align-items:start; }
+.card-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:.75rem; align-items:start; margin-bottom:.75rem; }
 .card-grid > .card { margin-bottom:0; }
 .card-grid > .card-wide { grid-column:1 / -1; }
 dl.facts { display:grid; grid-template-columns:max-content 1fr; gap:.25rem 1rem; margin:0; }
