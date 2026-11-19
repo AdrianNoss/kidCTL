@@ -313,6 +313,8 @@ def cmd_compile() -> None:
         tar.add(STAGING, arcname="staging")
         tar.add(HERE / "kidctl.iss", arcname="kidctl.iss")
         tar.add(HERE / "kidctl.ico", arcname="kidctl.ico")
+        for png in sorted(HERE.glob("wizard-small-*.png")):
+            tar.add(png, arcname=png.name)
     winvm("ssh", f"Remove-Item -Recurse -Force {VM_BUILD} -ErrorAction SilentlyContinue; "
                  f"New-Item -ItemType Directory {VM_BUILD} | Out-Null")
     winvm("put", str(bundle), f"{VM_BUILD}/build.tar")

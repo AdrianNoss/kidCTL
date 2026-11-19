@@ -2,7 +2,8 @@
 
 On Windows 10/11 the current version provides **screen time, sign-out, sign-in lock, "Lock now",
 the tray app with chat and extensions, app control, the web filter and the game limit** (Steam,
-Epic Games, Store games; further apps can be marked as "Game" in the web interface).
+Epic Games, EA app, GOG Galaxy, Battle.net, Store games and games started by a launcher such as Ubisoft Connect or
+Wargaming; further apps can be marked as "Game" in the web interface).
 
 1. Create **child accounts** as "Standard user" (Settings → Accounts → Other users), local accounts or
    Microsoft accounts. KidCTL never restricts administrators – the web interface reports assigned children with
@@ -31,6 +32,9 @@ Epic Games, Store games; further apps can be marked as "Game" in the web interfa
   "Your account has been disabled" – the sign-in screen doesn't allow a custom notice. This applies to every
   sign-in method (password, PIN, Windows Hello) and also in safe mode.
 - **Updates** are installed by KidCTL itself (checked every 6 hours, signed). No system update needed.
+- **Appearance:** the tray app follows the Windows 11 style (light or dark and accent colour as set in Windows;
+  without Mica on Windows 10). The tray icon is the KidCTL symbol with a coloured status dot; the remaining time is
+  shown in the tooltip and at the top of the menu.
 - **Notifications** are Windows toasts. If "Do not disturb" is on (also automatically during full-screen games),
   the tray app additionally shows the last minute and the countdown as a window in the foreground.
 - Check: `"C:\Program Files\KidCTL\kidctl.cmd" status`, service "KidCTL" (`services.msc`), log at

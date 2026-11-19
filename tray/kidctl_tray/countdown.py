@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from kidctl_common import tray as t
 
 from .qt import QHBoxLayout, QLabel, QPushButton, Qt, QTimer, QVBoxLayout, QWidget, Signal
+from . import winstyle
 from .texts import _, ngettext
 
 SHOW_BELOW = 60   # Sekunden
@@ -106,16 +107,24 @@ class CountdownWindow(QWidget):
         self.title.setFont(font)
         self.text = QLabel()
         self.text.setWordWrap(True)
+        self.big = QLabel()            # Windows: Restzeit groß (m:ss)
+        self.big.setProperty("role", "countdown")
+        self.big.setVisible(winstyle.active())
         self.request = QPushButton(_("Verlängerung anfordern …"))
         self.request.clicked.connect(self._request)
         ok = QPushButton(_("OK"))
         ok.clicked.connect(self.close)
+        if winstyle.active():
+            self.title.setProperty("role", "subtitle")
+            winstyle.primary(self.request)
         buttons = QHBoxLayout()
         buttons.addStretch(1)
         buttons.addWidget(self.request)
         buttons.addWidget(ok)
         layout = QVBoxLayout(self)
+        winstyle.window(self, layout)
         layout.addWidget(self.title)
+        layout.addWidget(self.big)
         layout.addWidget(self.text)
         layout.addLayout(buttons)
         self.setMinimumWidth(380)
@@ -137,6 +146,7 @@ class CountdownWindow(QWidget):
         title, text = texts_for(due)
         self.title.setText(title)
         self.text.setText(text)
+        self.big.setText(f"{due.seconds // 60}:{due.seconds % 60:02d}")
         self.request.setVisible(due.can_request)
         self.request.setText(_("Mehr Spielzeit anfragen …") if due.kind == "games" else _("Verlängerung anfordern …"))
         if self._kind != due.kind or not self.isVisible():

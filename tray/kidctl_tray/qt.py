@@ -31,10 +31,12 @@ if API is None:
 QObject, QTimer, QEvent, QRect, Qt, QTime, QElapsedTimer, QCoreApplication = (
     QtCore.QObject, QtCore.QTimer, QtCore.QEvent, QtCore.QRect, QtCore.Qt, QtCore.QTime, QtCore.QElapsedTimer,
     QtCore.QCoreApplication)
+QRectF = QtCore.QRectF
+QPen = QtGui.QPen
 QAction, QColor, QFont, QIcon, QPainter, QPalette, QPixmap = (
     QtGui.QAction, QtGui.QColor, QtGui.QFont, QtGui.QIcon, QtGui.QPainter, QtGui.QPalette, QtGui.QPixmap)
 QLocalServer, QLocalSocket = QtNetwork.QLocalServer, QtNetwork.QLocalSocket
-_W = ("QApplication", "QButtonGroup", "QCheckBox", "QDialog", "QDialogButtonBox", "QFormLayout", "QHBoxLayout",
+_W = ("QApplication", "QButtonGroup", "QCheckBox", "QDialog", "QDialogButtonBox", "QFormLayout", "QFrame", "QHBoxLayout",
       "QLabel", "QLineEdit", "QMenu", "QMessageBox", "QPlainTextEdit", "QPushButton", "QRadioButton", "QScrollArea",
       "QSpinBox", "QSystemTrayIcon", "QTextBrowser", "QTimeEdit", "QVBoxLayout", "QWidget")
 globals().update({n: getattr(QtWidgets, n) for n in _W})

@@ -354,6 +354,14 @@ Abweichungen stehen hier und unter „Restlücken“.
     hell/dunkel und Windows 10 hell, jeweils DE/EN. Die Bilder ersetzen die bisher von Hand geplanten
     Client-Screenshots für Projektseite und Wiki. Offscreen-Tests: Kontrastprüfung/Farbauswahl, Stylesheet nur unter
     Windows, alle Fenster lassen sich in beiden Schemata erzeugen.
+  - **Umgesetzt (0.38.0):** Bausteine in `winstyle.py` (`window`, `title`, `form`, `card`, `primary`; unter Linux
+    das bisherige Layout), Qt-Palette aus denselben Farbwerten. Radio-/Kontrollkästchen und Zahlen-/Zeitfelder bleiben
+    beim nativen Qt-Stil „windows11“ (Qt ≥ 6.7), weil ein Stylesheet dessen Fluent-Zeichnung abschaltet. **Mica nur
+    im Fensterrahmen** (Titelleiste); die Fläche hat die passende Fluent-Grundfarbe, denn ein durchsichtiger Inhalt ist
+    mit Qt-Widgets unter Windows fehleranfällig. Tray-Menü mit runden Ecken über DWM. Toast-Logo als PNG im Profil
+    (`%LOCALAPPDATA%\KidCTL\toast-logo.png`). Installer: `WizardStyle=modern dynamic`, Logo, Kopplungsseite mit
+    kurzem Hinweis. `dev/winshots.py`: Fenster per `grab()` in der VM (eingebettetes Python, Segoe-Schrift), dazu
+    Desktop-Abzüge über QMP (Toast, Installer). Windows-10-Screenshots: noch offen.
 - **Integrität (WebUI):** Dienst, SafeBoot-Eintrag, Unbound, WFP-Filter, DNS der Adapter, Ausführverbote
   (ACL), Kinder nicht in der Gruppe Administratoren.
 - **Verteilung und Updates:**
@@ -2852,3 +2860,16 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
     - Mail-Vorschau inkl. Logo.
     - Passwort-Mail hell, Rechnung und Newsletter dunkel.
   - MIME-Aufbau der `.eml`-Fassungen: Text, HTML mit Logo als `multipart/related`, PDF-Anhang.
+- 2026-11-19: Version 0.38.0 (Tray unter Windows): Oberfläche im Stil von Windows 11 (siehe „Oberfläche im
+  Windows-11-Stil“). Umgestellt: alle Fenster, Tray-Menü, monochromes Tray-Symbol mit Statuspunkt, Toast mit App-Logo
+  und Installer. Linux unverändert. Dazu Doku zum Kinderrechner (Windows) inkl. der in 0.36 erweiterten Spieleliste.
+  Getestet:
+  - Tray-Tests 26 grün, neu: Linux-Layout unverändert, Windows-Layout/Symbol/Toast-Logo erzwungen, Show-Hook mit
+    `QWindow`.
+  - `dev/winshots.py` in der Windows-11-VM (Qt 6.12): alle Fenster hell/dunkel × DE/EN.
+  - Echter Toast „Nachricht von mama“ per QMP-Abzug.
+  - Installer-Vorschau mit Inno Setup 6.7.4 kompiliert.
+
+  Dabei gefunden und behoben:
+  - Der Show-Hook stürzte bei `QWindow`-Ereignissen ab.
+  - Das Stylesheet schaltete die native Zeichnung von Radio-Knöpfen und Zahlenfeldern ab.

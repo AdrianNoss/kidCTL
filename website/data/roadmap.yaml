@@ -91,7 +91,8 @@
     de: "Alle Mails im selben Layout mit Logo, hell und dunkel, mit Textfassung; Newsletter mit Formatierung."
     en: "All emails in the same layout with logo, light and dark, with a plain-text version; formatted newsletters."
 - id: windows-fluent
-  status: planned
+  status: done
+  version: "0.38"
   title: { de: "Windows-11-Look für Kinder-App", en: "Windows 11 look for the child app" }
   text:
     de: "Fenster, Tray-Menü, Symbol, Benachrichtigungen und Installer im Stil von Windows 11, hell und dunkel."

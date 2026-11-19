@@ -2,7 +2,8 @@
 
 Unter Windows 10/11 gibt es in diesem Stand **Bildschirmzeit, Abmeldung, Login-Sperre, „Jetzt sperren“,
 Tray-App mit Chat und Verlängerungen, die Programmkontrolle, der Website-Filter und das Spiele-Limit** (Steam,
-Epic Games, Store-Spiele; weitere Apps lassen sich im WebUI als „Spiel“ markieren).
+Epic Games, EA app, GOG Galaxy, Battle.net, Store-Spiele sowie Spiele, die ein Launcher wie Ubisoft Connect oder
+Wargaming startet; weitere Apps lassen sich im WebUI als „Spiel“ markieren).
 
 1. **Kinderkonten** als „Standardbenutzer“ anlegen (Einstellungen → Konten → Andere Benutzer), lokale Konten oder
    Microsoft-Konten. Administratoren schränkt KidCTL nie ein – das WebUI meldet zugeordnete Kinder mit
@@ -31,6 +32,9 @@ Epic Games, Store-Spiele; weitere Apps lassen sich im WebUI als „Spiel“ mark
   „Ihr Konto wurde deaktiviert“ – einen eigenen Hinweis erlaubt der Anmeldebildschirm nicht. Das gilt für jede
   Anmeldeart (Passwort, PIN, Windows Hello) und auch im abgesicherten Modus.
 - **Updates** installiert KidCTL selbst (alle 6 Stunden geprüft, signiert). Kein Systemupdate nötig.
+- **Aussehen:** Die Tray-App folgt dem Stil von Windows 11 (hell oder dunkel und Akzentfarbe wie in Windows
+  eingestellt; unter Windows 10 ohne Mica). Das Tray-Symbol ist das KidCTL-Symbol mit einem farbigen Statuspunkt;
+  die Restzeit steht im Tooltip und oben im Menü.
 - **Benachrichtigungen** sind Windows-Toasts. Ist „Bitte nicht stören“ an (auch automatisch bei Vollbildspielen),
   zeigt die Tray-App die letzte Minute und den Countdown zusätzlich als Fenster im Vordergrund.
 - Prüfen: `"C:\Program Files\KidCTL\kidctl.cmd" status`, Dienst „KidCTL“ (`services.msc`), Log unter

@@ -6,7 +6,7 @@ import html
 from datetime import time
 
 from .qt import (  # noqa: F401 – PySide6 oder PyQt6
-    QButtonGroup, QCheckBox, QColor, QDialog, QDialogButtonBox, QEvent, QFont, QFormLayout, QHBoxLayout, QIcon, QLabel,
+    QButtonGroup, QCheckBox, QColor, QDialog, QDialogButtonBox, QEvent, QFont, QHBoxLayout, QIcon, QLabel,
     QLineEdit, QPainter, QPalette, QPixmap, QPlainTextEdit, QPushButton, QRadioButton, QRect, QScrollArea, QSpinBox, Qt,
     QTextBrowser, QTime, QTimeEdit, QVBoxLayout, QWidget, Signal,
 )
@@ -14,7 +14,7 @@ from .qt import (  # noqa: F401 – PySide6 oder PyQt6
 from kidctl_common import tray as t
 from kidctl_common.protocol import MAX_BODY, ChatMessage
 
-from . import texts
+from . import texts, winstyle
 from .texts import _
 
 COLORS = {"ok": "#27ae60", "warning": "#f39c12", "critical": "#da4453", "offline": "#7f8c8d"}
@@ -36,6 +36,10 @@ def bubble_colors(pal: QPalette) -> tuple[str, str, str]:
 
 
 def render_icon(text: str, level: str, size: int = 64) -> QIcon:
+    """Tray-Symbol: Linux Kreis mit Restzeit; Windows monochromes KidCTL-Symbol mit Statuspunkt (Restzeit dann in
+    Tooltip und Menü)."""
+    if winstyle.active():
+        return winstyle.tray_icon(level, winstyle.taskbar_light(), size)
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
@@ -51,6 +55,20 @@ def render_icon(text: str, level: str, size: int = 64) -> QIcon:
     p.drawText(QRect(0, 0, size, size), Qt.AlignmentFlag.AlignCenter, text)
     p.end()
     return QIcon(pix)
+
+
+def _buttons(dialog: QDialog, ok_text: str, on_ok) -> QDialogButtonBox:
+    """„OK“ (Hauptaktion) und „Abbrechen“; die Reihenfolge folgt der Plattform."""
+    buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+    ok = buttons.button(QDialogButtonBox.StandardButton.Ok)
+    ok.setText(ok_text)
+    winstyle.primary(ok)
+    buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(_("Abbrechen"))
+    buttons.accepted.connect(on_ok)
+    buttons.rejected.connect(dialog.reject)
+    if winstyle.active():
+        buttons.setCenterButtons(False)
+    return buttons
 
 
 class RequestDialog(QDialog):
@@ -77,31 +95,33 @@ class RequestDialog(QDialog):
         self.reason = QPlainTextEdit(placeholderText=_("Warum brauchst du mehr Zeit?"))
         self.reason.setMaximumHeight(90)
         self.hint = QLabel()
-        self.hint.setStyleSheet("color: #da4453")
+        self.hint.setProperty("role", "error")   # Windows: Farbe aus der Stilschicht
+        if not winstyle.active():
+            self.hint.setStyleSheet("color: #da4453")
 
-        form = QFormLayout()
+        rows = []
         if has_games:
             choice = QHBoxLayout()
             choice.addWidget(self.screen_choice)
             choice.addWidget(self.games_choice)
-            form.addRow(_("Wofür:"), choice)
-        form.addRow(_("Mehr Zeit:"), self.minutes)
+            choice.addStretch(1)
+            rows.append((_("Wofür:"), choice))
+        rows.append((_("Mehr Zeit:"), self.minutes))
         row = QHBoxLayout()
         row.addWidget(self.later)
         row.addWidget(self.until)
-        form.addRow(row)
+        row.addStretch(1)
+        rows.append((None, row))
+        rows.append((_("Begründung:"), self.reason))
         self.games_choice.toggled.connect(self._target_changed)
-        self._target_changed(self.games_choice.isChecked())
-        form.addRow(_("Begründung:"), self.reason)
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        buttons.button(QDialogButtonBox.StandardButton.Ok).setText(_("Anfragen"))
-        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(_("Abbrechen"))
-        buttons.accepted.connect(self._check)
-        buttons.rejected.connect(self.reject)
         lay = QVBoxLayout(self)
-        lay.addLayout(form)
+        winstyle.window(self, lay)
+        if head := winstyle.title(_("Verlängerung anfordern")):
+            lay.addWidget(head)
+        lay.addLayout(winstyle.form(rows))
+        self._target_changed(self.games_choice.isChecked())
         lay.addWidget(self.hint)
-        lay.addWidget(buttons)
+        lay.addWidget(_buttons(self, _("Anfragen"), self._check))
 
     def _target_changed(self, games: bool) -> None:
         self.later.setVisible(not games)   # Spielzeit: nur Minuten
@@ -136,18 +156,21 @@ class AccessDialog(QDialog):
         super().__init__(parent)
         self.item = item
         self.setWindowTitle(_("Freigabe anfragen"))
-        title = QLabel(f"<b>{html.escape(item.name)}</b> ({texts.kind_label(item.access_kind)})")
+        if winstyle.active():   # Fluent: Name als Überschrift, Art darunter
+            title = QLabel(html.escape(item.name))
+            title.setProperty("role", "title")
+            kind = QLabel(texts.kind_label(item.access_kind))
+            winstyle.secondary(kind)
+            heads = [title, kind]
+        else:
+            heads = [QLabel(f"<b>{html.escape(item.name)}</b> ({texts.kind_label(item.access_kind)})")]
         info = QLabel(_("Deine Eltern bekommen die Anfrage und können sie dauerhaft oder nur für heute erlauben."))
         info.setWordWrap(True)
         self.reason = QPlainTextEdit(placeholderText=_("Wofür brauchst du das? (freiwillig)"))
         self.reason.setMaximumHeight(90)
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        buttons.button(QDialogButtonBox.StandardButton.Ok).setText(_("Anfragen"))
-        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(_("Abbrechen"))
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
         lay = QVBoxLayout(self)
-        for w in (title, info, self.reason, buttons):
+        winstyle.window(self, lay)
+        for w in (*heads, info, self.reason, _buttons(self, _("Anfragen"), self.accept)):
             lay.addWidget(w)
 
     def request(self) -> t.TrayAccessRequest:
@@ -166,7 +189,10 @@ class BlockedWindow(QWidget):
         hint = QLabel(_("Programme und Websites, die in den letzten 24 Stunden gesperrt wurden. "
                         "Websites sind je Hauptdomain zusammengefasst."))
         hint.setWordWrap(True)
+        winstyle.secondary(hint)
         self.list = QVBoxLayout()
+        if winstyle.active():
+            self.list.setSpacing(4)
         self.list.addStretch(1)
         inner = QWidget()
         inner.setLayout(self.list)
@@ -175,9 +201,18 @@ class BlockedWindow(QWidget):
         reload_ = QPushButton(_("Aktualisieren"))
         reload_.clicked.connect(self.refresh.emit)
         lay = QVBoxLayout(self)
+        winstyle.window(self, lay)
+        if head := winstyle.title(_("Gesperrt")):
+            lay.addWidget(head)
         lay.addWidget(hint)
         lay.addWidget(area, 1)
-        lay.addWidget(reload_)
+        if winstyle.active():   # Fluent: Knopf rechts statt über die ganze Breite
+            bottom = QHBoxLayout()
+            bottom.addStretch(1)
+            bottom.addWidget(reload_)
+            lay.addLayout(bottom)
+        else:
+            lay.addWidget(reload_)
         self.items: list[t.BlockedItem] = []
 
     def set_items(self, items: list[t.BlockedItem]) -> None:
@@ -191,7 +226,8 @@ class BlockedWindow(QWidget):
         for i, item in enumerate(items):
             row = QWidget()
             h = QHBoxLayout(row)
-            h.setContentsMargins(0, 2, 0, 2)
+            h.setContentsMargins(*((12, 10, 12, 10) if winstyle.active() else (0, 2, 0, 2)))
+            winstyle.card(row)
             label = QLabel(f"<b>{html.escape(item.name)}</b><br><small>{html.escape(texts.blocked_line(item))}</small>")
             label.setWordWrap(True)
             button = QPushButton(_("Angefragt") if item.pending else _("Anfragen …"))
@@ -223,11 +259,25 @@ class ChatWindow(QWidget):
         req.clicked.connect(self.requestExtension.emit)
         blocked = QPushButton(_("Gesperrt – Freigabe anfragen …"))
         blocked.clicked.connect(self.showBlocked.emit)
+        winstyle.primary(send)
+        send.setAutoDefault(False)
         row = QHBoxLayout()
         row.addWidget(self.input)
         row.addWidget(send)
         lay = QVBoxLayout(self)
-        lay.addWidget(self.status)
+        winstyle.window(self, lay)
+        if head := winstyle.title(_("Bildschirmzeit & Nachrichten")):
+            lay.addWidget(head)
+        if winstyle.active():   # Status als Karte über dem Verlauf
+            box = QWidget()
+            winstyle.card(box)
+            inner = QVBoxLayout(box)
+            inner.setContentsMargins(14, 10, 14, 10)
+            inner.addWidget(self.status)
+            lay.addWidget(box)
+            self.status_box = box
+        else:
+            lay.addWidget(self.status)
         lay.addWidget(self.view, 1)
         lay.addLayout(row)
         buttons = QHBoxLayout()
@@ -264,6 +314,10 @@ class ChatWindow(QWidget):
     def _render(self) -> None:
         parts = []
         own, other, fg = bubble_colors(self.view.palette())
+        pad = "8px 10px" if winstyle.active() else "6px"
+        if winstyle.active():   # Farben aus der Stilschicht (Palette folgt dem Stylesheet nicht)
+            tok = winstyle.STYLE.tokens
+            own, other, fg = _mix(QColor(tok["card"]), QColor(tok["accent"]), 0.22), tok["control"], tok["text"]
         for m in sorted(self.messages.values(), key=lambda x: x.id):
             align = "right" if m.from_child else "left"
             bg = own if m.from_child else other
@@ -279,7 +333,7 @@ class ChatWindow(QWidget):
             who = html.escape(_("Du")) if m.from_child else html.escape(m.sender_name)
             parts.append(
                 f'<table width="100%"><tr><td align="{align}">'
-                f'<div style="background:{bg}; color:{fg}; padding:6px;"><small>{who} · {texts.local_time(m.created_at)}'
+                f'<div style="background:{bg}; color:{fg}; padding:{pad};"><small>{who} · {texts.local_time(m.created_at)}'
                 f"</small><br>{body}</div></td></tr></table>")
         self.view.setHtml("".join(parts) or "<i>" + html.escape(_("Noch keine Nachrichten.")) + "</i>")
         self.view.verticalScrollBar().setValue(self.view.verticalScrollBar().maximum())

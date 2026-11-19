@@ -15,7 +15,7 @@ from kidctl_common import tray as t
 
 from .qt import QAction, QApplication, QLocalServer, QLocalSocket, QMenu, QMessageBox, QSystemTrayIcon, QTimer
 
-from . import texts
+from . import texts, winstyle
 from .texts import _
 from .client import AgentClient
 from .ui import AccessDialog, BlockedWindow, ChatWindow, RequestDialog, render_icon
@@ -39,6 +39,9 @@ class TrayApp:
         self.menu = QMenu()
         self.status_action = QAction(_("Verbinde …"), enabled=False)
         self.menu.addAction(self.status_action)
+        if WINDOWS:   # Windows 11: runde Ecken; Restzeit steht im Menü, nicht im Symbol
+            self.menu.aboutToShow.connect(lambda: winstyle.round_corners(self.menu, small=True))
+            winstyle.STYLE.listeners.append(self._redraw_icon)   # Taskleiste hell/dunkel umgeschaltet
         self.menu.addSeparator()
         self.menu.addAction(_("Chat öffnen"), self.show_chat)
         self.menu.addAction(_("Verlängerung anfordern …"), lambda: self.request_extension())
@@ -52,7 +55,7 @@ class TrayApp:
         if WINDOWS:
             from .countdown import CountdownWindow
             from .winplatform import Toaster
-            self.toaster = Toaster()
+            self.toaster = Toaster(winstyle.logo_png(toast_logo_path()))
             self.countdown = CountdownWindow()
             self.countdown.requestExtension.connect(self.request_extension)
 
@@ -155,6 +158,11 @@ class TrayApp:
         box.show()
         self._notice_box = box   # Referenz halten, sonst schließt Qt das Fenster sofort
 
+    def _redraw_icon(self) -> None:
+        state = self.state
+        if state is not None and state.restricted:
+            self.tray.setIcon(render_icon(texts.icon_text(state), texts.level(state)))
+
     def _state_changed(self, state: t.TrayState) -> None:
         self.state = state
         if self.countdown is not None:
@@ -171,12 +179,17 @@ class TrayApp:
             self.blocked.hide()
             return
         self._first_notice()
-        self.tray.setIcon(render_icon(texts.icon_text(state), texts.level(state)))
+        self._redraw_icon()
         line = texts.status_line(state)
         self.tray.setToolTip("\n".join(texts.detail_lines(state)))
         self.status_action.setText(line)
         self.window.set_state(state, True)
         self.tray.show()
+
+
+def toast_logo_path() -> str:
+    base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+    return os.path.join(base, "KidCTL", "toast-logo.png")
 
 
 def notice_flag() -> str:
@@ -250,6 +263,8 @@ def main() -> int:
     gnome = "gnome" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
     app.setDesktopFileName("kidctl" if gnome else "kidctl-tray")
     app.setQuitOnLastWindowClosed(False)
+    from . import winstyle
+    winstyle.apply(app)   # Windows: Fluent-Stil (Linux behält den nativen Look)
     path = instance_path()
     if path and ask_running_instance(path, command):
         return 0   # läuft schon – Fenster dort geöffnet bzw. Klick weitergegeben

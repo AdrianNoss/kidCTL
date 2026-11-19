@@ -46,7 +46,10 @@ SetupIconFile=kidctl.ico
 UninstallDisplayIcon={app}\kidctl.ico
 Compression=lzma2/max
 SolidCompression=yes
-WizardStyle=modern
+; Fluent-ähnlich: modern, hell/dunkel nach Windows-Einstellung (Inno Setup ≥ 6.6); Logo oben rechts
+WizardStyle=modern dynamic
+WizardSmallImageFile=wizard-small-55.png,wizard-small-83.png,wizard-small-110.png
+WizardSizePercent=110
 CloseApplications=no
 RestartApplications=no
 SetupLogging=yes
@@ -59,16 +62,16 @@ Name: "en"; MessagesFile: "compiler:Default.isl"
 [CustomMessages]
 de.PairTitle=Mit dem KidCTL-Server koppeln
 de.PairDesc=Kopplungscode aus dem Eltern-WebUI (Geräte → Koppeln)
-de.PairHint=Adresse des Servers (https://…) und Kopplungscode eingeben. Leer lassen, um später als Administrator zu koppeln: "C:\Program Files\KidCTL\kidctl.cmd" enroll https://… CODE
-de.PairServer=Server-Adresse:
+de.PairHint=Leer lassen, um später zu koppeln.
+de.PairServer=Server-Adresse (https://…):
 de.PairCode=Kopplungscode:
 de.PairHttps=Die Server-Adresse muss mit https:// beginnen.
 de.PairFailed=Kopplung fehlgeschlagen:%n%n%1%n%nSpäter als Administrator erneut koppeln:%n"C:\Program Files\KidCTL\kidctl.cmd" enroll <Server> <Code>
 de.TrayName=KidCTL
 en.PairTitle=Pair with the KidCTL server
 en.PairDesc=Pairing code from the parents' web UI (Devices → Pair)
-en.PairHint=Enter the server address (https://…) and the pairing code. Leave empty to pair later as administrator: "C:\Program Files\KidCTL\kidctl.cmd" enroll https://… CODE
-en.PairServer=Server address:
+en.PairHint=Leave empty to pair later.
+en.PairServer=Server address (https://…):
 en.PairCode=Pairing code:
 en.PairHttps=The server address must start with https://.
 en.PairFailed=Pairing failed:%n%n%1%n%nPair later as administrator:%n"C:\Program Files\KidCTL\kidctl.cmd" enroll <server> <code>

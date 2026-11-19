@@ -60,7 +60,8 @@ def parse_url(arg: str) -> tuple[str, str] | None:
     return None
 
 
-def toast_xml(title: str, body: str, action_id: str | None, action_label: str, critical: bool) -> str:
+def toast_xml(title: str, body: str, action_id: str | None, action_label: str, critical: bool,
+              logo: str | None = None) -> str:
     actions = ""
     scenario = ""
     if action_id and action_label:
@@ -68,16 +69,21 @@ def toast_xml(title: str, body: str, action_id: str | None, action_label: str, c
                    f'arguments={quoteattr(f"{SCHEME}://action/{action_id}")}/></actions>')
         if critical:
             scenario = ' scenario="reminder"'   # bleibt stehen, bis das Kind reagiert
+    image = ""
+    if logo:   # App-Logo links im Toast (nur lokale PNG-Datei)
+        uri = "file:///" + logo.replace("\\", "/").lstrip("/")
+        image = f'<image placement="appLogoOverride" src={quoteattr(uri)}/>'
     return (f'<toast activationType="protocol" launch="{SCHEME}://show"{scenario}><visual>'
-            f'<binding template="ToastGeneric"><text>{escape(title)}</text><text>{escape(body)}</text>'
+            f'<binding template="ToastGeneric"><text>{escape(title)}</text><text>{escape(body)}</text>{image}'
             f'</binding></visual>{actions}</toast>')
 
 
 class Toaster:
     """Windows-Toasts über WinRT (Pakete ``winrt-Windows.UI.Notifications`` und ``winrt-Windows.Data.Xml.Dom``)."""
 
-    def __init__(self) -> None:
+    def __init__(self, logo: str | None = None) -> None:
         self.notifier = None
+        self.logo = logo
         try:
             from winrt.windows.ui.notifications import ToastNotificationManager
 
@@ -100,7 +106,7 @@ class Toaster:
             from winrt.windows.ui.notifications import ToastNotification
 
             doc = XmlDocument()
-            doc.load_xml(toast_xml(title, body, action_id, action_label, critical))
+            doc.load_xml(toast_xml(title, body, action_id, action_label, critical, self.logo))
             self.notifier.show(ToastNotification(doc))
             return True
         except Exception:
