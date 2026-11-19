@@ -1,0 +1,12 @@
+{% extends "mail/base.html" %}
+{#- Newsletter (Markdown-Teilmenge, app.mdmail). ctx: name, nl_subject, body (Markdown), body_html,
+    unsubscribe_url (leer beim Testversand) -#}
+{% set subject = nl_subject %}
+{% set plain_subject = true %}
+{% set heading = nl_subject %}
+{% set preheader = preheader_text %}
+{% set greeting = _("Hallo {name},").format(name=name) %}
+{% set text_extra = body %}
+{% set reason = _("Du bekommst diese Mail, weil eure Familie Neuigkeiten per E-Mail abonniert hat.") if unsubscribe_url else _("(Testversand – an Familien steht hier der Abmeldelink.)") %}
+{% set unsubscribe = (_("Abbestellen"), unsubscribe_url) if unsubscribe_url else None %}
+{% block body_extra %}{{ body_html | safe }}{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "mail/base.html" %}
+{#- Neue E-Mail-Adresse eines Elternteils bestätigen. ctx: name, link, hours -#}
+{% set subject = _("E-Mail-Adresse bestätigen") %}
+{% set heading = subject %}
+{% set preheader = _("Bitte bestätige deine E-Mail-Adresse.") %}
+{% set greeting = _("Hallo {name},").format(name=name) %}
+{% set paragraphs = [_("bitte bestätige diese Adresse für deinen KidCTL-Account. Der Link gilt {hours} Stunden:").format(hours=hours) | brand] %}
+{% set action = (_("Adresse bestätigen"), link) %}
+{% set after = [_("Danach kannst du dich mit ihr anmelden und bekommst Hinweise und Berichte."), _("Falls du das nicht warst, kannst du diese Mail ignorieren.")] %}
+{% set reason = _("Du bekommst diese Mail, weil diese Adresse bei einem Account hinterlegt wurde.") %}

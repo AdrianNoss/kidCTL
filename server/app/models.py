@@ -316,6 +316,13 @@ class Branding(Base):
     logo: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)       # PNG, höchstens 512×128
     icon: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)       # PNG 512×512 (Favicon, App-Icon)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+    # Anbieter (Fußzeile der Mails; leere Felder entfallen)
+    provider_name: Mapped[str] = mapped_column(String(128), default="", server_default="")
+    provider_address: Mapped[str] = mapped_column(String(255), default="", server_default="")
+    provider_email: Mapped[str] = mapped_column(String(255), default="", server_default="")
+    imprint_url: Mapped[str] = mapped_column(String(255), default="", server_default="")
+    privacy_url: Mapped[str] = mapped_column(String(255), default="", server_default="")
+    news_url: Mapped[str] = mapped_column(String(255), default="", server_default="")   # leer: Projekt-News
 
 
 class InvoiceSettings(Base):

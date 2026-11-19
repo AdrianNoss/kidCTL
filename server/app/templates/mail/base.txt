@@ -1,0 +1,21 @@
+{% autoescape false %}{% if text_template %}{% include text_template %}{% else %}{% if heading %}{{ heading }}
+
+{% endif %}{% if greeting %}{{ greeting }}
+
+{% endif %}{% for para in paragraphs or [] %}{{ para }}
+
+{% endfor %}{% if text_extra %}{{ text_extra }}
+
+{% endif %}{% if action %}{{ action[0] }}:
+{{ action[1] }}
+
+{% endif %}{% for para in after or [] %}{{ para }}
+
+{% endfor %}{% endif %}
+--
+{% if reason %}{{ reason }}{% if unsubscribe %}
+{{ unsubscribe[0] }}: {{ unsubscribe[1] }}{% endif %}
+{% endif %}{% for label, url in footer.links %}{{ label }}: {{ url }}
+{% endfor %}{% if footer.provider %}{{ footer.provider | join(" · ") }}
+{% endif %}{% if brand().custom %}{{ brand().name }} · powered by KidCTL
+{% endif %}{% endautoescape %}

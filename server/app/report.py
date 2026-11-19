@@ -209,19 +209,20 @@ def render(db: Session | None, parent: Parent, p: Period) -> tuple[str, str, str
             family_id = family_of_parent(pdb, parent.id)
         with family_session(family_id) as fdb:
             return render(fdb, parent, p)
-    with i18n.use(i18n.parent_language(parent)):
+    from . import mailer
+    lang = i18n.parent_language(parent)
+    with i18n.use(lang):
         reports = build(db, p)
-        subject = f"KidCTL: {p.title} {p.label}"
-        ctx = dict(parent=parent, period=p, reports=reports, base_url=settings.base_url, fmt=sch.fmt_minutes,
-                   short=_short, bar_height=BAR_HEIGHT, intervals=INTERVALS)
-        html = templates.env.get_template("mail/report.html").render(**ctx)
-        text = templates.env.get_template("mail/report.txt").render(**ctx)
-    return subject, text, html
+    r = mailer.render("report", lang, parent=parent, period=p, reports=reports, fmt=sch.fmt_minutes, short=_short,
+                      bar_height=BAR_HEIGHT, intervals=INTERVALS)
+    return r.subject, r.text, r.html
 
 
 def send(db: Session | None, parent: Parent, p: Period) -> bool:
+    from . import mailer
     subject, text, html = render(db, parent, p)
-    return mail.send(parent.email, subject, text, html)
+    png, _w, _h = mailer.logo()
+    return mail.send(parent.email, subject, text, html, inline=[(mailer.LOGO_CID, png, "image/png")], branded=True)
 
 
 # ---------- Versand ----------

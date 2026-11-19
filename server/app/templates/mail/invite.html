@@ -1,0 +1,9 @@
+{% extends "mail/base.html" %}
+{#- Einladung eines weiteren Elternteils. ctx: by, link, days -#}
+{% set subject = _("Einladung") %}
+{% set heading = _("Einladung zur Familie") %}
+{% set preheader = _("{by} lädt dich ein, die Kinder eurer Familie in KidCTL mitzuverwalten.").format(by=by) | brand %}
+{% set paragraphs = [preheader, _("Über diesen Link legst du Passwort und Authenticator fest ({days} Tage gültig):").format(days=days)] %}
+{% set action = (_("Einladung annehmen"), link) %}
+{% set after = [_("Falls du damit nichts anfangen kannst, ignoriere diese Mail.")] %}
+{% set reason = _("Du bekommst diese Mail, weil dich jemand in eine Familie eingeladen hat.") %}

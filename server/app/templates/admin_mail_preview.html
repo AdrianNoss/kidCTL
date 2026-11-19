@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Mails") }} – {{ brand().name }}{% endblock %}
+{% block content %}
+{% set heading = _("Mails") %}{% include "_admin_head.html" %}
+{% if sent == "1" %}<p class="success">{{ _("Testmail an {email} gesendet.").format(email=operator.email) }}</p>
+{% elif sent == "0" %}<p class="error">{{ _("Testmail nicht gesendet – SMTP-Einstellungen prüfen (Server-Log).") }}</p>
+{% elif sent == "noaddr" %}<p class="error">{{ _("Für den Testversand bitte im Profil eine E-Mail-Adresse hinterlegen.") }}</p>{% endif %}
+<form method="get" action="/admin/mail-preview" class="card admin-search">
+  <div class="filter-grid">
+    <label>{{ _("Mailtyp") }} <select name="type">{% for t in types %}<option value="{{ t }}"{% if t == current %} selected{% endif %}>{{ t }}</option>{% endfor %}</select></label>
+    <label>{{ _("Sprache") }} <select name="lang"><option value="de"{% if mail_lang == "de" %} selected{% endif %}>Deutsch</option><option value="en"{% if mail_lang == "en" %} selected{% endif %}>English</option></select></label>
+  </div>
+  <div class="row filter-actions"><button type="submit" class="secondary">{{ _("Anzeigen") }}</button></div>
+</form>
+<section class="card">
+  <div class="card-head"><h2>{{ subject }}</h2>
+    <form method="post" action="/admin/mail-preview/send" class="inline">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <input type="hidden" name="type" value="{{ current }}"><input type="hidden" name="lang" value="{{ mail_lang }}">
+      <button type="submit" class="small">{{ _("Testmail an mich") }}</button>
+    </form></div>
+  <p class="muted"><small>{{ _("Beispieldaten. HTML {kb} KB (Gmail kürzt ab etwa 100 KB).").format(kb=(size / 1024) | round(1)) }}</small></p>
+  <iframe class="mail-frame" sandbox title="{{ _('HTML-Fassung') }}" srcdoc="{{ html }}"></iframe>
+  <details><summary>{{ _("Textfassung") }}</summary><pre class="mail-text">{{ text }}</pre></details>
+</section>
+{% endblock %}

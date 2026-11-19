@@ -18,7 +18,7 @@ import pyotp
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from . import branding, i18n
+from . import branding, i18n, mailer
 from .i18n import _
 from . import mail
 from .config import settings
@@ -102,13 +102,8 @@ def send_email_verification(db: Session, parent: Parent) -> bool:
     raw = create_token(db, parent, "email_verify", timedelta(hours=EMAIL_VERIFY_HOURS))
     db.commit()
     link = f"{settings.base_url}/email/verify/{raw}"
-    with i18n.use(i18n.parent_language(parent)):
-        return mail.send(parent.email, _("KidCTL: E-Mail-Adresse bestätigen"),
-                         _("Hallo {name},").format(name=parent.display_name or parent.username) + "\n\n"
-                         + _("bitte bestätige diese Adresse für deinen KidCTL-Account. Der Link gilt {hours} Stunden:").format(
-                             hours=EMAIL_VERIFY_HOURS) + f"\n\n{link}\n\n"
-                         + _("Danach kannst du dich mit ihr anmelden und bekommst Hinweise und Berichte.") + "\n"
-                         + _("Falls du das nicht warst, kannst du diese Mail ignorieren.") + "\n")
+    return mailer.send(parent.email, "email_verify", i18n.parent_language(parent),
+                       name=parent.display_name or parent.username, link=link, hours=EMAIL_VERIFY_HOURS)
 
 
 def confirm_email(db: Session, raw: str) -> Parent | None:
@@ -216,26 +211,21 @@ def start_password_reset(db: Session, ident: str) -> bool:
     raw = create_token(db, parent, "password_reset", timedelta(minutes=RESET_MINUTES))
     db.commit()
     link = f"{settings.base_url}/reset/{raw}"
-    with i18n.use(i18n.parent_language(parent)):   # Sprache des Accounts, nicht des anfragenden Browsers
-        return mail.send(parent.email, _("KidCTL: Passwort zurücksetzen"),
-                         _("Hallo {name},").format(name=parent.display_name or parent.username) + "\n\n"
-                         + _("für deinen KidCTL-Account „{username}“ wurde ein neues Passwort angefordert.").format(
-                             username=parent.username) + "\n"
-                         + _("Über diesen Link kannst du es {minutes} Minuten lang einmal neu setzen:").format(
-                             minutes=RESET_MINUTES) + f"\n\n{link}\n\n"
-                         + _("Zum Anmelden brauchst du danach weiterhin deine Authenticator-App.") + "\n"
-                         + _("Falls du das nicht warst, kannst du diese Mail ignorieren.") + "\n")
+    # Sprache des Accounts, nicht des anfragenden Browsers
+    return mailer.send(parent.email, "password_reset", i18n.parent_language(parent),
+                       name=parent.display_name or parent.username, username=parent.username, link=link,
+                       minutes=RESET_MINUTES)
 
 
 def notify(parent: Parent, subject: str, text: str, **fmt) -> None:
     """Sicherheitshinweis an die hinterlegte Adresse (falls vorhanden). ``subject``/``text`` sind mit ``N_``
     markierte Texte und werden in der Sprache des Elternteils gesendet."""
     if email_usable(parent):
-        with i18n.use(i18n.parent_language(parent)):
-            mail.send(parent.email, f"KidCTL: {_(subject)}",
-                      _("Hallo {name},").format(name=parent.display_name or parent.username) + f"\n\n{_(text).format(**fmt)}\n\n"
-                      + _("Falls du das nicht warst, melde dich sofort an, ändere dein Passwort und prüfe die "
-                          "Eltern-Accounts.") + "\n")
+        lang = i18n.parent_language(parent)
+        with i18n.use(lang):
+            title, body = _(subject), _(text).format(**fmt)
+        mailer.send(parent.email, "security_notice", lang, name=parent.display_name or parent.username,
+                    title=title, text=body)
 
 
 def new_secret() -> str:
@@ -258,12 +248,7 @@ def create_invite(db: Session, email: str, display_name: str, created_by: int) -
 
 
 def send_invite(email: str, link: str, by: str, lang: str) -> bool:
-    with i18n.use(lang):
-        return mail.send(email, _("KidCTL: Einladung"),
-                         _("{by} lädt dich ein, die Kinder eurer Familie in KidCTL mitzuverwalten.").format(by=by)
-                         + "\n\n" + _("Über diesen Link legst du Passwort und Authenticator fest ({days} Tage gültig):").format(
-                             days=INVITE_DAYS) + f"\n\n{link}\n\n"
-                         + _("Falls du damit nichts anfangen kannst, ignoriere diese Mail.") + "\n")
+    return mailer.send(email, "invite", lang, by=by, link=link, days=INVITE_DAYS)
 
 
 def open_invite(db: Session, raw: str):

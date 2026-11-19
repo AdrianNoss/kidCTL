@@ -65,27 +65,32 @@ def _recipients(family_id: int) -> list[tuple[str, str, str]]:
                 for p in parents if accounts.email_usable(p)]
 
 
-def compose(nl: Newsletter, lang: str, name: str, family_id: int | None) -> tuple[str, str]:
-    """Betreff und Text in ``lang`` (Englisch nur mit englischem Text) samt Abmeldehinweis."""
+def mail_ctx(nl: Newsletter, lang: str, name: str, family_id: int | None) -> tuple[str, dict]:
+    """(Sprache, Variablen) der Newsletter-Mail: Englisch nur mit englischem Text, sonst Deutsch."""
     english = lang == "en" and nl.subject_en.strip() and nl.body_en.strip()
-    use = "en" if english else "de"
     subject, body = (nl.subject_en, nl.body_en) if english else (nl.subject_de, nl.body_de)
-    with i18n.use(use):
-        text = _("Hallo {name},").format(name=name) + "\n\n" + body.strip() + "\n\n"
-        if family_id is not None:
-            text += (_("Du bekommst diese Mail, weil eure Familie Neuigkeiten per E-Mail abonniert hat.") + "\n"
-                     + _("Abbestellen: {url}").format(url=unsubscribe_url(family_id)) + "\n")
-        else:
-            text += _("(Testversand – an Familien steht hier der Abmeldelink.)") + "\n"
-    return subject.strip(), text
+    from . import mdmail
+    return ("en" if english else "de"), dict(name=name, nl_subject=subject.strip(), body=body.strip(),
+                                             body_html=mdmail.to_html(body), preheader_text=mdmail.preheader(body),
+                                             unsubscribe_url=unsubscribe_url(family_id) if family_id is not None else "")
+
+
+def compose(nl: Newsletter, lang: str, name: str, family_id: int | None) -> tuple[str, str]:
+    """Betreff und Textfassung (für Tests und Vorschau)."""
+    from . import mailer
+    use, ctx = mail_ctx(nl, lang, name, family_id)
+    r = mailer.render("newsletter", use, **ctx)
+    return r.subject, r.text
 
 
 def send_test(nl: Newsletter, to: str) -> int:
     """Testversand an den Betreiber: beide Sprachen (sofern vorhanden). Anzahl gesendeter Mails."""
     sent = 0
+    from . import mailer
     for lang in ("de", "en") if nl.subject_en.strip() and nl.body_en.strip() else ("de",):
-        subject, body = compose(nl, lang, to, None)
-        sent += bool(mail.send(to, f"[Test] {subject}", body))
+        use, ctx = mail_ctx(nl, lang, to, None)
+        ctx["nl_subject"] = "[Test] " + ctx["nl_subject"]
+        sent += bool(mailer.send(to, "newsletter", use, **ctx))
     return sent
 
 
@@ -105,10 +110,12 @@ def deliver(newsletter_id: int) -> None:
             log.exception("Newsletter %s: Empfänger der Familie %s nicht lesbar", newsletter_id, family_id)
             continue
         url = unsubscribe_url(family_id)
+        from . import mailer
         for email, lang, name in recipients:
-            subject, body = compose(nl, lang, name, family_id)
-            if mail.send(email, subject, body, headers={"List-Unsubscribe": f"<{url}>",
-                                                         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"}):
+            use, ctx = mail_ctx(nl, lang, name, family_id)
+            if mailer.send(email, "newsletter", use, headers={"List-Unsubscribe": f"<{url}>",
+                                                              "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"},
+                           **ctx):
                 sent += 1
     with platform_session() as db:
         row = db.get(Newsletter, newsletter_id)

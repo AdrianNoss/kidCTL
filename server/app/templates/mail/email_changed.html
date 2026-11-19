@@ -1,0 +1,9 @@
+{% extends "mail/base.html" %}
+{#- An die bisherige Adresse nach einer Änderung. ctx: username, email -#}
+{% set subject = _("E-Mail-Adresse geändert") %}
+{% set heading = subject %}
+{% set preheader = _("Die E-Mail-Adresse des KidCTL-Accounts „{username}“ wurde von dieser Adresse auf „{email}“ geändert.").format(username=username, email=email or _("(keine)")) | brand %}
+{% set paragraphs = [preheader] %}
+{% set action = (_("Anmelden"), base_url ~ "/login") %}
+{% set after = [_("Falls du das nicht warst, melde dich sofort an.")] %}
+{% set reason = _("Du bekommst diese Mail, weil diese Adresse bisher bei dem Account hinterlegt war.") %}

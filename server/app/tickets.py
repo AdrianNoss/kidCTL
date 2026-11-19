@@ -131,12 +131,9 @@ def notify_support(ticket_id: int, family_id: int, new: bool) -> None:
     if settings.support_notify_email:
         to.add(settings.support_notify_email)
     link = f"{settings.base_url}/admin/tickets/{ticket_id}"
-    with i18n.use("de"):
-        subject = (_("KidCTL: Neues Ticket #{id}") if new else _("KidCTL: Antwort auf Ticket #{id}")).format(id=ticket_id)
-        text = (_("Familie #{family} hat ein neues Ticket angelegt.") if new
-                else _("Familie #{family} hat auf ein Ticket geantwortet.")).format(family=family_id)
-        for addr in sorted(to):
-            mail.send(addr, subject, f"{text}\n\n{link}\n")
+    from . import mailer
+    for addr in sorted(to):
+        mailer.send(addr, "ticket_support", "de", ticket_id=ticket_id, family_id=family_id, new=new, link=link)
 
 
 def notify_family(family_id: int, ticket_id: int, closed: bool = False) -> None:
@@ -151,9 +148,9 @@ def notify_family(family_id: int, ticket_id: int, closed: bool = False) -> None:
     with family_session(family_id) as db:
         for p in db.scalars(select(Parent)):
             if email_usable(p):
-                with i18n.use(i18n.parent_language(p)):
-                    mail.send(p.email, "KidCTL: " + _(subject_de).format(id=ticket_id),
-                              _("Hallo {name},").format(name=p.display_name or p.username) + f"\n\n{_(text_de)}\n\n{link}\n")
+                from . import mailer
+                mailer.send(p.email, "ticket_family", i18n.parent_language(p), name=p.display_name or p.username,
+                            ticket_id=ticket_id, closed=closed, link=link)
     try:
         send_to_parents_sync(lambda: _(subject_de).format(id=ticket_id), lambda: _(text_de), f"/support/{ticket_id}",
                              tag=f"ticket-{ticket_id}", family_id=family_id)

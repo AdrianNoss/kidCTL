@@ -25,7 +25,7 @@ def saas(monkeypatch):
 def outbox(monkeypatch):
     sent = []
     monkeypatch.setattr(Settings, "mail_enabled", property(lambda s: True))
-    monkeypatch.setattr(mail, "send", lambda to, subject, body, html=None, attachments=None, headers=None:
+    monkeypatch.setattr(mail, "send", lambda to, subject, body, html=None, attachments=None, headers=None, **kw:
                         sent.append({"to": to, "subject": subject, "body": body, "headers": headers or {}}) or True)
     return sent
 
@@ -139,10 +139,10 @@ def test_admin_newsletter_test_and_send(client, operator, parent, saas, outbox):
 def test_english_parent_gets_english_or_fallback(client):
     nl = Newsletter(subject_de="Neu", body_de="Text", subject_en="New", body_en="Text EN")
     subject, body = newsletter.compose(nl, "en", "Mum", 1)
-    assert subject == "New" and body.startswith("Hello Mum") and "Text EN" in body
+    assert subject == "New" and "Hello Mum," in body and "Text EN" in body
     nl.subject_en = nl.body_en = ""
     subject, body = newsletter.compose(nl, "en", "Mum", 1)
-    assert subject == "Neu" and body.startswith("Hallo Mum")
+    assert subject == "Neu" and "Hallo Mum," in body
 
 
 def test_send_requires_content_and_support_role(client, operator, saas):  # noqa: F811

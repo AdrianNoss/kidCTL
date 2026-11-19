@@ -3,7 +3,8 @@
 {% block title %}{{ _("Erscheinungsbild") }} – {{ brand().name }}{% endblock %}
 {% block content %}
 {% set heading = _("Erscheinungsbild") %}{% include "_admin_head.html" %}
-{% if saved %}<p class="success">{{ _("Gespeichert. Familien sehen die Änderung nach spätestens einer Minute.") }}</p>{% endif %}
+{% if saved == "provider" %}<p class="success">{{ _("Gespeichert.") }}</p>
+{% elif saved %}<p class="success">{{ _("Gespeichert. Familien sehen die Änderung nach spätestens einer Minute.") }}</p>{% endif %}
 <div class="card-grid">
 <section class="card">
   <h2>{{ _("Vorschau") }}</h2>
@@ -29,6 +30,19 @@
   <label class="option"><input type="checkbox" name="remove_icon" value="1"> {{ _("App-Icon entfernen") }}</label>
   {% endif %}
   <p class="muted"><small>{{ _("PNG, JPEG, WebP, GIF oder ICO, höchstens {mb} MB. Das Logo wird auf höchstens 512 × 128 Pixel verkleinert, das Icon auf 512 × 512 (am besten quadratisch, mindestens 512 Pixel). Leerer Name: KidCTL.").format(mb=max_mb) }}</small></p>
+  <div class="row"><button type="submit">{{ _("Speichern") }}</button></div>
+</form>
+
+<form method="post" action="/admin/branding/provider" class="card" id="anbieter">
+  <h2>{{ _("Anbieter") }}</h2>
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <label>{{ _("Name") }} <input name="provider_name" maxlength="128" value="{{ row.provider_name if row else '' }}" placeholder="{{ _('z. B. Muster GmbH') }}"></label>
+  <label>{{ _("Anschrift (eine Zeile)") }} <input name="provider_address" maxlength="255" value="{{ row.provider_address if row else '' }}" placeholder="{{ _('Straße 1, 12345 Ort') }}"></label>
+  <label>{{ _("Kontakt-E-Mail") }} <input type="email" name="provider_email" maxlength="255" value="{{ row.provider_email if row else '' }}"></label>
+  <label>{{ _("Impressum (Link)") }} <input type="url" name="imprint_url" maxlength="255" value="{{ row.imprint_url if row else '' }}" placeholder="https://"></label>
+  <label>{{ _("Datenschutz (Link)") }} <input type="url" name="privacy_url" maxlength="255" value="{{ row.privacy_url if row else '' }}" placeholder="https://"></label>
+  <label>{{ _("Neuigkeiten (Link)") }} <input type="url" name="news_url" maxlength="255" value="{{ row.news_url if row else '' }}" placeholder="{{ _('leer: News der Projektseite') }}"></label>
+  <p class="muted"><small>{{ _("Erscheint in der Fußzeile aller Mails. Leere Felder entfallen. „Anleitungen“ verlinkt immer das Wiki der Projektseite.") }} <a href="/admin/mail-preview">{{ _("Mail-Vorschau") }}</a></small></p>
   <div class="row"><button type="submit">{{ _("Speichern") }}</button></div>
 </form>
 </div>

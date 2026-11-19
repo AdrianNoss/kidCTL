@@ -1,0 +1,10 @@
+{% extends "mail/base.html" %}
+{#- Sicherheitshinweis an ein Elternteil (Passwort/Authenticator geändert …). ctx: name, title, text -#}
+{% set subject = title %}
+{% set heading = title %}
+{% set preheader = text %}
+{% set greeting = _("Hallo {name},").format(name=name) %}
+{% set paragraphs = [text] %}
+{% set action = (_("Anmelden"), base_url ~ "/login") %}
+{% set after = [_("Falls du das nicht warst, melde dich sofort an, ändere dein Passwort und prüfe die Eltern-Accounts.")] %}
+{% set reason = _("Du bekommst diese Mail als Sicherheitshinweis zu deinem Account.") %}

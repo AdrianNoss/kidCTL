@@ -81,12 +81,8 @@ def start(db: Session, email: str, code: str, lang: str) -> bool:
     if link_error(db, email, code):
         return False
     link = f"{settings.base_url}/signup/{make_token(email, code)}"
-    with i18n.use(lang):
-        return mail.send(email, _("KidCTL: E-Mail-Adresse bestätigen"),
-                         _("Willkommen bei KidCTL!") + "\n\n"
-                         + _("Über diesen Link bestätigst du deine E-Mail-Adresse und legst Passwort und Authenticator "
-                             "fest ({hours} Stunden gültig):").format(hours=LINK_HOURS) + f"\n\n{link}\n\n"
-                         + _("Falls du dich nicht registriert hast, ignoriere diese Mail.") + "\n")
+    from . import mailer
+    return mailer.send(email, "signup_verify", lang, link=link, hours=LINK_HOURS)
 
 
 def complete(db: Session, email: str, code: str, display_name: str, password: str, totp_secret: str,

@@ -1,0 +1,78 @@
+{#- Basis aller Mails: Tabellenlayout mit Inline-Styles (Mailprogramme ignorieren <style>/CSS-Variablen teilweise),
+    Farben wie im Webinterface (Material 3, helles Schema), dunkles Schema über prefers-color-scheme (k-Klassen).
+    Logo nur als Inline-Bild (cid:), keine externen Ressourcen. Mail-Templates setzen oben Variablen (app.mailer). -#}
+{%- set C = {"bg": "#f3f3fa", "surface": "#ffffff", "surface2": "#ededf4", "ink": "#1a1b21", "ink2": "#44464f",
+             "muted": "#5d5f68", "line": "#e2e2e9", "border": "#c5c6d0", "accent": "#3b5ba9", "onaccent": "#ffffff",
+             "soft": "#dae2ff", "warn": "#7a5900", "warnsoft": "#ffdea1", "warnbar": "#c99400"} -%}
+{%- set sans = "Roboto,'Segoe UI','Helvetica Neue','Noto Sans',Arial,sans-serif" -%}
+{%- set b = brand() -%}
+<!doctype html>
+<html lang="{{ lang() }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<style>
+  @media (prefers-color-scheme: dark) {
+    .k-bg { background:#121318 !important; }
+    .k-card { background:#1a1b21 !important; border-color:#44464f !important; }
+    .k-tile { background:#292a2f !important; }
+    .k-warntile { background:#5c4200 !important; }
+    .k-ink { color:#e2e2e9 !important; }
+    .k-ink2 { color:#c5c6d0 !important; }
+    .k-muted { color:#a9abb4 !important; }
+    .k-accent { color:#b1c5ff !important; }
+    .k-btn { background:#b1c5ff !important; border-color:#b1c5ff !important; }
+    .k-btntext { color:#182d61 !important; }
+    .k-warn { color:#f5bf48 !important; }
+    .k-line { border-color:#44464f !important; }
+  }
+  @media (max-width: 480px) { .k-pad { padding:20px 16px 4px !important; } }
+</style>
+<title>{{ subject }}</title>
+</head>
+<body class="k-bg k-ink" style="margin:0;padding:0;background:{{ C.bg }};color:{{ C.ink }};font-family:{{ sans }};">
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">{{ preheader or subject }}&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="{{ C.bg }}" class="k-bg" style="background:{{ C.bg }};">
+<tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
+
+  {# ---------- Kopf ---------- #}
+  <tr><td style="padding:0 4px 16px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td style="vertical-align:middle;"><img src="cid:{{ logo_cid }}" width="{{ logo_w }}" height="{{ logo_h }}" alt="{{ b.name if b.logo_only else '' }}" style="display:block;border:0;width:{{ logo_w }}px;height:{{ logo_h }}px;"></td>
+      {% if not b.logo_only or b.custom %}<td class="k-ink" style="padding-left:10px;vertical-align:middle;font:500 18px/1.2 {{ sans }};color:{{ C.ink }};">{% if not b.logo_only %}{{ b.name }}{% endif %}{% if b.custom %}{% if not b.logo_only %}<br>{% endif %}<span class="k-muted" style="font:400 11px/1.6 {{ sans }};color:{{ C.muted }};">powered by KidCTL</span>{% endif %}</td>{% endif %}
+    </tr></table>
+  </td></tr>
+
+  {% block content %}
+  <tr><td bgcolor="{{ C.surface }}" class="k-card k-pad" style="background:{{ C.surface }};border:1px solid {{ C.border }};border-radius:16px;padding:28px 28px 8px;">
+    {% if heading %}<h1 class="k-ink" style="margin:0 0 16px;font:400 24px/1.3 {{ sans }};color:{{ C.ink }};">{{ heading }}</h1>{% endif %}
+    {% if greeting %}<p class="k-ink2" style="margin:0 0 14px;font:15px/1.6 {{ sans }};color:{{ C.ink2 }};">{{ greeting }}</p>{% endif %}
+    {% for para in paragraphs or [] %}<p class="k-ink2" style="margin:0 0 14px;font:15px/1.6 {{ sans }};color:{{ C.ink2 }};">{{ para }}</p>{% endfor %}
+    {% block body_extra %}{% endblock %}
+    {% if action %}
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 10px;"><tr><td>
+      <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ action[1] }}" style="height:44px;v-text-anchor:middle;width:260px;" arcsize="50%" stroke="f" fillcolor="{{ C.accent }}"><w:anchorlock/><center style="color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">{{ action[0] }}</center></v:roundrect><![endif]-->
+      <!--[if !mso]><!--><a href="{{ action[1] }}" class="k-btn" style="display:inline-block;background:{{ C.accent }};border:1px solid {{ C.accent }};border-radius:22px;padding:12px 26px;font:500 15px/20px {{ sans }};text-decoration:none;"><span class="k-btntext" style="color:{{ C.onaccent }};">{{ action[0] }}</span></a><!--<![endif]-->
+    </td></tr></table>
+    <p class="k-muted" style="margin:0 0 16px;font:12px/1.5 {{ sans }};color:{{ C.muted }};word-break:break-all;">{{ _("Oder diesen Link öffnen:") }} <a href="{{ action[1] }}" class="k-accent" style="color:{{ C.accent }};">{{ action[1] }}</a></p>
+    {% endif %}
+    {% for para in after or [] %}<p class="k-ink2" style="margin:0 0 14px;font:15px/1.6 {{ sans }};color:{{ C.ink2 }};">{{ para }}</p>{% endfor %}
+  </td></tr>
+  {% endblock %}
+
+  {# ---------- Fuß ---------- #}
+  <tr><td class="k-muted" style="padding:18px 4px 0;font:12px/1.6 {{ sans }};color:{{ C.muted }};">
+    {% block footnote %}{% endblock %}
+    {% if reason %}<p style="margin:0 0 8px;">{{ reason }}{% if unsubscribe %} <a href="{{ unsubscribe[1] }}" class="k-muted" style="color:{{ C.muted }};">{{ unsubscribe[0] }}</a>{% endif %}</p>{% endif %}
+    <p style="margin:0 0 8px;">{% for label, url in footer.links %}<a href="{{ url }}" class="k-muted" style="color:{{ C.muted }};">{{ label }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</p>
+    {% if footer.provider %}<p style="margin:0 0 8px;">{{ footer.provider | join(" · ") }}</p>{% endif %}
+    {% if b.custom %}<p style="margin:0 0 8px;">powered by KidCTL</p>{% endif %}
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

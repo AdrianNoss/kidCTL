@@ -30,6 +30,4 @@
 {{ _("Noch keine Kinder angelegt.") }}
 {% endfor %}
 
---
-{{ _("Bericht ändern oder abbestellen") }}: {{ base_url }}/profile
 {% endautoescape %}

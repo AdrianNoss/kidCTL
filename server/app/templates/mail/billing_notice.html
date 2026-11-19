@@ -1,0 +1,9 @@
+{% extends "mail/base.html" %}
+{#- Hinweis zum Abo (Testphase endet, Ruhemodus, Löschung …). ctx: name, title, text -#}
+{% set subject = title | brand %}
+{% set heading = subject %}
+{% set preheader = text | brand %}
+{% set greeting = _("Hallo {name},").format(name=name) %}
+{% set paragraphs = [text | brand] %}
+{% set action = (_("Zum Abo"), base_url ~ "/settings#abo") %}
+{% set reason = _("Du bekommst diese Mail als Hinweis zum Abo eurer Familie.") %}

@@ -966,6 +966,14 @@ hierher verschoben 2026-11-17.)
   CID-Logo vorhanden, Textfassung vorhanden, keine externen Ressourcen/Skripte, Whitelabel an/aus).
   Vorschauseite `/admin/mail-preview` (nur *Admin*): alle Mailtypen mit Beispieldaten, DE/EN umschaltbar,
   Button „Testmail an mich“ (an die eigene Betreiber-Adresse).
+- **Umgesetzt (0.37.0):**
+  - `app/mailer.py`: `render`/`send`, Logo, Fußzeile, Beispieldaten `samples()` für Vorschau und Tests.
+  - `app/mdmail.py`: Markdown-Teilmenge.
+  - Templates `templates/mail/*.html` erben von `mail/base.html`; Textfassung `mail/base.txt` aus denselben Variablen.
+  - Anbieter-Felder in `branding` (Migration 0020).
+  - Im abgeschotteten Vorschau-Rahmen kommt das Logo als `data:`-URI statt per CID: Die CSP erlaubt dort keine
+    Server-Adressen.
+  - Ausnahmen vom Basis-Layout: keine; der Nutzungsbericht nutzt eigene Blöcke (`content`, `footnote`).
 
 ## Backup (entschieden 2026-10-21)
 
@@ -2828,3 +2836,19 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
     - Launcher und `EALocalHostSvc.exe` zählen nicht.
   - Nicht live getestet: Battle.net (Hearthstone-Download zu groß), Vorwarnung vor dem Spiele-Ende (Limit war sofort
     erreicht; Unit-Tests decken sie ab).
+- 2026-11-19: Version 0.37.0 (Server): einheitliche HTML-Mails (siehe „E-Mails“).
+  - Alle 13 Mailtypen erben von `mail/base.html`: Logo per CID, hell/dunkel, Button auch für Outlook, Textfassung,
+    Fußzeile mit Grund, Links und Anbieter-Angaben.
+  - Block „Anbieter“ auf der Seite „Erscheinungsbild“.
+  - Newsletter in Markdown mit Vorschau.
+  - Mail-Vorschau `/admin/mail-preview` mit „Testmail an mich“.
+
+  Getestet:
+  - Server-Tests 315 grün, neu `test_mails.py`: jeder Mailtyp DE/EN, Whitelabel- und Anbieter-Fußzeile,
+    Einzelbetrieb, CID-Aufbau, HTML < 100 KB, keine externen Ressourcen, Rollen der Vorschau, Markdown ohne HTML,
+    Bilder und `javascript:`.
+  - Migration 0020 hin und zurück, `alembic check`.
+  - Im Browser:
+    - Mail-Vorschau inkl. Logo.
+    - Passwort-Mail hell, Rechnung und Newsletter dunkel.
+  - MIME-Aufbau der `.eml`-Fassungen: Text, HTML mit Logo als `multipart/related`, PDF-Anhang.

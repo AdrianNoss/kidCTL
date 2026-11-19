@@ -16,7 +16,7 @@ NEW = "ganz-neues-passwort-42"
 def outbox(monkeypatch):
     from app import mail
     sent = []
-    monkeypatch.setattr(mail, "send", lambda to, subject, body, **kw: sent.append({"to": to, "subject": subject}) or True)
+    monkeypatch.setattr(mail, "send", lambda to, subject, body, html=None, **kw: sent.append({"to": to, "subject": subject}) or True)
     return sent
 
 

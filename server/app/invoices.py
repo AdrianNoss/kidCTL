@@ -277,6 +277,14 @@ def storno(db: Session, inv: Invoice, actor) -> Invoice:
     return s
 
 
+def invoice_mail_ctx(inv: Invoice, address: dict, sender: dict) -> dict:
+    """Variablen der Rechnungsmail (Zahlungsangaben nur bei offener, positiver Rechnung)."""
+    return dict(name=address.get("name", ""), storno=inv.status == "storno", number=inv.number,
+                issue_date=inv.issue_date, gross=eur(inv.gross_cents), due_date=inv.due_date,
+                pay=inv.status != "storno" and inv.gross_cents > 0, holder=sender.get("bank_holder", ""),
+                iban=sender.get("iban", ""), bic=sender.get("bic", ""), sender_name=sender.get("sender_name", ""))
+
+
 def send(db: Session, inv: Invoice, actor, again: bool = False) -> bool:
     """Rechnung mit PDF an die Rechnungs-E-Mail der Familie (Zahlungsinformationen im Text)."""
     if inv.status not in ISSUED:
@@ -286,17 +294,9 @@ def send(db: Session, inv: Invoice, actor, again: bool = False) -> bool:
     to = address.get("email", "")
     if not to:
         raise InvoiceError("Keine Rechnungs-E-Mail hinterlegt.")
-    title = "Stornorechnung" if inv.status == "storno" else "Rechnung"
-    body = (f"Guten Tag {address.get('name', '')},\n\nanbei die {title} "
-            f"{inv.number} vom {inv.issue_date:%d.%m.%Y} über {eur(inv.gross_cents)}.\n\n")
-    if inv.status != "storno" and inv.gross_cents > 0:
-        body += (f"Bitte überweise den Betrag bis {inv.due_date:%d.%m.%Y} auf folgendes Konto:\n"
-                 f"Kontoinhaber: {sender.get('bank_holder', '')}\nIBAN: {sender.get('iban', '')}\n"
-                 + (f"BIC: {sender['bic']}\n" if sender.get("bic") else "")
-                 + f"Verwendungszweck: {inv.number}\n\n")
-    body += f"Viele Grüße\n{sender.get('sender_name', '')}\n"
-    ok = mail.send(to, f"KidCTL: {title} {inv.number}", body,
-                   attachments=[(f"{inv.number}.pdf", pdf_bytes(inv), "application/pdf")])
+    from . import mailer
+    ok = mailer.send(to, "invoice", "de", attachments=[(f"{inv.number}.pdf", pdf_bytes(inv), "application/pdf")],
+                     **invoice_mail_ctx(inv, address, sender))
     if ok:
         inv.sent_at = utcnow()
         audit.record(db, actor, "invoice", "erneut gesendet" if again else "gesendet", None, to,

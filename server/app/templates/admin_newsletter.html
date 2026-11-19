@@ -22,12 +22,22 @@
       <label>{{ _("Text") }} <textarea name="body_en" rows="14" maxlength="20000">{{ nl.body_en }}</textarea></label>
     </div>
   </div>
-  <p class="muted"><small>{{ _("Reiner Text, Links werden im Mailprogramm klickbar. Anrede („Hallo …“), Abmeldehinweis und – bei eigenem Erscheinungsbild – „powered by KidCTL“ fügt das System hinzu. Ohne englischen Text bekommen alle die deutsche Fassung.") }}</small></p>
+  <p class="muted"><small>{{ _("Formatierung mit Markdown: ## Überschrift, ### Unterüberschrift, **fett**, *kursiv*, - Liste, 1. Liste, [Text](https://…), --- für eine Trennlinie. Anrede, Abmeldehinweis und – bei eigenem Erscheinungsbild – „powered by KidCTL“ fügt das System hinzu. Ohne englischen Text bekommen alle die deutsche Fassung.") }}</small></p>
   <div class="row">
     <button type="submit" name="action" value="save" class="secondary">{{ _("Entwurf speichern") }}</button>
     <button type="submit" name="action" value="test" class="secondary">{{ _("Speichern und Test an mich") }}</button>
   </div>
 </form>
+{% if previews %}
+<section class="card">
+  <h2>{{ _("Vorschau") }}</h2>
+  <p class="muted"><small>{{ _("So sieht die Mail aus (gespeicherter Stand, Abmeldelink als Beispiel).") }}</small></p>
+  {% for lang, html in previews %}
+  {% if previews | length > 1 %}<h3>{{ _("Deutsch") if lang == "de" else _("Englisch") }}</h3>{% endif %}
+  <iframe class="mail-frame" sandbox title="{{ _('Vorschau') }}" srcdoc="{{ html }}"></iframe>
+  {% endfor %}
+</section>
+{% endif %}
 <section class="card">
   <h2>{{ _("Versand") }}</h2>
   <p>{{ ngettext("Geht an alle Eltern mit bestätigter Adresse in {n} Familie mit Zustimmung.", "Geht an alle Eltern mit bestätigter Adresse in {n} Familien mit Zustimmung.", families).format(n=families) }}

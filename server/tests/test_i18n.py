@@ -127,11 +127,11 @@ def test_mail_and_push_in_parent_language(client, parent, monkeypatch):
         assert "Wochenbericht 12.10.–18.10.2026" in report.render(db, p, report.last_period("weekly", d(2026, 10, 19)))[0]
 
         sent = []
-        monkeypatch.setattr(accounts.mail, "send", lambda to, subject, body, html=None: sent.append((subject, body)) or True)
+        monkeypatch.setattr(accounts.mail, "send", lambda to, subject, body, html=None, **kw: sent.append((subject, body)) or True)
         p.detected_language = "en"
         db.commit()
         accounts.start_password_reset(db, "mama")
-        assert sent[-1][0] == "KidCTL: reset password" and "a new password was requested" in sent[-1][1]
+        assert sent[-1][0] == "KidCTL: Reset password" and "a new password was requested" in sent[-1][1]
 
     payloads = []
     monkeypatch.setattr(Settings, "push_enabled", property(lambda s: True))

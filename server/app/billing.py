@@ -141,12 +141,14 @@ def _notify(family_id: int, subject: str, text: str, **fmt) -> None:
                             .where(Membership.role == ROLE_OWNER)).all()
         for p in owners:
             if p.email:
-                with i18n.use(i18n.parent_language(p)):
+                from . import mailer
+                lang = i18n.parent_language(p)
+                with i18n.use(lang):
+                    title = _(subject)
                     body = _(text).format(**{k: (i18n.fmt_date(v.date()) if isinstance(v, datetime) else v)
                                              for k, v in fmt.items()})
-                    mail.send(p.email, f"KidCTL: {_(subject)}",
-                              _("Hallo {name},").format(name=p.display_name or p.username) + f"\n\n{body}\n\n"
-                              + f"{settings.base_url}/settings#abo\n")
+                mailer.send(p.email, "billing_notice", lang, name=p.display_name or p.username, title=title,
+                            text=body)
     try:
         def title():
             return _(subject)

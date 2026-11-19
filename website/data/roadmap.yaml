@@ -84,7 +84,8 @@
     de: "EA app, GOG Galaxy und Battle.net; Spiele, die ein Launcher wie Ubisoft Connect oder Wargaming startet, zählen auch ohne bekanntes Manifest."
     en: "EA app, GOG Galaxy and Battle.net; games started by a launcher such as Ubisoft Connect or Wargaming count even without a known manifest."
 - id: html-mails
-  status: planned
+  status: done
+  version: "0.37"
   title: { de: "Einheitliche Mails", en: "Consistent emails" }
   text:
     de: "Alle Mails im selben Layout mit Logo, hell und dunkel, mit Textfassung; Newsletter mit Formatierung."

@@ -55,7 +55,9 @@ gilt die Sprache der Desktop-Sitzung.
 - **Mehrere Familien** (`KIDCTL_MODE=saas`): Registrierung mit Einladungscode, Abo mit Testphase, Support-Tickets
   und ein Verwaltungsbereich für den Betreiber (Rollen, Protokoll, Suche).
 - **Eigenes Erscheinungsbild:** Name, Logo und App-Icon für Weboberfläche, App und Mails, mit „powered by KidCTL“.
-- **Newsletter:** Neuigkeiten an alle Familien, die zugestimmt haben – auf Deutsch und Englisch, mit Abmeldelink.
+  Alle Mails im selben Layout (hell/dunkel, mit Textfassung), Anbieter-Angaben und Impressum in der Fußzeile.
+- **Newsletter:** Neuigkeiten an alle Familien, die zugestimmt haben – auf Deutsch und Englisch, mit Markdown
+  formatiert, mit Vorschau und Abmeldelink.
 - **Sicherheit**:
   - Eltern-Login nur mit TOTP, Rate-Limiting, CSRF-Schutz.
   - Namen, Chat, Protokoll, Statistik und E-Mail-Adressen liegen auf dem Server verschlüsselt (eigener Schlüssel

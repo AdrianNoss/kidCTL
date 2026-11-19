@@ -1,0 +1,9 @@
+{% extends "mail/base.html" %}
+{#- Registrierung: Adresse bestätigen. ctx: link, hours -#}
+{% set subject = _("E-Mail-Adresse bestätigen") %}
+{% set heading = _("Willkommen bei KidCTL!") | brand %}
+{% set preheader = _("Bitte bestätige deine E-Mail-Adresse.") %}
+{% set paragraphs = [_("Über diesen Link bestätigst du deine E-Mail-Adresse und legst Passwort und Authenticator fest ({hours} Stunden gültig):").format(hours=hours)] %}
+{% set action = (_("Registrierung abschließen"), link) %}
+{% set after = [_("Falls du dich nicht registriert hast, ignoriere diese Mail.")] %}
+{% set reason = _("Du bekommst diese Mail, weil mit dieser Adresse eine Registrierung begonnen wurde.") %}

@@ -1,0 +1,10 @@
+{% extends "mail/base.html" %}
+{#- Sicherheitshinweis an einen Betreiber (Passwort/Authenticator geändert). ctx: name, title, text -#}
+{% set subject = title %}
+{% set heading = title %}
+{% set preheader = text %}
+{% set greeting = _("Hallo {name},").format(name=name) %}
+{% set paragraphs = [text] %}
+{% set action = (_("Zum Verwaltungsbereich"), base_url ~ "/admin") %}
+{% set after = [_("Falls du das nicht warst, setze den Zugang sofort per Kommandozeile zurück (create-operator --reset) und prüfe das Verwaltungsprotokoll.")] %}
+{% set reason = _("Du bekommst diese Mail als Sicherheitshinweis zu deinem Betreiber-Zugang.") %}

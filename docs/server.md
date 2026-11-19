@@ -166,9 +166,17 @@ KidCTL" is shown everywhere, in emails as a footer. The programs on the children
 Set the sender name of the emails in `SMTP_FROM` (e.g. `Family Guard <noreply@example.org>`). Changes are logged and
 visible everywhere within a minute.
 
+**Emails:** All emails share the same layout (light and dark, with a plain-text version) with the logo as an embedded
+image – no external images or tracking. In the "Provider" block on the "Appearance" page you enter name, address,
+contact email and links to the imprint, privacy policy and news; they appear in the footer of every email (empty fields
+are left out, "Guides" points to the wiki). Under "Emails" you see every email type with sample data in German and
+English and send it to the address in your profile with "Test email to me".
+
 **Newsletter** (*Admin* only, SaaS only): Under "Newsletter" you write news (new versions, features) with a subject
-and text in German, optionally in English. "Save and send test to me" sends both versions to the address in your
-profile. "Send to N families" sends in the background to all parents with a confirmed address in families that opted
+and text in German, optionally in English. You format the text with Markdown: `##`/`###` for headings, `**bold**`,
+`*italic*`, lists with `-` or `1.`, links `[text](https://…)` and `---` as a separator (images, HTML and code are not
+included). After saving, "Preview" shows the finished email for each language. "Save and send test to me" sends both
+versions to the address in your profile. "Send to N families" sends in the background to all parents with a confirmed address in families that opted
 in – each in their language (without an English text: German), with a greeting and an unsubscribe link (including
 "one-click unsubscribe" in the email program). Afterwards the newsletter cannot be changed and stays in the archive
 with the number of families and emails; sending is recorded in the activity log. Families opt in themselves (off by

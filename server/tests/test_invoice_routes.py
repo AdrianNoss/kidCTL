@@ -26,7 +26,7 @@ def saas(monkeypatch):
 def outbox(monkeypatch):
     sent = []
     monkeypatch.setattr(Settings, "mail_enabled", property(lambda s: True))
-    monkeypatch.setattr(mail, "send", lambda to, subject, body, html=None, attachments=None:
+    monkeypatch.setattr(mail, "send", lambda to, subject, body, html=None, attachments=None, **kw:
                         sent.append((to, subject, body, attachments or [])) or True)
     return sent
 

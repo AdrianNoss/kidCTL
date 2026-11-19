@@ -633,11 +633,7 @@ def profile_save(request: Request, username: str = Form(""), display_name: str =
     accounts.set_email(db, parent, email)   # neue Adresse: Bestätigungslink (mit SMTP)
     db.commit()
     if old_email and old_email != email:
-        with i18n.use(i18n.parent_language(parent)):
-            accounts.mail.send(old_email, _("KidCTL: E-Mail-Adresse geändert"),
-                               _("Die E-Mail-Adresse des KidCTL-Accounts „{username}“ wurde von dieser Adresse auf "
-                                 "„{email}“ geändert.").format(username=username, email=email or _("(keine)"))
-                               + "\n" + _("Falls du das nicht warst, melde dich sofort an.") + "\n")
+        accounts.mailer.send(old_email, "email_changed", i18n.parent_language(parent), username=username, email=email)
     return _redirect("/profile?msg=saved")
 
 

@@ -16,11 +16,13 @@ TIMEOUT = 20
 
 
 def send(to: str, subject: str, body: str, html: str | None = None,
-         attachments: list[tuple[str, bytes, str]] | None = None, headers: dict[str, str] | None = None) -> bool:
+         attachments: list[tuple[str, bytes, str]] | None = None, headers: dict[str, str] | None = None,
+         inline: list[tuple[str, bytes, str]] | None = None, branded: bool = False) -> bool:
     """Mail senden (``html``: zusätzlich als HTML-Alternative; ``attachments``: (Dateiname, Inhalt, MIME-Typ));
     ``False`` bei Fehler oder ohne SMTP (Fehler werden geloggt, nie an Nutzer gezeigt)."""
-    from . import branding
-    subject, body, html = branding.mail_parts(subject, body, html)   # eigener Name + „powered by KidCTL“
+    if not branded:   # Mails aus Templates (app.mailer) tragen Name und Fußzeile schon selbst
+        from . import branding
+        subject, body, html = branding.mail_parts(subject, body, html)   # eigener Name + „powered by KidCTL“
     if not settings.mail_enabled:
         if settings.dev:
             log.info("Mail (nicht gesendet, KIDCTL_DEV) an %s: %s\n%s", to, subject, body)
@@ -34,6 +36,12 @@ def send(to: str, subject: str, body: str, html: str | None = None,
     msg.set_content(body)
     if html:
         msg.add_alternative(html, subtype="html")
+        if inline:   # Bilder im HTML (cid:…) – HTML und Bilder als multipart/related
+            html_part = msg.get_payload()[1]
+            for cid, data, mimetype in inline:
+                maintype, _sep, subtype = mimetype.partition("/")
+                html_part.add_related(data, maintype=maintype, subtype=subtype, cid=f"<{cid}>",
+                                      filename=f"{cid}.{subtype}", disposition="inline")
     for filename, data, mimetype in attachments or []:
         maintype, _sep, subtype = mimetype.partition("/")
         msg.add_attachment(data, maintype=maintype, subtype=subtype, filename=filename)

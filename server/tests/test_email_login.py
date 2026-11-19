@@ -17,7 +17,7 @@ from conftest import PASSWORD, SessionLocal, add_family, add_parent, csrf_from, 
 def outbox(monkeypatch):
     sent = []
     monkeypatch.setattr(Settings, "mail_enabled", property(lambda s: True))
-    monkeypatch.setattr(mail, "send", lambda to, subject, body, html=None: sent.append((to, subject, body)) or True)
+    monkeypatch.setattr(mail, "send", lambda to, subject, body, html=None, **kw: sent.append((to, subject, body)) or True)
     return sent
 
 

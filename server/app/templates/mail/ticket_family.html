@@ -1,0 +1,9 @@
+{% extends "mail/base.html" %}
+{#- An Eltern: Antwort des Supports bzw. Ticket geschlossen (nur Hinweis, kein Inhalt). ctx: name, ticket_id, closed, link -#}
+{% set subject = (_("Ticket #{id} geschlossen") if closed else _("Neue Antwort auf Ticket #{id}")).format(id=ticket_id) %}
+{% set heading = subject %}
+{% set preheader = _("Euer Ticket wurde geschlossen, weil 14 Tage keine Antwort kam. Ihr könnt es noch 14 Tage lang mit einer Antwort wieder öffnen.") if closed else _("Der Support hat auf euer Ticket geantwortet.") %}
+{% set greeting = _("Hallo {name},").format(name=name) %}
+{% set paragraphs = [preheader] %}
+{% set action = (_("Ticket öffnen"), link) %}
+{% set reason = _("Du bekommst diese Mail, weil eure Familie ein Support-Ticket hat.") %}

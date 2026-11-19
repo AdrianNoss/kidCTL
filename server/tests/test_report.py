@@ -22,7 +22,7 @@ WEEK = report.Period("weekly", date(2026, 10, 12), date(2026, 10, 18))   # Mo–
 def outbox(monkeypatch):
     sent = []
     monkeypatch.setattr(Settings, "mail_enabled", property(lambda s: True))
-    monkeypatch.setattr(mail, "send", lambda to, subject, body, html=None: sent.append((to, subject, body, html)) or True)
+    monkeypatch.setattr(mail, "send", lambda to, subject, body, html=None, **kw: sent.append((to, subject, body, html)) or True)
     report._failed.clear()
     return sent
 

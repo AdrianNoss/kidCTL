@@ -865,12 +865,6 @@ msgstr "No blocked actions in this period."
 msgid "Keine gesperrten Aktionen."
 msgstr "No blocked actions."
 
-msgid "KidCTL: E-Mail-Adresse geändert"
-msgstr "KidCTL: email address changed"
-
-msgid "KidCTL: Passwort zurücksetzen"
-msgstr "KidCTL: reset password"
-
 msgid "Lernen"
 msgstr "Learning"
 
@@ -1782,9 +1776,6 @@ msgstr "Email address confirmed. You can now sign in with it."
 msgid "Für den Nutzungsbericht zuerst eine E-Mail-Adresse eintragen und bestätigen."
 msgstr "To receive the usage report, first enter and confirm an email address."
 
-msgid "KidCTL: E-Mail-Adresse bestätigen"
-msgstr "KidCTL: confirm your email address"
-
 msgid "bitte bestätige diese Adresse für deinen KidCTL-Account. Der Link gilt {hours} Stunden:"
 msgstr "please confirm this address for your KidCTL account. The link is valid for {hours} hours:"
 
@@ -1849,9 +1840,6 @@ msgstr "If this doesn't mean anything to you, just ignore this email."
 
 msgid "Gib diesen Link weiter (persönlich oder per Messenger). Er ist {days} Tage gültig und nur einmal verwendbar."
 msgstr "Pass this link on (in person or via messenger). It is valid for {days} days and can be used only once."
-
-msgid "KidCTL: Einladung"
-msgstr "KidCTL: Invitation"
 
 msgid "Offene Einladungen"
 msgstr "Open invitations"
@@ -2569,12 +2557,6 @@ msgstr "Category"
 msgid "Keine Tickets."
 msgstr "No tickets."
 
-msgid "KidCTL: Antwort auf Ticket #{id}"
-msgstr "KidCTL: Reply to ticket #{id}"
-
-msgid "KidCTL: Neues Ticket #{id}"
-msgstr "KidCTL: New ticket #{id}"
-
 msgid "Nachricht"
 msgstr "Message"
 
@@ -3058,9 +3040,6 @@ msgstr "(no subject)"
 msgid "Abbestellen"
 msgstr "Unsubscribe"
 
-msgid "Abbestellen: {url}"
-msgstr "Unsubscribe: {url}"
-
 msgid "Abbestellt"
 msgstr "Unsubscribed"
 
@@ -3133,9 +3112,6 @@ msgstr "Newsletter"
 msgid "Noch kein Newsletter."
 msgstr "No newsletter yet."
 
-msgid "Reiner Text, Links werden im Mailprogramm klickbar. Anrede („Hallo …“), Abmeldehinweis und – bei eigenem Erscheinungsbild – „powered by KidCTL“ fügt das System hinzu. Ohne englischen Text bekommen alle die deutsche Fassung."
-msgstr "Plain text; links become clickable in the email program. The greeting (\"Hello …\"), the unsubscribe note and – with custom branding – \"powered by KidCTL\" are added by the system. Without an English text, everyone gets the German version."
-
 msgid "Selten und kurz: neue Versionen, neue Funktionen und wichtige Hinweise zum Dienst. Die Mail geht an alle Eltern eurer Familie mit bestätigter Adresse, jeweils in ihrer Sprache. Abbestellen geht jederzeit hier oder über den Link in jeder Mail."
 msgstr "Rare and short: new versions, new features and important notes about the service. The email goes to all parents in your family with a confirmed address, each in their language. You can unsubscribe at any time here or via the link in every email."
 
@@ -3189,3 +3165,180 @@ msgid "{n} Familie hat Neuigkeiten per E-Mail abonniert (Opt-in in den Einstellu
 msgid_plural "{n} Familien haben Neuigkeiten per E-Mail abonniert (Opt-in in den Einstellungen bzw. bei der Registrierung)."
 msgstr[0] "{n} family has subscribed to news by email (opt-in in the settings or at sign-up)."
 msgstr[1] "{n} families have subscribed to news by email (opt-in in the settings or at sign-up)."
+
+# Einheitliche HTML-Mails
+msgid "Adresse bestätigen"
+msgstr "Confirm address"
+
+msgid "Anleitungen"
+msgstr "Guides"
+
+msgid "Antwort auf Ticket #{id}"
+msgstr "Reply to ticket #{id}"
+
+msgid "Beispiel: Euer Abo ist abgelaufen."
+msgstr "Example: your subscription has expired."
+
+msgid "Bitte bestätige deine E-Mail-Adresse."
+msgstr "Please confirm your email address."
+
+msgid "Bitte überweise den Betrag bis {date} auf folgendes Konto:"
+msgstr "Please transfer the amount by {date} to the following account:"
+
+msgid "Datenschutz"
+msgstr "Privacy"
+
+msgid "Du bekommst diese Mail als Hinweis zum Abo eurer Familie."
+msgstr "You are receiving this email as a notice about your family's subscription."
+
+msgid "Du bekommst diese Mail als Sicherheitshinweis zu deinem Account."
+msgstr "You are receiving this email as a security notice about your account."
+
+msgid "Du bekommst diese Mail als Sicherheitshinweis zu deinem Betreiber-Zugang."
+msgstr "You are receiving this email as a security notice about your operator account."
+
+msgid "Du bekommst diese Mail, weil dich jemand in eine Familie eingeladen hat."
+msgstr "You are receiving this email because someone invited you to a family."
+
+msgid "Du bekommst diese Mail, weil diese Adresse als Rechnungs-E-Mail eurer Familie hinterlegt ist."
+msgstr "You are receiving this email because this address is your family's billing email."
+
+msgid "Du bekommst diese Mail, weil diese Adresse bei einem Account hinterlegt wurde."
+msgstr "You are receiving this email because this address was added to an account."
+
+msgid "Du bekommst diese Mail, weil diese Adresse bisher bei dem Account hinterlegt war."
+msgstr "You are receiving this email because this address was previously set for the account."
+
+msgid "Du bekommst diese Mail, weil du im Verwaltungsbereich Ticket-Mails aktiviert hast oder die Adresse als Sammeladresse für Tickets eingetragen ist."
+msgstr "You are receiving this email because you turned on ticket emails in the administration area or this address is set as the shared address for tickets."
+
+msgid "Du bekommst diese Mail, weil eure Familie ein Support-Ticket hat."
+msgstr "You are receiving this email because your family has a support ticket."
+
+msgid "Du bekommst diese Mail, weil für deinen Account ein neues Passwort angefordert wurde."
+msgstr "You are receiving this email because a new password was requested for your account."
+
+msgid "Du bekommst diese Mail, weil mit dieser Adresse eine Registrierung begonnen wurde."
+msgstr "You are receiving this email because a sign-up was started with this address."
+
+msgid "E-Mail-Adresse bestätigen"
+msgstr "Confirm email address"
+
+msgid "E-Mail-Adresse geändert"
+msgstr "Email address changed"
+
+msgid "Einladung zur Familie"
+msgstr "Invitation to the family"
+
+msgid "Guten Tag {name},"
+msgstr "Dear {name},"
+
+msgid "Guten Tag,"
+msgstr "Hello,"
+
+msgid "Impressum"
+msgstr "Imprint"
+
+msgid "Link zum Zurücksetzen deines Passworts."
+msgstr "Link to reset your password."
+
+msgid "Neues Passwort setzen"
+msgstr "Set new password"
+
+msgid "Neues Ticket #{id}"
+msgstr "New ticket #{id}"
+
+msgid "Neuigkeiten"
+msgstr "News"
+
+msgid "Oder diesen Link öffnen:"
+msgstr "Or open this link:"
+
+msgid "Passwort zurücksetzen"
+msgstr "Reset password"
+
+msgid "Registrierung abschließen"
+msgstr "Complete sign-up"
+
+msgid "Ticket öffnen"
+msgstr "Open ticket"
+
+msgid "Verwendungszweck"
+msgstr "Payment reference"
+
+msgid "Viele Grüße"
+msgstr "Kind regards"
+
+msgid "Zum Verwaltungsbereich"
+msgstr "Go to administration"
+
+msgid "anbei die {kind} {number} vom {date} über {amount}."
+msgstr "please find attached {kind} {number} of {date} for {amount}."
+
+msgid "{kind} {number} vom {date} über {amount}."
+msgstr "{kind} {number} of {date} for {amount}."
+
+# Verwaltung: Anbieter, Mail-Vorschau
+msgid "Anbieter"
+msgstr "Provider"
+
+msgid "Anschrift (eine Zeile)"
+msgstr "Address (one line)"
+
+msgid "Beispieldaten. HTML {kb} KB (Gmail kürzt ab etwa 100 KB)."
+msgstr "Sample data. HTML {kb} KB (Gmail clips at about 100 KB)."
+
+msgid "Datenschutz (Link)"
+msgstr "Privacy (link)"
+
+msgid "Erscheint in der Fußzeile aller Mails. Leere Felder entfallen. „Anleitungen“ verlinkt immer das Wiki der Projektseite."
+msgstr "Shown in the footer of all emails. Empty fields are left out. \"Guides\" always links to the wiki of the project site."
+
+msgid "HTML-Fassung"
+msgstr "HTML version"
+
+msgid "Impressum (Link)"
+msgstr "Imprint (link)"
+
+msgid "Kontakt-E-Mail"
+msgstr "Contact email"
+
+msgid "Links bitte mit https:// angeben."
+msgstr "Please enter links with https://."
+
+msgid "Mail-Vorschau"
+msgstr "Email preview"
+
+msgid "Mailtyp"
+msgstr "Email type"
+
+msgid "Neuigkeiten (Link)"
+msgstr "News (link)"
+
+msgid "Straße 1, 12345 Ort"
+msgstr "Street 1, 12345 Town"
+
+msgid "Testmail an mich"
+msgstr "Test email to me"
+
+msgid "Testmail an {email} gesendet."
+msgstr "Test email sent to {email}."
+
+msgid "Testmail nicht gesendet – SMTP-Einstellungen prüfen (Server-Log)."
+msgstr "Test email not sent – check the SMTP settings (server log)."
+
+msgid "Textfassung"
+msgstr "Plain-text version"
+
+msgid "leer: News der Projektseite"
+msgstr "empty: news of the project site"
+
+msgid "z. B. Muster GmbH"
+msgstr "e.g. Example Ltd"
+
+# Newsletter: Markdown, Vorschau
+msgid "Formatierung mit Markdown: ## Überschrift, ### Unterüberschrift, **fett**, *kursiv*, - Liste, 1. Liste, [Text](https://…), --- für eine Trennlinie. Anrede, Abmeldehinweis und – bei eigenem Erscheinungsbild – „powered by KidCTL“ fügt das System hinzu. Ohne englischen Text bekommen alle die deutsche Fassung."
+msgstr "Formatting with Markdown: ## heading, ### subheading, **bold**, *italic*, - list, 1. list, [text](https://…), --- for a divider. The greeting, the unsubscribe note and – with custom branding – \"powered by KidCTL\" are added by the system. Without an English text, everyone gets the German version."
+
+msgid "So sieht die Mail aus (gespeicherter Stand, Abmeldelink als Beispiel)."
+msgstr "This is how the email looks (saved version, unsubscribe link as an example)."

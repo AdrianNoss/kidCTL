@@ -20,5 +20,8 @@ httpx==0.28.1
 reportlab==4.4.10
 # Whitelabel: Logo/App-Icon prüfen und skalieren (ohnehin Abhängigkeit von reportlab)
 pillow==13.0.0
+# Newsletter: Markdown-Teilmenge ohne HTML in Mails umwandeln
+markdown-it-py==4.3.0
+mdurl==0.1.2
 # Zeitzonen-Daten für zoneinfo (das schlanke Debian-Image bringt tzdata nicht zuverlässig mit)
 tzdata==2026.6

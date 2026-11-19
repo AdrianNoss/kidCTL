@@ -1,0 +1,21 @@
+{% extends "mail/base.html" %}
+{#- Rechnung bzw. Stornorechnung mit PDF im Anhang. ctx: name, storno, number, issue_date, gross, due_date,
+    pay (bool), holder, iban, bic, sender_name -#}
+{% set kind = _("Stornorechnung") if storno else _("Rechnung") %}
+{% set subject = kind ~ " " ~ number %}
+{% set heading = subject %}
+{% set preheader = _("{kind} {number} vom {date} über {amount}.").format(kind=kind, number=number, date=fmt_date(issue_date), amount=gross) %}
+{% set greeting = _("Guten Tag {name},").format(name=name) if name else _("Guten Tag,") %}
+{% set paragraphs = [_("anbei die {kind} {number} vom {date} über {amount}.").format(kind=kind, number=number, date=fmt_date(issue_date), amount=gross)] %}
+{% set pay_lines = [(_("Kontoinhaber"), holder), ("IBAN", iban)] + ([("BIC", bic)] if bic else []) + [(_("Verwendungszweck"), number)] %}
+{% set text_extra = (_("Bitte überweise den Betrag bis {date} auf folgendes Konto:").format(date=fmt_date(due_date)) ~ "\n" ~ pay_lines | map("join", ": ") | join("\n")) if pay else "" %}
+{% set after = [_("Viele Grüße"), sender_name] %}
+{% set reason = _("Du bekommst diese Mail, weil diese Adresse als Rechnungs-E-Mail eurer Familie hinterlegt ist.") %}
+{% block body_extra %}
+{% if pay %}
+    <p class="k-ink2" style="margin:0 0 8px;font:15px/1.6 {{ sans }};color:{{ C.ink2 }};">{{ _("Bitte überweise den Betrag bis {date} auf folgendes Konto:").format(date=fmt_date(due_date)) }}</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="k-ink2" style="margin:0 0 16px;font:14px/1.6 {{ sans }};color:{{ C.ink2 }};">
+      {% for label, value in pay_lines %}<tr><td class="k-muted" style="padding:2px 16px 2px 0;color:{{ C.muted }};">{{ label }}</td><td style="padding:2px 0;font-weight:500;">{{ value }}</td></tr>{% endfor %}
+    </table>
+{% endif %}
+{% endblock %}

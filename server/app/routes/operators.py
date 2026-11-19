@@ -355,12 +355,12 @@ def _end_other_sessions(db: Session, sess: OperatorSession) -> None:
 
 def _notify_operator(op: Operator, subject: str, text: str) -> None:
     """Sicherheitshinweis an die hinterlegte Adresse des Betreibers (falls vorhanden)."""
-    from .. import mail
+    from .. import mailer
     if op.email:
-        mail.send(op.email, f"KidCTL: {_(subject)}",
-                  _("Hallo {name},").format(name=op.username) + f"\n\n{_(text)}\n\n"
-                  + _("Falls du das nicht warst, setze den Zugang sofort per Kommandozeile zurück "
-                      "(create-operator --reset) und prüfe das Verwaltungsprotokoll.") + "\n")
+        from ..i18n import use
+        with use("de"):
+            title, body = _(subject), _(text)
+        mailer.send(op.email, "operator_notice", "de", name=op.username, title=title, text=body)
 
 
 def _totp_token(op_id: int, secret: str, expires: int) -> str:
@@ -913,6 +913,74 @@ async def branding_save(request: Request, sess: OperatorSession = Depends(opr.ad
     return RedirectResponse("/admin/branding?saved=1", status_code=303)
 
 
+PROVIDER_FIELDS = {"provider_name": 128, "provider_address": 255, "provider_email": 255, "imprint_url": 255,
+                   "privacy_url": 255, "news_url": 255}
+
+
+@router.post("/branding/provider")
+async def provider_save(request: Request, sess: OperatorSession = Depends(opr.admin_csrf),
+                        db: Session = Depends(get_platform_db)):
+    """Anbieter-Angaben für die Fußzeile der Mails (leere Felder entfallen); URLs nur http(s)."""
+    form = await request.form()
+    row = _branding_row(db)
+    values = {}
+    for field, n in PROVIDER_FIELDS.items():
+        value = " ".join(str(form.get(field, "")).split())[:n]
+        if field.endswith("_url") and value and not value.lower().startswith(("https://", "http://")):
+            db.rollback()
+            return _branding_page(request, db, sess, 400, error=_("Links bitte mit https:// angeben."))
+        if field == "provider_email" and value:
+            from .. import accounts
+            if err := accounts.email_error(value):
+                db.rollback()
+                return _branding_page(request, db, sess, 400, error=err)
+        values[field] = value
+    before = audit.snapshot(row, list(PROVIDER_FIELDS))
+    for field, value in values.items():
+        setattr(row, field, value)
+    audit.changes(db, audit.actor_of(sess), "branding", before, row)
+    db.commit()
+    return RedirectResponse("/admin/branding?saved=provider#anbieter", status_code=303)
+
+
+# ---------- Mail-Vorschau ----------
+
+@router.get("/mail-preview")
+def mail_preview(request: Request, type: str = "", lang: str = "de", sess: OperatorSession = Depends(opr.require_admin)):
+    """Alle Mailtypen mit Beispieldaten, DE/EN umschaltbar; Ansicht im Rahmen, Testmail an die eigene Adresse."""
+    from .. import mailer
+    types = sorted(mailer.samples())
+    current = type if type in types else types[0]
+    lang = lang if lang in ("de", "en") else "de"
+    from ..i18n import use
+    with use(lang):
+        rendered = mailer.render(current, lang, **mailer.samples()[current])
+    html = mailer.preview_html(rendered.html)
+    return _render(request, "admin_mail_preview.html", sess, types=types, current=current, mail_lang=lang,
+                   subject=rendered.subject, text=rendered.text, html=html, size=len(rendered.html.encode()),
+                   sent=request.query_params.get("sent"))
+
+
+@router.post("/mail-preview/send")
+def mail_preview_send(request: Request, type: str = Form(""), lang: str = Form("de"),
+                      sess: OperatorSession = Depends(opr.admin_csrf)):
+    from urllib.parse import urlencode
+    from .. import mailer
+    samples = mailer.samples()
+    if type not in samples:
+        raise HTTPException(404)
+    lang = lang if lang in ("de", "en") else "de"
+    if not sess.operator.email:
+        return RedirectResponse("/admin/mail-preview?" + urlencode({"type": type, "lang": lang, "sent": "noaddr"}),
+                                status_code=303)
+    from ..i18n import use
+    with use(lang):
+        ctx = mailer.samples()[type]
+    ok = mailer.send(sess.operator.email, type, lang, **ctx)
+    return RedirectResponse("/admin/mail-preview?" + urlencode({"type": type, "lang": lang, "sent": "1" if ok else "0"}),
+                            status_code=303)
+
+
 # ---------- Newsletter ----------
 
 NL_FIELDS = {"subject_de": 200, "body_de": 20000, "subject_en": 200, "body_en": 20000}
@@ -928,8 +996,15 @@ def _nl_or_404(db: Session, newsletter_id: int):
 
 
 def _nl_page(request, db, sess, nl, status_code: int = 200, **ctx):
-    from .. import newsletter
+    from .. import mailer, newsletter
     families = len(newsletter.subscribed_families(db))
+    previews = []   # HTML-Vorschau je Sprache
+    for lang in ("de", "en") if nl.subject_en and nl.body_en else ("de",):
+        if nl.subject_de or lang == "en":
+            use, mctx = newsletter.mail_ctx(nl, lang, sess.operator.username, 0)
+            html = mailer.render("newsletter", use, **mctx).html
+            previews.append((lang, mailer.preview_html(html)))
+    ctx.setdefault("previews", previews)
     return _render(request, "admin_newsletter.html", sess, status_code, nl=nl, families=families,
                    statuses=NL_STATUSES, saved=request.query_params.get("saved"), **ctx)
 

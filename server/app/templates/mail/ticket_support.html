@@ -1,0 +1,8 @@
+{% extends "mail/base.html" %}
+{#- An Betreiber: neues Ticket bzw. Antwort einer Familie (nur Hinweis, kein Inhalt). ctx: ticket_id, family_id, new, link -#}
+{% set subject = (_("Neues Ticket #{id}") if new else _("Antwort auf Ticket #{id}")).format(id=ticket_id) %}
+{% set heading = subject %}
+{% set preheader = (_("Familie #{family} hat ein neues Ticket angelegt.") if new else _("Familie #{family} hat auf ein Ticket geantwortet.")).format(family=family_id) %}
+{% set paragraphs = [preheader] %}
+{% set action = (_("Ticket öffnen"), link) %}
+{% set reason = _("Du bekommst diese Mail, weil du im Verwaltungsbereich Ticket-Mails aktiviert hast oder die Adresse als Sammeladresse für Tickets eingetragen ist.") %}

@@ -168,9 +168,17 @@ eigenem Namen steht überall „powered by KidCTL“, in Mails als Fußzeile. Di
 weiterhin KidCTL. Den Absendernamen der Mails setzt du in `SMTP_FROM` (z. B. `Familienwächter <noreply@example.org>`).
 Änderungen werden protokolliert und sind nach spätestens einer Minute überall sichtbar.
 
+**Mails:** Alle Mails haben dasselbe Layout (hell und dunkel, mit Textfassung) mit dem Logo als eingebettetem Bild –
+ohne externe Bilder oder Tracking. Im Block „Anbieter“ auf der Seite „Erscheinungsbild“ trägst du Name, Anschrift,
+Kontakt-E-Mail und Links zu Impressum, Datenschutz und Neuigkeiten ein; sie erscheinen in der Fußzeile jeder Mail
+(leere Felder entfallen, „Anleitungen“ zeigt auf das Wiki). Unter „Mails“ siehst du jeden Mailtyp mit Beispieldaten auf
+Deutsch und Englisch und schickst ihn mit „Testmail an mich“ an die Adresse aus deinem Profil.
+
 **Newsletter** (nur *Admin*, nur SaaS): Unter „Newsletter“ schreibst du Neuigkeiten (neue Versionen, Funktionen) mit
-Betreff und Text auf Deutsch, optional auf Englisch. „Speichern und Test an mich“ schickt beide Fassungen an die
-Adresse aus deinem Profil. „An N Familien senden“ verschickt im Hintergrund an alle Eltern mit bestätigter Adresse in
+Betreff und Text auf Deutsch, optional auf Englisch. Den Text formatierst du mit Markdown: `##`/`###` für
+Überschriften, `**fett**`, `*kursiv*`, Listen mit `-` oder `1.`, Links `[Text](https://…)` und `---` als Trennlinie
+(Bilder, HTML und Code werden nicht übernommen). Nach dem Speichern zeigt „Vorschau“ die fertige Mail je Sprache.
+„Speichern und Test an mich“ schickt beide Fassungen an die Adresse aus deinem Profil. „An N Familien senden“ verschickt im Hintergrund an alle Eltern mit bestätigter Adresse in
 Familien, die zugestimmt haben – jeweils in ihrer Sprache (ohne englischen Text: Deutsch), mit Anrede und Abmeldelink
 (auch „Abmelden mit einem Klick“ im Mailprogramm). Danach ist der Newsletter unveränderlich und bleibt mit Zahl der
 Familien und Mails im Archiv; der Versand steht im Verwaltungsprotokoll. Familien stimmen selbst zu (Opt-in, Standard
