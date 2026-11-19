@@ -10,7 +10,7 @@ import pytest
 from kidctl_common import protocol as p
 
 from kidctl_agent import store
-from kidctl_agent.win import acl, catalog
+from kidctl_agent.win import acl, catalog, games
 from kidctl_agent.win.procs import WinProc
 from kidctl_agent.win.programs import WinAllowed, app_root, classify
 from kidctl_agent.win.watcher import WinProgramWatcher
@@ -352,8 +352,7 @@ STEAM_DIR = r"C:\Program Files (x86)\Steam"
 def _steam_watcher(programs, procs):
     agent = FakeAgent(programs=programs)
     w = WinProgramWatcher(agent, procs=procs, scan_catalog=_catalog, clock=lambda: 1000.0)
-    w.scan_games = lambda: SimpleNamespace(
-        steam_exe=STEAM_DIR + r"\steam.exe", steam_dirs=[catalog.norm(STEAM_DIR)], epic_dirs=[], names=dict)
+    w.scan_games = lambda: games.GameIndex(steam_exe=STEAM_DIR + r"\steam.exe", steam_dirs=[catalog.norm(STEAM_DIR)])
     return agent, w
 
 

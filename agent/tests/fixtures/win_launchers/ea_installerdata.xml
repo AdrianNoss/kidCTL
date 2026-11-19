@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<game gameVersion="2.0.0.1" manifestVersion="3.0">
+  <contentIDs>
+    <contentID>71104</contentID>
+  </contentIDs>
+  <uninstall>
+    <path>[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{59D2C751-F7BE-4E9F-9C8C-1F16013802C7}\UninstallString]</path>
+  </uninstall>
+  <metadata>
+    <featureFlags
+      forceTouchupInstallerAfterUpdate="1"
+      autoUpdateEnabled="1"
+      treatUpdatesAsMandatory="0"
+      useGameVersionFromManifestEnabled="0"
+      enableDifferentialUpdate="0" 
+    />
+    <os minVersion="5.1"></os>
+    <ignore>/game.ico</ignore>
+    <localeInfo locale="en_US">
+      <title>SimCity 2000 Special Edition</title>
+      <eula name="SimCity 2000 Special Edition End User License Agreement">/Support/eula/en_US_eula.rtf</eula>
+    </localeInfo>
+  </metadata>
+  <executable>
+    <filePath>/__Installer/touchup.exe</filePath>
+    <parameters>install -locale {locale} -installPath "{installLocation}" -autologging</parameters>
+    <updateParameters>install -update -locale {locale} -installPath "{installLocation}" -autologging</updateParameters>
+    <repairParameters>install -repair -locale {locale} -installPath "{installLocation}" -autologging</repairParameters>
+  </executable>
+  <installManifest>
+    <filePath>/Support/mnfst.txt</filePath>
+  </installManifest>
+</game>

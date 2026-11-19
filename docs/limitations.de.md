@@ -56,6 +56,9 @@ steht im README.
 - **Website-Filter:** Programme, die die Namensauflösung von systemd direkt fragen (z. B. `resolvectl`), umgehen
   ihn; Browser und normale Programme nicht. Wird die Firewall-Konfiguration neu geladen oder entfernt, kann der
   Filter bis zu 60 Sekunden offen sein, bis KidCTL ihn wiederherstellt.
+- **Lutris und Bottles:** Spiele, die über Lutris oder Bottles (Wine) laufen, erkennt KidCTL nicht als Spiele – sie
+  zählen nicht zur Spielzeit und nicht zum Spiele-Limit. Als Ausweg den Schalter „zählt als Spiel“ in der
+  Programmliste nutzen, soweit das Spiel dort erscheint.
 
 ## Windows
 
@@ -89,6 +92,10 @@ steht im README.
   Namen aus dem App-Paket.
 - **Vollbildspiele:** Vorwarn-Fenster erscheinen nicht über Spielen im exklusiven Vollbild; die Abmeldung erfolgt
   trotzdem.
+- **Spiele ohne Launcher:** Ein Spiel, das ohne Launcher und ohne bekanntes Manifest direkt über seine `.exe`
+  gestartet wird, zählt nur als Spiel, wenn es in der Programmliste als „zählt als Spiel“ markiert ist.
+- **Ubisoft Connect und Wargaming:** Deren Spiele erkennt KidCTL nur, solange der Launcher sie startet. Der Name
+  stammt aus der `.exe`, und jede `.exe` zählt als eigenes Spiel.
 - **Tray-App:** Ein Kind könnte die Anzeige der Tray-App anderer Benutzer verfälschen. Die Durchsetzung durch den
   KidCTL-Dienst ist davon nicht betroffen.
 - **Ohne Code-Signatur:** SmartScreen fragt beim ersten Installieren nach, Defender kann Fehlalarme melden – siehe

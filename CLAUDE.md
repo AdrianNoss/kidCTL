@@ -131,6 +131,25 @@ CLAUDE.md
   Löschung nur über die Aufbewahrungsfrist.
 - Beträge als ganze Cent (Integer), nie als Float.
 
+## E-Mails
+
+- Jede Mail ist ein Template, das von `templates/mail/base.html` erbt, und hat immer eine Textfassung.
+  Nur Tabellenlayout und Inline-Styles; keine externen Bilder, Schriften oder Skripte; Logo nur per CID.
+- Neuer Mailtyp → Beispieldaten für `/admin/mail-preview` und Test (DE/EN) im selben Commit.
+- Tickets und Hinweise: Mails enthalten nur Hinweis + Link, keine Inhalte (Ausnahme: Rechnungen mit PDF,
+  Newsletter, Nutzungsbericht).
+
+## Tray-App unter Windows
+
+- Windows-Design nur in `winstyle.py`/QSS; Logik und Texte gemeinsam mit Linux. Keine harten Farben in Fenstern –
+  Farben aus Palette bzw. Stilschicht.
+- Sichtbare Änderung an einem Fenster → `dev/winshots.py` in der VM laufen lassen und Bilder prüfen.
+
+## Spielerkennung Windows
+
+- Launcher-Formate nur anhand echter Installationen (VM-Snapshot „launchers“) umsetzen und als anonymisierte
+  Testdaten ablegen; keine angenommenen Formate.
+
 ## Tests & Verifikation
 
 - Jede Funktion vor Auslieferung end-to-end smoke-testen und im Changelog vermerken, was getestet

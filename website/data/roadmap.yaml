@@ -76,6 +76,31 @@
   text:
     de: "Betreiber informieren Familien über neue Versionen und Funktionen – nur mit Zustimmung der Familie."
     en: "Operators tell families about new versions and features – only with the family's consent."
+- id: windows-games
+  status: done
+  version: "0.36"
+  title: { de: "Mehr Spiele unter Windows erkennen", en: "Detect more games on Windows" }
+  text:
+    de: "EA app, GOG Galaxy und Battle.net; Spiele, die ein Launcher wie Ubisoft Connect oder Wargaming startet, zählen auch ohne bekanntes Manifest."
+    en: "EA app, GOG Galaxy and Battle.net; games started by a launcher such as Ubisoft Connect or Wargaming count even without a known manifest."
+- id: html-mails
+  status: planned
+  title: { de: "Einheitliche Mails", en: "Consistent emails" }
+  text:
+    de: "Alle Mails im selben Layout mit Logo, hell und dunkel, mit Textfassung; Newsletter mit Formatierung."
+    en: "All emails in the same layout with logo, light and dark, with a plain-text version; formatted newsletters."
+- id: windows-fluent
+  status: planned
+  title: { de: "Windows-11-Look für Kinder-App", en: "Windows 11 look for the child app" }
+  text:
+    de: "Fenster, Tray-Menü, Symbol, Benachrichtigungen und Installer im Stil von Windows 11, hell und dunkel."
+    en: "Windows, tray menu, icon, notifications and installer in the Windows 11 style, light and dark."
+- id: wine-launchers
+  status: planned
+  title: { de: "Lutris und Bottles unter Linux", en: "Lutris and Bottles on Linux" }
+  text:
+    de: "Spiele aus Lutris und Bottles (Wine) als Spiele erkennen."
+    en: "Detect games from Lutris and Bottles (Wine) as games."
 - id: desktops
   status: planned
   title: { de: "Weitere Linux-Desktops", en: "More Linux desktops" }

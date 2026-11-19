@@ -1,0 +1,53 @@
+{
+ "SOFTWARE\\WOW6432Node\\GOG.com\\Games": {
+  "1449569170": {
+   "gameName": "Bio Menace",
+   "gameID": "1449569170",
+   "exe": "C:\\Program Files\\GOG Galaxy\\Games\\Bio Menace\\DOSBOX\\dosbox.exe",
+   "exeFile": "dosbox.exe",
+   "path": "C:\\Program Files\\GOG Galaxy\\Games\\Bio Menace",
+   "workingDir": "C:\\Program Files\\GOG Galaxy\\Games\\Bio Menace\\DOSBOX",
+   "productID": "1449569170",
+   "dependsOn": ""
+  }
+ },
+ "SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall": {
+  "{59D2C751-F7BE-4E9F-9C8C-1F16013802C7}": {
+   "DisplayName": "SimCity 2000 Special Edition",
+   "Publisher": "Electronic Arts",
+   "InstallLocation": "C:\\Program Files\\EA Games\\SimCity 2000 SE\\",
+   "DisplayIcon": "C:\\Program Files\\EA Games\\SimCity 2000 SE\\game.ico"
+  },
+  "{2c2007ed-70b6-49a3-87de-203e9c96070e}": {
+   "DisplayName": "EA app",
+   "Publisher": "Electronic Arts"
+  },
+  "1449569170_is1": {
+   "DisplayName": "Bio Menace",
+   "Publisher": "GOG.com",
+   "InstallLocation": "C:\\Program Files\\GOG Galaxy\\Games\\Bio Menace\\"
+  },
+  "Battle.net": {
+   "DisplayName": "Battle.net",
+   "Publisher": "Blizzard Entertainment",
+   "InstallLocation": "C:\\Program Files (x86)\\Battle.net"
+  },
+  "Steam": {
+   "DisplayName": "Steam",
+   "Publisher": "Valve Corporation",
+   "InstallLocation": "C:\\Program Files (x86)\\Steam"
+  },
+  "Uplay": {
+   "DisplayName": "Ubisoft Connect",
+   "Publisher": "Ubisoft",
+   "InstallLocation": "C:\\Program Files (x86)\\Ubisoft\\Ubisoft Game Launcher\\"
+  }
+ },
+ "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall": {
+  "Steam App 684410": {
+   "DisplayName": "Bridge Constructor Portal",
+   "Publisher": "ClockStone",
+   "InstallLocation": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Bridge Constructor Portal"
+  }
+ }
+}

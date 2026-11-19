@@ -57,6 +57,9 @@ version is in the README.
   it; browsers and normal programs don't. If the firewall configuration is reloaded or removed, the
   filter can be open for up to 60 seconds until KidCTL restores it.
 
+- **Lutris and Bottles:** games that run via Lutris or Bottles (Wine) are not detected as games by KidCTL – they
+  don't count towards game time or the game limit. As a workaround, use the "Counts as a game" switch in the program
+  list, if the game appears there.
 ## Windows
 
 - **x64 only:** no Windows on ARM.
@@ -89,6 +92,10 @@ version is in the README.
   name from the app package.
 - **Full-screen games:** warning windows don't appear over games in exclusive full screen; sign-out still
   happens.
+- **Games without a launcher:** a game that is started directly via its `.exe`, without a launcher and without a
+  known manifest, only counts as a game if "Counts as a game" is switched on for it in the program list.
+- **Ubisoft Connect and Wargaming:** KidCTL only detects their games while the launcher starts them. The name
+  comes from the `.exe`, and each `.exe` counts as a separate game.
 - **Tray app:** a child could falsify the display of other users' tray apps. Enforcement by the
   KidCTL service is not affected.
 - **No code signature:** SmartScreen asks on first installation, Defender may report false positives – see

@@ -298,6 +298,62 @@ Abweichungen stehen hier und unter „Restlücken“.
   - **Neu, für alle Plattformen:** Schalter „zählt als Spiel“ je Kind und App in der Programmliste (Tabelle
     `child_game_app`, `ChildPolicy.game_apps`); Apps der Kategorie „Spiele“ sind fest markiert. Der Agent (Linux
     und Windows) prüft Spiele je Kind (`AgentCore.is_game`).
+- **Spielerkennung erweitert (entschieden 2026-11-19 per /grill-me):**
+  - **Auslöser:** Ein über Steam gestartetes Spiel wurde unter Windows nicht als Spiel erkannt (keine Spielzeit,
+    kein Spiele-Limit). Ursache zuerst in der VM nachstellen und beheben (Kandidaten: Index nur beim
+    Katalog-Durchlauf neu eingelesen; Steam nur unter `HKCU` registriert; Spiel-`.exe` außerhalb von `installdir`).
+  - **Manifeste je Launcher** für Namen und stabile Schlüssel `game:<launcher>:<id>`: Steam, Epic (bisher), neu
+    **EA App**, **Ubisoft Connect**, **Battle.net**, **Wargaming Game Center**, **GOG Galaxy**. Formate aus echten
+    Installationen ermitteln (Registry/ProgramData), robust parsen, Fehler nur loggen.
+  - **Prozess-Abstammung als Rückfall:** Ein Prozess, der direkt oder indirekt von einem Launcher aus `LAUNCHERS`
+    gestartet wurde, zählt als Spiel – ausgenommen eine feste Liste von Hilfsprozessen je Launcher (z. B.
+    `steamwebhelper.exe`, Crash-Reporter, Updater, Overlays). Schlüssel `game:exe:<normierter Pfad>`, Name aus den
+    Versionsinformationen der `.exe` (ProductName/FileDescription), sonst Dateiname. Die Abstammung bleibt erhalten,
+    wenn der Launcher sich danach beendet (Elternkette beim Prozessstart merken).
+  - **Index sofort aktualisieren:** Änderungen an Manifest-Ordnern bzw. Bibliotheken (Prüfung im Takt oder
+    Verzeichnisüberwachung) lösen ein Neueinlesen aus, nicht erst der Katalog-Durchlauf.
+  - `LAUNCHERS` um **Wargaming Game Center** ergänzen (Freigabe-Regel wie bei den anderen Launchern).
+  - Launcher selbst zählen weiterhin nicht als Spiel.
+  - **Restlücke** (`docs/limitations*.md`): Ein Spiel, das ohne Launcher und ohne bekanntes Manifest direkt über die
+    `.exe` gestartet wird, zählt nur über den Schalter „zählt als Spiel“ in der Programmliste.
+  - **Nur Windows.** Linux: Lutris/Bottles (Wine) werden nicht als Launcher erkannt – Restlücke und Roadmap-Eintrag.
+  - **Umgesetzt (0.36.0):** Ursache des Steam-Fehlers: Der Index wurde nur alle 6 h mit dem Katalog gelesen, und
+    Steam wurde nur über `HKLM` gefunden. Jetzt gibt es eine Prüfung alle 10 s (Änderungszeit der Manifest-Ordner bzw.
+    Registry-Schlüssel), Steam auch über `HKEY_USERS\<SID>`, und ein unbekannter Prozess in einer Bibliothek löst ein
+    Neueinlesen aus. Manifeste nach den echten Installationen im VM-Snapshot „launchers“ (Testdaten
+    `agent/tests/fixtures/win_launchers`):
+    - GOG: Registry `GOG.com\Games\<id>`.
+    - EA: Uninstall-Eintrag mit `__Installer\installerdata.xml`.
+    - Battle.net: `product.db` (Protobuf).
+    - Ubisoft Connect und Wargaming: Spiele zu groß für die VM, deshalb kein Format; nur Rückfall (Restlücke).
+
+    Steamworks-Redistributables zählen nicht als Spiel. Vom Rückfall ausgenommen sind Programme im Ordner eines
+    laufenden Launchers (z. B. `EALocalHostSvc.exe`). Kurze 8.3-Pfade (`PROGRA~1`) werden vor der Zuordnung in die
+    lange Form aufgelöst. Freigegebene Launcher GOG, EA und Battle.net geben auch ihre Spieleordner frei, wie bisher
+    Epic.
+- **Oberfläche im Windows-11-Stil (entschieden 2026-11-19 per /grill-me):**
+  - **Nur unter Windows** (10 und 11 gleich); Linux behält den nativen Look (Breeze/Adwaita). Logik, Texte und
+    Übersetzungen bleiben gemeinsam; das Windows-Design ist eine eigene Stilschicht (`tray/kidctl_tray/winstyle.py`
+    + QSS), geladen nur unter Windows.
+  - **Fluent-Gestaltung per Qt-Stylesheet:** Segoe UI Variable (Rückfall Segoe UI), großzügige Abstände, Ecken 8 px
+    (Fenster/Karten) bzw. 4 px (Eingaben/Buttons), primärer Button gefüllt in Akzentfarbe, sekundäre Buttons
+    umrandet, Eingabefelder mit Akzent-Unterstrich im Fokus, hell/dunkel nach Windows-Einstellung (live
+    umschaltend). **Mica** als Fensterhintergrund unter Windows 11 (DWM `DWMWA_SYSTEMBACKDROP_TYPE`), Windows 10
+    einfarbig. Fenster werden dafür neu aufgebaut (keine reinen Formular-Layouts mehr), Funktion unverändert.
+  - **Akzentfarbe:** Windows-Akzentfarbe des Benutzers; Kontrastprüfung (Text auf Akzent ≥ 4,5:1), sonst
+    KidCTL-Blau `#3b5ba9`. **Statusfarben fest** (ok/Warnung/kritisch/offline) in Fluent-Tönen, je hell/dunkel;
+    harte Farben wie `#da4453` entfallen.
+  - **Umfang:** alle Fenster der Tray-App (Countdown, Zeit anfragen, Freigabe anfragen, Gesperrt-Fenster, Chat),
+    **Tray-Menü** (Windows-11-Optik), **Tray-Symbol** (monochromes KidCTL-Symbol passend zur Taskleiste hell/dunkel
+    mit kleinem Statuspunkt; Restzeit im Tooltip und im Menü – nur Windows, Linux behält Kreis mit Zahl),
+    **Toasts** (App-Logo, App-Name „KidCTL“, Aktionsbuttons im Windows-Standard), **Installer** (Inno Setup:
+    moderner Assistent-Stil, KidCTL-Logo, Kopplungsseite aufgeräumt: Server und Code untereinander, kurzer Hinweis).
+  - Kinder-Clients bleiben immer „KidCTL“ (kein Whitelabel).
+  - **Prüfung:** `dev/winshots.py` öffnet in der Windows-VM jedes Fenster in Beispielzuständen (Countdown 5 min,
+    Anfragen, Gesperrt, Chat mit Verlauf, Tray-Menü, Toast, Installer-Kopplungsseite) und fotografiert Windows 11
+    hell/dunkel und Windows 10 hell, jeweils DE/EN. Die Bilder ersetzen die bisher von Hand geplanten
+    Client-Screenshots für Projektseite und Wiki. Offscreen-Tests: Kontrastprüfung/Farbauswahl, Stylesheet nur unter
+    Windows, alle Fenster lassen sich in beiden Schemata erzeugen.
 - **Integrität (WebUI):** Dienst, SafeBoot-Eintrag, Unbound, WFP-Filter, DNS der Adapter, Ausführverbote
   (ACL), Kinder nicht in der Gruppe Administratoren.
 - **Verteilung und Updates:**
@@ -882,6 +938,34 @@ hierher verschoben 2026-11-17.)
     stellt er sofort wieder her; Dateien unter `/etc` meldet er nur (Agent läuft mit
     `ProtectSystem`). Meldung an den Server nur bei Änderung; Push-Alarm nur für **neu**
     fehlschlagende Prüfungen. WebUI: Abschnitt „Integrität“ je Gerät, Hinweis in Übersicht/Geräteliste.
+
+## E-Mails (entschieden 2026-11-19 per /grill-me)
+
+- **Einheitliches HTML-Layout für alle Mails** – an Familien (Bestätigung, Passwort, Einladungen, Tickets,
+  Abo-Hinweise, Rechnungen, Newsletter, Nutzungsbericht) und an Betreiber (Tickets, Profil, Alarme). Basis-Template
+  `templates/mail/base.html` (Kopf mit Logo, Inhaltsblock, Fuß); jede Mail ist ein eigenes Template, das davon erbt.
+  Gestaltung wie der bisherige Nutzungsbericht: Tabellenlayout, Inline-Styles, Material-3-Farben, dunkles Schema über
+  `prefers-color-scheme`, max. 600 px, Vorschauzeile. Aktionslinks als Buttons, die auch in Outlook als Button
+  erscheinen, darunter der Link als Text. **Textfassung bleibt** bei jeder Mail (multipart/alternative).
+  Der Nutzungsbericht wird auf das Basis-Template umgestellt (Inhalt unverändert).
+- **Logo als Inline-Anhang (CID):** Whitelabel-Logo, sonst KidCTL-Logo (aus `packaging/arch/kidctl.svg` als PNG
+  gerendert). Für Mails auf max. 400 × 96 px verkleinert, zwischengespeichert, mit `branding.version` invalidiert.
+  Keine externen Bilder, keine Data-URIs, kein Tracking.
+- **Footer:** (1) Grund der Mail je Mailtyp, wo nötig mit Abmeldelink (Bericht, Newsletter); (2) Links
+  *Neuigkeiten* · *Anleitungen* · *Support* (nur SaaS) · *Impressum* · *Datenschutz*; (3) Anbieter-Zeile (Name ·
+  Anschrift · Kontakt-E-Mail); (4) „powered by KidCTL“ bei eigenem Namen.
+- **Anbieter-Angaben:** neuer Block „Anbieter“ auf der Branding-Seite im Verwaltungsbereich (nur *Admin*,
+  protokolliert): Name, Anschrift, Kontakt-E-Mail, URLs für Impressum, Datenschutz, Neuigkeiten (Vorgabe:
+  Projektseite bzw. Wiki). Leere Felder entfallen im Footer (keine Platzhalter). **Einzelbetrieb:** Footer nur mit
+  Grund und Links (Neuigkeiten = Projekt-News, Anleitungen = Wiki), Anbieterzeile nur, wenn ausgefüllt.
+- **Newsletter:** Text in einer **Markdown-Teilmenge** (Überschriften `##`/`###`, fett/kursiv, Listen, Links,
+  Trennlinie), serverseitig mit `markdown-it-py` (HTML aus, nur erlaubte Elemente, Links nur http/https/mailto) in
+  HTML umgewandelt; Markdown-Quelle als Textfassung. Vorschau des HTML-Mails im Verwaltungsbereich vor dem
+  Testversand.
+- **Prüfung:** Tests für jeden Mailtyp in DE und EN (keine fehlenden Variablen, HTML < 100 KB wegen Gmail-Kürzung,
+  CID-Logo vorhanden, Textfassung vorhanden, keine externen Ressourcen/Skripte, Whitelabel an/aus).
+  Vorschauseite `/admin/mail-preview` (nur *Admin*): alle Mailtypen mit Beispieldaten, DE/EN umschaltbar,
+  Button „Testmail an mich“ (an die eigene Betreiber-Adresse).
 
 ## Backup (entschieden 2026-10-21)
 
@@ -2726,3 +2810,21 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-18: Version 0.35.0 (Agent, Pakete): Sammelversion für Familiensuche, Admin-Profil, Whitelabel, Newsletter
   und den Fix der PWA-Leiste – keine Änderung am Agenten selbst. News 0.35 (DE/EN), Roadmap mit Version. Getestet:
   Versionsabgleich PKGBUILD/Agent, `hugo --minify` fehlerfrei.
+- 2026-11-19: Anforderungen per /grill-me abgestimmt: Spielerkennung Windows (Steam-Fehler, Manifeste für EA,
+  Ubisoft, Battle.net, Wargaming, GOG, Prozess-Abstammung als Rückfall), einheitliche HTML-Mails mit Logo und
+  Footer (Anbieter-Angaben, Newsletter in Markdown, Mail-Vorschau), Windows-Oberfläche im Fluent-Stil. Noch keine
+  Umsetzung.
+- 2026-11-19: Version 0.36.0 (Agent): Spielerkennung unter Windows erweitert (siehe „Spielerkennung erweitert“):
+  Steam-Fehler behoben (Index bei Änderung neu lesen, Steam-Pfad je Benutzer). Neu: GOG, EA app, Battle.net.
+  Rückfall über die Prozess-Abstammung mit Hilfsprozess-Liste, Wargaming als Launcher. Restlücken für
+  Ubisoft/Wargaming und Lutris/Bottles, Roadmap. Getestet:
+  - Agent-Tests 285 grün, davon neu: echte Launcher-Daten, robuster `product.db`-Leser, Registry-Signatur,
+    Launcher-Ordner, Abstammung, 8.3-Pfade.
+  - Windows-11-VM, Konto des Kindes:
+    - Bridge Constructor Portal (Steam), SimCity 2000 (EA), Absolute Drift (Epic) und Bio Menace (GOG) werden mit
+      Namen als Spiel gezählt und im Dashboard als „spielt gerade“ angezeigt.
+    - Ein entferntes und wieder zurückgelegtes Steam-Manifest wird binnen 20 s neu gelesen.
+    - Spiele-Limit beendet SimCity.
+    - Launcher und `EALocalHostSvc.exe` zählen nicht.
+  - Nicht live getestet: Battle.net (Hearthstone-Download zu groß), Vorwarnung vor dem Spiele-Ende (Limit war sofort
+    erreicht; Unit-Tests decken sie ab).

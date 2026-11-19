@@ -56,6 +56,11 @@ def _k32(name, restype, *argtypes):
 
 def snapshot() -> dict[int, int]:
     """PID -> Eltern-PID aller Prozesse."""
+    return {pid: ppid for pid, (ppid, _name) in snapshot_names().items()}
+
+
+def snapshot_names() -> dict[int, tuple[int, str]]:
+    """PID -> (Eltern-PID, Dateiname) aller Prozesse (für die Abstammung von Spielen)."""
     h = _k32("CreateToolhelp32Snapshot", w.HANDLE, w.DWORD, w.DWORD)(TH32CS_SNAPPROCESS, 0)
     if h is None or h == api.INVALID_HANDLE_VALUE:
         raise api._err("CreateToolhelp32Snapshot")
@@ -66,7 +71,7 @@ def snapshot() -> dict[int, int]:
         out = {}
         ok = first(h, byref(e))
         while ok:
-            out[e.th32ProcessID] = e.th32ParentProcessID
+            out[e.th32ProcessID] = (e.th32ParentProcessID, e.szExeFile)
             ok = nxt(h, byref(e))
         return out
     finally:

@@ -30,6 +30,7 @@ log = logging.getLogger("kidctl.programs")
 POLL = 0.5                 # Sekunden zwischen zwei Prozesslisten
 MAX_ANCESTORS = 16
 CATALOG_EVERY = 6 * 3600.0
+GAMES_CHECK = 10.0   # Sekunden: Manifest-Ordner der Launcher auf Änderungen prüfen
 CATALOG_MIN_GAP = 60.0     # neu lesen bei unbekanntem Paket höchstens so oft
 BLOCKED_FILE = "blocked.json"
 MAX_PENDING = 500
@@ -53,6 +54,11 @@ class WinProgramWatcher:
         self.catalog: catalog_mod.Catalog | None = None
         self.games = games_mod.GameIndex()
         self.scan_games = games_mod.scan
+        self.games_signature = games_mod.signature
+        self.launches = games_mod.LaunchTracker()
+        self._games_sig: tuple | None = None
+        self._games_checked: float | None = None
+        self.games_stale = False   # Prozess in einer Spielebibliothek ohne Treffer im Index -> sofort neu lesen
         self._catalog_at: float | None = None
         self._catalog_task: asyncio.Task | None = None
         self.names: dict[str, str] = {}
@@ -89,15 +95,47 @@ class WinProgramWatcher:
             return False
         changed = self.catalog is None or cat.apps != self.catalog.apps or cat.known_pfns != self.catalog.known_pfns
         self.catalog = cat
-        try:
-            self.games = await asyncio.to_thread(self.scan_games)
-        except Exception:
-            log.exception("Spiele nicht lesbar")
+        await self.refresh_games(force=True)
         self.names = {a.key: a.name for a in cat.apps} | self.games.names()
         self.names_en = {a.key: a.name_en for a in cat.apps if a.name_en}
         self.canon = {key_norm(a.key): a.key for a in cat.apps}
         self.policy_changed()
         return changed
+
+    async def refresh_games(self, force: bool = False) -> bool:
+        """Spiele-Index neu lesen, wenn sich ein Manifest-Ordner geändert hat (Takt ``GAMES_CHECK``), ein Prozess
+        in einer Bibliothek unbekannt war oder ``force``. True = neu gelesen."""
+        now = self.clock()
+        if not force and not self.games_stale and self._games_checked is not None \
+                and now - self._games_checked < GAMES_CHECK:
+            return False
+        self._games_checked = now
+        try:
+            sig = await asyncio.to_thread(self.games_signature, self.games)
+            if not force and not self.games_stale and sig == self._games_sig:
+                return False
+            self.games = await asyncio.to_thread(self.scan_games)
+            self._games_sig = await asyncio.to_thread(self.games_signature, self.games)
+        except Exception:
+            log.exception("Spiele nicht lesbar")
+            return False
+        self.games_stale = False
+        if not force:
+            self.policy_changed()   # neue Bibliotheken: Launcher-Ordner der Freigaben neu berechnen
+        if self.catalog is not None:
+            self.names = {a.key: a.name for a in self.catalog.apps} | self.games.names()
+        log.info("Spiele-Index gelesen: %d Spiele", len(self.games.games))
+        return True
+
+    def track_launches(self) -> None:
+        """Abstammung neuer Prozesse merken (Launcher -> Spiel), unabhängig von der Programmkontrolle."""
+        snap = getattr(self.procs, "snapshot_names", None)
+        if snap is None:
+            return
+        try:
+            self.launches.update(snap())
+        except Exception:
+            log.exception("Prozessliste (Abstammung) nicht lesbar")
 
     def admin_profiles(self) -> list[str]:
         from .acl import profile_path
@@ -150,13 +188,16 @@ class WinProgramWatcher:
         return self._targets
 
     def launcher_dirs(self, keys: set[str]) -> tuple[str, ...]:
-        """Spieleordner der freigegebenen Launcher (Steam: Bibliotheken, Epic: Installationsordner)."""
+        """Spieleordner der freigegebenen Launcher (Steam: Bibliotheken; Epic, GOG, EA, Battle.net:
+        Installationsordner der Spiele)."""
         released = {key_norm(k) for k in keys}
         dirs: list[str] = []
         if self.games.steam_exe and key_norm("exe:" + self.games.steam_exe) in released:
             dirs += self.games.steam_dirs
-        if any(k.startswith("exe:") and k.endswith("\\epicgameslauncher.exe") for k in released):
-            dirs += self.games.epic_dirs
+        exes = {ntpath.basename(k).lower() for k in released if k.startswith("exe:")}
+        for launcher, folders in sorted(self.games.launcher_dirs.items()):
+            if launcher in exes:
+                dirs += folders
         return tuple(dirs)
 
     def users(self) -> set[str]:
@@ -167,6 +208,8 @@ class WinProgramWatcher:
     async def poll_forever(self) -> None:
         while True:
             try:
+                await asyncio.to_thread(self.track_launches)
+                await self.refresh_games()
                 await self.poll()
             except Exception:
                 log.exception("Programmprüfung fehlgeschlagen")

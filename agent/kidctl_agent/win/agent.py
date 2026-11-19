@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import ntpath
 import os
 import sys
 from pathlib import Path
@@ -31,6 +32,9 @@ from .watcher import WinProgramWatcher
 from ..apptime import AppTime
 from ..gamelimit import GameLimit
 from .apptime import WinAppIndex
+from .catalog import norm
+from .games import LAUNCHERS, exe_game_key, exe_name, long_path
+from .programs import WINDIR, _under
 
 log = logging.getLogger("kidctl.agent")
 
@@ -258,9 +262,21 @@ class WinAgent(AgentCore):
         keys: dict[str, set[str]] = {}
         playing: dict[str, dict[str, str]] = {}
         game_procs: dict[str, list[tuple[int, int]]] = {}
+        games = self.programs.games
+        libraries = tuple(d + "\\" for d in games.steam_dirs[1:] + games.epic_dirs)
+        # Ordner laufender Launcher: was dort liegt, gehört zum Launcher (Dienste, Helfer) – außer Spielebibliotheken
+        launcher_homes = tuple(ntpath.dirname(norm(i.exe)) + "\\" for i in infos
+                               if ntpath.basename(i.exe).lower() in LAUNCHERS)
         for info in infos:
             user = users[info.sid]
             found = index.key_for(info)
+            if (found is None or not found[0].startswith("game:")) and libraries \
+                    and norm(info.exe).startswith(libraries) and games.game_of(info.exe) is None:
+                self.programs.games_stale = True    # Spiel in einer Bibliothek, Manifest noch nicht gelesen
+            exe = norm(long_path(info.exe))
+            if (found is None or not self.is_game(found[0], user)) and self.programs.launches.launcher_of(info.pid) \
+                    and not _under(exe, WINDIR) and not (exe.startswith(launcher_homes) and not exe.startswith(libraries)):
+                found = (exe_game_key(info.exe), exe_name(long_path(info.exe)))   # Rückfall: vom Launcher gestartet
             if found is None:
                 continue
             key, name = found
