@@ -12,5 +12,6 @@
     <li><a href="{{ $ob.url | default "https://developer.mozilla.org/observatory/analyze?host=kids.nossco.de" }}" rel="noopener">MDN HTTP Observatory</a>{{ with $ob.grade }}: <strong>{{ . }}</strong>{{ end }}</li>
   </ul>
   <p class="muted">{{ T "checks_note" }}{{ with $sc.date }} {{ T "checks_date" }} {{ time.Format ":date_medium" . }}.{{ end }}
-    <a href="{{ relLangURL "docs/security/" }}">{{ T "checks_security" }}</a></p>
+    <a href="{{ relLangURL "docs/security/" }}">{{ T "checks_security" }}</a>
+    {{- with site.GetPage "/how-built" }} · <a href="{{ .RelPermalink }}">{{ .Title }}</a>{{ end }}</p>
 </div>

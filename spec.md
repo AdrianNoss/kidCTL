@@ -3162,3 +3162,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-20: Entschieden (geplant, noch nicht umgesetzt): Rechnungs-PDF bekommt eine Kopfzeile mit Logo und Name
   des Dienstes aus dem Erscheinungsbild; nur für neu ausgestellte Rechnungen, gespeicherte PDFs bleiben unverändert.
   Kein Roadmap-Eintrag (Abrechnungsdetail). Ohne Code, daher ohne Test.
+- 2026-11-20: Transparenz zur Entwicklung mit KI (ohne neue Version): README-Abschnitt „Wie kidCTL entsteht“ (DE/EN)
+  und Website-Seite „So entsteht kidCTL“ (`/how-kidctl-is-built/`, verlinkt in Fußzeile und Box „Automatisch
+  geprüft“). Getestet: Doku-Parität, `hugo --minify --panicOnWarning`, Links in der erzeugten Seite.

@@ -180,6 +180,19 @@ described in `spec.md` first and dated in the changelog. Conventions are in
 user interface live in `server/app/locale/en.po`, `agent/kidctl_agent/locale/en.po` and
 `tray/kidctl_tray/locale/en.po`; tests check that every marked text is translated.
 
+## How kidCTL is built
+
+KidCTL is developed by Adrian Noss **with the help of AI**: most of the code, tests, translations and guides are
+written by [Claude Code](https://claude.com/claude-code) (Anthropic). Adrian decides what kidCTL should do, tests on
+real devices and approves every release; publishing, signing and running the servers is done by him only. The AI
+works with test data only.
+
+Fixed rules keep this reliable: every change is written into [`spec.md`](spec.md) first and recorded there with a
+date and test note; no feature without automated tests; system-level parts go to test VMs first; CodeQL, OpenSSF
+Scorecard and a monthly web scan keep checking. The AI's working instructions are public in
+[`CLAUDE.md`](CLAUDE.md). kidCTL itself uses no AI and sends nothing to AI services. An independent security audit
+by humans has not taken place yet. More: [How kidCTL is built](https://adriannoss.github.io/kidCTL/how-kidctl-is-built/).
+
 ## Security
 
 Please report security vulnerabilities **confidentially** (GitHub "Report a vulnerability" or security@nossco.de),
