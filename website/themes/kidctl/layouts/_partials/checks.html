@@ -1,0 +1,16 @@
+{{- /* Box „Automatisch geprüft“: Werte holt der Pages-Workflow (data/checks.json) – als Text, keine externen Bilder.
+       Fehlt ein Wert, steht nur der Link. Best Practices erst mit params.bestpractices_id. */ -}}
+{{- $c := hugo.Data.checks | default dict }}
+{{- $sc := $c.scorecard | default dict }}{{ $ob := $c.observatory | default dict }}
+<div class="card checks">
+  <h3>{{ partial "icon.html" "check" }}{{ T "checks_title" }}</h3>
+  <ul class="plain">
+    <li><a href="https://scorecard.dev/viewer/?uri=github.com/AdrianNoss/kidCTL" rel="noopener">OpenSSF Scorecard</a>{{ with $sc.score }}: <strong>{{ lang.FormatNumber 1 . }}</strong>/10{{ end }}</li>
+    {{- with site.Params.bestpractices_id }}
+    <li><a href="https://www.bestpractices.dev/projects/{{ . }}" rel="noopener">OpenSSF Best Practices</a></li>
+    {{- end }}
+    <li><a href="{{ $ob.url | default "https://developer.mozilla.org/observatory/analyze?host=kids.nossco.de" }}" rel="noopener">MDN HTTP Observatory</a>{{ with $ob.grade }}: <strong>{{ . }}</strong>{{ end }}</li>
+  </ul>
+  <p class="muted">{{ T "checks_note" }}{{ with $sc.date }} {{ T "checks_date" }} {{ time.Format ":date_medium" . }}.{{ end }}
+    <a href="{{ relLangURL "docs/security/" }}">{{ T "checks_security" }}</a></p>
+</div>

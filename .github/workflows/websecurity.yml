@@ -1,0 +1,79 @@
+# Monatlicher Web-Scan der öffentlichen Seiten von kids.nossco.de – nur passiv, ohne Anmeldung:
+# - OWASP ZAP Baseline (Spider + passive Regeln, keine Angriffe),
+# - MDN HTTP Observatory (Header, TLS-Weiterleitung, Cookies).
+# Funde ab „Medium“ bzw. Observatory-Note schlechter als A → GitHub-Issue nur mit Verweis auf den Lauf (keine Details
+# öffentlich, siehe SECURITY.md). Berichte als Artefakt (14 Tage).
+
+name: Web-Scan
+
+on:
+  schedule:
+    - cron: "17 5 3 * *"   # am 3. jedes Monats
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TARGET: https://kids.nossco.de
+  HOST: kids.nossco.de
+
+jobs:
+  scan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write   # Issue bei Fund
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: ZAP Baseline (passiv)
+        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25   # v0.15.0
+        with:
+          target: ${{ env.TARGET }}/login
+          cmd_options: "-m 3"        # Spider höchstens 3 Minuten (ohne AJAX-Spider)
+          allow_issue_writing: false # eigenes Issue ohne Details (unten)
+          fail_action: false
+          artifact_name: zap-baseline
+
+      - name: MDN HTTP Observatory
+        id: observatory
+        run: |
+          curl -fsS -X POST "https://observatory-api.mdn.mozilla.net/api/v2/scan?host=${HOST}" -o observatory.json
+          jq . observatory.json
+          echo "grade=$(jq -r '.grade // "?"' observatory.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Bewerten
+        id: verdict
+        env:
+          GRADE: ${{ steps.observatory.outputs.grade }}
+        run: |
+          medium=0
+          if [ -f report_json.json ]; then
+            medium=$(jq '[.site[].alerts[] | select((.riskcode | tonumber) >= 2)] | length' report_json.json)
+          fi
+          echo "ZAP-Funde ab Medium: $medium · Observatory: $GRADE"
+          bad=false
+          [ "$medium" -gt 0 ] && bad=true
+          case "$GRADE" in A|A+) ;; *) bad=true ;; esac
+          echo "bad=$bad" >> "$GITHUB_OUTPUT"
+
+      - name: Issue bei Fund
+        if: steps.verdict.outputs.bad == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "Web-Scan: Befund $(date -u +%Y-%m)" \
+            --body "Der monatliche Web-Scan hat einen Befund gemeldet. Details nur im Workflow-Lauf: ${run}"
+
+      - name: Observatory-Bericht aufheben
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
+        with:
+          name: observatory
+          path: observatory.json
+          retention-days: 14

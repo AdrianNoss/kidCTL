@@ -2,7 +2,7 @@
 # Auslöser: Push auf main mit Änderungen an der Seite oder den Anleitungen (docs/, SECURITY*.md), veröffentlichtes
 # Release (Release-Liste), von Hand.
 # Einmalig in den Repo-Einstellungen: Settings → Pages → Source „GitHub Actions“.
-# Schritte: Releases holen → Platzhalter-Check (Impressum) → Doku-Parität DE/EN → hugo --minify → Suchindex
+# Schritte: Releases holen → Prüfergebnisse (Scorecard, Observatory) → Platzhalter-Check (Impressum) → Doku-Parität DE/EN → hugo --minify → Suchindex
 # (Pagefind, pip, gepinnt) → Deploy.
 
 name: Projektseite
@@ -14,6 +14,8 @@ on:
             ".github/workflows/pages.yml"]
   release:
     types: [published]
+  schedule:
+    - cron: "11 6 * * 1"   # wöchentlich: Prüfergebnisse auffrischen
   workflow_dispatch:
 
 permissions:
@@ -32,7 +34,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
         with:
           persist-credentials: false
 
@@ -54,6 +56,17 @@ jobs:
                    assets: [.assets[] | {name, size, browser_download_url}]}]' \
             | jq -s 'add // []' > website/data/releases.json
           jq length website/data/releases.json
+
+      - name: Prüfergebnisse holen (Scorecard, Observatory)
+        # Für die Box „Automatisch geprüft“ auf der Startseite – als Text, keine externen Bilder. Fehler: Box ohne Wert.
+        run: |
+          sc=$(curl -fsS "https://api.securityscorecards.dev/projects/github.com/${GITHUB_REPOSITORY}" || echo '{}')
+          ob=$(curl -fsS -X POST "https://observatory-api.mdn.mozilla.net/api/v2/scan?host=kids.nossco.de" || echo '{}')
+          jq -n --argjson sc "$sc" --argjson ob "$ob" '{
+            scorecard: {score: ($sc.score // null), date: ($sc.date // null)},
+            observatory: {grade: ($ob.grade // null), date: ($ob.scanned_at // null), url: ($ob.details_url // null)}
+          }' > website/data/checks.json
+          cat website/data/checks.json
 
       - name: Platzhalter-Check (Impressum)
         run: |
@@ -80,7 +93,7 @@ jobs:
           "$RUNNER_TEMP/pagefind/bin/pip" install -q "pagefind[bin]==${PAGEFIND_VERSION}"
           "$RUNNER_TEMP/pagefind/bin/python" -m pagefind --site website/public
 
-      - uses: actions/upload-pages-artifact@v5
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9   # v5.0.0
         with:
           path: website/public
           include-hidden-files: true   # .well-known/security.txt
@@ -97,4 +110,4 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - id: deploy
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346   # v5.0.1

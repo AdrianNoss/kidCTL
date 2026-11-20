@@ -11,6 +11,9 @@
 
 **English** · [Deutsch](README.de.md)
 
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/AdrianNoss/kidCTL/badge)](https://scorecard.dev/viewer/?uri=github.com/AdrianNoss/kidCTL)  
+<sub>Automatically checked (configuration and repository practices, not a seal); report vulnerabilities as described in [SECURITY.md](SECURITY.md).</sub>
+
 Self-hosted parental control for **Windows 10 (22H2) and Windows 11 (23H2 or later)** (x64, Home and Pro) and
 **Arch Linux, Debian and Ubuntu** (also Mint, Pop!_OS) **with KDE Plasma or GNOME (Wayland)**. A central server
 with a parents' web interface (installable as an app on your phone) controls a root agent on each child's

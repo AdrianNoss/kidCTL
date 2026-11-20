@@ -118,11 +118,14 @@
       <h2>{{ T "trust_title" }}</h2>
       <p class="lead">{{ T "trust_lead" }}</p>
     </div>
+    <div>
     <ul class="checklist">
     {{- range hugo.Data.trust }}
       <li>{{ partial "icon.html" "check" }}<span>{{ partial "tr.html" . | markdownify }}</span></li>
     {{- end }}
     </ul>
+    {{ partial "checks.html" . }}
+    </div>
   </div>
 </section>
 

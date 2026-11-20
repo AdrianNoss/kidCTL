@@ -3103,3 +3103,20 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   - Arch-VM, GNOME 51 mit AppIndicator: Symbol dunkel auf heller Leiste, Menü mit Restzeit, kein Tooltip.
   - Windows-11-VM: Tray-Menü und Tooltip hell/dunkel (DE) als Desktop-Abzug in voller Auflösung. EN fehlt, die VM
     hat nur Deutsch als Anzeigesprache. Einbindung in Startseite und Wiki erst nach Abnahme.
+- 2026-11-20: Automatische Sicherheitsprüfungen (ohne neue Version, nur Workflows und Website).
+  - `scorecard.yml`: OpenSSF Scorecard wöchentlich, bei Push und von Hand; `permissions: read-all`; Ergebnis
+    veröffentlicht, SARIF in Code Scanning.
+  - `websecurity.yml`: monatlich, passive ZAP-Baseline und MDN Observatory gegen `kids.nossco.de`. Bei Funden ab
+    Medium bzw. einer Note unter A wird ein Issue nur mit Link auf den Lauf angelegt.
+  - Alle Actions in allen Workflows per Commit-SHA gepinnt.
+  - Startseite: Box „Automatisch geprüft“ (Abschnitt Vertrauen). Werte holt der Pages-Workflow
+    (`data/checks.json`, wöchentlich aufgefrischt), als Text mit Link, keine externen Bilder; Best Practices
+    erscheint erst mit `params.bestpractices_id`.
+  - README: Scorecard-Badge mit Hinweis „Automatisch geprüft“ und Verweis auf `SECURITY.md`.
+  - `dev/openssf-best-practices.md`: Antworten für alle Passing-Kriterien; offen sind `CONTRIBUTING.md`, ein
+    Test-Workflow, ein Linter und der Branch-Schutz.
+
+  Getestet:
+  - `hugo --minify --panicOnWarning` mit und ohne `checks.json`.
+  - YAML der Workflows geprüft, keine ungepinnten Actions mehr.
+  - Läufe der Workflows erst nach dem Push auf `main` möglich.

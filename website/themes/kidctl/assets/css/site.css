@@ -166,6 +166,8 @@ dialog.lightbox button { position:fixed; top:.75rem; right:.75rem; width:48px; h
 .checklist { list-style:none; margin:0; padding:0; display:grid; gap:.75rem; }
 .checklist li { display:flex; gap:.75rem; align-items:flex-start; }
 .checklist .icon { color:var(--success); margin-top:.1rem; }
+.checks { margin-top:1.5rem; }
+.checks .plain { list-style:none; padding:0; margin:0 0 .75rem; display:grid; gap:.375rem; }
 
 /* ---------- Roadmap ---------- */
 .roadmap { display:grid; gap:1rem; }

@@ -5,3 +5,4 @@ resources/
 !data/
 # vom Pages-Workflow per GitHub-API erzeugt (lokal: siehe README.md)
 data/releases.json
+data/checks.json
