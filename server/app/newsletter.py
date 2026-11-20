@@ -14,9 +14,8 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from . import accounts, i18n, mail
+from . import accounts, i18n
 from .config import settings
-from .i18n import _
 from .models import Family, Membership, Newsletter, Parent, utcnow
 from .tenant import family_session, platform_session
 

@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
-from datetime import date
 from types import SimpleNamespace
 
 import pytest

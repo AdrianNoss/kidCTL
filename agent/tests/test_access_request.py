@@ -1,7 +1,7 @@
 """Freigabe anfragen: Sperrliste je Kind, Tray-Ablauf, Benachrichtigungen, Freigaben „nur heute“."""
 
 import asyncio
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from kidctl_common import protocol as p
 from kidctl_common import tray as t

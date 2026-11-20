@@ -114,7 +114,7 @@ def test_english_pages_render(client, parent):
 
 def test_mail_and_push_in_parent_language(client, parent, monkeypatch):
     from datetime import date as d
-    from app import accounts, push, report
+    from app import accounts, mail, push, report
     from app.config import Settings
     with SessionLocal() as db:
         p = db.get(Parent, parent.id)
@@ -127,7 +127,7 @@ def test_mail_and_push_in_parent_language(client, parent, monkeypatch):
         assert "Wochenbericht 12.10.–18.10.2026" in report.render(db, p, report.last_period("weekly", d(2026, 10, 19)))[0]
 
         sent = []
-        monkeypatch.setattr(accounts.mail, "send", lambda to, subject, body, html=None, **kw: sent.append((subject, body)) or True)
+        monkeypatch.setattr(mail, "send", lambda to, subject, body, html=None, **kw: sent.append((subject, body)) or True)
         p.detected_language = "en"
         db.commit()
         accounts.start_password_reset(db, "mama")

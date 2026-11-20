@@ -11,7 +11,6 @@ from test_policy import _policy, _setup, device
 
 
 def test_paused_family_gets_empty_policy_with_paused_users(client, parent):
-    import asyncio
 
     from app import policy
     cid, tok = _setup(client, parent)

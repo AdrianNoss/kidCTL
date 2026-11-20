@@ -180,6 +180,8 @@ zuerst in `spec.md` beschrieben und im Changelog datiert. Konventionen stehen in
 Oberfläche liegen in `server/app/locale/en.po`, `agent/kidctl_agent/locale/en.po` und
 `tray/kidctl_tray/locale/en.po`; Tests prüfen, dass jeder markierte Text übersetzt ist.
 
+Wie man beiträgt (Issue, Pull Request, Testpflicht): [Mitmachen](CONTRIBUTING.de.md).
+
 ## Wie kidCTL entsteht
 
 KidCTL wird von Adrian Noss **mit Hilfe von KI entwickelt**: Den größten Teil von Code, Tests, Übersetzungen und

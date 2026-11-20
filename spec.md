@@ -3165,3 +3165,25 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-20: Transparenz zur Entwicklung mit KI (ohne neue Version): README-Abschnitt „Wie kidCTL entsteht“ (DE/EN)
   und Website-Seite „So entsteht kidCTL“ (`/how-kidctl-is-built/`, verlinkt in Fußzeile und Box „Automatisch
   geprüft“). Getestet: Doku-Parität, `hugo --minify --panicOnWarning`, Links in der erzeugten Seite.
+- 2026-11-20: Beitragsregeln, Test-Workflow und Linter für das OpenSSF-Best-Practices-Badge (ohne neue Version).
+  - `CONTRIBUTING.md`/`CONTRIBUTING.de.md` (inhaltsgleich, im Paritäts-Check und im README verlinkt): Issue zuerst,
+    dann Pull Request; Testpflicht; Tests der drei Komponenten starten; `ruff check`; Doku-Parität;
+    Sicherheitsmeldungen nur nach `SECURITY.md`; Abschnitt „KI-Unterstützung“ (gleiche Regeln, Kennzeichnung per
+    `Co-Authored-By`).
+  - `.github/workflows/tests.yml` bei Push auf `main` und Pull Requests, `permissions: contents: read`, Actions per
+    SHA gepinnt: Linter und Doku-Parität; Server und Agent (inkl. E2E) gegen `postgres:17` als Service-Container,
+    `pg_dump`/`pg_restore` der Backup-Tests per `docker exec` im Container; Tray mit PySide6 offscreen (bricht ab,
+    wenn Qt nicht lädt, statt die GUI-Tests zu überspringen).
+  - `ruff.toml`: nur Fehlerregeln Pyflakes `F` und `E9`. Funde bereinigt: ungenutzte Importe und f-Strings ohne
+    Platzhalter entfernt; Schleifenvariablen, die die Übersetzungsfunktion `_` überdeckten, umbenannt
+    (`agent/kidctl_agent/watcher.py`, `win/watcher.py`). Ein Test patcht `mail.send` jetzt direkt statt über
+    `accounts.mail`.
+  - Agent-E2E-Test an das zweistufige Login (0.39.0) angepasst; der Test schlug seitdem fehl.
+  - `dev/openssf-best-practices.md`: Kriterien zu Beiträgen, Tests, CI und Warnungen auf Met; offen nur der
+    Branch-Schutz (Einstellungen beschrieben).
+
+  Getestet:
+  - Server-, Agent- und Tray-Tests lokal grün; Backup-Tests mit `pg_dump`/`pg_restore` per
+    `exec -e PGUSER -e PGPASSWORD -e PGDATABASE` im Container (wie in CI).
+  - `ruff check` (0.17.6) ohne Funde, `python dev/check_docs_parity.py` ok, YAML des Workflows gültig.
+  - Workflow-Lauf in GitHub erst nach dem Push möglich.

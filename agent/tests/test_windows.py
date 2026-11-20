@@ -6,7 +6,6 @@ import asyncio
 import base64
 import hashlib
 import json
-from datetime import date, datetime
 from types import SimpleNamespace
 
 import pytest

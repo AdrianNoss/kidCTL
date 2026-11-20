@@ -17,7 +17,7 @@ from datetime import timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from . import audit, i18n, mail
+from . import audit, i18n
 from .config import settings
 from .i18n import N_, _
 from .models import Device, Family, Operator, Parent, Ticket, TicketMessage, utcnow

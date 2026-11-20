@@ -7,8 +7,7 @@ import json
 from datetime import date, datetime, time, timezone
 
 from sqlalchemy import (
-    Boolean, Date, DateTime, ForeignKey, Index, Integer, LargeBinary, String, Text, Time, UniqueConstraint, func,
-    text,
+    Boolean, Date, DateTime, ForeignKey, Index, Integer, LargeBinary, String, Text, Time, UniqueConstraint, text,
 )
 from sqlalchemy import event
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship

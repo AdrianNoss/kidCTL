@@ -180,6 +180,8 @@ described in `spec.md` first and dated in the changelog. Conventions are in
 user interface live in `server/app/locale/en.po`, `agent/kidctl_agent/locale/en.po` and
 `tray/kidctl_tray/locale/en.po`; tests check that every marked text is translated.
 
+How to contribute (issue, pull request, test policy): [Contributing](CONTRIBUTING.md).
+
 ## How kidCTL is built
 
 KidCTL is developed by Adrian Noss **with the help of AI**: most of the code, tests, translations and guides are

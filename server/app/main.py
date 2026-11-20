@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import alarms, backup, billing, blocklog, tickets, i18n, policy, report, versions, webfilter, retention
+from . import alarms, backup, billing, tickets, i18n, policy, report, versions, webfilter, retention
 from .config import settings
 from .db import init_db
 from .tenant import platform_session

@@ -52,7 +52,6 @@ def test_file_checks_ok_and_broken(tmp_path, monkeypatch):
 
 
 def test_noexec_checks(monkeypatch):
-    import os
     monkeypatch.setattr(integrity, "safe_home", lambda u: "/home/" + u)
     ok = integrity.check_noexec({ME}, mounts=lambda: {"/tmp", "/var/tmp", "/dev/shm", f"/home/{ME}"})
     assert all(c.ok for c in ok) and [c.id for c in ok] == ["noexec", f"home:{ME}"]

@@ -1,6 +1,6 @@
 """Aufbewahrungsfristen und „Chat leeren“ (Etappe 2.5 Multi-Tenant)."""
 
-from datetime import date, timedelta
+from datetime import timedelta
 
 from sqlalchemy import func, select
 

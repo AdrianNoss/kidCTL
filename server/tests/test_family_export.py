@@ -9,10 +9,10 @@ import pyotp
 import pytest
 from sqlalchemy import select
 
-from app import family_export, web
+from app import web
 from app.config import Settings
 from app.models import (
-    ROLE_OWNER, Child, Device, DeviceUser, Family, Membership, Message, Parent, UsageRecord, WeekdayRule, utcnow,
+    ROLE_OWNER, Child, Device, DeviceUser, Family, Membership, Message, Parent, UsageRecord, WeekdayRule,
 )
 from app.security import hash_password, new_totp_secret
 from app.tenant import family_session

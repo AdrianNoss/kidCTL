@@ -26,7 +26,6 @@ from .i18n import N_, _
 from .config import settings
 from .tenant import family_of, family_of_parent, family_session, load_parent, platform_session
 from .models import BlockedEvent, Child, DayException, GameSession, Message, Parent
-from .web import templates
 
 log = logging.getLogger("kidctl.report")
 

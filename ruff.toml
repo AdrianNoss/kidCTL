@@ -1,0 +1,7 @@
+# Linter: ruff check (CI: .github/workflows/tests.yml). Bewusst nur echte Fehler – Pyflakes (F) und
+# Syntaxfehler (E9) –, keine Stil- oder Formatregeln.
+target-version = "py311"
+line-length = 120
+
+[lint]
+select = ["F", "E9"]

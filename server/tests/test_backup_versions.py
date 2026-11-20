@@ -7,9 +7,8 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import select
 
 from app import alarms, backup, versions
-from app.config import Settings
 from conftest import SessionLocal
-from app.models import Device, Parent, utcnow
+from app.models import Device, utcnow
 from conftest import csrf_from, login
 
 TZ = ZoneInfo("Europe/Berlin")

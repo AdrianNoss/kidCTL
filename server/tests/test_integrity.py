@@ -1,6 +1,5 @@
 """Integritätsmeldungen: Speichern, Alarm nur bei neuen Fehlern, Anzeige, Migration."""
 
-from sqlalchemy import select
 
 from kidctl_common import protocol as p
 

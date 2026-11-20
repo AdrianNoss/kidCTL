@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy import delete, select
+from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
 from .. import accounts, loginticket, passkeys
@@ -11,7 +11,7 @@ from ..i18n import N_, _
 from ..config import settings
 from ..db import get_db, get_platform_db
 from ..tenant import load_parent, platform_session
-from ..models import Parent, ParentSession, utcnow
+from ..models import ParentSession, utcnow
 from ..security import (
     SESSION_COOKIE, client_ip, create_session, csrf_protect, csrf_protect_anon, dummy_verify,
     get_session, hash_password, is_rate_limited, record_failure, set_cookie, totp_locked, totp_qr_svg,
