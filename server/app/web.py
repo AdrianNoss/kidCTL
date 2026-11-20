@@ -103,6 +103,13 @@ def admin_nav(operator) -> list[tuple[str, str, str, bool]]:
     return [(href, soft.get(label, label), ic, mobile) for href, label, ic, mobile in items]
 
 
+def pct(value: float, total: float) -> int:
+    """Anteil in ganzen Prozent (0–100) für die Klassen ``p-0``…``p-100`` in style.css – Diagramme ohne Inline-Style,
+    die CSP verbietet ihn."""
+    return max(0, min(100, round(100 * value / total))) if total else 0
+
+
+templates.env.globals["pct"] = pct
 templates.env.globals["admin_nav"] = admin_nav
 templates.env.globals["brand"] = branding.current          # Whitelabel: Name, Logo, Icon (kurz zwischengespeichert)
 templates.env.filters["brand"] = branding.apply            # „KidCTL“ in Texten an Familien → eigener Name

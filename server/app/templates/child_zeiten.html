@@ -16,7 +16,7 @@
 <section class="card">
   <div class="card-head">
     <h2>{{ _("Wochenvorlage") }}</h2>
-    <form method="post" action="/children/{{ child.id }}/mode" class="segmented" style="margin:0">
+    <form method="post" action="/children/{{ child.id }}/mode" class="segmented">
       <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
       <input type="hidden" name="weekdays_same" value="{{ '' if child.weekdays_same else '1' }}">
       {% if child.weekdays_same %}<span class="active">{{ _("Werktage / Wochenende") }}</span><button type="submit" class="ghost small">{{ _("Jeder Tag einzeln") }}</button>

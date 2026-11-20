@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import secrets
 from datetime import date, time, timedelta
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -24,6 +25,7 @@ from .. import access, accounts, blocklog, chat, i18n, nowplaying, passkeys, pol
 from .. import lock as lk
 from .. import schedule as sch
 from ..i18n import N_, _
+from ..middleware import csp
 from ..security import (
     client_ip, csrf_protect, hash_password, is_rate_limited, new_pairing_code, new_totp_secret, record_failure,
     require_session, token_hash, totp_qr_svg, totp_uri, verify_password,
@@ -694,7 +696,10 @@ def profile_report_send(request: Request, interval: str = Form(""), sess: Parent
 @router.get("/profile/report/preview", response_class=HTMLResponse)
 def profile_report_preview(request: Request, interval: str = "", db: Session = Depends(get_db)):
     parent = db.get(Parent, request.state.session.parent_id)
-    return HTMLResponse(report.render(db, parent, _report_period(parent, interval))[2])
+    from .. import mailer
+    nonce = secrets.token_urlsafe(16)   # Mail-HTML mit Inline-Styles: als <style> mit Nonce (CSP ohne unsafe-inline)
+    html = mailer.csp_safe(mailer.preview_html(report.render(db, parent, _report_period(parent, interval))[2]), nonce)
+    return HTMLResponse(html, headers={"Content-Security-Policy": csp(nonce)})
 
 
 @router.post("/profile/password")

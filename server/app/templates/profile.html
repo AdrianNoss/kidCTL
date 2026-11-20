@@ -27,7 +27,7 @@
   <button type="submit">{{ _("Speichern") }}</button>
 </form>
   {% if parent.email and parent.email_verified_at is none and mail_enabled %}
-  <form method="post" action="/profile/email/verify" class="row" style="margin-top:.75rem">
+  <form method="post" action="/profile/email/verify" class="row spaced">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <small class="muted">{{ _("Die Adresse ist noch nicht bestätigt – bis dahin gehen keine Mails an sie und die Anmeldung mit ihr ist noch nicht möglich.") }}</small>
     <button type="submit" class="secondary small">{{ _("Bestätigungslink erneut senden") }}</button>

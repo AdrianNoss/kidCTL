@@ -21,9 +21,9 @@
     <div class="col" tabindex="0"
          data-tip="{{ tip }}{% if b.over %} – {{ _('überzogen um {n} min').format(n=b.used_minutes - b.allowed_minutes) }}{% endif %}">
       <div class="plot">
-        <div class="bar" style="height: {{ (100 * b.used_minutes / scale) | round(1) }}%"></div>
-        <div class="quota" style="bottom: {{ (100 * b.allowed_minutes / scale) | round(1) }}%"></div>
-        {% if loop.last %}<div class="value" style="bottom: {{ (100 * b.used_minutes / scale) | round(1) }}%">{{ fmt_minutes(b.used_minutes) }}</div>{% endif %}
+        <div class="bar p-{{ pct(b.used_minutes, scale) }}"></div>
+        <div class="quota p-{{ pct(b.allowed_minutes, scale) }}"></div>
+        {% if loop.last %}<div class="value p-{{ pct(b.used_minutes, scale) }}">{{ fmt_minutes(b.used_minutes) }}</div>{% endif %}
       </div>
       <div class="xlabel">{{ wd }}<br>{{ b.day.day }}{{ "." if lang() == "de" else "" }}</div>
     </div>
@@ -55,7 +55,7 @@
     {% for a in apps %}
     <div class="hrow" tabindex="0" data-tip="{{ a.name }}{% if a.launcher %} ({{ a.launcher }}){% endif %}: {{ fmt_minutes(a.minutes) }}">
       <div class="hname">{{ a.name }}{% if a.launcher %} <small class="muted">{{ a.launcher }}</small>{% endif %}</div>
-      <div class="htrack"><div class="hbar" style="width: {{ (100 * a.minutes / app_scale) | round(1) }}%"></div>
+      <div class="htrack"><div class="hbar p-{{ pct(a.minutes, app_scale) }}"></div>
         <span class="hval">{{ fmt_minutes(a.minutes) }}</span></div>
     </div>
     {% endfor %}

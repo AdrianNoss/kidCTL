@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="page-head"><h1>{{ _("Übersicht") }}</h1></div>
-<h2 class="section-title" style="margin-top:0">{{ _("Kinder") }}</h2>
+<h2 class="section-title first">{{ _("Kinder") }}</h2>
 {% if children %}
 <div class="kids">
   {% for c in children %}{% set st = status[c.id] %}{% set locked = is_locked(c) %}
@@ -22,7 +22,7 @@
     </div>
     <div>
       <progress max="{{ st.allowed_minutes or 1 }}" value="{{ [st.used_seconds // 60, st.allowed_minutes] | min }}" aria-label="{{ _('Genutzte Zeit') }}"></progress>
-      <div class="kid-meta" style="margin-top:.375rem"><span class="num">{{ _("{used} von {total} genutzt").format(used=fmt_minutes(st.used_seconds // 60), total=fmt_minutes(st.allowed_minutes)) }}</span></div>
+      <div class="kid-meta kid-used"><span class="num">{{ _("{used} von {total} genutzt").format(used=fmt_minutes(st.used_seconds // 60), total=fmt_minutes(st.allowed_minutes)) }}</span></div>
     </div>
     <div class="actions">
       <form method="post" action="/children/{{ c.id }}/{{ 'unlock' if locked else 'lock' }}" class="inline">

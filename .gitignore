@@ -8,3 +8,5 @@ __pycache__/
 *.torrent
 dist/
 build/
+dev/design-review/*
+!dev/design-review/FINDINGS.md

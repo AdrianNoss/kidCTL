@@ -118,7 +118,10 @@ def test_mail_preview_and_test_send(client, operator, monkeypatch):  # noqa: F81
     sent = []
     monkeypatch.setattr(mail, "send", lambda to, subject, body, html=None, **kw: sent.append((to, subject, kw)) or True)
     admin_login(client, operator)
-    page = client.get("/admin/mail-preview?type=invoice&lang=en").text
+    r = client.get("/admin/mail-preview?type=invoice&lang=en")
+    page = r.text
+    nonce = re.search(r"'nonce-([^']+)'", r.headers["content-security-policy"]).group(1)
+    assert f"nonce=&#34;{nonce}&#34;" in page and " style=&#34;" not in page        # Rahmen erbt die CSP der Seite
     assert "srcdoc=" in page and "Invoice 2026-0001" in page and "data:image/png;base64," in page and "cid:" not in page
     assert "cid:" not in page
     tok = csrf_from(page)

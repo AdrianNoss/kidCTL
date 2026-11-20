@@ -137,8 +137,11 @@ class Web:
         return re.search(r'name="csrf_token" value="([^"]+)"', (await self.c.get(path)).text).group(1)
 
     async def login(self, user: str, secret: str) -> None:
-        r = await self.c.post("/login", data={"csrf_token": await self.csrf("/login"), "username": user,
-                                              "password": PASSWORD, "totp": pyotp.TOTP(secret).now()})
+        # Zweistufig: Passwort, dann Authenticator-Code zum Login-Ticket
+        await self.c.post("/login", data={"csrf_token": await self.csrf("/login"), "username": user,
+                                          "password": PASSWORD})
+        r = await self.c.post("/login/code", data={"csrf_token": await self.csrf("/login/code"),
+                                                   "totp": pyotp.TOTP(secret).now()})
         if r.status_code >= 400 or (await self.c.get("/", follow_redirects=False)).status_code != 200:
             raise SystemExit(f"Login fehlgeschlagen ({r.status_code})")
 

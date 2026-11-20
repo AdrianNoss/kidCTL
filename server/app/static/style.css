@@ -624,3 +624,40 @@ body.no-nav .brand-preview .brand { visibility:visible; }
 /* Verwaltung: Mail-Vorschau */
 .mail-frame { width:100%; height:70vh; border:1px solid var(--outline-variant); border-radius:var(--shape-md); background:#fff; }
 .mail-text { white-space:pre-wrap; overflow-wrap:anywhere; font-size:.8125rem; background:var(--surface-container); padding:1rem; border-radius:var(--shape-md); }
+
+/* ---------- Design-Durchsicht 0.44 (vorher Inline-Styles in Templates; CSP ohne 'unsafe-inline') ---------- */
+.section-title.first { margin-top:0; }
+.kid-used { margin-top:.375rem; }
+.kid-left strong { white-space:nowrap; }   /* „0:18 h“ nie auf zwei Zeilen */
+.card-head .segmented { margin:0; }
+.row.end { justify-content:flex-end; }
+.row.spaced { margin-top:.75rem; }
+td.check-col { width:2rem; }
+hr { border:0; border-top:1px solid var(--line); margin:1rem 0; }
+/* Einzelne Option direkt im Formular: Abstand zum nächsten Feld wie bei Labels */
+form > label.option, .mode-on > label.option { margin-bottom:1rem; }
+.btn-block + .btn-block { margin-top:.5rem; }
+/* Filterkarte ohne Suchfeld darüber: keine Trennlinie oben */
+.admin-search > .filter-grid:first-child { border-top:0; margin-top:0; padding-top:0; }
+/* Diagramme: Anteile als Klassen p-0…p-100 (web.pct), Höhe/Lage/Breite aus --p */
+.col .bar { height:var(--p); }
+.col .quota, .col .value { bottom:var(--p); }
+.hbar { width:var(--p); }
+/* Letzter Wert bündig rechts statt halb aus dem Diagramm */
+.col:last-child .value { left:auto; right:0; transform:translateY(-2px); background:var(--card-bg); padding:0 .125rem; border-radius:var(--shape-xs); }
+@media (max-width:480px) {
+  .columns { gap:1px; }
+  .col { min-width:18px; }
+  .col .xlabel { font-size:.65em; }
+}
+.p-0{--p:0%} .p-1{--p:1%} .p-2{--p:2%} .p-3{--p:3%} .p-4{--p:4%} .p-5{--p:5%} .p-6{--p:6%} .p-7{--p:7%} .p-8{--p:8%} .p-9{--p:9%}
+.p-10{--p:10%} .p-11{--p:11%} .p-12{--p:12%} .p-13{--p:13%} .p-14{--p:14%} .p-15{--p:15%} .p-16{--p:16%} .p-17{--p:17%} .p-18{--p:18%} .p-19{--p:19%}
+.p-20{--p:20%} .p-21{--p:21%} .p-22{--p:22%} .p-23{--p:23%} .p-24{--p:24%} .p-25{--p:25%} .p-26{--p:26%} .p-27{--p:27%} .p-28{--p:28%} .p-29{--p:29%}
+.p-30{--p:30%} .p-31{--p:31%} .p-32{--p:32%} .p-33{--p:33%} .p-34{--p:34%} .p-35{--p:35%} .p-36{--p:36%} .p-37{--p:37%} .p-38{--p:38%} .p-39{--p:39%}
+.p-40{--p:40%} .p-41{--p:41%} .p-42{--p:42%} .p-43{--p:43%} .p-44{--p:44%} .p-45{--p:45%} .p-46{--p:46%} .p-47{--p:47%} .p-48{--p:48%} .p-49{--p:49%}
+.p-50{--p:50%} .p-51{--p:51%} .p-52{--p:52%} .p-53{--p:53%} .p-54{--p:54%} .p-55{--p:55%} .p-56{--p:56%} .p-57{--p:57%} .p-58{--p:58%} .p-59{--p:59%}
+.p-60{--p:60%} .p-61{--p:61%} .p-62{--p:62%} .p-63{--p:63%} .p-64{--p:64%} .p-65{--p:65%} .p-66{--p:66%} .p-67{--p:67%} .p-68{--p:68%} .p-69{--p:69%}
+.p-70{--p:70%} .p-71{--p:71%} .p-72{--p:72%} .p-73{--p:73%} .p-74{--p:74%} .p-75{--p:75%} .p-76{--p:76%} .p-77{--p:77%} .p-78{--p:78%} .p-79{--p:79%}
+.p-80{--p:80%} .p-81{--p:81%} .p-82{--p:82%} .p-83{--p:83%} .p-84{--p:84%} .p-85{--p:85%} .p-86{--p:86%} .p-87{--p:87%} .p-88{--p:88%} .p-89{--p:89%}
+.p-90{--p:90%} .p-91{--p:91%} .p-92{--p:92%} .p-93{--p:93%} .p-94{--p:94%} .p-95{--p:95%} .p-96{--p:96%} .p-97{--p:97%} .p-98{--p:98%} .p-99{--p:99%}
+.p-100{--p:100%}

@@ -79,11 +79,11 @@
   </div>
   {% if blocked %}
   <div class="scroll">
-  <table>
+  <table class="log-table">
     {% for e in blocked %}
     <tr>
       <td class="num log-time">{{ e.at | localtime("%H:%M") }}</td>
-      <td>{% if e.kind == "domain" %}<span class="pill">{{ _("Website") }}</span> {% endif %}{{ name_of(e.key, e.name) }}{% if blocked_detail(e) %} <small class="muted">({{ blocked_detail(e) }})</small>{% endif %}</td>
+      <td class="log-key">{% if e.kind == "domain" %}<span class="pill">{{ _("Website") }}</span> {% endif %}{{ name_of(e.key, e.name) }}{% if blocked_detail(e) %} <small class="muted">({{ blocked_detail(e) }})</small>{% endif %}</td>
       <td class="right">{% if e.audit %}<span class="pill">{{ _("nur protokolliert") }}</span>{% else %}<span class="pill warn">{{ _("gesperrt") }}</span>{% endif %}</td>
     </tr>
     {% endfor %}

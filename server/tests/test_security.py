@@ -98,6 +98,46 @@ def test_templates_need_no_inline_script():
         assert "javascript:" not in text, f.name
 
 
+def test_templates_need_no_inline_style():
+    """Die CSP erlaubt keine Inline-Styles (style-src ohne 'unsafe-inline', Issue #3): Korrekturen gehören zentral
+    nach static/style.css. Mail-Templates sind ausgenommen – dort sind Inline-Styles Pflicht."""
+    templates = Path(__file__).resolve().parents[1] / "app" / "templates"
+    for f in templates.rglob("*.html"):
+        if "mail" in f.relative_to(templates).parts[:-1]:
+            continue
+        text = f.read_text(encoding="utf-8")
+        assert not re.search(r"<[a-zA-Z][^>]*\sstyle\s*=", text, re.S), f.name
+        assert "<style" not in text, f.name
+
+
+def test_csp_forbids_inline_styles(client):
+    for path in ("/login", "/signup", "/static/style.css", "/gibtsnicht"):
+        csp = client.get(path).headers["content-security-policy"]
+        assert "unsafe-inline" not in csp and "style-src 'self';" in csp, (path, csp)
+
+
+def test_mail_html_csp_safe():
+    """Mail-Vorschauen: style-Attribute werden zu Regeln in einem <style> mit Nonce, kein Inline-Style bleibt übrig."""
+    from app import mailer
+    from app.middleware import csp
+    html = mailer.render("report", "de", **mailer.samples()["report"]).html
+    assert ' style="' in html
+    out = mailer.csp_safe(html, "abc123")
+    assert not re.search(r"<[a-zA-Z][^<>]*\sstyle=", out)
+    assert re.findall(r"<style(?=[\s>])[^>]*>", out) and \
+        all('nonce="abc123"' in t for t in re.findall(r"<style(?=[\s>])[^>]*>", out))
+    assert '[data-ks="0"]{' in out and "!important" in out
+    assert out.index('[data-ks="0"]') < out.index("@media")     # Mail-eigene Regeln (dunkles Schema) danach
+    assert "style-src 'self' 'nonce-abc123';" in csp("abc123") and "unsafe-inline" not in csp("abc123")
+
+
+def test_pct_classes():
+    from app.web import pct
+    assert (pct(0, 10), pct(5, 10), pct(10, 10), pct(15, 10), pct(-1, 10), pct(3, 0)) == (0, 50, 100, 100, 0, 0)
+    css = (Path(__file__).resolve().parents[1] / "app" / "static" / "style.css").read_text(encoding="utf-8")
+    assert all(f".p-{i}{{--p:{i}%}}" in css for i in range(101))
+
+
 def test_local_redirect_only():
     from app.web import is_local_path
     for ok in ("/", "/login", "/children/3?x=1#ende", "/settings#abo"):
