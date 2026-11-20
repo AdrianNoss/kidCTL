@@ -12,7 +12,7 @@ from app.db import engine
 from app.models import AdminLog, Family, Operator, Parent, Ticket, TicketMessage, utcnow
 from app.security import hash_password, new_totp_secret
 from app.tenant import family_session
-from conftest import PASSWORD, SessionLocal, add_family, csrf_from, login, platform_db
+from conftest import two_step_login, PASSWORD, SessionLocal, add_family, csrf_from, login, platform_db
 from test_admin_roles import _login, _operator
 
 SECRET = "Mein Passwort ist geheim123"
@@ -142,9 +142,7 @@ def test_isolation_between_families(client, parent, saas):
         import pyotp
         secret = p.totp_secret
     client.cookies.clear()
-    page = client.get("/login").text
-    client.post("/login", data={"csrf_token": csrf_from(page), "username": "fremd", "password": PASSWORD,
-                                "totp": pyotp.TOTP(secret).now()})
+    two_step_login(client, "/login", "fremd", PASSWORD, pyotp.TOTP(secret).now())
     assert client.get(f"/support/{tid}").status_code == 404
     assert f"/support/{tid}" not in client.get("/support").text
     tok = csrf_from(client.get("/support").text)

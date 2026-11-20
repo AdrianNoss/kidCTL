@@ -8,7 +8,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from .. import operators as opr
-from .. import audit, backup, billing, support, tickets
+from .. import audit, backup, billing, loginticket, support, tickets
 from ..config import settings
 from ..db import get_platform_db
 from ..i18n import N_, _
@@ -33,36 +33,75 @@ def _render(request: Request, name: str, sess: OperatorSession, status_code: int
 def login_form(request: Request, db: Session = Depends(get_platform_db)):
     if opr.get_session(db, request):
         return RedirectResponse("/admin", status_code=303)
-    return render_anon(request, "admin_login.html")
+    notice = _("Die Anmeldung wurde abgebrochen oder ist abgelaufen. Bitte noch einmal anmelden.") \
+        if request.query_params.get("msg") == "expired" else None
+    return render_anon(request, "admin_login.html", notice=notice)
 
 
 @router.post("/login", dependencies=[Depends(csrf_protect_anon)])
-def login(request: Request, username: str = Form(""), password: str = Form(""), totp: str = Form(""),
+def login(request: Request, username: str = Form(""), password: str = Form(""),
           db: Session = Depends(get_platform_db)):
+    """Schritt 1: Passwort (wie bei Eltern, eigene Zähler und Tickets)."""
     ip, username = client_ip(request), username.strip()
     key = f"op:{username}"[:64]   # eigener Zähler, unabhängig von gleichnamigen Eltern-Accounts
     if is_rate_limited(db, "admin", ip, key):
         return render_anon(request, "admin_login.html", status_code=429, username=username,
                            error=_("Zu viele Fehlversuche. Bitte später erneut versuchen."))
     op = db.scalar(select(Operator).where(Operator.username == username)) if username else None
-    ok = False
     if op is None:
         dummy_verify()
     elif verify_password(password, op.password_hash):
         if totp_locked(db, key):
             return render_anon(request, "admin_login.html", status_code=429, username=username,
                                error=_("Zu viele Fehlversuche. Bitte später erneut versuchen."))
-        ok = verify_totp(db, op, totp)
-        if not ok:
-            record_failure(db, "totp", ip, key)
-    if not ok:
+        resp = RedirectResponse("/admin/login/code", status_code=303)
+        loginticket.set_cookie(resp, "operator", loginticket.create(db, "operator", op.id))
+        return resp
+    record_failure(db, "admin", ip, key)
+    return render_anon(request, "admin_login.html", status_code=401, username=username,
+                       error=_("Anmeldung fehlgeschlagen."))
+
+
+def _login_expired():
+    resp = RedirectResponse("/admin/login?msg=expired", status_code=303)
+    loginticket.clear_cookie(resp, "operator")
+    return resp
+
+
+def _code_page(request, status_code=200, error=None):
+    return render_anon(request, "login_code.html", status_code=status_code, action="/admin/login/code",
+                       back="/admin/login", admin=True, error=error)
+
+
+@router.get("/login/code")
+def login_code_form(request: Request, db: Session = Depends(get_platform_db)):
+    if loginticket.get(db, request, "operator") is None:
+        return _login_expired()
+    return _code_page(request)
+
+
+@router.post("/login/code", dependencies=[Depends(csrf_protect_anon)])
+def login_code(request: Request, totp: str = Form(""), db: Session = Depends(get_platform_db)):
+    """Schritt 2: Authenticator-Code zum Ticket."""
+    ticket = loginticket.get(db, request, "operator")
+    op = db.get(Operator, ticket.account_id) if ticket else None
+    if op is None:
+        return _login_expired()
+    ip, key = client_ip(request), f"op:{op.username}"[:64]
+    if totp_locked(db, key):
+        return _code_page(request, 429, _("Zu viele Fehlversuche. Bitte später erneut versuchen."))
+    if not verify_totp(db, op, totp):
+        record_failure(db, "totp", ip, key)
         record_failure(db, "admin", ip, key)
-        return render_anon(request, "admin_login.html", status_code=401, username=username,
-                           error=_("Anmeldung fehlgeschlagen."))
+        if loginticket.failed(db, ticket):
+            return _login_expired()
+        return _code_page(request, 401, _("Code falsch. Bitte erneut versuchen."))
+    loginticket.consume(db, ticket)
     db.commit()   # totp_last_step
     resp = RedirectResponse("/admin", status_code=303)
     resp.set_cookie(opr.COOKIE, opr.create_session(db, op), max_age=opr.SESSION_HOURS * 3600, httponly=True,
                     secure=settings.cookie_secure, samesite="strict", path="/admin")
+    loginticket.clear_cookie(resp, "operator")
     return resp
 
 

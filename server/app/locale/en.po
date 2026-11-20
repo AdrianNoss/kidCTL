@@ -3342,3 +3342,12 @@ msgstr "Formatting with Markdown: ## heading, ### subheading, **bold**, *italic*
 
 msgid "So sieht die Mail aus (gespeicherter Stand, Abmeldelink als Beispiel)."
 msgstr "This is how the email looks (saved version, unsubscribe link as an example)."
+
+msgid "Gib den Code aus deiner Authenticator-App ein."
+msgstr "Enter the code from your authenticator app."
+
+msgid "Code falsch. Bitte erneut versuchen."
+msgstr "Wrong code. Please try again."
+
+msgid "Die Anmeldung wurde abgebrochen oder ist abgelaufen. Bitte noch einmal anmelden."
+msgstr "The sign-in was cancelled or has expired. Please sign in again."

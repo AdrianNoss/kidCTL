@@ -1,0 +1,14 @@
+{% from "_brand.html" import brand_mark %}{% extends "base.html" %}
+{% block title %}{{ _("Anmelden") }} – {{ brand().name }}{% endblock %}
+{% block content %}
+<form method="post" action="{{ action }}" class="card narrow">
+  <div class="login-brand">{{ brand_mark() }}</div>
+  {% if admin %}<h2>{{ _("Verwaltung") }}</h2>{% endif %}
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <p>{{ _("Gib den Code aus deiner Authenticator-App ein.") }}</p>
+  <label>{{ _("Authenticator-Code") }} <input name="totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required autofocus></label>
+  <button type="submit" class="btn-block">{{ _("Anmelden") }}</button>
+  <p class="login-help"><a href="{{ back }}">{{ _("Zurück") }}</a></p>
+  {% include "_langswitch.html" %}
+</form>
+{% endblock %}

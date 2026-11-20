@@ -17,7 +17,7 @@
     <label>{{ _("Anzeigename") }} <input name="display_name" maxlength="128" value="{{ form.display_name or '' }}"></label>
     <label>{{ _("Passwort (min. 12 Zeichen)") }} <input type="password" name="password" minlength="12" required autocomplete="new-password"></label>
     <label>{{ _("Wiederholen") }} <input type="password" name="repeat" minlength="12" required autocomplete="new-password"></label>
-    <button type="submit" style="width:100%">{{ _("Weiter zum Authenticator") }}</button>
+    <button type="submit" class="btn-block">{{ _("Weiter zum Authenticator") }}</button>
   </form>
   {% endif %}
   {% include "_langswitch.html" %}

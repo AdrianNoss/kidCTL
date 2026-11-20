@@ -7,7 +7,7 @@ from starlette.websockets import WebSocketDisconnect
 
 from kidctl_common import protocol as p
 
-from conftest import SessionLocal
+from conftest import two_step_login, SessionLocal
 from app.models import Child, Device, Parent
 
 from conftest import PASSWORD, csrf_from, login, recv
@@ -37,9 +37,7 @@ def test_totp_replay_rejected(client, parent):
     code = pyotp.TOTP(parent.totp_secret).now()
     assert login(client, parent, code=code).status_code == 303
     client.cookies.clear()
-    page = client.get("/login")
-    r = client.post("/login", data={"csrf_token": csrf_from(page.text), "username": "mama",
-                                    "password": PASSWORD, "totp": code}, follow_redirects=False)
+    r = two_step_login(client, "/login", "mama", PASSWORD, code)
     assert r.status_code == 401
 
 
@@ -52,8 +50,7 @@ def test_login_rate_limit(client, parent):
 
 def test_login_requires_csrf(client, parent):
     client.get("/login")
-    r = client.post("/login", data={"username": "mama", "password": PASSWORD,
-                                    "totp": pyotp.TOTP(parent.totp_secret).now()})
+    r = client.post("/login", data={"username": "mama", "password": PASSWORD})
     assert r.status_code == 403
 
 

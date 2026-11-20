@@ -150,15 +150,26 @@ def csrf_from(html: str) -> str:
     return html[i:html.index('"', i)]
 
 
+def two_step_login(client, base, username, password, code, headers=None):
+    """Login in zwei Schritten (``base``: ``/login`` bzw. ``/admin/login``). Gibt die letzte Antwort zurück:
+    bei falschem Passwort die von Schritt 1, sonst die von Schritt 2."""
+    h = headers or {}
+    page = client.get(base, headers=h)
+    r = client.post(base, data={"csrf_token": csrf_from(page.text), "username": username, "password": password},
+                    headers=h, follow_redirects=False)
+    if r.status_code != 303 or r.headers["location"] != base + "/code":
+        return r
+    page = client.get(base + "/code", headers=h)
+    return client.post(base + "/code", data={"csrf_token": csrf_from(page.text), "totp": code}, headers=h,
+                       follow_redirects=False)
+
+
 def login(client, parent, password=PASSWORD, code=None):
     with SessionLocal() as db:  # Replay-Schutz für wiederholte Test-Logins zurücksetzen
         db.get(Parent, parent.id).totp_last_step = 0
         db.commit()
-    page = client.get("/login")
-    return client.post("/login", data={
-        "csrf_token": csrf_from(page.text), "username": parent.username, "password": password,
-        "totp": code or pyotp.TOTP(parent.totp_secret).now(),
-    }, follow_redirects=False)
+    return two_step_login(client, "/login", parent.username, password,
+                          code or pyotp.TOTP(parent.totp_secret).now())
 
 
 def recv(ws, keep_policy=False):

@@ -13,7 +13,7 @@
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <label>{{ _("E-Mail-Adresse") }} <input type="email" name="email" maxlength="255" value="{{ form.email or '' }}" autocomplete="email" required autofocus></label>
     {% if invite %}<label>{{ _("Einladungscode") }} <input name="code" maxlength="20" value="{{ form.code or '' }}" autocomplete="off" autocapitalize="characters" placeholder="XXXX-XXXX-XXXX" required></label>{% endif %}
-    <button type="submit" style="width:100%">{{ _("Link schicken") }}</button>
+    <button type="submit" class="btn-block">{{ _("Link schicken") }}</button>
   </form>
   {% endif %}
   <p class="login-help"><a href="/login">{{ _("Schon registriert? Anmelden") }}</a></p>

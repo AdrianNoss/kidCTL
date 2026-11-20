@@ -876,6 +876,170 @@ hierher verschoben 2026-11-17.)
 - CSRF-Schutz auf allen Formularen/Aktionen.
 - Push-Abos pro Account und Endgerät.
 
+## Anmeldung, Oberfläche und Prüfungen (entschieden 2026-11-20 per /brainstorming)
+
+Ziel: Eltern melden sich bequemer an, ohne dass ein Elternkonto schwächer geschützt wird; stimmiges Erscheinungsbild über Elternoberfläche, Verwaltung, Login und Tray-App.
+Anti-Ziele: Elternkonto mit einem einzelnen schwachen Faktor erreichbar; klassischer Login fällt weg oder braucht JavaScript; die Anmeldung verrät, ob eine E-Mail-Adresse ein Konto hat; Linux-Kinder sehen keine Restzeit mehr.
+
+### Login in zwei Schritten (Eltern und Betreiber)
+
+- **Schritt 1:** E-Mail (bzw. Benutzername) + Passwort → „Weiter“. **Schritt 2:** Authenticator-Code.
+- Zwischen den Schritten ein **Login-Ticket**: serverseitig gespeichert (Tabelle, nur Hash des Tokens), Token im
+  Cookie (`HttpOnly`, `Secure`, `SameSite=Strict`), **5 Minuten** gültig, **einmal** verwendbar, gebunden an Konto
+  und Art (Eltern/Betreiber). Abgelaufen/ungültig → zurück zu Schritt 1 mit neutralem Hinweis.
+- **Keine Kontoauskunft:** falsches Passwort und unbekannte E-Mail → identische Antwort und vergleichbare Laufzeit
+  (`dummy_verify` bleibt). Schritt 2 erscheint nur nach korrektem Passwort.
+- **Sperren:** bestehende Ratenbegrenzung je IP/Konto für Schritt 1; TOTP-Fehlversuche weiter je Konto
+  (`totp_locked`), zusätzlich max. 5 Code-Versuche je Ticket, danach Ticket ungültig.
+- Funktioniert **ohne JavaScript** (zwei normale Formulare). Bestehende Flows (Authenticator einrichten,
+  Passwort vergessen, Authenticator-Reset-Link) bleiben erhalten und werden an den neuen Ablauf angepasst.
+- Betreiber-Login (`/admin/login`) identisch, eigene Tickets.
+
+### Passkeys als vollständiger Login (Variante A)
+
+- **Bibliothek:** `webauthn` (py_webauthn, Duo Labs, BSD-3) in `server/requirements.txt` gepinnt.
+- **Loginseite Schritt 1:** E-Mail-Feld mit `autocomplete="username webauthn"` (Browser schlägt gespeicherte Passkeys
+  vor, „conditional UI“) **und** Button „Mit Passkey anmelden“. Erfolgreicher Passkey → angemeldet, **ohne** Passwort
+  und Code. Ohne Passkey normaler Ablauf (2.1). Ohne JavaScript bzw. ohne WebAuthn-Unterstützung: Button
+  ausgeblendet, klassischer Login unverändert.
+- **Parameter:** discoverable credentials (`residentKey=required`), `userVerification=required` (Biometrie/Geräte-PIN
+  = zweiter Faktor), `attestation=none`, Algorithmen ES256 und RS256. Challenge serverseitig, einmalig, 5 Minuten.
+- **RP-ID:** `WEBAUTHN_RP_ID` (Standard: Host aus `BASE_URL`), Anzeigename = Branding-Name. Origin-Prüfung gegen
+  `BASE_URL`. Hinweis in der Doku: Passkeys sind an die Domain gebunden; bei Domain-Wechsel neu anlegen (oder
+  später Related Origin Requests über `/.well-known/webauthn`).
+- **Verwaltung im Profil** (Eltern und Betreiber): Liste der Passkeys (Name, angelegt, zuletzt benutzt,
+  „synchronisiert“ ja/nein), hinzufügen, umbenennen, löschen. **Hinzufügen und Löschen nur nach frischer
+  Bestätigung** (Passwort + Code oder ein vorhandener Passkey, nicht älter als 5 Minuten). Mehrere Passkeys je Konto.
+- **Speicherung:** je Passkey Credential-ID, öffentlicher Schlüssel, Sign-Count, Transports, Backup-Status, Name,
+  Zeiten; Zuordnung zum Konto. Ablage wie die übrigen Konto-Anmeldedaten (Plattform-Bereich, damit die Anmeldung
+  vor der Familienzuordnung funktioniert); Namen der Passkeys verschlüsselt wie andere Kontodaten.
+- **Sign-Count:** Rückgang bei nicht synchronisierten Schlüsseln → Anmeldung ablehnen und protokollieren
+  (synchronisierte Passkeys liefern oft 0 – dann keine Prüfung).
+- **Sicherheitsereignisse:** Hinzufügen/Löschen eines Passkeys → Hinweis-Mail an das Konto („Neuer Passkey …“) und
+  bei Betreibern Eintrag im Verwaltungsprotokoll.
+- **Wiederherstellung und Entzug:** „Passwort vergessen“ (neues Passwort gesetzt) und Authenticator-Reset (auch durch
+  den Inhaber für ein Mitelternteil) **löschen alle Passkeys des Kontos**; die Hinweis-Mail sagt das („Deine Passkeys
+  wurden entfernt – bitte neu anlegen“). „Alle Sitzungen beenden“ lässt Passkeys bestehen. Andere Eltern sehen die
+  Passkeys eines Mitelternteils nicht. Gleiches gilt für Betreiber (Reset per CLI löscht Passkeys).
+- **Frische Bestätigung – gemeinsamer Mechanismus:** gilt für **Passwort ändern, Authenticator ändern und Passkeys
+  hinzufügen/löschen** (Eltern und Betreiber): Passwort + Authenticator-Code **oder** ein vorhandener Passkey, nicht
+  älter als 5 Minuten (Zeitstempel an der Sitzung). Die vier bestehenden Abläufe (`profile/password`,
+  `profile/totp/confirm`, je Eltern und Betreiber), die heute nur das Passwort verlangen, werden darauf umgestellt.
+- **Rückfall:** Passwort + Authenticator bleibt immer möglich; Passkeys ersetzen den Authenticator **nicht** bei der
+  Kontoeinrichtung (TOTP bleibt Pflicht bei Registrierung).
+- Sitzungen nach Passkey-Login wie bisher (Laufzeit, Cookie).
+
+### Homepage-Link auf der Loginseite
+
+- Neues Feld **„Homepage“** (URL + Linktext, DE/EN) auf der Seite *Erscheinungsbild* (Branding), nur *Admin*,
+  protokolliert. Nur `https://`-URLs.
+- Link unter dem Login-Formular, auch auf Registrierung, Passwort vergessen, Authenticator-Einrichtung und dem
+  Betreiber-Login.
+- Leer → Link zur Projektseite (Standard-URL der kidCTL-Homepage); im Einzelbetrieb ebenso.
+
+### Einladungsmail für Einladungscodes
+
+- Formular „Einladungscode erzeugen“ bekommt ein optionales Feld **E-Mail-Adresse** (+ Sprache DE/EN).
+- Ausgefüllt → beim Erzeugen Mail im HTML-Layout (`mail/base.html`) mit Code, Registrierungslink mit eingesetztem
+  Code (`/signup?code=…`), Ablaufdatum und Tarif bzw. Testphase. Neuer Mailtyp in `/admin/mail-preview` + Tests.
+- Adresse wird gespeichert (Plattform-Schlüssel), damit **„Erneut senden“** möglich ist; **gelöscht**, sobald der
+  Code eingelöst oder abgelaufen ist (Aufräumjob).
+- Registrierung mit Code-Link: E-Mail-Feld mit der Einladungsadresse vorbelegt, änderbar. **Die E-Mail-Bestätigung
+  bleibt unverändert** (der Code kann auch ohne Mail weitergegeben werden; der Link beweist kein Postfach). *(Entscheidung
+  Claude, Builder-Check)*
+- Liste der Codes zeigt „per Mail an … (maskiert)“ und den Button „Erneut senden“ (nur offene Codes).
+- Code-Klartext erscheint wie bisher einmal auf dem Bildschirm; beim erneuten Senden wird **ein neuer Code**
+  erzeugt (nur der Hash ist gespeichert) und der alte ungültig.
+
+### Verwaltungsbereich mit Eltern-Navigation
+
+- Gleiche Navigationskomponente wie `base.html` (`.navbar`, `nav-item`, Icons aus `_icons.html`) statt der Reiter in
+  `_admin_head.html`.
+- **Desktop:** Leiste links mit Icon + Text für alle Bereiche (je nach Rolle): Familien, Tickets, Rechnungen,
+  Einladungscodes, Newsletter (SaaS), Mails, Erscheinungsbild, Protokoll, Profil.
+- **Mobil:** untere Leiste mit vier Einträgen – Familien, Tickets, Rechnungen, **Mehr** (Unterseite mit den übrigen
+  Bereichen). Für *Support*: Familien, Tickets, Protokoll, Mehr.
+- „Abmelden“ ans Ende der Leiste bzw. ins Profil; Kopfzeile ohne Reiter, nur Seitentitel (und Kontextaktionen).
+- Fehlende Icons im selben Stil ergänzen.
+
+### Tray-Symbol unter Linux wie unter Windows
+
+- Linux nutzt dasselbe monochrome Symbol mit Statuspunkt wie Windows (`winstyle.tray_icon`), passend zur hellen bzw.
+  dunklen Leiste (Plasma: Farbschema; GNOME: dunkle Leiste als Standard).
+- Restzeit unter Linux nur noch in **Tooltip und Menü**; Warnungen (5/1 min) und Countdown-Fenster unverändert.
+- In der VM prüfen: Plasma und GNOME (AppIndicator) zeigen Symbol, Statuspunkt, Tooltip und Menü-Restzeit. Zeigt
+  GNOME den Tooltip nicht: in `docs/limitations*.md` vermerken (Restzeit dann über das Menü).
+- Restliches Linux-Design bleibt nativ (nur das Symbol ändert sich).
+
+### Screenshot „Tray-App mit Restzeit“ für die Homepage
+
+- In der Windows-11-VM über `dev/winshots.py`: Tray-Menü geöffnet mit Restzeit, zusätzlich Tooltip über dem Symbol;
+  hell und dunkel, DE und EN. Einbinden auf der Startseite (Funktionen/Tray) und im Wiki (`child-windows`).
+
+### Design-Durchsicht aller Seiten
+
+- Playwright-Skript fotografiert **alle** Seiten: Elternoberfläche (alle Menüpunkte und Kinder-Unterseiten),
+  Verwaltung (alle Bereiche, Detailseiten), Login/Registrierung/Passwort/Authenticator, Fehlerseiten – jeweils mobil
+  (390 px) und Desktop (1280 px), hell und dunkel, mit Demo-Daten.
+- Prüfliste: Buttons einer Gruppe auf gleicher Höhe und **vertikal/horizontal mittig** (Text im Button zentriert,
+  Button-Gruppen bündig), einheitliche Abstände (Raster des Themes), Formularfelder bündig und gleich breit,
+  Beschriftungen über Feldern, keine abgeschnittenen oder umbrechenden Button-Texte, Karten mit gleichem Innenabstand,
+  Tabellen/Listen mobil lesbar, Fokus sichtbar.
+- Korrekturen **zentral im CSS** (Komponentenklassen), Einzelfixes nur wo nötig; keine Inline-Styles.
+- Ergebnis: Bilder **vorher/nachher** in `dev/design-review/` (**nicht committet**, in `.gitignore`); committet wird nur
+  die Fundliste `dev/design-review/FINDINGS.md`. Reihenfolge: erst alle Seiten fotografieren und Funde sammeln, dann
+  korrigieren, dann erneut fotografieren; Adrian nimmt **danach** anhand vorher/nachher ab. Danach einmal
+  `dev/screenshots.py` für Website/Wiki neu laufen lassen. *(Entscheidung Claude, Builder-Check)*
+
+### Transparenz & Sicherheit: automatische Prüfungen mit Badges
+
+- **Grundsatz:** kein Siegel „Sicherheit geprüft durch …“. Externe Gratis-Scanner prüfen Konfiguration
+  (TLS, Header, DNS, Repo-Praktiken), nicht die Anwendung. Beschriftung auf Homepage/README: **„Automatisch geprüft“**
+  mit Datum und Links; Hinweis auf `SECURITY.md` für echte Meldungen.
+- **OpenSSF Scorecard:** Workflow `.github/workflows/scorecard.yml` (`ossf/scorecard-action`, Actions per SHA
+  gepinnt, wöchentlich + bei Push auf `main`, `publish_results: true`, `id-token: write`, SARIF in Code Scanning);
+  Badge in README (DE/EN) und Homepage.
+- **OpenSSF Best Practices (Passing):** Claude Code bereitet die Antworten auf alle Passing-Kriterien in
+  `dev/openssf-best-practices.md` vor (mit Belegen/Links ins Repo) und listet fehlende Punkte; Adrian legt das
+  Projekt auf bestpractices.dev an und trägt ein; Badge danach in README/Homepage.
+- **Monatlicher Scan** `.github/workflows/websecurity.yml`: OWASP ZAP **Baseline** (passiv, keine Angriffe) und
+  MDN HTTP Observatory gegen `kids.nossco.de` (Login-Seite und öffentliche Seiten, ohne Anmeldung); Funde ab
+  Stufe „Medium“ bzw. Note schlechter als A → GitHub-Issue (ohne Details zu Lücken öffentlich, nur „Scan-Befund,
+  siehe Workflow-Lauf“). Observatory-Note mit Link in der Homepage-Box.
+- **Später (nicht heute):** internet.nl (100 % braucht IPv6 + DNSSEC, Badge nur für exakt die getestete Domain) mit
+  der Produkt-Domain; SSL-Labs-Note mit Link.
+
+### Google-Login (Recherche, Bau später)
+
+**Entscheidung (abgestimmt, Variante D):** Google ersetzt das Passwort. Meldet Google im ID-Token `amr` mit `mfa`,
+ist die Anmeldung vollständig; fehlt `mfa` oder der Claim, folgt der kidCTL-Zweitfaktor (Authenticator-Code oder
+Passkey). Klassischer Login bleibt.
+
+**Fakten (Stand November 2026):**
+
+- Protokoll OpenID Connect; Python-Bibliothek Authlib. Scopes nur `openid email profile` – laut Google
+  „nicht sensibel“, keine Pflichtprüfung; Brand-Verifizierung nur nötig, wenn Name/Logo im Zustimmungsfenster
+  erscheinen sollen (typisch 2–3 Werktage; alle Domains von Homepage, Datenschutzerklärung und Redirect-URIs müssen
+  verifiziert sein).
+- **„Security bundle“:** Claims `auth_time` und `amr` (Werte u. a. `mfa`, `pwd`, `swk` = Passkey, `hwk` =
+  Sicherheitsschlüssel, `sms`, `tel`). Voraussetzung: App „In production“ **und** „Verified“, in den erweiterten
+  Einstellungen „Authentication strength claims“ aktiviert. `amr` kann trotzdem fehlen.
+- **MFA erzwingen ist nicht möglich** – nur auswerten. 2SV legt der Kontoinhaber fest (oder Workspace-Admins).
+- Eindeutige ID ist `sub`, **nicht** die E-Mail. Google empfiehlt zusätzlich „Cross-Account Protection“ (RISC).
+
+**Vorschläge für den späteren Bau:**
+
+- Google-Konto nur **im eingeloggten Profil verknüpfen** (nie automatisch per gleicher E-Mail); Login-Button erst bei
+  verknüpftem Konto wirksam. Registrierung per Google: später entscheiden.
+- Konfiguration über `.env` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`), ohne Werte unsichtbar – für Self-Hosting
+  optional, jede Instanz eigene Zugangsdaten.
+- Datenschutzerklärung: Google als Empfänger von Anmeldedaten, Drittlandübermittlung.
+- Zeitpunkt: nach Domainkauf und Datenschutzerklärung (Verifizierung); vorher funktioniert D, aber immer mit
+  Zweitfaktor.
+
+**Quellen:** developers.google.com (Sign in with Google – Security bundle; Brand verification; Authentication policy
+compliance), web.dev (Related Origin Requests), py_webauthn (PyPI/GitHub duo-labs).
+
 ## Sicherheit Agent ↔ Server
 
 - Transport nur TLS: `kidctl enroll` verlangt `https://` (`--insecure-http` nur für Test-Server,
@@ -2873,3 +3037,23 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Dabei gefunden und behoben:
   - Der Show-Hook stürzte bei `QWindow`-Ereignissen ab.
   - Das Stylesheet schaltete die native Zeichnung von Radio-Knöpfen und Zahlenfeldern ab.
+- 2026-11-20: Anforderungen per /brainstorming abgestimmt: Login in zwei Schritten, Passkeys als vollständiger Login,
+  Homepage-Link auf der Loginseite, Einladungsmail, Verwaltungsnavigation wie Elternoberfläche, Tray-Symbol Linux wie
+  Windows, Screenshot Tray, Design-Durchsicht, automatische Sicherheitsprüfungen mit Badges (OpenSSF Scorecard, Best
+  Practices, ZAP-Baseline/Observatory), anschließend Sicherheits- und Performance-Audit der Codebasis; Recherche
+  Google-Login (Bau später). Noch keine Umsetzung.
+- 2026-11-20: Version 0.39.0 (Server): Login in zwei Schritten für Eltern und Betreiber. Erst Passwort, dann
+  Authenticator-Code; dazwischen ein Login-Ticket (Tabelle `login_ticket`, Migration 0021, nur der Hash; Cookie
+  `HttpOnly`, `SameSite=Strict`; 5 min, einmalig, max. 5 Codes, an Konto und Art gebunden; abgelaufene Tickets
+  räumt das Anlegen neuer mit weg). Abgelaufen bzw. ungültig führt zurück zu Schritt 1 mit neutralem Hinweis. Die
+  Folge-Flows (Passwort vergessen, Authenticator-Link) bleiben unverändert und führen zum neuen Login. Anmeldeknöpfe
+  bekommen die Klasse `btn-block` statt Inline-Styles. Getestet:
+  - Server-Tests 324 grün, neu `test_login_steps.py`:
+    - Reihenfolge; ohne Code nicht angemeldet.
+    - Unbekannte Adresse und falsches Passwort: gleiche Antwort, je genau eine Hash-Prüfung.
+    - Ticket einmalig, abgelaufen und an die Art gebunden; nur der Hash wird gespeichert.
+    - 5 falsche Codes beenden das Ticket und sperren den Authenticator.
+    - Betreiber-Login identisch.
+    - Formulare ohne JavaScript.
+  - Migration 0021 hin und zurück, `alembic check`.
+  - Im Browser: Passwort → Code → Übersicht.

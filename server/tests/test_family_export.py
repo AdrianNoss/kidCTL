@@ -16,7 +16,7 @@ from app.models import (
 )
 from app.security import hash_password, new_totp_secret
 from app.tenant import family_session
-from conftest import PASSWORD, SessionLocal, add_family, add_parent, csrf_from, login, platform_db
+from conftest import two_step_login, PASSWORD, SessionLocal, add_family, add_parent, csrf_from, login, platform_db
 
 
 @pytest.fixture
@@ -76,10 +76,8 @@ def test_export_import_roundtrip_into_other_family(client, parent):
 
     fid, owner = _owner_of_new_family()
     client.cookies.clear()
-    page = client.get("/login").text
-    assert client.post("/login", data={"csrf_token": csrf_from(page), "username": owner.username, "password": PASSWORD,
-                                       "totp": pyotp.TOTP(owner.totp_secret).now()},
-                       follow_redirects=False).status_code == 303
+    assert two_step_login(client, "/login", owner.username, PASSWORD,
+                          pyotp.TOTP(owner.totp_secret).now()).status_code == 303
     page = client.get("/settings").text
     assert 'action="/settings/import"' in page
     r2 = _import(client, r.content)

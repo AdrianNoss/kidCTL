@@ -10,7 +10,7 @@ from app.config import Settings
 from app.models import ROLE_OWNER, Membership, Parent, utcnow
 from app.security import hash_password, new_totp_secret
 from app.tenant import family_session
-from conftest import PASSWORD, SessionLocal, add_family, add_parent, csrf_from, login
+from conftest import two_step_login, PASSWORD, SessionLocal, add_family, add_parent, csrf_from, login
 
 
 @pytest.fixture
@@ -28,9 +28,7 @@ def saas(monkeypatch):
 
 
 def _login(client, ident, secret, password=PASSWORD):
-    page = client.get("/login")
-    return client.post("/login", data={"csrf_token": csrf_from(page.text), "username": ident, "password": password,
-                                       "totp": pyotp.TOTP(secret).now()}, follow_redirects=False)
+    return two_step_login(client, "/login", ident, password, pyotp.TOTP(secret).now())
 
 
 def _profile(client, **data):

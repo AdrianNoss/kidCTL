@@ -150,6 +150,21 @@ CLAUDE.md
 - Launcher-Formate nur anhand echter Installationen (VM-Snapshot „launchers“) umsetzen und als anonymisierte
   Testdaten ablegen; keine angenommenen Formate.
 
+## Anmeldung
+
+- Login immer zweistufig über Login-Tickets; nie verraten, ob ein Konto existiert (gleiche Antwort, `dummy_verify`).
+- Passkeys (`webauthn`): Challenges serverseitig, einmalig, kurzlebig; `userVerification=required`; Origin/RP-ID aus
+  der Konfiguration, nie aus dem Request.
+- Änderungen an Anmeldedaten (Passwort, Authenticator, Passkeys) nur nach frischer Bestätigung und immer mit
+  Hinweis-Mail.
+- Der klassische Login (Passwort + Authenticator) muss ohne JavaScript funktionieren.
+
+## Oberfläche
+
+- Eltern- und Verwaltungsbereich nutzen dieselben Komponenten (Navigation, Karten, Buttons, Formulare); keine
+  Inline-Styles, Korrekturen zentral im CSS.
+- Sichtbare Änderung an Seiten → Design-Review-Skript für die betroffenen Seiten laufen lassen.
+
 ## Tests & Verifikation
 
 - Jede Funktion vor Auslieferung end-to-end smoke-testen und im Changelog vermerken, was getestet

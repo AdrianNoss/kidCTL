@@ -118,6 +118,7 @@ body.no-nav .brand { visibility:hidden; }   /* Anmeldeseiten zeigen das Logo in 
 .nav-item { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-width:0;
             color:var(--on-surface-variant); text-decoration:none; font-size:.75rem; line-height:1rem; font-weight:500; }
 .nav-icon { display:grid; place-items:center; width:min(64px, calc(100% - .5rem)); height:32px; border-radius:var(--shape-full); transition:background-color .15s; }
+.btn-block { width:100%; }
 .nav-label { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:clamp(.6875rem, 3vw, .75rem); }
 .nav-long { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }   /* für Screenreader; untere Leiste mit 6 Einträgen: Kurzform, damit nichts abgeschnitten wird */
 .nav-short { display:inline; }

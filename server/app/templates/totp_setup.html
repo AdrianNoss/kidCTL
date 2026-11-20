@@ -16,7 +16,7 @@
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <label>{{ _("Passwort") }} <input type="password" name="password" required autocomplete="current-password"></label>
     <label>{{ _("Code aus der App") }} <input name="totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
-    <button type="submit" style="width:100%">{{ _("Einrichten") }}</button>
+    <button type="submit" class="btn-block">{{ _("Einrichten") }}</button>
   </form>
   {% endif %}
   {% include "_langswitch.html" %}

@@ -12,7 +12,7 @@ from app import operators
 from app.config import settings
 from app.models import Child, Device, Operator, OperatorSession, SignupCode, utcnow
 from app.security import hash_password, new_totp_secret
-from conftest import PASSWORD, add_family, csrf_from, platform_db
+from conftest import two_step_login, PASSWORD, add_family, csrf_from, platform_db
 from app.tenant import family_session
 
 
@@ -26,10 +26,7 @@ def operator(client):
 
 
 def admin_login(client, op, password=PASSWORD, code=None):
-    page = client.get("/admin/login")
-    return client.post("/admin/login", data={"csrf_token": csrf_from(page.text), "username": op.username,
-                                             "password": password, "totp": code or pyotp.TOTP(op.totp_secret).now()},
-                       follow_redirects=False)
+    return two_step_login(client, "/admin/login", op.username, password, code or pyotp.TOTP(op.totp_secret).now())
 
 
 def test_admin_requires_operator_login(client, operator, parent):

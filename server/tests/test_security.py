@@ -7,7 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pyotp
-from conftest import PASSWORD, csrf_from
+from conftest import two_step_login, PASSWORD, csrf_from
 
 from app import accounts
 from app.middleware import MAX_BODY_BYTES
@@ -17,9 +17,7 @@ ENROLL = "/api/v1/enroll"
 
 
 def _attempt(client, parent, password, code, ip):
-    token = csrf_from(client.get("/login").text)
-    return client.post("/login", data={"csrf_token": token, "username": "mama", "password": password, "totp": code},
-                       headers={"X-Forwarded-For": ip}, follow_redirects=False)
+    return two_step_login(client, "/login", "mama", password, code, headers={"X-Forwarded-For": ip})
 
 
 def test_body_limit_by_length(client):

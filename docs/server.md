@@ -216,6 +216,10 @@ confirmation link arrives (valid for 48 hours); only after that can the parent s
 notices, reports and "Forgot password". Each address can only be used once. The user name remains valid for
 signing in. The profile also lets you change the display name, password and authenticator.
 
+Signing in takes two steps: first email address (or username) and password, then the authenticator code. The
+second step allows 5 minutes and 5 attempts; after that, sign-in starts over. The admin area (`/admin/login`) works
+the same way.
+
 | Problem | Solution |
 |---|---|
 | Forgot password | Sign-in page → "Forgot password?". The link is valid for 30 minutes and resets **only the password**. Signing in still requires the authenticator. |

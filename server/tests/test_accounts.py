@@ -7,7 +7,7 @@ import pytest
 
 from app import mail
 from app.config import Settings
-from conftest import SessionLocal, add_parent
+from conftest import two_step_login, SessionLocal, add_parent
 from app.models import Parent, ParentSession, utcnow
 from app.security import hash_password, new_totp_secret
 from conftest import PASSWORD, csrf_from, login
@@ -195,9 +195,7 @@ def test_invite_parent_by_link(client, parent, outbox):
         assert db.scalar(select(Membership.role).where(Membership.parent_id == papa.id)) == ROLE_PARENT
         papa.totp_last_step = 0
         db.commit()
-    page = client.get("/login")
-    r = client.post("/login", data={"csrf_token": csrf_from(page.text), "username": "papa@example.org",
-                                    "password": NEW_PW, "totp": pyotp.TOTP(secret).now()}, follow_redirects=False)
+    r = two_step_login(client, "/login", "papa@example.org", NEW_PW, pyotp.TOTP(secret).now())
     assert r.status_code == 303
 
 

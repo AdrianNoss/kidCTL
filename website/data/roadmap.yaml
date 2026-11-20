@@ -97,6 +97,18 @@
   text:
     de: "Fenster, Tray-Menü, Symbol, Benachrichtigungen und Installer im Stil von Windows 11, hell und dunkel."
     en: "Windows, tray menu, icon, notifications and installer in the Windows 11 style, light and dark."
+- id: passkeys
+  status: planned
+  title: { de: "Anmelden mit Passkey", en: "Sign in with a passkey" }
+  text:
+    de: "Eltern melden sich per Fingerabdruck, Gesicht oder Geräte-PIN an – Passwort und Authenticator bleiben als Weg erhalten."
+    en: "Parents sign in with fingerprint, face or device PIN – password and authenticator remain available."
+- id: security-checks
+  status: planned
+  title: { de: "Automatisch geprüft", en: "Automatically checked" }
+  text:
+    de: "Regelmäßige automatische Prüfungen (OpenSSF Scorecard, Webserver-Scans) mit öffentlich einsehbaren Ergebnissen."
+    en: "Regular automated checks (OpenSSF Scorecard, web server scans) with publicly visible results."
 - id: wine-launchers
   status: planned
   title: { de: "Lutris und Bottles unter Linux", en: "Lutris and Bottles on Linux" }

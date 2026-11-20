@@ -11,7 +11,7 @@ from app import web
 from app.config import Settings
 from app.models import AdminLog, Family, Operator, SignupCode, utcnow
 from app.security import hash_password, new_totp_secret
-from conftest import PASSWORD, csrf_from, platform_db
+from conftest import two_step_login, PASSWORD, csrf_from, platform_db
 
 
 def _operator(role):
@@ -24,10 +24,7 @@ def _operator(role):
 
 
 def _login(client, op):
-    page = client.get("/admin/login")
-    r = client.post("/admin/login", data={"csrf_token": csrf_from(page.text), "username": op.username,
-                                          "password": PASSWORD, "totp": pyotp.TOTP(op.totp_secret).now()},
-                    follow_redirects=False)
+    r = two_step_login(client, "/admin/login", op.username, PASSWORD, pyotp.TOTP(op.totp_secret).now())
     assert r.status_code == 303
 
 

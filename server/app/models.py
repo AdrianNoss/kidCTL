@@ -426,6 +426,20 @@ class LoginAttempt(Base):
     at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
 
 
+class LoginTicket(Base):
+    """Zwischenschritt der Anmeldung: Passwort war richtig, der Zweitfaktor fehlt noch. Nur der Hash des Tokens
+    (Cookie) wird gespeichert; 5 Minuten gültig, einmal verwendbar, höchstens 5 Code-Versuche."""
+    __tablename__ = "login_ticket"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    kind: Mapped[str] = mapped_column(String(16))              # parent | operator
+    account_id: Mapped[int] = mapped_column(Integer)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
 class PushSubscription(Base):
     __tablename__ = "push_subscription"
 

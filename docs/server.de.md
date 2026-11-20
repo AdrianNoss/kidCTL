@@ -220,6 +220,10 @@ Bestätigungslink (48 Stunden gültig); erst danach meldet man sich mit der Adre
 Berichte und „Passwort vergessen“. Jede Adresse kann nur einmal verwendet werden. Der Benutzername bleibt zum
 Anmelden erhalten. Im Profil lassen sich auch Anzeigename, Passwort und der Authenticator ändern.
 
+Die Anmeldung läuft in zwei Schritten: erst E-Mail-Adresse (oder Benutzername) und Passwort, dann der
+Authenticator-Code. Für den zweiten Schritt bleiben 5 Minuten und 5 Versuche, danach beginnt die Anmeldung von vorn.
+Der Verwaltungsbereich (`/admin/login`) funktioniert genauso.
+
 | Problem | Lösung |
 |---|---|
 | Passwort vergessen | Anmeldeseite → „Passwort vergessen?“. Der Link ist 30 Minuten gültig und setzt **nur das Passwort** zurück. Zum Anmelden braucht man weiterhin den Authenticator. |

@@ -5,7 +5,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from .. import accounts
+from .. import accounts, loginticket
 from .. import i18n
 from ..i18n import N_, _
 from ..config import settings
@@ -35,6 +35,7 @@ LOGIN_NOTICES = {
     "totp": N_("Authenticator eingerichtet. Bitte mit Passwort und dem neuen Code anmelden."),
     "email": N_("E-Mail-Adresse bestätigt. Du kannst dich jetzt mit ihr anmelden."),
     "family_deleted": N_("Die Familie und alle ihre Daten wurden gelöscht."),
+    "expired": N_("Die Anmeldung wurde abgebrochen oder ist abgelaufen. Bitte noch einmal anmelden."),
     "email_invalid": N_("Der Bestätigungslink ist ungültig oder abgelaufen. Im Profil kannst du einen neuen anfordern."),
 }
 
@@ -60,37 +61,71 @@ def login(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
-    totp: str = Form(...),
     db: Session = Depends(get_platform_db),
 ):
+    """Schritt 1: Passwort. Unbekannte Adresse und falsches Passwort sind nicht unterscheidbar (gleiche Antwort,
+    ``dummy_verify``); erst nach richtigem Passwort folgt Schritt 2 mit einem Login-Ticket."""
     ip = client_ip(request)
     username = username.strip()
     if is_rate_limited(db, "login", ip, username):
         return render_anon(request, "login.html", status_code=429, username=username,
                            error=_("Zu viele Fehlversuche. Bitte später erneut versuchen."))
-
     parent = accounts.find_by_login(db, username)   # E-Mail-Adresse oder (bisherige Accounts) Benutzername
-    ok = False
     if parent is None:
         dummy_verify()
     elif verify_password(password, parent.password_hash):
         if totp_locked(db, parent.username):
             return render_anon(request, "login.html", status_code=429, username=username,
                                error=_("Zu viele Fehlversuche. Bitte später erneut versuchen."))
-        ok = verify_totp(db, parent, totp)
-        if not ok:
-            record_failure(db, "totp", ip, parent.username)
+        resp = RedirectResponse("/login/code", status_code=303)
+        loginticket.set_cookie(resp, "parent", loginticket.create(db, "parent", parent.id))
+        return resp
+    record_failure(db, "login", ip, username)
+    return render_anon(request, "login.html", status_code=401, username=username,
+                       error=_("Anmeldung fehlgeschlagen."))
 
-    if not ok:
-        record_failure(db, "login", ip, username)
-        return render_anon(request, "login.html", status_code=401, username=username,
-                           error=_("Anmeldung fehlgeschlagen."))
 
+def _expired():
+    resp = RedirectResponse("/login?msg=expired", status_code=303)
+    loginticket.clear_cookie(resp, "parent")
+    return resp
+
+
+def _code_page(request, status_code=200, error=None):
+    return render_anon(request, "login_code.html", status_code=status_code, action="/login/code", back="/login",
+                       error=error)
+
+
+@router.get("/login/code")
+def login_code_form(request: Request, db: Session = Depends(get_platform_db)):
+    if loginticket.get(db, request, "parent") is None:
+        return _expired()
+    return _code_page(request)
+
+
+@router.post("/login/code", dependencies=[Depends(csrf_protect_anon)])
+def login_code(request: Request, totp: str = Form(""), db: Session = Depends(get_platform_db)):
+    """Schritt 2: Authenticator-Code zum Ticket."""
+    ticket = loginticket.get(db, request, "parent")
+    parent = load_parent(db, ticket.account_id) if ticket else None   # mit dem Schlüssel seiner Familie
+    if parent is None:
+        return _expired()
+    ip = client_ip(request)
+    if totp_locked(db, parent.username):
+        return _code_page(request, 429, _("Zu viele Fehlversuche. Bitte später erneut versuchen."))
+    if not verify_totp(db, parent, totp):
+        record_failure(db, "totp", ip, parent.username)
+        record_failure(db, "login", ip, parent.username)
+        if loginticket.failed(db, ticket):
+            return _expired()
+        return _code_page(request, 401, _("Code falsch. Bitte erneut versuchen."))
+    loginticket.consume(db, ticket)
     parent.detected_language = i18n.browser_language(request)   # für Mails/Push bei „Automatisch“
     db.commit()  # totp_last_step
     token = create_session(db, parent, request.headers.get("user-agent", ""))
     resp = RedirectResponse("/", status_code=303)
     set_cookie(resp, SESSION_COOKIE, token, max_age=settings.session_days * 86400)
+    loginticket.clear_cookie(resp, "parent")
     return resp
 
 

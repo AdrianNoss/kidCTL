@@ -6,8 +6,7 @@
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
   <label>{{ _("E-Mail-Adresse") if SAAS else _("E-Mail-Adresse oder Benutzername") }} <input name="username" value="{{ username or '' }}" autocomplete="username" inputmode="email" required autofocus></label>
   <label>{{ _("Passwort") }} <input type="password" name="password" autocomplete="current-password" required></label>
-  <label>{{ _("Authenticator-Code") }} <input name="totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
-  <button type="submit" style="width:100%">{{ _("Anmelden") }}</button>
+  <button type="submit" class="btn-block">{{ _("Weiter") }}</button>
   <p class="login-help"><a href="/reset">{{ _("Passwort vergessen?") }}</a></p>
   {% if REGISTRATION != "closed" %}<p class="login-help"><a href="/signup">{{ _("Neu hier? Familie registrieren") }}</a></p>{% endif %}
   {% include "_langswitch.html" %}
