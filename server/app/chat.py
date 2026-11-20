@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import time
+from datetime import time, timedelta
 
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
@@ -127,6 +127,16 @@ def _existing(db: Session, device_id: int, client_msg_id: str) -> Message | None
         Message.device_id == device_id, Message.client_msg_id == client_msg_id))
 
 
+CHILD_MSG_LIMIT = 30                       # neue Nachrichten/Anfragen je Kind …
+CHILD_MSG_WINDOW = timedelta(minutes=10)   # … in diesem Zeitraum; darüber Ack ohne Speichern und Push
+
+
+def rate_limited(db: Session, child_id: int) -> bool:
+    since = utcnow() - CHILD_MSG_WINDOW
+    return db.scalar(select(func.count()).select_from(Message).where(
+        Message.child_id == child_id, Message.from_child.is_(True), Message.created_at >= since)) >= CHILD_MSG_LIMIT
+
+
 def receive_from_agent(db: Session, device_id: int,
                        msg: p.ChatSend | p.ExtensionRequest) -> tuple[p.Ack, Message | None]:
     """Speichert eine Kind-Nachricht. Gibt (Ack, neue Message oder None bei Duplikat/Fehler) zurück."""
@@ -136,6 +146,8 @@ def receive_from_agent(db: Session, device_id: int,
     child = child_for_user(db, device_id, msg.username)
     if child is None:
         return p.Ack(client_msg_id=msg.client_msg_id, ok=False, error="user_not_mapped"), None
+    if rate_limited(db, child.id):
+        return p.Ack(client_msg_id=msg.client_msg_id, ok=False, error="rate_limited"), None
 
     m = Message(child_id=child.id, from_child=True, device_id=device_id,
                 client_msg_id=msg.client_msg_id)

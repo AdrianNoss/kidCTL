@@ -261,3 +261,22 @@ def test_pipe_writer_closes_when_queue_full():
     with pytest.raises(ConnectionError):
         w.write(b"x")
     assert conn.closed
+
+
+def test_outbox_limited_per_user():
+    from kidctl_agent import core
+
+    async def scenario():
+        a, _ = make_agent()
+        c = await connect(a)
+        await c.send(t.TrayHello())
+        await c.recv()
+        await c.recv()
+        for i in range(core.OUTBOX_MAX_PER_USER):
+            await c.send(t.TrayChatSend(body=f"Hallo {i}"))
+            assert isinstance(await c.recv(skip_state=True), t.TrayQueued)
+        await c.send(t.TrayChatSend(body="eins zu viel"))
+        assert isinstance(await c.recv(skip_state=True), t.TrayError)
+        assert len(a.outbox.items) == core.OUTBOX_MAX_PER_USER
+        await a.tray.stop()
+    asyncio.run(scenario())

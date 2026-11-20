@@ -34,6 +34,7 @@ REPORT_EVERY = 60.0   # Sekunden
 # sonst kann die (ältere) gecachte Policy einen Fehlalarm auslösen. Gezählt wird trotzdem.
 STARTUP_SYNC = 10.0   # Sekunden
 DEFAULT_TZ = "Europe/Berlin"
+OUTBOX_MAX_PER_USER = 20  # ungesendete Nachrichten/Anfragen je Benutzer (Tray-App)
 
 
 def _chat_texts(msg: p.ChatMessage, change: str) -> tuple[str, str]:
@@ -360,6 +361,10 @@ class AgentCore:
 
     def tray_history(self, user: str) -> list[p.ChatMessage]:
         return self.chat.history(self.policy.users[user]) if self.policy and user in self.policy.users else []
+
+    def outbox_full(self, user: str) -> bool:
+        """Höchstens ``OUTBOX_MAX_PER_USER`` ungesendete Nachrichten/Anfragen je Benutzer."""
+        return self.outbox.pending_for([user]) >= OUTBOX_MAX_PER_USER
 
     async def tray_chat_send(self, user: str, body: str) -> bool:
         self.outbox.add(p.ChatSend(client_msg_id=new_client_msg_id(), username=user, body=body.strip()))

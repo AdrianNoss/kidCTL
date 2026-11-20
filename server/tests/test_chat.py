@@ -153,3 +153,24 @@ def test_request_past_day_expires_and_sync(client, parent):
         ws.send_text(p.ChatSync(username="gast").model_dump_json())
         ws.send_text(p.Ping().model_dump_json())
         assert isinstance(_recv(ws), p.Pong)  # nicht zugeordnet -> kein Verlauf
+
+
+def test_child_messages_rate_limited(client, parent, monkeypatch):
+    from app import chat
+    monkeypatch.setattr(chat, "CHILD_MSG_LIMIT", 3)
+    with connected(client, parent) as (ws, child_id, _):
+        for i in range(3):
+            ws.send_text(p.ChatSend(client_msg_id=_cid(), username="max", body=f"Hallo {i}").model_dump_json())
+            ack, msg = _recv(ws), _recv(ws)
+            assert ack.ok and isinstance(msg, p.ChatMessage)
+        ws.send_text(p.ChatSend(client_msg_id=_cid(), username="max", body="zu viel").model_dump_json())
+        bad = _recv(ws)
+        assert not bad.ok and bad.error == "rate_limited"
+        _request_ws = p.ExtensionRequest(client_msg_id=_cid(), username="max", day=today_local(), minutes=30,
+                                         reason="x")
+        ws.send_text(_request_ws.model_dump_json())
+        assert _recv(ws).error == "rate_limited"
+        ws.send_text(p.Ping().model_dump_json())
+        assert isinstance(_recv(ws), p.Pong)     # keine weitere Nachricht zugestellt
+        with SessionLocal() as db:
+            assert len(db.scalars(select(Message).where(Message.child_id == child_id)).all()) == 3

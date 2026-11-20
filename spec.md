@@ -3243,3 +3243,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   `<name>.broken`, warnt im Log und liefert `None`; der Agent startet ohne diesen Stand und holt die Policy vom
   Server. Getestet: Unit-Test mit kaputtem JSON bzw. falschem Schema in allen vier Dateien (`test_agent.py`), alle
   Agent-Tests grün; Prüfung in der Test-VM offen.
+- 2026-11-20: Chat und Anfragen begrenzt: Der Agent nimmt je Benutzer höchstens 20 ungesendete Nachrichten/Anfragen
+  an (`OUTBOX_MAX_PER_USER`, darüber `TrayError`), der Server speichert je Kind höchstens 30 neue Nachrichten/
+  Anfragen in 10 Minuten (`CHILD_MSG_LIMIT`/`CHILD_MSG_WINDOW`, darüber `Ack(ok=False, error="rate_limited")`
+  ohne Push). Getestet: `test_tray.py` (21. Nachricht abgelehnt), `test_chat.py` (Grenze bei Chat und
+  Verlängerungsanfrage, keine Zustellung), alle Agent- und Server-Tests grün; Prüfung in der Test-VM offen.

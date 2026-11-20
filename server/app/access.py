@@ -20,7 +20,7 @@ from kidctl_common import protocol as p
 
 from . import programs
 from . import schedule as sch
-from .chat import _existing, child_for_user
+from .chat import _existing, child_for_user, rate_limited
 from .i18n import N_, _
 from .models import ChildDomain, ChildTempGrant, DeviceApp, Message, utcnow
 from .webfilter import normalize_domain
@@ -67,6 +67,8 @@ def receive(db: Session, device_id: int, msg: p.AccessRequest) -> tuple[p.Ack, M
                                             Message.status == "pending", Message.access_key == key))
     if open_ is not None:
         return p.Ack(client_msg_id=msg.client_msg_id, ok=True, message_id=open_.id), None
+    if rate_limited(db, child.id):
+        return p.Ack(client_msg_id=msg.client_msg_id, ok=False, error="rate_limited"), None
     m = Message(child_id=child.id, from_child=True, device_id=device_id, client_msg_id=msg.client_msg_id,
                 kind="access_request", body=msg.reason.strip(), status="pending", request_day=sch.today_local(),
                 access_kind=msg.access_kind, access_key=key, access_name=msg.name.strip()[:255] or key)

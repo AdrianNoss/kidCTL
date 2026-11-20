@@ -152,6 +152,12 @@ class TrayServer:
             with i18n.use(self.handler.lang_of(user)):
                 await self._send(client, t.TrayError(message=_("Dieser Benutzer ist keinem Kind zugeordnet.")))
             return
+        if isinstance(msg, (t.TrayChatSend, t.TrayExtensionRequest, t.TrayAccessRequest)) \
+                and self.handler.outbox_full(user):
+            with i18n.use(self.handler.lang_of(user)):
+                await self._send(client, t.TrayError(
+                    message=_("Zu viele Nachrichten warten noch auf den Versand. Bitte später erneut versuchen.")))
+            return
         if isinstance(msg, t.TrayChatSend):
             online = await self.handler.tray_chat_send(user, msg.body)
             await self._send(client, t.TrayQueued(kind="chat_send", online=online))
