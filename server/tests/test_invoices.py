@@ -206,3 +206,57 @@ def test_retention_and_export(ready):
         assert invoices.purge_expired(db, date(year + 9, 1, 1)) == 1
         assert db.get(Invoice, inv.id) is None
         assert db.scalar(select(AdminLog).where(AdminLog.object == "invoice", AdminLog.object_id == inv.id)) is None
+
+
+def _race(n, action):
+    """``action(db)`` in ``n`` Threads gleichzeitig; Rückgabe: (Erfolge, InvoiceErrors)."""
+    barrier, ok, failed, errors = threading.Barrier(n), [], [], []
+
+    def work():
+        try:
+            with platform_db() as db:
+                barrier.wait()
+                action(db)
+                ok.append(1)
+        except invoices.InvoiceError:
+            failed.append(1)
+        except Exception as e:   # pragma: no cover
+            errors.append(e)
+    threads = [threading.Thread(target=work) for _ in range(n)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert not errors
+    return len(ok), len(failed)
+
+
+def test_same_invoice_issued_once(ready):
+    with platform_db() as db:
+        iid = _draft(db).id
+
+    def act(db):
+        inv = db.get(Invoice, iid)
+        _ = inv.status, list(inv.lines)   # Stand vor der Sperre laden
+        invoices.issue(db, inv, ACTOR)
+    assert _race(4, act) == (1, 3)
+    with platform_db() as db:
+        assert db.get(Invoice, iid).seq == 1
+        nxt = _draft(db)
+        invoices.issue(db, nxt, ACTOR)
+        assert nxt.seq == 2   # keine Lücke
+
+
+def test_same_invoice_canceled_once(ready):
+    with platform_db() as db:
+        inv = _draft(db)
+        invoices.issue(db, inv, ACTOR)
+        iid = inv.id
+
+    def act(db):
+        inv = db.get(Invoice, iid)
+        _ = inv.status, list(inv.lines)
+        invoices.storno(db, inv, ACTOR)
+    assert _race(4, act) == (1, 3)
+    with platform_db() as db:
+        assert len(db.scalars(select(Invoice).where(Invoice.storno_of == iid)).all()) == 1

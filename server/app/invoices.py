@@ -137,9 +137,17 @@ def _add_months(d: date, months: int) -> date:
     raise ValueError(d)
 
 
+def _lock(db: Session, inv: Invoice) -> None:
+    """Rechnungszeile bis zum Commit sperren und den aktuellen Stand neu laden, damit Statusprüfungen nicht auf
+    einem veralteten Stand derselben Rechnung arbeiten."""
+    if inv.id is not None:
+        db.refresh(inv, with_for_update=True)
+
+
 def update_draft(db: Session, inv: Invoice, start: date | None, end: date | None,
                  lines: list[tuple[str, int, int]]) -> None:
     """Entwurf speichern; ``lines`` = (Text, Menge, Einzelpreis in Cent)."""
+    _lock(db, inv)
     if inv.status != "draft":
         raise InvoiceError("Ausgestellte Rechnungen sind unveränderlich – Korrektur nur per Storno.")
     if start and end and end < start:
@@ -153,6 +161,7 @@ def update_draft(db: Session, inv: Invoice, start: date | None, end: date | None
 
 
 def delete_draft(db: Session, inv: Invoice, actor) -> None:
+    _lock(db, inv)
     if inv.status != "draft":
         raise InvoiceError("Ausgestellte Rechnungen lassen sich nicht löschen – Korrektur nur per Storno.")
     audit.record(db, actor, "invoice", "Entwurf gelöscht", None, None, family_id=inv.family_id, object_id=inv.id)
@@ -203,6 +212,7 @@ def _sender_json(row: InvoiceSettings) -> str:
 
 def issue(db: Session, inv: Invoice, actor, address_json: str | None = None) -> Invoice:
     """Ausstellen: Nummer, Datum, Kopien und Beträge einfrieren, PDF erzeugen – alles in einer Transaktion."""
+    _lock(db, inv)
     if problems := issue_problems(db, inv):
         raise InvoiceError(" ".join(problems))
     row = settings_row(db)
@@ -235,6 +245,7 @@ def mark_paid(db: Session, inv: Invoice, paid_on: date, actor) -> int | None:
     """Bezahlt markieren und das Abo koppeln (aktiv, „bezahlt bis“ = Ende des Leistungszeitraums, falls später).
     Rückgabe: Familie, deren Abo sich geändert hat (für billing.apply), sonst None."""
     from . import billing
+    _lock(db, inv)
     if inv.status != "open":
         raise InvoiceError("Nur offene Rechnungen lassen sich als bezahlt markieren.")
     inv.status, inv.paid_on = "paid", paid_on
@@ -259,6 +270,7 @@ def mark_paid(db: Session, inv: Invoice, paid_on: date, actor) -> int | None:
 def storno(db: Session, inv: Invoice, actor) -> Invoice:
     """Storno-Rechnung zu einer offenen oder bezahlten Rechnung (negative Beträge, eigene Nummer). Das Abo bleibt
     unverändert – bei einer bezahlten Rechnung zeigt die Oberfläche „Abo prüfen“."""
+    _lock(db, inv)
     if inv.status not in ("open", "paid"):
         raise InvoiceError("Stornieren lässt sich nur eine offene oder bezahlte Rechnung.")
     was_paid = inv.status == "paid"

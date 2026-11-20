@@ -3225,3 +3225,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   (`MAX_QUEUE`), darüber wird getrennt. Der Takt des Agenten läuft damit unabhängig vom Verhalten einzelner
   Tray-Clients weiter. Getestet: Unit-Tests mit hängendem Writer bzw. voller Warteschlange (`test_tray.py`), alle
   Agent-Tests grün; Prüfung in der Test-VM offen.
+- 2026-11-20: Rechnungen: Ausstellen, Bezahlt, Storno, Entwurf speichern und löschen sperren die Rechnungszeile
+  (`SELECT … FOR UPDATE`) und prüfen den Status auf dem frischen Stand. Gleichzeitige Aktionen auf dieselbe Rechnung
+  ergeben damit genau eine Nummer bzw. genau eine Storno-Rechnung; Nummern bleiben lückenlos. Getestet: je 4 Threads
+  stellen dieselbe Rechnung aus bzw. stornieren sie (`test_invoices.py`), alle Server-Tests grün.
