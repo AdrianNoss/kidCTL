@@ -17,7 +17,7 @@ import logging
 from datetime import date, datetime, time
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import select
 
 from .. import billing
@@ -39,13 +39,17 @@ class WebhookEvent(BaseModel):
 
 
 @router.post("/api/billing/webhook")
-async def webhook(event: WebhookEvent, request: Request):
+async def webhook(request: Request):
     secret = settings.billing_webhook_secret
     if not secret:
         raise HTTPException(404)
     auth = request.headers.get("authorization", "")
     if not hmac.compare_digest(auth.encode(), f"Bearer {secret}".encode()):
         raise HTTPException(401, "Ungültiges Geheimnis")
+    try:   # Body erst nach dem Geheimnis auswerten
+        event = WebhookEvent.model_validate_json(await request.body())
+    except ValidationError as e:
+        raise HTTPException(422, "Ungültige Daten") from e
     with platform_session() as db:
         f = None
         if event.customer:

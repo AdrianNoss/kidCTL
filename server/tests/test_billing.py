@@ -156,8 +156,12 @@ def test_signup_starts_trial_or_free_code(client, monkeypatch, saas, outbox):
 def test_webhook(client, saas, monkeypatch, pushed):
     url = "/api/billing/webhook"
     assert client.post(url, json={"status": "active", "family_id": 1}).status_code == 404   # ohne Geheimnis aus
+    assert client.post(url, json={"x": 1}).status_code == 404               # Body wird vorher nicht ausgewertet
+    assert client.post(url, content=b"kein json").status_code == 404
     monkeypatch.setattr(Settings, "billing_webhook_secret", property(lambda s: "geheim"))
     assert client.post(url, json={"status": "active", "family_id": 1}).status_code == 401
+    assert client.post(url, json={"x": 1}).status_code == 401
+    assert client.post(url, headers={"Authorization": "Bearer geheim"}, content=b"kein json").status_code == 422
     auth = {"Authorization": "Bearer geheim"}
     _family(plan="standard", billing_status="trial", trial_ends_at=utcnow() - timedelta(days=30), paused_at=utcnow())
     r = client.post(url, headers=auth, json={"status": "active", "family_id": 1, "provider": "pay",

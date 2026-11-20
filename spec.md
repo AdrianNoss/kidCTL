@@ -3269,3 +3269,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-20: Statische Dateien mit Prüfsumme in der URL (`asset()`, `?v=…`) bekommen
   `Cache-Control: public, max-age=31536000, immutable` (in `SecurityMiddleware`, nur bei Status 200). Getestet:
   `test_security.py` (mit/ohne `v=`, fehlende Datei, normale Seite), alle Server-Tests grün.
+- 2026-11-20: Zahlungs-Webhook: Der Body wird erst nach der Prüfung des Geheimnisses ausgewertet; ohne Geheimnis
+  antwortet der Endpunkt unabhängig vom Inhalt mit 404, mit falschem Geheimnis mit 401. Getestet: `test_billing.py`
+  (ungültiger Body ohne/mit falschem Geheimnis), alle Server-Tests grün.
