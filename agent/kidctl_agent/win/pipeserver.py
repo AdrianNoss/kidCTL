@@ -29,6 +29,7 @@ PIPE_PATH = rf"\\.\pipe\{t.PIPE_NAME}"
 # SYSTEM und Administratoren voll, interaktive Benutzer lesen/schreiben (Qt öffnet mit GENERIC_READ|WRITE)
 PIPE_SDDL = "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GRGW;;;IU)"
 READ_SIZE = 4096
+MAX_QUEUE = 256   # ausstehende Nachrichten je Verbindung; darüber wird getrennt
 
 
 class _PipeWriter:
@@ -40,7 +41,11 @@ class _PipeWriter:
     def write(self, data: bytes) -> None:
         if self.conn.closed:
             raise ConnectionError("Pipe geschlossen")
-        self.conn.out.put(data)
+        try:
+            self.conn.out.put_nowait(data)
+        except queue.Full:
+            self.conn.close()
+            raise ConnectionError("Pipe-Client reagiert nicht") from None
 
     async def drain(self) -> None:
         if self.conn.closed:
@@ -59,7 +64,7 @@ class _PipeConn:
         self.loop = loop
         self.stop_event = stop_event
         self.reader = asyncio.StreamReader(limit=MAX_LINE, loop=loop)
-        self.out: queue.Queue[bytes | None] = queue.Queue()
+        self.out: queue.Queue[bytes | None] = queue.Queue(maxsize=MAX_QUEUE)
         self.closed = False
         self._lock = threading.Lock()
         self._threads = [threading.Thread(target=self._read_loop, daemon=True, name="kidctl-pipe-read"),
@@ -116,7 +121,10 @@ class _PipeConn:
             if self.closed:
                 return
             self.closed = True
-        self.out.put(None)
+        try:
+            self.out.put_nowait(None)
+        except queue.Full:
+            pass   # Schreib-Thread sieht ``closed`` nach dem nächsten Eintrag
         api.cancel_io(self.handle)
 
     def _thread_done(self) -> None:

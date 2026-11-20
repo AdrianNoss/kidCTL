@@ -20,6 +20,7 @@ log = logging.getLogger("kidctl.tray")
 
 MAX_LINE = 64 * 1024
 STATE_REFRESH = 30.0  # Sekunden: Zustand spätestens so oft senden (Restzeit-Anzeige)
+SEND_TIMEOUT = 2.0    # Sekunden: so lange darf ein Client beim Senden bremsen, sonst wird er getrennt
 
 
 def peer_uid(sock: socket.socket) -> int:
@@ -69,9 +70,13 @@ class TrayServer:
     async def _send(self, client: _Client, msg: BaseModel) -> None:
         try:
             client.writer.write(msg.model_dump_json().encode() + b"\n")
-            await client.writer.drain()
+            await asyncio.wait_for(client.writer.drain(), SEND_TIMEOUT)
         except (ConnectionError, RuntimeError):
             self.clients.discard(client)
+        except asyncio.TimeoutError:
+            log.warning("Tray-Client von %s reagiert nicht, Verbindung getrennt", client.user)
+            self.clients.discard(client)
+            client.writer.close()
 
     async def send_to_user(self, user: str, msg: BaseModel) -> int:
         targets = [c for c in self.clients if c.user == user]

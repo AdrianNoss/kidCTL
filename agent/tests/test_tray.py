@@ -209,3 +209,55 @@ def test_invalid_input_keeps_connection():
         assert isinstance(await c.recv(), t.TrayState)
         await a.tray.stop()
     asyncio.run(scenario())
+
+
+class _StuckWriter:
+    """Writer, dessen Empfänger nie liest: ``drain`` kehrt nie zurück."""
+
+    def __init__(self):
+        self.closed = False
+
+    def write(self, data):
+        pass
+
+    async def drain(self):
+        await asyncio.Event().wait()
+
+    def close(self):
+        self.closed = True
+
+
+def test_push_states_does_not_hang_on_unread_client():
+    from kidctl_agent import trayserver
+
+    async def scenario():
+        a, _ = make_agent()
+        srv = a.tray
+        stuck = trayserver._Client(ME, _StuckWriter())
+        srv.clients.add(stuck)
+        await asyncio.wait_for(srv.push_states(0.0), 3 * trayserver.SEND_TIMEOUT)
+        assert stuck not in srv.clients and stuck.writer.closed
+    asyncio.run(scenario())
+
+
+def test_pipe_writer_closes_when_queue_full():
+    from kidctl_agent.win import pipeserver as ps
+
+    class FakeConn:
+        closed = False
+
+        def __init__(self):
+            import queue
+            self.out = queue.Queue(maxsize=ps.MAX_QUEUE)
+
+        def close(self):
+            self.closed = True
+
+    conn = FakeConn()
+    w = ps._PipeWriter(conn)
+    for _ in range(ps.MAX_QUEUE):
+        w.write(b"x")
+    import pytest
+    with pytest.raises(ConnectionError):
+        w.write(b"x")
+    assert conn.closed

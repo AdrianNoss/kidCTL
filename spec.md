@@ -3220,3 +3220,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
     Konsole (Chromium), kein waagerechtes Scrollen; Mail-Vorschau im Rahmen sichtbar gestylt (hell und dunkel),
     Balken und Werte im Statistik-Diagramm korrekt.
   - `dev/screenshots.py` neu gelaufen, geänderte Website- und Doku-Bilder aktualisiert.
+- 2026-11-20: Agent: Tray-Verbindung robuster. Sendet der Agent an eine Tray-Verbindung, die nicht abnimmt, trennt er
+  sie nach 2 s (Linux, `SEND_TIMEOUT`); unter Windows ist die Ausgangs-Warteschlange je Verbindung begrenzt
+  (`MAX_QUEUE`), darüber wird getrennt. Der Takt des Agenten läuft damit unabhängig vom Verhalten einzelner
+  Tray-Clients weiter. Getestet: Unit-Tests mit hängendem Writer bzw. voller Warteschlange (`test_tray.py`), alle
+  Agent-Tests grün; Prüfung in der Test-VM offen.
