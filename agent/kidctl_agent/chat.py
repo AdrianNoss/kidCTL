@@ -25,11 +25,13 @@ class ChatStore:
 
     @classmethod
     def load(cls) -> ChatStore:
-        c = cls()
-        for m in (store.load(CHAT_FILE) or {}).get("messages", []):
-            msg = p.ChatMessage.model_validate(m)
-            c.by_child.setdefault(msg.child_id, {})[msg.id] = msg
-        return c
+        def parse(data: dict) -> ChatStore:
+            c = cls()
+            for m in data.get("messages", []):
+                msg = p.ChatMessage.model_validate(m)
+                c.by_child.setdefault(msg.child_id, {})[msg.id] = msg
+            return c
+        return store.load(CHAT_FILE, parse) or cls()
 
     def save(self) -> None:
         store.save(CHAT_FILE, {"messages": [m.model_dump(mode="json")
@@ -68,11 +70,13 @@ class Outbox:
 
     @classmethod
     def load(cls) -> Outbox:
-        o = cls()
-        for raw in (store.load(OUTBOX_FILE) or {}).get("items", []):
-            item = _outbox_item.validate_python(raw)
-            o.items[item.client_msg_id] = item
-        return o
+        def parse(data: dict) -> Outbox:
+            o = cls()
+            for raw in data.get("items", []):
+                item = _outbox_item.validate_python(raw)
+                o.items[item.client_msg_id] = item
+            return o
+        return store.load(OUTBOX_FILE, parse) or cls()
 
     def save(self) -> None:
         store.save(OUTBOX_FILE, {"items": [i.model_dump(mode="json") for i in self.items.values()]})

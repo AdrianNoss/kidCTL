@@ -96,3 +96,21 @@ def test_sdnotify_ready(tmp_path, monkeypatch):
     srv.close()
     monkeypatch.delenv("NOTIFY_SOCKET")
     assert not sdnotify.notify("READY=1")
+
+
+def test_broken_state_files_do_not_stop_agent(monkeypatch):
+    """Beschädigte oder unpassende Zustandsdateien: Agent startet, Dateien liegen als ``.broken`` daneben."""
+    from kidctl_agent import chat as chat_mod
+    monkeypatch.setattr(agent_mod, "boottime", lambda: 0.0)
+    store.ensure_dir()
+    store.path(store.POLICY_FILE).write_text('{"version": "v", "users": 7}')      # Schema passt nicht
+    store.path(store.USAGE_FILE).write_text("{kaputt")
+    store.path(chat_mod.CHAT_FILE).write_text('{"messages": [{"id": "x"}]}')
+    store.path(chat_mod.OUTBOX_FILE).write_text("[1, 2]")
+    a = Agent(FakeLogind(), FakeNotifier(), {"server_url": "https://x", "device_id": 1, "token": "t"})
+    assert a.policy is None and not a.chat.by_child and not a.outbox.items
+    for name in (store.POLICY_FILE, store.USAGE_FILE, chat_mod.CHAT_FILE, chat_mod.OUTBOX_FILE):
+        assert not store.path(name).exists() and store.path(name + ".broken").exists()
+    a.conn = FakeConn()
+    asyncio.run(a.on_message(policy(60, "neu")))   # Server-Policy wird danach normal übernommen
+    assert a.policy.version == "neu" and store.load(store.POLICY_FILE)["version"] == "neu"

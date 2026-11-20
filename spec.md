@@ -3238,3 +3238,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-20: Familien-Import: entpackte Größe des Archivs höchstens 20 MB (vorher 200 MB), passend zum
   Upload-Limit von 2 MB. Getestet: Archiv mit 21 MB entpackt wird mit „Die Datei ist zu groß.“ abgelehnt
   (`test_family_export.py`), Export/Import-Tests grün.
+- 2026-11-20: Agent: beschädigte oder nicht mehr passende Zustandsdateien (`policy.json`, `usage.json`,
+  `chat.json`, `outbox.json` u. a.) verhindern den Start nicht mehr. `store.load` verschiebt sie nach
+  `<name>.broken`, warnt im Log und liefert `None`; der Agent startet ohne diesen Stand und holt die Policy vom
+  Server. Getestet: Unit-Test mit kaputtem JSON bzw. falschem Schema in allen vier Dateien (`test_agent.py`), alle
+  Agent-Tests grün; Prüfung in der Test-VM offen.

@@ -73,8 +73,7 @@ class AgentCore:
         self._integrity: list[p.IntegrityCheck] | None = None  # zuletzt gemeldet
         self.apps: list[p.AppEntry] = []
         self._sessions: list = []
-        raw = store.load(store.POLICY_FILE)
-        self.policy: p.Policy | None = p.Policy.model_validate(raw) if raw else None
+        self.policy: p.Policy | None = store.load(store.POLICY_FILE, p.Policy.model_validate)
         try:
             self.conn = Connection(device, self) if device else None
         except ValueError as e:  # z. B. http:// ohne --insecure-http: offline weiter durchsetzen

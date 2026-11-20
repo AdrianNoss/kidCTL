@@ -48,8 +48,11 @@ class Usage:
 
     @classmethod
     def load(cls) -> Usage:
+        return store.load(store.USAGE_FILE, cls._parse) or cls()
+
+    @classmethod
+    def _parse(cls, data: dict) -> Usage:
         u = cls()
-        data = store.load(store.USAGE_FILE) or {}
         for key, sec in data.get("local", {}).items():
             user, day = key.split("|", 1)
             u.local[(user, day)] = float(sec)
