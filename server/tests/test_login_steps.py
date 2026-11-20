@@ -123,3 +123,37 @@ def test_operator_two_steps(client, operator):  # noqa: F811
 def test_helper_full_login(client, parent):
     assert two_step_login(client, "/login", "mama", PASSWORD,
                           pyotp.TOTP(parent.totp_secret).now()).headers["location"] == "/"
+
+
+def _parallel(n, fn):
+    import threading
+    barrier, results = threading.Barrier(n), []
+
+    def work():
+        with platform_db() as db:
+            barrier.wait()
+            results.append(fn(db))
+    threads = [threading.Thread(target=work) for _ in range(n)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    return results
+
+
+def test_code_attempts_counted_atomically(client, parent):
+    """Gleichzeitige Versuche: je Ticket und je Konto höchstens ``MAX_ATTEMPTS`` bzw. ``login_max_failures``."""
+    from app.config import settings
+    with platform_db() as db:
+        loginticket.create(db, "parent", parent.id)
+        tid = db.scalar(select(LoginTicket.id))
+
+    def claim(db):
+        return loginticket.claim(db, db.get(LoginTicket, tid))
+    assert sum(_parallel(20, claim)) == loginticket.MAX_ATTEMPTS
+
+    def begin(db):
+        return security.begin_totp_attempt(db, "1.2.3.4", "mama") is not None
+    assert sum(_parallel(20, begin)) == settings.login_max_failures
+    with platform_db() as db:
+        assert security.totp_locked(db, "mama")

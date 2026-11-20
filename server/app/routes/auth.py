@@ -13,8 +13,8 @@ from ..db import get_db, get_platform_db
 from ..tenant import load_parent, platform_session
 from ..models import ParentSession, utcnow
 from ..security import (
-    SESSION_COOKIE, client_ip, create_session, csrf_protect, csrf_protect_anon, dummy_verify,
-    get_session, hash_password, is_rate_limited, record_failure, set_cookie, totp_locked, totp_qr_svg,
+    SESSION_COOKIE, begin_totp_attempt, client_ip, create_session, csrf_protect, csrf_protect_anon, dummy_verify,
+    get_session, hash_password, is_rate_limited, record_failure, set_cookie, totp_attempt_ok, totp_locked, totp_qr_svg,
     verify_password, verify_totp,
 )
 from ..web import local_redirect, render_anon
@@ -111,14 +111,17 @@ def login_code(request: Request, totp: str = Form(""), db: Session = Depends(get
     if parent is None:
         return _expired()
     ip = client_ip(request)
-    if totp_locked(db, parent.username):
+    if not loginticket.claim(db, ticket):
+        return _expired()
+    attempt = begin_totp_attempt(db, ip, parent.username)
+    if attempt is None:
         return _code_page(request, 429, _("Zu viele Fehlversuche. Bitte später erneut versuchen."))
     if not verify_totp(db, parent, totp):
-        record_failure(db, "totp", ip, parent.username)
         record_failure(db, "login", ip, parent.username)
         if loginticket.failed(db, ticket):
             return _expired()
         return _code_page(request, 401, _("Code falsch. Bitte erneut versuchen."))
+    totp_attempt_ok(db, attempt)
     loginticket.consume(db, ticket)
     parent.detected_language = i18n.browser_language(request)   # für Mails/Push bei „Automatisch“
     db.commit()  # totp_last_step

@@ -221,7 +221,8 @@ def confirm(db: Session, request, sess, account, password: str, code: str, totp_
     """Frische Bestätigung per Passwort + Authenticator-Code (sonst schon frisch: nichts zu tun). Fehlertext oder
     ``None``. Rate-Limiting wie beim Login; falsche Codes zählen für die Authenticator-Sperre des Kontos."""
     from .i18n import _
-    from .security import client_ip, is_rate_limited, record_failure, totp_locked, verify_password, verify_totp
+    from .security import (begin_totp_attempt, client_ip, is_rate_limited, record_failure, totp_attempt_ok, totp_locked,
+                           verify_password, verify_totp)
     if is_fresh(sess):
         return None
     ip = client_ip(request)
@@ -230,9 +231,12 @@ def confirm(db: Session, request, sess, account, password: str, code: str, totp_
     if not password or not verify_password(password, account.password_hash):
         record_failure(db, "login", ip, totp_key)
         return _("Bestätigung fehlgeschlagen: Passwort oder Code falsch.")
+    attempt = begin_totp_attempt(db, ip, totp_key)
+    if attempt is None:
+        return _("Zu viele Fehlversuche. Bitte später erneut versuchen.")
     if not verify_totp(db, account, code):
-        record_failure(db, "totp", ip, totp_key)
         return _("Bestätigung fehlgeschlagen: Passwort oder Code falsch.")
+    totp_attempt_ok(db, attempt)
     mark_fresh(db, sess)
     return None
 

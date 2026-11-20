@@ -122,6 +122,28 @@ def totp_locked(db: Session, username: str) -> bool:
         LoginAttempt.username == username)) >= settings.login_max_failures
 
 
+def begin_totp_attempt(db: Session, ip: str, username: str) -> LoginAttempt | None:
+    """Code-Versuch vorab als Fehlversuch verbuchen (Commit, dann zählen) – so prüfen auch gleichzeitige Anfragen
+    zusammen höchstens ``login_max_failures`` Codes. ``None`` = gesperrt. Bei richtigem Code ``totp_attempt_ok``."""
+    a = LoginAttempt(kind="totp", ip=ip, username=username[:64])
+    db.add(a)
+    db.commit()
+    since = utcnow() - timedelta(minutes=settings.login_window_minutes)
+    n = db.scalar(select(func.count()).select_from(LoginAttempt).where(
+        LoginAttempt.kind == "totp", LoginAttempt.at >= since, LoginAttempt.username == username[:64]))
+    if n > settings.login_max_failures:
+        db.delete(a)
+        db.commit()
+        return None
+    return a
+
+
+def totp_attempt_ok(db: Session, attempt: LoginAttempt) -> None:
+    """Richtiger Code: der vorab verbuchte Versuch zählt nicht als Fehlversuch."""
+    db.execute(delete(LoginAttempt).where(LoginAttempt.id == attempt.id))
+    db.commit()
+
+
 def record_failure(db: Session, kind: str, ip: str, username: str = "") -> None:
     db.add(LoginAttempt(kind=kind, ip=ip, username=username[:64]))
     # Alte Einträge aufräumen

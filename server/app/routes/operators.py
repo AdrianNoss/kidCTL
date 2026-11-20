@@ -17,8 +17,8 @@ from ..i18n import N_, _
 from ..middleware import csp
 from ..models import Operator, OperatorSession, SignupCode, utcnow
 from ..security import (
-    client_ip, csrf_protect_anon, dummy_verify, is_rate_limited, record_failure, totp_locked,
-    verify_password, verify_totp,
+    begin_totp_attempt, client_ip, csrf_protect_anon, dummy_verify, is_rate_limited, record_failure, totp_attempt_ok,
+    totp_locked, verify_password, verify_totp,
 )
 from ..web import local_redirect, render_anon, templates
 
@@ -91,14 +91,17 @@ def login_code(request: Request, totp: str = Form(""), db: Session = Depends(get
     if op is None:
         return _login_expired()
     ip, key = client_ip(request), f"op:{op.username}"[:64]
-    if totp_locked(db, key):
+    if not loginticket.claim(db, ticket):
+        return _login_expired()
+    attempt = begin_totp_attempt(db, ip, key)
+    if attempt is None:
         return _code_page(request, 429, _("Zu viele Fehlversuche. Bitte später erneut versuchen."))
     if not verify_totp(db, op, totp):
-        record_failure(db, "totp", ip, key)
         record_failure(db, "admin", ip, key)
         if loginticket.failed(db, ticket):
             return _login_expired()
         return _code_page(request, 401, _("Code falsch. Bitte erneut versuchen."))
+    totp_attempt_ok(db, attempt)
     loginticket.consume(db, ticket)
     db.commit()   # totp_last_step
     resp = RedirectResponse("/admin", status_code=303)

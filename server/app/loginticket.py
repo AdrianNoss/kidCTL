@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from .config import settings
@@ -39,12 +39,18 @@ def get(db: Session, request, kind: str) -> LoginTicket | None:
     return t
 
 
+def claim(db: Session, t: LoginTicket) -> bool:
+    """Einen Versuch atomar verbuchen, *bevor* der Code geprüft wird. False = keine Versuche mehr übrig."""
+    row = db.execute(update(LoginTicket).where(LoginTicket.id == t.id, LoginTicket.attempts < MAX_ATTEMPTS)
+                     .values(attempts=LoginTicket.attempts + 1).returning(LoginTicket.id)).first()
+    db.commit()
+    return row is not None
+
+
 def failed(db: Session, t: LoginTicket) -> bool:
-    """Falscher Code: Versuch zählen. True = Ticket jetzt verbraucht (zurück zu Schritt 1)."""
-    t.attempts += 1
-    spent = t.attempts >= MAX_ATTEMPTS
-    if spent:
-        db.delete(t)
+    """Falscher Code (Versuch schon per ``claim`` gezählt). True = Ticket jetzt verbraucht (zurück zu Schritt 1)."""
+    spent = db.execute(delete(LoginTicket).where(LoginTicket.id == t.id, LoginTicket.attempts >= MAX_ATTEMPTS)
+                       .returning(LoginTicket.id)).first() is not None
     db.commit()
     return spent
 

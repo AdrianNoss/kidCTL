@@ -3248,3 +3248,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Anfragen in 10 Minuten (`CHILD_MSG_LIMIT`/`CHILD_MSG_WINDOW`, darüber `Ack(ok=False, error="rate_limited")`
   ohne Push). Getestet: `test_tray.py` (21. Nachricht abgelehnt), `test_chat.py` (Grenze bei Chat und
   Verlängerungsanfrage, keine Zustellung), alle Agent- und Server-Tests grün; Prüfung in der Test-VM offen.
+- 2026-11-20: Anmeldung: Versuche mit dem Authenticator-Code werden vor der Prüfung atomar verbucht – je Login-Ticket
+  per bedingtem `UPDATE … attempts < 5` (`loginticket.claim`), je Konto per Vorab-Eintrag mit anschließender
+  Zählung (`security.begin_totp_attempt`, bei Erfolg `totp_attempt_ok`). Gilt für Eltern- und Betreiber-Login
+  sowie die frische Bestätigung. Getestet: je 20 gleichzeitige Versuche → genau 5 zugelassen, Konto danach
+  gesperrt (`test_login_steps.py`), alle Server-Tests grün.
