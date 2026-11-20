@@ -66,7 +66,8 @@ def test_linux_keeps_native_layout():
     assert isinstance(form, qt.QtWidgets.QFormLayout)
     d = ui.RequestDialog(None)
     assert not d.property("kidctlWindow")
-    assert ui.render_icon("12", "ok").pixmap(32, 32).toImage().pixelColor(16, 16).name() != "#000000"
+    img = ui.render_icon("critical", 64).pixmap(64, 64).toImage()                      # Linux: Symbol wie Windows
+    assert img.pixelColor(51, 51).name() == ws.status_color("critical", not ws.taskbar_light())
 
 
 def test_windows_layout_and_icon(win_style):
@@ -122,3 +123,20 @@ def test_window_hook_ignores_non_widgets(win_style):
         d.close()
     finally:
         win_style.removeEventFilter(win_style._kidctl_hook)
+
+
+def test_linux_panel_brightness(monkeypatch):
+    """GNOME vor 51: dunkle Leiste (helles Symbol); GNOME ab 51 und Plasma: nach Farbschema."""
+    qt.QtWidgets.QApplication.instance() or qt.QtWidgets.QApplication([])
+    monkeypatch.setattr(ws.sys, "platform", "linux")
+    hints = qt.QtWidgets.QApplication.instance().styleHints()
+    monkeypatch.setattr(type(hints), "colorScheme", lambda self: qt.Qt.ColorScheme.Light)
+    monkeypatch.setenv("XDG_CURRENT_DESKTOP", "ubuntu:GNOME")
+    monkeypatch.setattr(ws, "gnome_major", lambda: 46)
+    assert ws.taskbar_light() is False                                   # GNOME 46 (Ubuntu 24.04): Leiste immer dunkel
+    monkeypatch.setattr(ws, "gnome_major", lambda: 51)
+    assert ws.taskbar_light() is True                                    # GNOME 51: folgt dem Farbschema
+    monkeypatch.setenv("XDG_CURRENT_DESKTOP", "KDE")
+    for scheme, light in ((qt.Qt.ColorScheme.Light, True), (qt.Qt.ColorScheme.Dark, False)):
+        monkeypatch.setattr(type(hints), "colorScheme", lambda self, s=scheme: s)
+        assert ws.taskbar_light() is light

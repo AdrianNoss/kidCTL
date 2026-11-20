@@ -57,6 +57,8 @@ version is in the README.
   it; browsers and normal programs don't. If the firewall configuration is reloaded or removed, the
   filter can be open for up to 60 seconds until KidCTL restores it.
 
+- **Tooltip on GNOME:** the AppIndicator extension shows no tooltip on hover. The remaining time is shown at the
+  top of the icon's menu; warnings and the countdown work as before.
 - **Lutris and Bottles:** games that run via Lutris or Bottles (Wine) are not detected as games by KidCTL – they
   don't count towards game time or the game limit. As a workaround, use the "Counts as a game" switch in the program
   list, if the game appears there.

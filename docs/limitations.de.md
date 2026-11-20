@@ -56,6 +56,8 @@ steht im README.
 - **Website-Filter:** Programme, die die Namensauflösung von systemd direkt fragen (z. B. `resolvectl`), umgehen
   ihn; Browser und normale Programme nicht. Wird die Firewall-Konfiguration neu geladen oder entfernt, kann der
   Filter bis zu 60 Sekunden offen sein, bis KidCTL ihn wiederherstellt.
+- **Tooltip unter GNOME:** Die AppIndicator-Erweiterung zeigt beim Darüberfahren keinen Tooltip. Die Restzeit
+  steht oben im Menü des Symbols; Warnungen und Countdown kommen wie gewohnt.
 - **Lutris und Bottles:** Spiele, die über Lutris oder Bottles (Wine) laufen, erkennt KidCTL nicht als Spiele – sie
   zählen nicht zur Spielzeit und nicht zum Spiele-Limit. Als Ausweg den Schalter „zählt als Spiel“ in der
   Programmliste nutzen, soweit das Spiel dort erscheint.

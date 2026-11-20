@@ -3089,3 +3089,17 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   - Server-Tests 333 grün, neu `test_admin_nav.py`: je Rolle alle Bereiche erreichbar, genau ein aktiver Eintrag
     (auch auf der Familien-Detailseite), Handy-Leiste mit 3 + „Mehr“, keine Reiter, Rechte weiter serverseitig.
   - Im Browser bei 1280 und 375 px.
+- 2026-11-20: Version 0.42.0 (Tray Linux): Tray-Symbol unter Linux wie unter Windows.
+  - Monochromes KidCTL-Symbol mit Statuspunkt (`winstyle.tray_icon`), passend zur Leiste: Plasma nach Farbschema;
+    GNOME ab 51 ebenso (obere Leiste hell oder dunkel), ältere GNOME immer dunkel. In der VM festgestellt, dass
+    GNOME 51 eine helle Leiste hat.
+  - Neu gezeichnet beim Wechsel des Farbschemas. Die Restzeit steht in Tooltip und Menü, `icon_text` entfällt.
+  - Restlücke: GNOME (AppIndicator) zeigt keinen Tooltip, die Restzeit steht im Menü (`docs/limitations*.md`).
+  - `dev/vm/vmctl.py` kann die Maus bewegen (Tooltip) und rechtsklicken (Menü).
+
+  Getestet:
+  - Tray-Tests 27 grün (Leistenhelligkeit GNOME 46/51 und Plasma, Symbol unter Linux).
+  - Arch-VM, Plasma (helle Leiste): Symbol, grüner Punkt, Tooltip und Menü mit Restzeit.
+  - Arch-VM, GNOME 51 mit AppIndicator: Symbol dunkel auf heller Leiste, Menü mit Restzeit, kein Tooltip.
+  - Windows-11-VM: Tray-Menü und Tooltip hell/dunkel (DE) als Desktop-Abzug in voller Auflösung. EN fehlt, die VM
+    hat nur Deutsch als Anzeigesprache. Einbindung in Startseite und Wiki erst nach Abnahme.

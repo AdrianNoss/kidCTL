@@ -33,7 +33,7 @@ class TrayApp:
         self.client = AgentClient(socket_path)
         self.window = ChatWindow()
         self.blocked = BlockedWindow()
-        self.tray = QSystemTrayIcon(render_icon("…", "offline"))
+        self.tray = QSystemTrayIcon(render_icon("offline"))
         self.tray.setToolTip("KidCTL")
 
         self.menu = QMenu()
@@ -42,6 +42,11 @@ class TrayApp:
         if WINDOWS:   # Windows 11: runde Ecken; Restzeit steht im Menü, nicht im Symbol
             self.menu.aboutToShow.connect(lambda: winstyle.round_corners(self.menu, small=True))
             winstyle.STYLE.listeners.append(self._redraw_icon)   # Taskleiste hell/dunkel umgeschaltet
+        else:   # Plasma: Farbschema gewechselt -> Symbol passend zur Leiste neu zeichnen
+            try:
+                app.styleHints().colorSchemeChanged.connect(lambda *_: self._redraw_icon())
+            except AttributeError:
+                pass
         self.menu.addSeparator()
         self.menu.addAction(_("Chat öffnen"), self.show_chat)
         self.menu.addAction(_("Verlängerung anfordern …"), lambda: self.request_extension())
@@ -137,7 +142,7 @@ class TrayApp:
 
     def _connection_changed(self, connected: bool) -> None:
         if not connected:
-            self.tray.setIcon(render_icon("…", "offline"))
+            self.tray.setIcon(render_icon("offline"))
             self.status_action.setText(_("Keine Verbindung zum kidctl-Dienst"))
         self.window.set_state(self.state, connected)
 
@@ -161,7 +166,7 @@ class TrayApp:
     def _redraw_icon(self) -> None:
         state = self.state
         if state is not None and state.restricted:
-            self.tray.setIcon(render_icon(texts.icon_text(state), texts.level(state)))
+            self.tray.setIcon(render_icon(texts.level(state)))
 
     def _state_changed(self, state: t.TrayState) -> None:
         self.state = state
@@ -169,7 +174,7 @@ class TrayApp:
             self.countdown.set_state(state)
         if not state.restricted:  # nicht zugeordneter User: nichts anzeigen
             if state.paused:       # Ruhemodus: Symbol mit Hinweis, sonst nichts
-                self.tray.setIcon(render_icon("‖", "ok"))
+                self.tray.setIcon(render_icon("ok"))
                 self.tray.setToolTip(texts.paused_line())
                 self.status_action.setText(texts.paused_line())
                 self.tray.show()

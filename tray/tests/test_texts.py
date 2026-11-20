@@ -13,13 +13,12 @@ def st(**kw):
     return t.TrayState(**{**base, **kw})
 
 
-def test_icon_text_and_level():
-    assert texts.icon_text(st()) == "45" and texts.level(st()) == "ok"
-    assert texts.icon_text(st(remaining_seconds=150 * 60)) == "2h"
+def test_level():
+    assert texts.level(st()) == "ok"
     assert texts.level(st(remaining_seconds=10 * 60)) == "warning"
     assert texts.level(st(remaining_seconds=4 * 60)) == "critical"
     blocked = st(allowed=False, remaining_seconds=0, reason="quota")
-    assert texts.icon_text(blocked) == "×" and texts.level(blocked) == "critical"
+    assert texts.level(blocked) == "critical"
 
 
 def test_status_and_details():

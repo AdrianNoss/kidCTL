@@ -66,6 +66,10 @@ den DNS-Filter um und aktiviert die Browser-Policies gegen DNS-over-HTTPS.
 Fehlt zu einem installierten Desktop das passende Paket, weist `pacman` darauf hin und das WebUI
 meldet es unter „Integrität“.
 
+**Tray-Symbol:** das KidCTL-Symbol mit einem farbigen Statuspunkt (grün, gelb, rot, grau = keine Verbindung),
+passend zur hellen oder dunklen Leiste. Die Restzeit steht im Tooltip und oben im Menü; Warnungen und Countdown
+kommen wie gewohnt.
+
 **GNOME:** Keine automatische Anmeldung (`AutomaticLogin` in `/etc/gdm/custom.conf`) für Kinder
 einrichten. Lehnt die Login-Sperre sie beim Start ab, zeigt GDM keinen Anmeldebildschirm, sondern
 bleibt schwarz (Verhalten von GDM). Das WebUI meldet eine solche Einstellung unter „Integrität“.

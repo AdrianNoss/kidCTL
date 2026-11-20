@@ -66,6 +66,10 @@ the DNS filter and activates the browser policies against DNS-over-HTTPS.
 If the matching package for an installed desktop is missing, `pacman` points this out and the web interface
 reports it under "Integrity".
 
+**Tray icon:** the KidCTL symbol with a coloured status dot (green, yellow, red, grey = no connection), matching a
+light or dark panel. The remaining time is shown in the tooltip and at the top of the menu; warnings and the countdown
+work as before.
+
 **GNOME:** Don't set up automatic login (`AutomaticLogin` in `/etc/gdm/custom.conf`) for children.
 If the sign-in lock rejects it at boot, GDM shows no sign-in screen but
 stays black (GDM behaviour). The web interface reports such a setting under "Integrity".

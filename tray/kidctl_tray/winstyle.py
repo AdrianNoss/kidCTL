@@ -323,8 +323,42 @@ def round_corners(widget, small: bool = False) -> None:
         pass
 
 
+GNOME_LIGHT_BAR = 51   # ab dieser GNOME-Version folgt die obere Leiste dem Farbschema (in der VM geprüft)
+
+
+def gnome_major() -> int:
+    """Hauptversion von GNOME Shell (0 = unbekannt), einmal ermittelt."""
+    global _GNOME
+    if _GNOME is None:
+        import re
+        import subprocess
+        try:
+            out = subprocess.run(["gnome-shell", "--version"], capture_output=True, text=True, timeout=5).stdout
+            _GNOME = int(m.group(1)) if (m := re.search(r"(\d+)\.", out)) else 0
+        except (OSError, subprocess.SubprocessError, ValueError):
+            _GNOME = 0
+    return _GNOME
+
+
+_GNOME: int | None = None
+
+
 def taskbar_light() -> bool:
-    """Taskleiste hell (``SystemUsesLightTheme``) – dann dunkles Tray-Symbol."""
+    """Leiste hell – dann dunkles Tray-Symbol. Windows: ``SystemUsesLightTheme``. Linux: Plasma und GNOME ab
+    Version 51 folgen dem Farbschema (Qt ≥ 6.5, sonst Helligkeit der Palette); ältere GNOME haben eine dunkle Leiste."""
+    if sys.platform != "win32":
+        import os
+        if "gnome" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower() and gnome_major() < GNOME_LIGHT_BAR:
+            return False
+        try:
+            from .qt import QPalette, Qt
+            app = _app()
+            scheme = app.styleHints().colorScheme()
+            if scheme != Qt.ColorScheme.Unknown:
+                return scheme == Qt.ColorScheme.Light
+            return app.palette().color(QPalette.ColorRole.Window).lightness() >= 128
+        except (AttributeError, RuntimeError):
+            return False
     try:
         import winreg
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER,

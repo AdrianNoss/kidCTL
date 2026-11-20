@@ -6,8 +6,8 @@ import html
 from datetime import time
 
 from .qt import (  # noqa: F401 – PySide6 oder PyQt6
-    QButtonGroup, QCheckBox, QColor, QDialog, QDialogButtonBox, QEvent, QFont, QHBoxLayout, QIcon, QLabel,
-    QLineEdit, QPainter, QPalette, QPixmap, QPlainTextEdit, QPushButton, QRadioButton, QRect, QScrollArea, QSpinBox, Qt,
+    QButtonGroup, QCheckBox, QColor, QDialog, QDialogButtonBox, QEvent, QHBoxLayout, QIcon, QLabel,
+    QLineEdit, QPalette, QPlainTextEdit, QPushButton, QRadioButton, QScrollArea, QSpinBox,
     QTextBrowser, QTime, QTimeEdit, QVBoxLayout, QWidget, Signal,
 )
 
@@ -16,8 +16,6 @@ from kidctl_common.protocol import MAX_BODY, ChatMessage
 
 from . import texts, winstyle
 from .texts import _
-
-COLORS = {"ok": "#27ae60", "warning": "#f39c12", "critical": "#da4453", "offline": "#7f8c8d"}
 
 
 def _mix(a: QColor, b: QColor, share_b: float) -> str:
@@ -35,26 +33,10 @@ def bubble_colors(pal: QPalette) -> tuple[str, str, str]:
     return own, other, text.name()
 
 
-def render_icon(text: str, level: str, size: int = 64) -> QIcon:
-    """Tray-Symbol: Linux Kreis mit Restzeit; Windows monochromes KidCTL-Symbol mit Statuspunkt (Restzeit dann in
-    Tooltip und Menü)."""
-    if winstyle.active():
-        return winstyle.tray_icon(level, winstyle.taskbar_light(), size)
-    pix = QPixmap(size, size)
-    pix.fill(Qt.GlobalColor.transparent)
-    p = QPainter(pix)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing)
-    p.setBrush(QColor(COLORS.get(level, COLORS["offline"])))
-    p.setPen(Qt.PenStyle.NoPen)
-    p.drawEllipse(2, 2, size - 4, size - 4)
-    font = QFont()
-    font.setBold(True)
-    font.setPixelSize(int(size * (0.5 if len(text) <= 2 else 0.38)))
-    p.setFont(font)
-    p.setPen(QColor("white"))
-    p.drawText(QRect(0, 0, size, size), Qt.AlignmentFlag.AlignCenter, text)
-    p.end()
-    return QIcon(pix)
+def render_icon(level: str, size: int = 64) -> QIcon:
+    """Tray-Symbol (Linux und Windows): monochromes KidCTL-Symbol passend zur Leiste mit Statuspunkt; die Restzeit
+    steht in Tooltip und Menü."""
+    return winstyle.tray_icon(level, winstyle.taskbar_light(), size)
 
 
 def _buttons(dialog: QDialog, ok_text: str, on_ok) -> QDialogButtonBox:

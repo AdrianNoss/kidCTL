@@ -4,6 +4,8 @@
     vmctl.py SOCKET type "text"        Text tippen (\\n = Enter)
     vmctl.py SOCKET key ctrl+alt+delete
     vmctl.py SOCKET click X Y          Klick; Koordinaten wie im Screenshot (Breite 900)
+    vmctl.py SOCKET rclick X Y         Rechtsklick (z. B. Menü am Tray-Symbol)
+    vmctl.py SOCKET move X Y           Maus nur bewegen (z. B. Tooltip)
     vmctl.py SOCKET shot DATEI         Screenshot als DATEI.png (Breite 900, braucht PySide6)
 
 SOCKET: QMP-Socket der VM, z. B. ~/.local/share/kidctl-vm-win11/qmp.sock
@@ -70,16 +72,19 @@ class Qmp:
             img.scaledToWidth(WIDTH).save(png)
         return img
 
-    def click(self, x: float, y: float) -> None:
+    def move(self, x: float, y: float) -> None:
         img = self.screendump("")
         scale = img.width() / WIDTH
         ax = int(x * scale / img.width() * 32767)
         ay = int(y * scale / img.height() * 32767)
         self.cmd("input-send-event", events=[{"type": "abs", "data": {"axis": "x", "value": ax}},
                                              {"type": "abs", "data": {"axis": "y", "value": ay}}])
+
+    def click(self, x: float, y: float, button: str = "left") -> None:
+        self.move(x, y)
         time.sleep(0.2)
         for down in (True, False):
-            self.cmd("input-send-event", events=[{"type": "btn", "data": {"down": down, "button": "left"}}])
+            self.cmd("input-send-event", events=[{"type": "btn", "data": {"down": down, "button": button}}])
             time.sleep(0.1)
 
 
@@ -91,8 +96,10 @@ def main() -> None:
         q.type(args[0])
     elif cmd == "key":
         q.keys(*args[0].split("+"))
-    elif cmd == "click":
-        q.click(float(args[0]), float(args[1]))
+    elif cmd in ("click", "rclick"):
+        q.click(float(args[0]), float(args[1]), "right" if cmd == "rclick" else "left")
+    elif cmd == "move":
+        q.move(float(args[0]), float(args[1]))
     elif cmd == "shot":
         q.screendump(args[0] + ".png")
     else:

@@ -41,14 +41,6 @@ def fmt_duration(seconds: int) -> str:
     return f"{minutes // 60}:{minutes % 60:02d} h" if i18n.current() == "de" else i18n.fmt_minutes(minutes)
 
 
-def icon_text(state: t.TrayState) -> str:
-    """Kurztext im Tray-Symbol (max. 3 Zeichen)."""
-    if not state.allowed:
-        return "×"
-    minutes = state.remaining_seconds // 60
-    return str(minutes) if minutes < 100 else f"{minutes // 60}h"
-
-
 def level(state: t.TrayState) -> str:
     if not state.allowed or state.remaining_seconds <= 5 * 60:
         return "critical"
