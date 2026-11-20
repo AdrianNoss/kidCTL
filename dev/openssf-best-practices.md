@@ -5,7 +5,7 @@ Antworten auf Englisch zum Einfügen; „Met“ / „Unmet“ / „N/A“ wie im
 `website/hugo.toml` als `bestpractices_id` unter `[params]` eintragen. Dann zeigt die Startseite den Link, und der
 Badge kann in die README.
 
-Stand: 2026-11-20 (Version 0.41). **Offene Punkte stehen am Ende.**
+Stand: 2026-11-20 (Version 0.43). Offen ist nur noch der Branch-Schutz (Ende des Dokuments).
 
 ## Basics
 
@@ -13,8 +13,8 @@ Stand: 2026-11-20 (Version 0.41). **Offene Punkte stehen am Ende.**
 |---|---|---|
 | description_good | Met | README: "Parental control that stays at home: self-hosted for Windows and Linux." https://github.com/AdrianNoss/kidCTL#readme |
 | interact | Met | GitHub Issues; project page https://adriannoss.github.io/kidCTL/ |
-| contribution | Met* | *Erst nach `CONTRIBUTING.md` (siehe offene Punkte).* "How to contribute: CONTRIBUTING.md (issues, pull requests, tests, bilingual docs)." |
-| contribution_requirements | Met* | *Mit `CONTRIBUTING.md`.* Coding conventions, tests and docs parity are described there. |
+| contribution | Met | "How to contribute: CONTRIBUTING.md (issue first, then pull request; tests; bilingual docs)." https://github.com/AdrianNoss/kidCTL/blob/main/CONTRIBUTING.md |
+| contribution_requirements | Met | `CONTRIBUTING.md`: required tests, linter (`ruff check`), docs parity check; conventions in `CLAUDE.md`. |
 | floss_license | Met | AGPL-3.0-or-later, `LICENSE` |
 | floss_license_osi | Met | AGPL-3.0 is OSI-approved. |
 | license_location | Met | `LICENSE` in the repository root. |
@@ -59,16 +59,16 @@ Stand: 2026-11-20 (Version 0.41). **Offene Punkte stehen am Ende.**
 | build | Met | Server: Docker (`docker compose up --build`); clients: `packaging/arch/PKGBUILD`, `.deb` and Windows installer built in `.github/workflows/release.yml`. |
 | build_common_tools | Met | Docker, makepkg, dpkg, Inno Setup, Hugo. |
 | build_floss_tools | Met | All build tools except Inno Setup are FLOSS (Inno Setup is free, source available). |
-| test | Met | Automated test suites with pytest: `server/tests`, `agent/tests`, `tray/tests` (how to run: `docs/` → development / `CONTRIBUTING.md`). |
-| test_invocation | Met* | *Standardaufruf mit `CONTRIBUTING.md` dokumentieren:* `python -m pytest` in each component. |
+| test | Met | Automated test suites with pytest: `server/tests`, `agent/tests`, `tray/tests` (how to run: `CONTRIBUTING.md`). |
+| test_invocation | Met | Standard invocation documented in `CONTRIBUTING.md`: `python -m pytest -q tests` in `server/`, `agent/` and `tray/`. |
 | test_most | Met | Most code paths are covered; every change ships with tests (see `spec.md` changelog test notes). |
-| test_continuous_integration | Unmet* | *Empfohlen: Test-Workflow (siehe offene Punkte).* |
-| test_policy | Met* | *Mit `CONTRIBUTING.md`:* "New functionality must come with automated tests." |
+| test_continuous_integration | Met | GitHub Actions `.github/workflows/tests.yml` runs all test suites on every push to `main` and every pull request (server and agent against a PostgreSQL service container, tray with Qt offscreen). |
+| test_policy | Met | `CONTRIBUTING.md`: "New functionality must come with automated tests." |
 | tests_are_added | Met | Recent changes add tests (e.g. `server/tests/test_login_steps.py`, `test_invite_mail.py`). |
-| tests_documented_added | Met* | *Mit `CONTRIBUTING.md`.* |
-| warnings | Unmet* | *Linter fehlt (siehe offene Punkte).* |
-| warnings_fixed | N/A* | Nach Linter-Einführung: Met. |
-| warnings_strict | Unmet* | Optional. |
+| tests_documented_added | Met | Test policy documented in `CONTRIBUTING.md` (section "Tests"). |
+| warnings | Met | `ruff check` (Pyflakes `F`, syntax errors `E9`; `ruff.toml`) runs in `.github/workflows/tests.yml`. |
+| warnings_fixed | Met | All findings were fixed when the linter was introduced; CI fails on new ones. |
+| warnings_strict | Unmet | Optional (SUGGESTED): only error rules are enabled, no style rules. |
 
 ## Security
 
@@ -106,17 +106,15 @@ Stand: 2026-11-20 (Version 0.41). **Offene Punkte stehen am Ende.**
 
 ## Offene Punkte (vor dem Eintragen erledigen)
 
-1. **`CONTRIBUTING.md`** (DE/EN) anlegen:
-   - Wie man beiträgt: Issue zuerst, Pull Request.
-   - Testpflicht für neue Funktionen.
-   - Tests ausführen: `cd server && python -m pytest`, ebenso in `agent/` und `tray/`.
-   - Doku zweisprachig mit `python dev/check_docs_parity.py`.
-   - Sicherheitsmeldungen nur nach `SECURITY.md`.
-   - Damit sind `contribution`, `contribution_requirements`, `test_invocation`, `test_policy` und
-     `tests_documented_added` erfüllt.
-2. **Test-Workflow** in GitHub Actions (empfohlen, `test_continuous_integration`): Server-Tests brauchen PostgreSQL
-   als Service-Container; Agent und Tray laufen ohne.
-3. **Linter** (`warnings`): z. B. `ruff check` mit einer kleinen Regelauswahl (Pyflakes `F`, `E9`) als Workflow-Schritt;
-   Funde vorher bereinigen.
-4. Branch-Schutz für `main` in GitHub prüfen (Scorecard „Branch-Protection“), z. B. „Require status checks“ und
-   Force-Push aus.
+1. ~~`CONTRIBUTING.md`~~ – erledigt 2026-11-20 (`CONTRIBUTING.md`/`CONTRIBUTING.de.md`, im README verlinkt).
+2. ~~Test-Workflow~~ – erledigt 2026-11-20 (`.github/workflows/tests.yml`). Erster Lauf erst nach dem Push sichtbar.
+3. ~~Linter~~ – erledigt 2026-11-20 (`ruff check` mit `F`, `E9` in `tests.yml`, Konfiguration `ruff.toml`).
+4. **Branch-Schutz für `main`** (Scorecard „Branch-Protection“) – in GitHub unter *Settings → Rules → Rulesets →
+   New branch ruleset* (oder *Settings → Branches*), Ziel `main`:
+   - *Restrict deletions* und *Block force pushes* an.
+   - *Require status checks to pass*: die Jobs aus `tests.yml` („Linter und Doku“, „Server und Agent“,
+     „Tray-App“) – erst auswählbar, nachdem der Workflow einmal gelaufen ist.
+   - Optional *Require a pull request before merging*. Solange direkt auf `main` gepusht wird, den Admin als
+     *Bypass* eintragen; sonst sperrt die Regel den eigenen Push.
+   - Scorecard bewertet höher mit Pflicht-Review (≥ 1 Approval); bei einem einzelnen Maintainer nicht sinnvoll
+     erfüllbar – bewusst offen lassen.

@@ -9,7 +9,6 @@ from app import mail
 from app.config import Settings
 from conftest import next_code, two_step_login, SessionLocal, add_parent
 from app.models import Parent, ParentSession, utcnow
-from app.security import hash_password, new_totp_secret
 from conftest import PASSWORD, csrf_from, login
 
 NEW_PW = "ganz neues passwort 42"

@@ -9,18 +9,14 @@ import pwd
 import re
 
 from kidctl_common import protocol as p
-from kidctl_common import tray as t
 
 from . import desktoptrust, gnomesearch, integrity, kidmounts, sdnotify
 from .accounting import boottime
 from .apps import scan_apps
 from .apptime import AppIndex, AppTime
-from .chat import new_client_msg_id
 from .connection import Connection
 from .core import STARTUP_SYNC, AgentCore  # noqa: F401 – STARTUP_SYNC: Weitergabe (Tests)
 from .dnsfilter import DnsFilter
-from kidctl_common import i18n
-from kidctl_common.i18n import _
 
 from .gamelimit import GameLimit
 from .games import GameNames, game_id
@@ -30,7 +26,7 @@ from .lang import UserLanguages
 from .loginlock import LoginLock, is_admin
 from .procs import ProcEvents, pids_of, read_environ, read_proc
 from .programs import LAUNCHERS, STEAM_KEY, STEAM_SYSTEM
-from .rules import Decision, game_limit
+from .rules import Decision
 from .trayserver import TrayServer
 from .watcher import ProgramWatcher
 

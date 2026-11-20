@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import date, time, timedelta
+from datetime import time, timedelta
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -25,8 +25,7 @@ from .. import lock as lk
 from .. import schedule as sch
 from ..i18n import N_, _
 from ..security import (
-    client_ip, csrf_protect, hash_password, is_rate_limited, new_pairing_code, new_totp_secret, record_failure,
-    require_session, token_hash, totp_qr_svg, totp_uri, verify_password,
+    csrf_protect, hash_password, new_pairing_code, new_totp_secret, require_session, token_hash, totp_qr_svg,
 )
 from ..web import local_redirect, render
 from ..ws import manager

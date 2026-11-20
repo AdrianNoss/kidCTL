@@ -156,7 +156,7 @@ def import_sqlite(path: str, target: Engine, apply: bool = False) -> dict[str, i
         src.dispose()
 
     # Alte Installationen kennen keine Familien: alles gehört Familie 1, der älteste Account wird Inhaber
-    from .models import ROLE_OWNER, ROLE_PARENT, FamilyScoped
+    from .models import ROLE_OWNER, ROLE_PARENT
     if not data["family"] and (data["parent"] or data["child"] or data["device"]):
         data["family"] = [{"id": 1, "name": "", "created_at": None}]
         owner = min((r["id"] for r in data["parent"]), default=None)

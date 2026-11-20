@@ -143,7 +143,7 @@ class ProgramWatcher:
         if not targets:
             return None
         info = self.read(pid)
-        for _ in range(EMPTY_ARGV_RETRIES):
+        for _retry in range(EMPTY_ARGV_RETRIES):
             if info is None or info.uid not in targets or info.argv:
                 break
             await asyncio.sleep(EMPTY_ARGV_DELAY)
@@ -268,7 +268,7 @@ class ProgramWatcher:
             return
         child_start = info.start
         pid = self.forks.get(info.pid, info.ppid)
-        for _ in range(2 * MAX_ANCESTORS):
+        for _step in range(2 * MAX_ANCESTORS):
             if pid <= 1:
                 return
             parent = self.read(pid)

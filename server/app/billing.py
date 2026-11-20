@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from . import i18n, mail
+from . import i18n
 from .config import settings
 from .i18n import N_, _
 from .models import ROLE_OWNER, Child, Family, Membership, Parent, utcnow

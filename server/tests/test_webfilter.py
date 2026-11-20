@@ -4,7 +4,6 @@ import asyncio
 
 import httpx
 import pytest
-from sqlalchemy import select
 
 from kidctl_common import protocol as p
 
@@ -12,7 +11,6 @@ from app import webfilter
 from conftest import SessionLocal
 from app.models import BlocklistState, Child
 
-from conftest import recv
 from test_policy import _policy, _setup, device
 
 

@@ -3,7 +3,6 @@ Policy bewirken: keine Admins sperren, keine Dateien außerhalb des Caches schre
 Unbound-Anweisungen einschleusen, keine unverschlüsselte Verbindung."""
 
 import threading
-from datetime import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest

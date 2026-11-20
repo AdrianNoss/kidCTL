@@ -68,8 +68,10 @@ def server(tmp_path):
             time.sleep(0.1)
     web = httpx.Client(base_url=base, headers={"Accept-Language": "de-DE"})
     tok = lambda html: re.search(r'name="csrf_token" value="([^"]+)"', html).group(1)  # noqa: E731
+    # Login in zwei Schritten (Passwort, dann Authenticator-Code)
     web.post("/login", data={"csrf_token": tok(web.get("/login").text), "username": "mama",
-                             "password": "ein-langes-passwort", "totp": pyotp.TOTP(secret).now()})
+                             "password": "ein-langes-passwort"})
+    web.post("/login/code", data={"csrf_token": tok(web.get("/login/code").text), "totp": pyotp.TOTP(secret).now()})
     csrf = tok(web.get("/children").text)
     web.post("/children", data={"csrf_token": csrf, "name": "Max"})
     yield base, web, csrf

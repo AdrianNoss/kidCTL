@@ -20,7 +20,6 @@ from sqlalchemy.orm import Session
 
 from . import branding, i18n, mailer
 from .i18n import _
-from . import mail
 from .config import settings
 from . import crypto
 from .models import Parent, ParentSession, ParentToken, utcnow

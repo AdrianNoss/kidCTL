@@ -1,0 +1,123 @@
+# Tests und Linter bei jedem Push und Pull Request: Server und Agent gegen PostgreSQL (Service-Container), Tray-App
+# mit PySide6 offscreen, ruff check (nur Fehlerregeln, ruff.toml) und Doku-Parität.
+# Nicht in CI: Systemnahes (PAM, nftables, Mounts) – die Tests ersetzen solche Aufrufe durch Fakes; echte Prüfung in
+# der Test-VM (dev/vm/). Windows-spezifisches läuft als plattformunabhängige Logik-Tests mit.
+
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"        # wie das Server-Image (server/Dockerfile)
+  PYTEST_VERSION: "9.2.0"
+  RUFF_VERSION: "0.17.6"
+  PYSIDE6_VERSION: "6.12.0"
+
+jobs:
+  lint:
+    name: Linter und Doku
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0   # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: ruff installieren
+        run: python -m pip install -q "ruff==${RUFF_VERSION}"
+      - name: ruff check
+        run: ruff check --output-format=github
+      - name: Doku-Parität Deutsch/Englisch
+        run: python dev/check_docs_parity.py
+
+  server-agent:
+    name: Server und Agent
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          # Zugangsdaten wie der Entwicklungs-Container (server/tests/conftest.py, agent/tests/test_e2e_server.py)
+          POSTGRES_USER: kidctl
+          POSTGRES_PASSWORD: kidctl-dev
+          POSTGRES_DB: kidctl
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U kidctl"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://kidctl:kidctl-dev@127.0.0.1:55432/kidctl_test
+      KIDCTL_E2E_DATABASE_URL: postgresql+psycopg://kidctl:kidctl-dev@127.0.0.1:55432/kidctl_e2e
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0   # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: server/requirements.txt
+      - name: Abhängigkeiten installieren
+        run: |
+          python -m pip install -q -r server/requirements.txt "pytest==${PYTEST_VERSION}" \
+            "dbus-next==0.2.3" "websockets==17.4"
+      - name: Server-Tests
+        working-directory: server
+        env:
+          PYTHONPATH: .:../common
+          # Backup-Tests: pg_dump/pg_restore im Service-Container (passend zu PostgreSQL 17, Verbindung über dessen
+          # Socket; Zugangsdaten setzt server/app/backup.py als PGUSER/PGPASSWORD/PGDATABASE). job-Kontext gibt es erst
+          # auf Schritt-Ebene.
+          KIDCTL_PG_DUMP: docker exec -i -e PGUSER -e PGPASSWORD -e PGDATABASE ${{ job.services.postgres.id }} pg_dump
+          KIDCTL_PG_RESTORE: docker exec -i -e PGUSER -e PGPASSWORD -e PGDATABASE ${{ job.services.postgres.id }} pg_restore
+        run: python -m pytest -q -rs tests -p no:logging
+      - name: Agent-Tests (inkl. End-to-End gegen den Server)
+        working-directory: agent
+        env:
+          PYTHONPATH: .:../common
+        run: python -m pytest -q -rs tests -p no:logging
+
+  tray:
+    name: Tray-App
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0   # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Systembibliotheken für Qt (offscreen)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
+      - name: Abhängigkeiten installieren
+        run: python -m pip install -q "PySide6-Essentials==${PYSIDE6_VERSION}" "pydantic==2.14.3" "pytest==${PYTEST_VERSION}"
+      - name: Qt prüfen
+        # Die GUI-Tests überspringen sich bei fehlendem Qt (importorskip) – in CI soll das stattdessen fehlschlagen.
+        run: python -c "from PySide6 import QtWidgets; QtWidgets.QApplication([])"
+      - name: Tray-Tests
+        working-directory: tray
+        env:
+          PYTHONPATH: .:../common
+        run: python -m pytest -q -rs tests

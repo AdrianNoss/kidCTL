@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Paritäts-Check der zweisprachigen Doku: Deutsch (Quelle) und Englisch müssen den gleichen Inhalt haben.
 
-Paare: docs/<name>.de.md ↔ docs/<name>.md, README.de.md ↔ README.md, SECURITY.de.md ↔ SECURITY.md.
+Paare: docs/<name>.de.md ↔ docs/<name>.md, README.de.md ↔ README.md, SECURITY.de.md ↔ SECURITY.md,
+CONTRIBUTING.de.md ↔ CONTRIBUTING.md.
 Geprüft wird je Paar:
   - beide Dateien vorhanden
   - gleiche Überschriftenfolge (Anzahl und Ebenen)
@@ -131,7 +132,7 @@ def pairs(root: Path) -> tuple[list[tuple[Path, Path]], list[str]]:
                 errs.append(f"{have.relative_to(root)}:1: Gegenstück {miss.relative_to(root)} fehlt")
         if de.exists() and en.exists():
             out.append((de, en))
-    for base in ("README", "SECURITY"):
+    for base in ("README", "SECURITY", "CONTRIBUTING"):
         de, en = root / f"{base}.de.md", root / f"{base}.md"
         if de.exists() or en.exists():
             if de.exists() and en.exists():
@@ -146,7 +147,7 @@ def check_nav(root: Path) -> list[str]:
     """docs.yaml (Navigation des Wikis) gegen die Dateien in docs/."""
     nav = root / "website/data/docs.yaml"
     if not nav.exists():
-        return [f"website/data/docs.yaml:1: fehlt"]
+        return ["website/data/docs.yaml:1: fehlt"]
     entries: list[tuple[int, str]] = []
     for n, line in enumerate(nav.read_text(encoding="utf-8").splitlines(), 1):
         if m := re.match(r"^\s*-\s+([a-z0-9-]+)\s*(#.*)?$", line):

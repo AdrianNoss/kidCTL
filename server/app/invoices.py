@@ -27,9 +27,9 @@ from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from . import audit, mail
+from . import audit
 from .config import settings
-from .i18n import N_, _
+from .i18n import N_
 from .models import (
     AdminLog, BillingAddress, Family, Invoice, InvoiceCounter, InvoiceLine, InvoiceSettings, PriceItem, utcnow,
 )

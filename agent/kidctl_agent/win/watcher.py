@@ -257,7 +257,7 @@ class WinProgramWatcher:
 
         def ancestors() -> list[str]:
             out, cur, seen = [], info, set()
-            for _ in range(MAX_ANCESTORS):
+            for _step in range(MAX_ANCESTORS):
                 if not cur.ppid or cur.ppid in seen:
                     break
                 seen.add(cur.ppid)

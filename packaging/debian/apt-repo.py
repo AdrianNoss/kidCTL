@@ -71,7 +71,7 @@ def build(debs_dir: Path, repo: Path, key: str) -> None:
         (d / "Packages").write_bytes(text)
         (d / "Packages.gz").write_bytes(gzip.compress(text, mtime=0))
         index_files += [d / "Packages", d / "Packages.gz"]
-    lines = [f"Origin: KidCTL", f"Label: KidCTL", f"Suite: {SUITE}", f"Codename: {SUITE}",
+    lines = ["Origin: KidCTL", "Label: KidCTL", f"Suite: {SUITE}", f"Codename: {SUITE}",
              f"Date: {email.utils.formatdate(usegmt=True)}", f"Architectures: {' '.join(ARCHES)}",
              f"Components: {COMPONENT}", "Description: KidCTL Parental Control", "SHA256:"]
     for f in index_files:

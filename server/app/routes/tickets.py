@@ -4,7 +4,6 @@ Auch im Ruhemodus erreichbar. Interne Notizen des Supports sind hier nie sichtba
 from __future__ import annotations
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Request
-from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
