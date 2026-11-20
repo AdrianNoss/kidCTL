@@ -7,13 +7,17 @@
   <h2>{{ _("Neuer Code") }}</h2>
   <p><code class="link-box">{{ new_code }}</code></p>
   <p class="muted"><small>{{ _("Der Code wird nur jetzt angezeigt. Er ist {days} Tage gültig und einmal verwendbar.").format(days=days) }}</small></p>
+  {% if sent %}<p class="success">{{ _("Einladung per Mail an {email} geschickt.").format(email=sent_to) }}</p>
+  {% elif sent is false %}<p class="error">{{ _("Die Mail an {email} ließ sich nicht senden (SMTP prüfen). Der Code gilt trotzdem.").format(email=sent_to) }}</p>{% endif %}
 </section>
 {% endif %}
 <form method="post" action="/admin/codes" class="card">
   <h2>{{ _("Code erzeugen") }}</h2>
   <p class="muted">{{ _("Für die Registrierung mit REGISTRATION=invite: Wer den Code hat, kann eine Familie anlegen.") }}</p>
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-  <label>{{ _("Notiz (für wen)") }} <input name="note" maxlength="255"></label>
+  <label>{{ _("Notiz (für wen)") }} <input name="note" maxlength="255" value="{{ form.note if form else '' }}"></label>
+  <label>{{ _("E-Mail-Adresse (optional)") }} <input type="email" name="email" maxlength="255" value="{{ form.email if form else '' }}" autocomplete="off"></label>
+  <label>{{ _("Sprache der Mail") }} <select name="lang"><option value="de">Deutsch</option><option value="en">English</option></select></label>
   <label class="option"><input type="checkbox" name="free" value="1"> {{ _("Tarif „Kostenlos“ (sonst Testphase)") }}</label>
   <button type="submit">{{ _("Erzeugen") }}</button>
 </form>
@@ -22,11 +26,16 @@
   <table class="responsive">
     {% for c in codes %}
     <tr>
-      <td><strong>{{ c.note or _("ohne Notiz") }}</strong>{% if c.plan == "free" %} <span class="pill play">{{ _("Kostenlos") }}</span>{% endif %}<br><small class="muted">{{ _("erstellt {date}").format(date=c.created_at | localtime) }}</small></td>
+      <td><strong>{{ c.note or _("ohne Notiz") }}</strong>{% if c.plan == "free" %} <span class="pill play">{{ _("Kostenlos") }}</span>{% endif %}<br><small class="muted">{{ _("erstellt {date}").format(date=c.created_at | localtime) }}{% if c.email %} · {{ _("per Mail an {email}").format(email=mask(c.email)) }}{% endif %}</small></td>
       <td class="right"><div class="actions">
         {% if c.used_at %}<span class="pill ok">{{ _("eingelöst {date}").format(date=c.used_at | localtime) }}{% if c.family_id %} · #{{ c.family_id }}{% endif %}</span>
         {% elif c.expires_at < now %}<span class="pill">{{ _("abgelaufen") }}</span>
         {% else %}<span class="pill play">{{ _("offen bis {date}").format(date=c.expires_at | localtime) }}</span>{% endif %}
+        {% if c.email and not c.used_at and c.expires_at >= now %}
+        <form method="post" action="/admin/codes/{{ c.id }}/resend" class="inline">
+          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+          <button type="submit" class="secondary small">{{ _("Erneut senden") }}</button>
+        </form>{% endif %}
         {% if not c.used_at %}
         <form method="post" action="/admin/codes/{{ c.id }}/delete" class="inline">
           <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">

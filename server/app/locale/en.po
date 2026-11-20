@@ -3351,3 +3351,66 @@ msgstr "Wrong code. Please try again."
 
 msgid "Die Anmeldung wurde abgebrochen oder ist abgelaufen. Bitte noch einmal anmelden."
 msgstr "The sign-in was cancelled or has expired. Please sign in again."
+
+msgid "Adresse"
+msgstr "Address"
+
+msgid "Dein Einladungscode: {code} (gültig bis {date}, einmal verwendbar)."
+msgstr "Your invitation code: {code} (valid until {date}, single use)."
+
+msgid "Deine Einladung"
+msgstr "Your invitation"
+
+msgid "Der Link setzt den Code schon ein. Falls du damit nichts anfangen kannst, ignoriere diese Mail."
+msgstr "The link already fills in the code. If this means nothing to you, please ignore this email."
+
+msgid "Die Homepage bitte mit https:// angeben."
+msgstr "Please enter the homepage with https://."
+
+msgid "Die Mail an {email} ließ sich nicht senden (SMTP prüfen). Der Code gilt trotzdem."
+msgstr "The email to {email} could not be sent (check SMTP). The code is valid anyway."
+
+msgid "Die ersten {days} Tage sind kostenlos."
+msgstr "The first {days} days are free."
+
+msgid "Du bekommst diese Mail, weil dich der Betreiber eingeladen hat."
+msgstr "You are receiving this email because the operator invited you."
+
+msgid "E-Mail-Adresse (optional)"
+msgstr "Email address (optional)"
+
+msgid "Einladung per Mail an {email} geschickt."
+msgstr "Invitation sent by email to {email}."
+
+msgid "Einladung zu KidCTL"
+msgstr "Invitation to KidCTL"
+
+msgid "Erscheint unter Anmeldung, Registrierung, „Passwort vergessen“ und Authenticator-Einrichtung. Leer: Link zur Projektseite von KidCTL."
+msgstr "Shown below sign-in, registration, \"Forgot password\" and authenticator setup. Empty: link to the KidCTL project page."
+
+msgid "Homepage"
+msgstr "Homepage"
+
+msgid "Jetzt registrieren"
+msgstr "Register now"
+
+msgid "Linktext (Deutsch)"
+msgstr "Link text (German)"
+
+msgid "Linktext (Englisch)"
+msgstr "Link text (English)"
+
+msgid "Mit deinem Einladungscode richtest du KidCTL für deine Familie ein."
+msgstr "With your invitation code you set up KidCTL for your family."
+
+msgid "Sprache der Mail"
+msgstr "Email language"
+
+msgid "Tarif: Kostenlos."
+msgstr "Plan: Free."
+
+msgid "per Mail an {email}"
+msgstr "by email to {email}"
+
+msgid "Über KidCTL"
+msgstr "About KidCTL"

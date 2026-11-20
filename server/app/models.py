@@ -191,6 +191,9 @@ class SignupCode(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime)
     used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     family_id: Mapped[int | None] = mapped_column(ForeignKey("family.id", ondelete="SET NULL"), nullable=True)
+    # Einladung per Mail: Adresse (Plattform-Schlüssel) für „Erneut senden“, gelöscht nach Einlösen/Ablauf
+    email: Mapped[str | None] = mapped_column(PlatformSealed("signup_code.email"), nullable=True)
+    lang: Mapped[str] = mapped_column(String(2), default="de", server_default="de")
 
 
 class SupportGrant(FamilyScoped, Base):
@@ -323,6 +326,10 @@ class Branding(Base):
     imprint_url: Mapped[str] = mapped_column(String(255), default="", server_default="")
     privacy_url: Mapped[str] = mapped_column(String(255), default="", server_default="")
     news_url: Mapped[str] = mapped_column(String(255), default="", server_default="")   # leer: Projekt-News
+    # Link unter den Anmeldeseiten (nur https); leer: Projektseite
+    homepage_url: Mapped[str] = mapped_column(String(255), default="", server_default="")
+    homepage_label_de: Mapped[str] = mapped_column(String(64), default="", server_default="")
+    homepage_label_en: Mapped[str] = mapped_column(String(64), default="", server_default="")
 
 
 class InvoiceSettings(Base):

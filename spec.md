@@ -3057,3 +3057,22 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
     - Formulare ohne JavaScript.
   - Migration 0021 hin und zurück, `alembic check`.
   - Im Browser: Passwort → Code → Übersicht.
+- 2026-11-20: Version 0.40.0 (Server): Homepage-Link und Einladungsmail.
+  - Homepage-Link: Felder unter *Erscheinungsbild* (`homepage_url`, Linktext DE/EN; nur https, protokolliert). Der
+    Link steht unter Login, Code-Schritt, Registrierung, Passwort vergessen/neu, Authenticator-Einrichtung,
+    Einladung und Betreiber-Login; leer zeigt er auf die Projektseite.
+  - Einladungscodes optional mit E-Mail-Adresse und Sprache: Mail `signup_invite` mit Code, Link
+    `/signup?code=…`, Ablauf und Tarif (Vorschau und Tests DE/EN). „Erneut senden“ erzeugt einen neuen Code und
+    löscht den alten.
+  - Die Adresse liegt mit dem Plattform-Schlüssel in `signup_code.email` (Migration 0022). Sie wird beim Einlösen
+    gelöscht, nach Ablauf im Aufräumjob. Bei der Registrierung per Link ist die Adresse vorbelegt und änderbar; die
+    Bestätigung per Mail bleibt.
+
+  Getestet:
+  - Server-Tests 329 grün, neu `test_invite_mail.py`:
+    - Link nur mit https, protokolliert, DE/EN, leer gilt der Standard.
+    - Mail EN mit Code und Link; Liste maskiert, Adresse verschlüsselt gespeichert.
+    - Erneut senden: alter Code ungültig, neuer mit gleichem Tarif und gleicher Notiz.
+    - Registrierungslink belegt Code und Adresse vor, die Adresse ist änderbar; nach dem Einlösen bzw. Ablauf ist sie
+      gelöscht.
+  - Migration 0022 hin und zurück.

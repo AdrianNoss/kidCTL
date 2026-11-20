@@ -103,13 +103,45 @@ def normalize_code(code: str) -> str:
     return code.strip().upper().replace("-", "").replace(" ", "")
 
 
-def create_code(db: Session, note: str, operator_id: int | None, plan: str = "") -> str:
-    """Neuer Code (12 Zeichen, gut abtippbar, angezeigt als XXXX-XXXX-XXXX); gespeichert wird nur der Hash."""
+def create_code(db: Session, note: str, operator_id: int | None, plan: str = "", email: str | None = None,
+                lang: str = "de") -> str:
+    """Neuer Code (12 Zeichen, gut abtippbar, angezeigt als XXXX-XXXX-XXXX); gespeichert wird nur der Hash.
+    Mit ``email`` bleibt die Adresse für „Erneut senden“ gespeichert (bis zum Einlösen bzw. Ablauf)."""
     raw = "".join(secrets.choice(PAIRING_ALPHABET) for _ in range(12))
     db.add(SignupCode(code_hash=token_hash(raw), note=note.strip()[:255], created_by=operator_id, plan=plan,
-                      expires_at=utcnow() + timedelta(days=CODE_DAYS)))
+                      expires_at=utcnow() + timedelta(days=CODE_DAYS), email=email or None,
+                      lang=lang if lang in ("de", "en") else "de"))
     db.commit()
     return "-".join(raw[i:i + 4] for i in range(0, 12, 4))
+
+
+def send_invite(db: Session, code_row: SignupCode, code: str) -> bool:
+    """Einladungsmail mit Code und Registrierungslink (Code eingesetzt) an die gespeicherte Adresse."""
+    from urllib.parse import quote
+
+    from . import mailer
+    if not code_row.email:
+        return False
+    return mailer.send(code_row.email, "signup_invite", code_row.lang, code=code,
+                       link=f"{settings.base_url}/signup?code={quote(code)}", expires=code_row.expires_at,
+                       free=code_row.plan == "free", trial_days=settings.trial_days)
+
+
+def mask_email(email: str | None) -> str:
+    """m***@example.org – für die Liste der Codes."""
+    if not email or "@" not in email:
+        return ""
+    local, domain = email.rsplit("@", 1)
+    return f"{local[:1]}***@{domain}"
+
+
+def forget_invite_emails(db: Session) -> int:
+    """Adressen eingelöster oder abgelaufener Codes löschen (Aufräumjob)."""
+    from sqlalchemy import or_, update
+    n = db.execute(update(SignupCode).where(SignupCode.email.is_not(None), or_(
+        SignupCode.used_at.is_not(None), SignupCode.expires_at < utcnow())).values(email=None)).rowcount or 0
+    db.commit()
+    return n
 
 
 def find_code(db: Session, code: str) -> SignupCode | None:

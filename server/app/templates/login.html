@@ -9,6 +9,7 @@
   <button type="submit" class="btn-block">{{ _("Weiter") }}</button>
   <p class="login-help"><a href="/reset">{{ _("Passwort vergessen?") }}</a></p>
   {% if REGISTRATION != "closed" %}<p class="login-help"><a href="/signup">{{ _("Neu hier? Familie registrieren") }}</a></p>{% endif %}
+  {% include "_homepage.html" %}
   {% include "_langswitch.html" %}
 </form>
 {% endblock %}

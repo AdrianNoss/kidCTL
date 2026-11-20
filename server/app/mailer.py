@@ -26,7 +26,7 @@ log = logging.getLogger("kidctl.mailer")
 LOGO_CID = "logo@kidctl"
 LOGO_MAX = (400, 96)                 # Pixel (doppelte Dichte; angezeigt in halber Größe)
 DEFAULT_LOGO = Path(__file__).parent / "static" / "mail-logo.png"   # aus packaging/arch/kidctl.svg (rsvg-convert)
-PROJECT_SITE = "https://adriannoss.github.io/kidCTL/"
+PROJECT_SITE = branding.PROJECT_SITE
 MAX_HTML = 100 * 1024                # Gmail kürzt größere HTML-Teile
 
 
@@ -143,7 +143,7 @@ def send(to: str, template: str, lang: str = "de", /, attachments=None, headers=
 
 def samples() -> dict[str, dict]:
     """Mailtyp -> Beispiel-Variablen. Neuer Mailtyp → hier ergänzen (Vorschau und Tests nutzen die Liste)."""
-    from datetime import date, timedelta
+    from datetime import date, datetime, timedelta
     from types import SimpleNamespace
     from . import report, schedule as sch
     from .i18n import _
@@ -157,6 +157,9 @@ def samples() -> dict[str, dict]:
                                 text=_("dein Passwort wurde im Profil geändert.")),
         "invite": dict(by="Mama", link=f"{url}/invite/BEISPIEL", days=7),
         "signup_verify": dict(link=f"{url}/signup/BEISPIEL", hours=24),
+        "signup_invite": dict(code="ABCD-EFGH-JKLM", link=f"{url}/signup?code=ABCD-EFGH-JKLM",
+                              expires=datetime.combine(today + timedelta(days=30), datetime.min.time()), free=False,
+                              trial_days=settings.trial_days),
         "billing_notice": dict(name="Mama", title=_("KidCTL pausiert"),
                                text=_("Beispiel: Euer Abo ist abgelaufen.")),
         "ticket_support": dict(ticket_id=42, family_id=7, new=True, link=f"{url}/admin/tickets/42"),

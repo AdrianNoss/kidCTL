@@ -93,7 +93,7 @@ def complete(db: Session, email: str, code: str, display_name: str, password: st
     if settings.registration == "invite":
         row = db.execute(update(SignupCode).where(
             SignupCode.code_hash == token_hash(operators.normalize_code(code)), SignupCode.used_at.is_(None),
-            SignupCode.expires_at > utcnow()).values(used_at=utcnow())
+            SignupCode.expires_at > utcnow()).values(used_at=utcnow(), email=None)
             .returning(SignupCode.id, SignupCode.plan)).first()
         if row is None:
             db.rollback()

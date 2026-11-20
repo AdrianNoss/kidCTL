@@ -1,0 +1,10 @@
+{% extends "mail/base.html" %}
+{#- Einladungscode vom Betreiber. ctx: code, link, expires (datetime), free (bool), trial_days -#}
+{% set subject = _("Deine Einladung") %}
+{% set heading = _("Einladung zu KidCTL") | brand %}
+{% set preheader = _("Mit deinem Einladungscode richtest du KidCTL für deine Familie ein.") | brand %}
+{% set plan = _("Tarif: Kostenlos.") if free else _("Die ersten {days} Tage sind kostenlos.").format(days=trial_days) %}
+{% set paragraphs = [preheader, plan, _("Dein Einladungscode: {code} (gültig bis {date}, einmal verwendbar).").format(code=code, date=expires | localtime("%d.%m.%Y" if lang() == "de" else "%Y-%m-%d"))] %}
+{% set action = (_("Jetzt registrieren"), link) %}
+{% set after = [_("Der Link setzt den Code schon ein. Falls du damit nichts anfangen kannst, ignoriere diese Mail.")] %}
+{% set reason = _("Du bekommst diese Mail, weil dich der Betreiber eingeladen hat.") %}

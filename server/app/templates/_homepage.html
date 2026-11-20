@@ -1,0 +1,3 @@
+{#- Link unter den Anmeldeseiten: eigene Homepage (Erscheinungsbild) oder die Projektseite -#}
+{% set hp = brand().homepage(lang()) %}
+<p class="login-help"><a href="{{ hp[0] }}" rel="noopener">{{ hp[1] or (_("Homepage") if brand().homepage_url else _("Über KidCTL")) }}</a></p>

@@ -111,7 +111,9 @@ filters appear as chips below the search and can be removed one by one), and a s
 bookmarked). Apart from the family name and billing details, this is metadata only: number of children and devices,
 oldest agent version, last activity, subscription and issues (devices offline, agent outdated, paused). Names and content are encrypted with each family's key
 and cannot be read there. You also create **invitation codes** for sign-up here (single use, valid for 30 days, with
-a note). New families sign up at `/signup`: email address (and code) → confirmation link by email (24 h) →
+a note). With an email address, the code is emailed right away, with a link that fills it into the sign-up form.
+"Resend" sends a new code and invalidates the old one. The address is deleted once the code is redeemed or has
+expired. New families sign up at `/signup`: email address (and code) → confirmation link by email (24 h) →
 password and authenticator → their own family, owner account, signed in.
 
 **Subscription:** New families start with a trial (`KIDCTL_TRIAL_DAYS`), families from an invitation code with
@@ -164,7 +166,8 @@ or ICO; the logo is scaled to 512 × 128, the icon to 512 × 512 pixels). This a
 on the phone, sign-in and sign-up, push notifications and all emails to families; with a custom name, "powered by
 KidCTL" is shown everywhere, in emails as a footer. The programs on the children's computers are still called KidCTL.
 Set the sender name of the emails in `SMTP_FROM` (e.g. `Family Guard <noreply@example.org>`). Changes are logged and
-visible everywhere within a minute.
+visible everywhere within a minute. Under "Homepage" you set the link below the sign-in pages (`https://` only, link text
+in German and English); empty, it points to the project page.
 
 **Emails:** All emails share the same layout (light and dark, with a plain-text version) with the logo as an embedded
 image – no external images or tracking. In the "Provider" block on the "Appearance" page you enter name, address,

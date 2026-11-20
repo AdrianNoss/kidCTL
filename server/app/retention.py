@@ -79,6 +79,9 @@ def prune_all(db: Session, now: datetime | None = None) -> dict[str, int]:
         if n:
             out[rule.name] = n
     db.commit()
+    from .operators import forget_invite_emails
+    if n := forget_invite_emails(db):
+        out["INVITE_EMAILS"] = n
     from .invoices import purge_expired
     if n := purge_expired(db, now.date()):
         out["INVOICES"] = n

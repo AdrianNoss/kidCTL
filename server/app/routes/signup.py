@@ -32,8 +32,15 @@ def _open() -> None:
 
 
 @router.get("/signup", dependencies=[Depends(_open)])
-def signup_form(request: Request):
-    return render_anon(request, "signup.html", invite=settings.registration == "invite", form={})
+def signup_form(request: Request, code: str = "", db: Session = Depends(get_platform_db)):
+    """Mit ``?code=`` (Link aus der Einladungsmail): Code eingesetzt, E-Mail mit der Einladungsadresse vorbelegt
+    (änderbar – die Adresse wird trotzdem per Link bestätigt)."""
+    form = {}
+    if code and settings.registration == "invite":
+        form["code"] = code[:20]
+        if (row := operators.find_code(db, code)) is not None and row.email:
+            form["email"] = row.email
+    return render_anon(request, "signup.html", invite=settings.registration == "invite", form=form)
 
 
 def _send(email: str, code: str, lang: str) -> None:

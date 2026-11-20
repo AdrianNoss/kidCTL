@@ -8,6 +8,7 @@
   <label>{{ _("Benutzername") }} <input name="username" value="{{ username or '' }}" autocomplete="username" required autofocus></label>
   <label>{{ _("Passwort") }} <input type="password" name="password" autocomplete="current-password" required></label>
   <button type="submit" class="btn-block">{{ _("Weiter") }}</button>
+  {% include "_homepage.html" %}
   {% include "_langswitch.html" %}
 </form>
 {% endblock %}

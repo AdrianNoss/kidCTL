@@ -287,7 +287,8 @@ def support_end(request: Request, db: Session = Depends(get_platform_db)):
 
 def _codes_page(request, db, sess, status_code=200, **ctx):
     codes = db.scalars(select(SignupCode).order_by(SignupCode.created_at.desc())).all()
-    return _render(request, "admin_codes.html", sess, status_code, codes=codes, now=utcnow(), days=opr.CODE_DAYS, **ctx)
+    return _render(request, "admin_codes.html", sess, status_code, codes=codes, now=utcnow(), days=opr.CODE_DAYS,
+                   mask=opr.mask_email, **ctx)
 
 
 @router.get("/codes")
@@ -297,12 +298,39 @@ def codes(request: Request, sess: OperatorSession = Depends(opr.require_admin),
 
 
 @router.post("/codes")
-def code_create(request: Request, note: str = Form(""), free: str = Form(""),
-                sess: OperatorSession = Depends(opr.admin_csrf), db: Session = Depends(get_platform_db)):
-    code = opr.create_code(db, note, sess.operator_id, "free" if free else "")
-    audit.record(db, audit.actor_of(sess), "code", "angelegt", None, (note.strip() or "–") + (" (Kostenlos)" if free else ""))
+def code_create(request: Request, note: str = Form(""), free: str = Form(""), email: str = Form(""),
+                lang: str = Form("de"), sess: OperatorSession = Depends(opr.admin_csrf),
+                db: Session = Depends(get_platform_db)):
+    from .. import accounts
+    email = email.strip()
+    if email and (err := accounts.email_error(email)):
+        return _codes_page(request, db, sess, 400, error=err, form={"note": note, "email": email})
+    code = opr.create_code(db, note, sess.operator_id, "free" if free else "", email or None, lang)
+    audit.record(db, audit.actor_of(sess), "code", "angelegt", None, (note.strip() or "–") + (" (Kostenlos)" if free else "")
+                 + (" · per Mail" if email else ""))
     db.commit()
-    return _codes_page(request, db, sess, new_code=code)
+    sent = None
+    if email:
+        sent = opr.send_invite(db, opr.find_code(db, code), code)
+    return _codes_page(request, db, sess, new_code=code, sent=sent, sent_to=opr.mask_email(email))
+
+
+@router.post("/codes/{code_id}/resend")
+def code_resend(code_id: int, request: Request, sess: OperatorSession = Depends(opr.admin_csrf),
+                db: Session = Depends(get_platform_db)):
+    """Neuer Code an dieselbe Adresse; der alte wird ungültig (gespeichert ist nur sein Hash)."""
+    old = db.get(SignupCode, code_id)
+    if old is None or not old.email:
+        raise HTTPException(404)
+    if old.used_at is not None or old.expires_at < utcnow():
+        raise HTTPException(400, "Nur offene Codes")
+    note, plan, email, lang = old.note, old.plan, old.email, old.lang
+    db.delete(old)
+    code = opr.create_code(db, note, sess.operator_id, plan, email, lang)
+    audit.record(db, audit.actor_of(sess), "code", "erneut gesendet", note or "–", None, object_id=code_id)
+    db.commit()
+    sent = opr.send_invite(db, opr.find_code(db, code), code)
+    return _codes_page(request, db, sess, new_code=code, sent=sent, sent_to=opr.mask_email(email))
 
 
 @router.post("/codes/{code_id}/delete")
@@ -980,6 +1008,29 @@ async def provider_save(request: Request, sess: OperatorSession = Depends(opr.ad
     audit.changes(db, audit.actor_of(sess), "branding", before, row)
     db.commit()
     return RedirectResponse("/admin/branding?saved=provider#anbieter", status_code=303)
+
+
+HOMEPAGE_FIELDS = {"homepage_url": 255, "homepage_label_de": 64, "homepage_label_en": 64}
+
+
+@router.post("/branding/homepage")
+async def homepage_save(request: Request, sess: OperatorSession = Depends(opr.admin_csrf),
+                        db: Session = Depends(get_platform_db)):
+    """Link unter den Anmeldeseiten (nur https); leer: Projektseite."""
+    from .. import branding
+    form = await request.form()
+    values = {f: " ".join(str(form.get(f, "")).split())[:n] for f, n in HOMEPAGE_FIELDS.items()}
+    url = values["homepage_url"]
+    if url and (not url.lower().startswith("https://") or len(url) <= len("https://")):
+        return _branding_page(request, db, sess, 400, error=_("Die Homepage bitte mit https:// angeben."))
+    row = _branding_row(db)
+    before = audit.snapshot(row, list(HOMEPAGE_FIELDS))
+    for field, value in values.items():
+        setattr(row, field, value)
+    audit.changes(db, audit.actor_of(sess), "branding", before, row)
+    db.commit()
+    branding.invalidate()
+    return RedirectResponse("/admin/branding?saved=homepage#homepage", status_code=303)
 
 
 # ---------- Mail-Vorschau ----------

@@ -113,8 +113,11 @@ lassen sich als Lesezeichen speichern). Außer Familienname und Rechnungsangaben
 und Geräte, älteste Agent-Version, letzte Aktivität, Abo und Auffälligkeiten (Geräte offline, Agent veraltet,
 Ruhemodus). Namen und Inhalte sind mit dem Schlüssel der jeweiligen
 Familie verschlüsselt und dort nicht lesbar. Außerdem erzeugst du hier **Einladungscodes** für die Registrierung
-(einmalig, 30 Tage gültig, mit Notiz). Neue Familien registrieren sich unter `/signup`: E-Mail-Adresse (und Code) →
-Bestätigungslink per Mail (24 h) → Passwort und Authenticator → eigene Familie, Inhaber-Account, angemeldet.
+(einmalig, 30 Tage gültig, mit Notiz). Mit E-Mail-Adresse geht der Code gleich per Mail hinaus, mit einem Link, der
+ihn in die Registrierung einsetzt. „Erneut senden“ schickt einen neuen Code und macht den alten ungültig. Die Adresse
+wird gelöscht, sobald der Code eingelöst oder abgelaufen ist. Neue Familien registrieren sich unter `/signup`:
+E-Mail-Adresse (und Code) → Bestätigungslink per Mail (24 h) → Passwort und Authenticator → eigene Familie,
+Inhaber-Account, angemeldet.
 
 **Abo:** Neue Familien starten mit einer Testphase (`KIDCTL_TRIAL_DAYS`), Familien aus einem Einladungscode mit
 „Tarif Kostenlos“ und alle Familien von vor dem Update im Tarif „Kostenlos“ (ohne Ablauf). Tarif, Status (Testphase,
@@ -166,7 +169,8 @@ fest (PNG, JPEG, WebP, GIF oder ICO; Logo wird auf 512 × 128, das Icon auf 512 
 Eltern-Oberfläche, die App auf dem Handy, Anmeldung und Registrierung, Push-Nachrichten und alle Mails an Familien; mit
 eigenem Namen steht überall „powered by KidCTL“, in Mails als Fußzeile. Die Programme auf den Kinderrechnern heißen
 weiterhin KidCTL. Den Absendernamen der Mails setzt du in `SMTP_FROM` (z. B. `Familienwächter <noreply@example.org>`).
-Änderungen werden protokolliert und sind nach spätestens einer Minute überall sichtbar.
+Änderungen werden protokolliert und sind nach spätestens einer Minute überall sichtbar. Unter „Homepage“ setzt du den
+Link unter den Anmeldeseiten (nur `https://`, Linktext auf Deutsch und Englisch); leer zeigt er auf die Projektseite.
 
 **Mails:** Alle Mails haben dasselbe Layout (hell und dunkel, mit Textfassung) mit dem Logo als eingebettetem Bild –
 ohne externe Bilder oder Tracking. Im Block „Anbieter“ auf der Seite „Erscheinungsbild“ trägst du Name, Anschrift,

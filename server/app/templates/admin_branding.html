@@ -3,7 +3,7 @@
 {% block title %}{{ _("Erscheinungsbild") }} – {{ brand().name }}{% endblock %}
 {% block content %}
 {% set heading = _("Erscheinungsbild") %}{% include "_admin_head.html" %}
-{% if saved == "provider" %}<p class="success">{{ _("Gespeichert.") }}</p>
+{% if saved in ("provider", "homepage") %}<p class="success">{{ _("Gespeichert.") }}</p>
 {% elif saved %}<p class="success">{{ _("Gespeichert. Familien sehen die Änderung nach spätestens einer Minute.") }}</p>{% endif %}
 <div class="card-grid">
 <section class="card">
@@ -43,6 +43,16 @@
   <label>{{ _("Datenschutz (Link)") }} <input type="url" name="privacy_url" maxlength="255" value="{{ row.privacy_url if row else '' }}" placeholder="https://"></label>
   <label>{{ _("Neuigkeiten (Link)") }} <input type="url" name="news_url" maxlength="255" value="{{ row.news_url if row else '' }}" placeholder="{{ _('leer: News der Projektseite') }}"></label>
   <p class="muted"><small>{{ _("Erscheint in der Fußzeile aller Mails. Leere Felder entfallen. „Anleitungen“ verlinkt immer das Wiki der Projektseite.") }} <a href="/admin/mail-preview">{{ _("Mail-Vorschau") }}</a></small></p>
+  <div class="row"><button type="submit">{{ _("Speichern") }}</button></div>
+</form>
+
+<form method="post" action="/admin/branding/homepage" class="card" id="homepage">
+  <h2>{{ _("Homepage") }}</h2>
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <label>{{ _("Adresse") }} <input type="url" name="homepage_url" maxlength="255" value="{{ row.homepage_url if row else '' }}" placeholder="https://"></label>
+  <label>{{ _("Linktext (Deutsch)") }} <input name="homepage_label_de" maxlength="64" value="{{ row.homepage_label_de if row else '' }}" placeholder="{{ _('Homepage') }}"></label>
+  <label>{{ _("Linktext (Englisch)") }} <input name="homepage_label_en" maxlength="64" value="{{ row.homepage_label_en if row else '' }}" placeholder="Homepage"></label>
+  <p class="muted"><small>{{ _("Erscheint unter Anmeldung, Registrierung, „Passwort vergessen“ und Authenticator-Einrichtung. Leer: Link zur Projektseite von KidCTL.") }}</small></p>
   <div class="row"><button type="submit">{{ _("Speichern") }}</button></div>
 </form>
 </div>

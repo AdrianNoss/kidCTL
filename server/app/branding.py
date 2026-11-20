@@ -11,6 +11,7 @@ import time
 from dataclasses import dataclass
 
 DEFAULT_NAME = "KidCTL"
+PROJECT_SITE = "https://adriannoss.github.io/kidCTL/"
 POWERED_BY = "powered by KidCTL"
 MAX_UPLOAD = 2 * 1024 * 1024          # Bytes je Bild beim Hochladen
 LOGO_MAX = (512, 128)                 # Logo wird höchstens so groß gespeichert
@@ -27,6 +28,15 @@ class Brand:
     has_icon: bool = False
     logo_only: bool = False           # Logo enthält den Namen → Text daneben nur für Screenreader
     version: int = 0                  # für Cache-Busting der Bild-URLs
+    homepage_url: str = ""            # Link unter den Anmeldeseiten; leer: Projektseite
+    homepage_labels: tuple[str, str] = ("", "")   # Linktext DE, EN
+
+    def homepage(self, lang: str = "de") -> tuple[str, str]:
+        """(URL, eigener Linktext oder "") für den Link unter den Anmeldeseiten."""
+        if not self.homepage_url:
+            return PROJECT_SITE + ("de/" if lang == "de" else ""), ""
+        de, en = self.homepage_labels
+        return self.homepage_url, (en or de) if lang == "en" else (de or en)
 
     @property
     def powered_by(self) -> str:
@@ -56,13 +66,15 @@ def current() -> Brand:
         from .tenant import platform_session
         with platform_session() as db:
             row = db.execute(select(Branding.name, Branding.logo_only, Branding.logo.is_not(None),
-                                    Branding.icon.is_not(None), Branding.updated_at)
+                                    Branding.icon.is_not(None), Branding.updated_at, Branding.homepage_url,
+                                    Branding.homepage_label_de, Branding.homepage_label_en)
                              .where(Branding.id == 1)).first()
         if row:
             name = (row[0] or "").strip()
             brand = Brand(name=name or DEFAULT_NAME, custom=bool(name) and name != DEFAULT_NAME, has_logo=row[2],
                           has_icon=row[3], logo_only=bool(row[1]) and row[2],
-                          version=int(row[4].timestamp()) if row[4] else 0)
+                          version=int(row[4].timestamp()) if row[4] else 0, homepage_url=row[5] or "",
+                          homepage_labels=(row[6] or "", row[7] or ""))
     except Exception:   # Datenbank (noch) nicht erreichbar – Seiten und Mails trotzdem ausliefern
         return brand
     _cached = (now, brand)
