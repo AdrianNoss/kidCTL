@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import secrets
+
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import delete, func, select
@@ -12,6 +14,7 @@ from .. import audit, backup, billing, loginticket, passkeys, support, tickets
 from ..config import settings
 from ..db import get_platform_db
 from ..i18n import N_, _
+from ..middleware import csp
 from ..models import Operator, OperatorSession, SignupCode, utcnow
 from ..security import (
     client_ip, csrf_protect_anon, dummy_verify, is_rate_limited, record_failure, totp_locked,
@@ -1174,10 +1177,14 @@ def mail_preview(request: Request, type: str = "", lang: str = "de", sess: Opera
     from ..i18n import use
     with use(lang):
         rendered = mailer.render(current, lang, **mailer.samples()[current])
-    html = mailer.preview_html(rendered.html)
-    return _render(request, "admin_mail_preview.html", sess, types=types, current=current, mail_lang=lang,
+    # Der Rahmen (srcdoc) erbt die CSP der Seite: Inline-Styles der Mail als <style> mit Nonce
+    nonce = secrets.token_urlsafe(16)
+    html = mailer.csp_safe(mailer.preview_html(rendered.html), nonce)
+    resp = _render(request, "admin_mail_preview.html", sess, types=types, current=current, mail_lang=lang,
                    subject=rendered.subject, text=rendered.text, html=html, size=len(rendered.html.encode()),
                    sent=request.query_params.get("sent"))
+    resp.headers["Content-Security-Policy"] = csp(nonce)
+    return resp
 
 
 @router.post("/mail-preview/send")

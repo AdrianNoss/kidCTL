@@ -12,7 +12,7 @@
   <textarea name="body" rows="2" maxlength="2000" required placeholder="{{ _('Nachricht an {name}').format(name=child.name) }}"></textarea>
   <button type="submit">{{ _("Senden") }}</button>
 </form>
-<form method="post" action="/children/{{ child.id }}/chat/clear" class="row" style="justify-content:flex-end"
+<form method="post" action="/children/{{ child.id }}/chat/clear" class="row end"
       data-confirm="{{ _('Den ganzen Chat mit {name} löschen? Das lässt sich nicht rückgängig machen.').format(name=child.name) }}">
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
   <small class="muted">{{ _("Nachrichten werden nach 12 Monaten automatisch gelöscht.") }}</small>

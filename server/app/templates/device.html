@@ -30,7 +30,7 @@
   <table>
     {% for c in device.integrity_checks %}
     <tr>
-      <td style="width:2rem">{% if c.ok %}<span class="check-ok" aria-label="ok">✓</span>{% else %}<span class="check-fail" aria-label="{{ _('Fehler') }}">✕</span>{% endif %}</td>
+      <td class="check-col">{% if c.ok %}<span class="check-ok" aria-label="ok">✓</span>{% else %}<span class="check-fail" aria-label="{{ _('Fehler') }}">✕</span>{% endif %}</td>
       <td>{{ integrity_label(c) }}{% if c.detail %}<br><small class="{{ 'warn' if not c.ok else 'muted' }}">{{ c.detail }}</small>{% endif %}</td>
     </tr>
     {% endfor %}
@@ -74,7 +74,7 @@
     <label>{{ _("Alarm, wenn länger als") }} <input type="number" name="hours" min="1" max="720" value="{{ device.alert_after_hours }}" class="short"> {{ _("Stunden ohne Meldung") }}</label>
     <button type="submit">{{ _("Speichern") }}</button>
   </form>
-  <hr style="border:0;border-top:1px solid var(--line);margin:1rem 0">
+  <hr>
   <form method="post" action="/devices/{{ device.id }}/revoke"
         data-confirm="{{ _('Geräte-Token widerrufen? Das Gerät muss danach neu gekoppelt werden.') }}">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">

@@ -12,9 +12,15 @@ from starlette.responses import PlainTextResponse
 
 # Größtes echtes Formular: Programmliste eines Kindes (einige Tausend Kästchen)
 MAX_BODY_BYTES = 2 * 1024 * 1024
-# Inline-Styles braucht die Oberfläche (Balkenhöhen), Skripte kommen nur als Dateien von hier
-CSP = ("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
-       "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
+# Skripte und Styles nur als Dateien von hier – keine Inline-Styles (Templates ohne style-Attribut, Test)
+_CSP = ("default-src 'self'; script-src 'self'; style-src 'self'{nonce}; img-src 'self' data:; "
+        "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
+CSP = _CSP.format(nonce="")
+
+
+def csp(style_nonce: str = "") -> str:
+    """CSP; mit ``style_nonce`` zusätzlich <style>-Blöcke mit dieser Nonce (Mail-Vorschauen, ``mailer.csp_safe``)."""
+    return _CSP.format(nonce=f" 'nonce-{style_nonce}'" if style_nonce else "")
 
 
 class SecurityMiddleware:

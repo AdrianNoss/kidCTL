@@ -170,6 +170,7 @@ def test_profile_settings(client, parent, outbox):
     _seed()
     prev = client.get("/profile/report/preview?interval=weekly")
     assert prev.status_code == 200 and "Wochenbericht" in prev.text and "Lea &amp; Tom" in prev.text
+    assert "'nonce-" in prev.headers["content-security-policy"] and ' style="' not in prev.text   # CSP ohne unsafe-inline
     assert "Monatsbericht" in client.get("/profile/report/preview").text
 
     r = client.post("/profile/report/send", data={"csrf_token": token, "interval": "weekly"}, follow_redirects=False)

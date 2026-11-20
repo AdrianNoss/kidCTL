@@ -15,7 +15,9 @@ from __future__ import annotations
 
 import io
 import logging
+import re
 from dataclasses import dataclass
+from html import unescape
 from pathlib import Path
 
 from . import branding, i18n, mail
@@ -129,6 +131,32 @@ def preview_html(html: str) -> str:
     import base64
     png, _w, _h = logo()
     return html.replace(f"cid:{LOGO_CID}", "data:image/png;base64," + base64.b64encode(png).decode())
+
+
+_STYLE_ATTR = re.compile(r'(<[a-zA-Z][^<>]*?)\sstyle="([^"]*)"')
+_STYLE_TAG = re.compile(r"<style(?=[\s>])")
+
+
+def csp_safe(html: str, nonce: str) -> str:
+    """Mail-HTML für Vorschauen im WebUI, dessen CSP keine Inline-Styles erlaubt: ``style``-Attribute werden zu
+    ``data-ks``-Attributen mit Regeln in einem <style>-Block, alle <style>-Blöcke bekommen die ``nonce`` (die Antwort
+    setzt ``middleware.csp(nonce)``). ``!important`` ersetzt den Vorrang des Inline-Styles; die eigenen Blöcke der
+    Mail stehen danach und gewinnen bei gleicher Spezifität wie im Mailprogramm (dunkles Schema)."""
+    rules: dict[str, int] = {}
+
+    def attr(m: re.Match) -> str:
+        n = rules.setdefault(unescape(m.group(2)), len(rules))
+        return f'{m.group(1)} data-ks="{n}"'
+
+    html = _STYLE_TAG.sub(f'<style nonce="{nonce}"', _STYLE_ATTR.sub(attr, html))
+    css = "".join(
+        f'[data-ks="{n}"]{{{";".join(d.strip() + " !important" for d in decl.split(";") if d.strip())}}}'
+        for decl, n in rules.items()).replace("<", "")   # kein </style> aus Attributwerten
+    block = f'<style nonce="{nonce}">{css}</style>'
+    i = html.find("<style")
+    if i < 0:
+        i = html.find("</head>")
+    return html[:i] + block + html[i:] if i >= 0 else block + html
 
 
 def send(to: str, template: str, lang: str = "de", /, attachments=None, headers=None, **ctx) -> bool:

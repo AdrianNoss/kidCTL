@@ -990,6 +990,13 @@ Anti-Ziele: Elternkonto mit einem einzelnen schwachen Faktor erreichbar; klassis
   die Fundliste `dev/design-review/FINDINGS.md`. Reihenfolge: erst alle Seiten fotografieren und Funde sammeln, dann
   korrigieren, dann erneut fotografieren; Adrian nimmt **danach** anhand vorher/nachher ab. Danach einmal
   `dev/screenshots.py` für Website/Wiki neu laufen lassen. *(Entscheidung Claude, Builder-Check)*
+- Skript: `dev/design-review.py --label vorher|nachher` (eigener Server im SaaS-Modus auf Port 8001, eigene Datenbank
+  `kidctl_review`, Demo-Daten aus `dev/demo_seed.py`, Betreiber per CLI); meldet zusätzlich Konsolenfehler
+  (CSP-Verstöße) und waagerechtes Scrollen.
+- **CSP ohne `'unsafe-inline'`** (Issue #3): Templates außer Mails haben keine `style`-Attribute und keine
+  `<style>`-Blöcke (Test). Diagrammmaße als Klassen `p-0`…`p-100` (`web.pct`). Mail-HTML in der Mail-Vorschau
+  (Verwaltung) und der Berichtsvorschau (Profil) wird per `mailer.csp_safe` umgeschrieben (style-Attribute → Regeln
+  in `<style nonce>`); nur diese Antworten erlauben ihre Nonce. JS setzt keine Styles (nur `hidden`).
 
 ### Transparenz & Sicherheit: automatische Prüfungen mit Badges
 
@@ -3187,3 +3194,29 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
     `exec -e PGUSER -e PGPASSWORD -e PGDATABASE` im Container (wie in CI).
   - `ruff check` (0.17.6) ohne Funde, `python dev/check_docs_parity.py` ok, YAML des Workflows gültig.
   - Workflow-Lauf in GitHub erst nach dem Push möglich.
+- 2026-11-20: Version 0.44.0 (Server): Design-Durchsicht aller Seiten (Etappe 6) und CSP ohne `'unsafe-inline'` für
+  Styles (Issue #3).
+  - Neues Skript `dev/design-review.py`: 36 Seiten (Anmeldung beider Stufen, Elternbereich, Verwaltung), mobil und
+    Desktop, hell und dunkel, DE/EN; Bilder in `dev/design-review/` (nicht im Repo), Fundliste
+    `dev/design-review/FINDINGS.md`.
+  - Behoben (zentral in `style.css`): Restzeit bricht nicht mehr um; Status-Chips unter „Zuletzt gesperrt“ mobil nicht
+    mehr abgeschnitten; Balkendiagramm passt mobil (letzter Tag, letzter Wert); Abstand zwischen „Weiter“ und „Mit
+    Passkey anmelden“; Abstand nach einzelnen Options-Kacheln; verwaiste Trennlinie in der Mail-Vorschau.
+  - `passkey.js`: Fehler des Passkey-Vorschlags im Hintergrund (Conditional UI) nur noch in der Konsole statt als
+    Browsermeldung unter dem Login-Formular.
+  - Alle 12 Inline-Styles aus 8 Templates in Klassen überführt; CSP `style-src 'self'`; Mail- und Berichtsvorschau mit
+    Nonce (`mailer.csp_safe`, `middleware.csp`).
+  - `dev/demo_seed.py` meldet sich zweistufig an (Passwort, dann Code) – `dev/screenshots.py` lief seit dem
+    zweistufigen Login nicht mehr.
+  - Zurückgestellt mit Begründung: siehe `FINDINGS.md` (u. a. abgeschnittener Platzhalter der Familiensuche,
+    waagerecht scrollende Reiter als Absicht).
+
+  Getestet:
+  - Server-Tests 349 grün; neu: keine `style`-Attribute/`<style>` in Nicht-Mail-Templates, CSP ohne `unsafe-inline`
+    auf Seiten und statischen Dateien, `mailer.csp_safe` (kein Inline-Style übrig, Nonce an allen `<style>`, Mail-Regeln
+    fürs dunkle Schema danach), `pct`/Klassen `p-0`…`p-100`; Mail-Vorschau und Berichtsvorschau senden eine CSP mit
+    passender Nonce.
+  - `dev/design-review.py` vorher/nachher (DE+EN, je 144 Bilder): nachher keine CSP-Verstöße oder JS-Fehler in der
+    Konsole (Chromium), kein waagerechtes Scrollen; Mail-Vorschau im Rahmen sichtbar gestylt (hell und dunkel),
+    Balken und Werte im Statistik-Diagramm korrekt.
+  - `dev/screenshots.py` neu gelaufen, geänderte Website- und Doku-Bilder aktualisiert.

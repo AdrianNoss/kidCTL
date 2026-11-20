@@ -79,7 +79,9 @@
     login.addEventListener("click", () => signIn(false).catch((e) => showError(errorBox, e)));
     if (PublicKeyCredential.isConditionalMediationAvailable) {
       PublicKeyCredential.isConditionalMediationAvailable().then((ok) => {
-        if (ok) signIn(true).catch((e) => showError(errorBox, e));
+        // Vorschlag im E-Mail-Feld läuft im Hintergrund: Fehler nur in die Konsole (sonst steht beim Laden der Seite
+        // eine Browsermeldung wie „This is an invalid domain.“ unter dem Formular); der Knopf zeigt sie weiter an.
+        if (ok) signIn(true).catch((e) => { if (e && e.name !== "AbortError") console.warn("Passkey:", e); });
       });
     }
   }
