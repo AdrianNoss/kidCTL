@@ -3253,3 +3253,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Zählung (`security.begin_totp_attempt`, bei Erfolg `totp_attempt_ok`). Gilt für Eltern- und Betreiber-Login
   sowie die frische Bestätigung. Getestet: je 20 gleichzeitige Versuche → genau 5 zugelassen, Konto danach
   gesperrt (`test_login_steps.py`), alle Server-Tests grün.
+- 2026-11-20: Agent: Server-Umzug (`relocate`) nur auf `https://`-Adressen (`http://` nur bei mit
+  `--insecure-http` gekoppelten Geräten); andere Ziele werden ohne Verbindungsversuch abgelehnt. Die Prüfung von
+  `KIDCTL_RELOCATE_TO` im Server bestand schon. Getestet: `test_relocate_paused.py` (http/ftp/ohne Schema abgelehnt,
+  keine Probe), alle Agent-Tests grün; Prüfung in der Test-VM offen.

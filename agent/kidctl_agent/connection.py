@@ -135,6 +135,10 @@ class Connection:
         url = ws_url(server_url)
         if url == self.url:
             return
+        if not (url.startswith("wss://") or (self.device.get("insecure_http") and url.startswith("ws://"))):
+            log.warning("Umzug nach %s abgelehnt: nur https:// erlaubt – bleibe bei %s",
+                        server_url, self.device.get("server_url"))
+            return
         if not await self._probe(url):
             log.warning("Umzug nach %s abgelehnt: neuer Server erkennt das Gerät nicht – bleibe bei %s",
                         server_url, self.device.get("server_url"))

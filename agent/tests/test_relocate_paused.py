@@ -47,6 +47,14 @@ def test_relocate_rejected_keeps_old_server(monkeypatch):
     assert conn.url == "wss://alt.example.org" + p.WS_PATH and not conn._ws.closed
 
 
+def test_relocate_to_unencrypted_address_refused(monkeypatch):
+    conn, probed = _conn(monkeypatch, accepted=True)
+    for url in ("http://neu.example.org", "ftp://neu.example.org", "neu.example.org"):
+        asyncio.run(conn._relocate(url))
+    assert probed == []          # Token geht nicht an das Ziel
+    assert store.load(store.DEVICE_FILE)["server_url"] == "https://alt.example.org" and not conn._ws.closed
+
+
 def test_relocate_to_same_server_is_noop(monkeypatch):
     conn, probed = _conn(monkeypatch, accepted=True)
     asyncio.run(conn._relocate("https://alt.example.org"))
