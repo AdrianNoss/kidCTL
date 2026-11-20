@@ -30,7 +30,7 @@ FORMAT = "kidctl-family-export"
 VERSION = 1
 EXCLUDED = {"membership", "family_invite", "pairing_code", "support_grant", "support_access", "billing_address",
             "ticket", "ticket_message"}
-MAX_ZIP = 200 * 1024 * 1024       # Schutz vor zu großen Uploads/Archiven (entpackt)
+MAX_ZIP = 20 * 1024 * 1024        # Schutz vor zu großen Uploads/Archiven (entpackt, gesamt)
 
 
 class ImportError_(Exception):

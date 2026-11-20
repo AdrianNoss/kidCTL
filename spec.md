@@ -3235,3 +3235,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Getestet: neuer Test prüft Worker-Thread und genau eine `usage_record`-Abfrage je Bericht (`test_policy.py`),
   alle Server-Tests grün. Offen: Lastmessung vorher/nachher; `async`-Routen mit synchroner DB (z. B.
   `invoice_paid`, `child_*` in `routes/admin.py`) unverändert.
+- 2026-11-20: Familien-Import: entpackte Größe des Archivs höchstens 20 MB (vorher 200 MB), passend zum
+  Upload-Limit von 2 MB. Getestet: Archiv mit 21 MB entpackt wird mit „Die Datei ist zu groß.“ abgelehnt
+  (`test_family_export.py`), Export/Import-Tests grün.

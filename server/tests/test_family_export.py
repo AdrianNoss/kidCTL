@@ -158,3 +158,14 @@ def test_single_mode_cannot_delete_family(client, parent):
     tok = csrf_from(client.get("/settings").text)
     assert client.post("/settings/delete-family", data={"csrf_token": tok, "current_password": PASSWORD,
                                                        "confirm": "LÖSCHEN"}).status_code == 404
+
+
+def test_import_rejects_oversized_archive(client, parent):
+    login(client, parent)
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("manifest.json", json.dumps({"format": "kidctl-family-export", "version": 1}))
+        zf.writestr("message.json", "[" + " " * (21 * 1024 * 1024) + "]")
+    assert len(buf.getvalue()) < 1024 * 1024        # passt durch das Upload-Limit
+    r = _import(client, buf.getvalue())
+    assert r.status_code == 400 and "zu groß" in r.text
