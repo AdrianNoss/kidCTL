@@ -25,7 +25,7 @@ RUN useradd --system --uid 10001 kidctl && mkdir -p /data && chown kidctl /data
 USER kidctl
 
 EXPOSE 8000
-# Traefik setzt X-Forwarded-For; Container ist nur über das Traefik-Netz erreichbar. Für Sperren zählt nur der
-# von Traefik angehängte letzte Eintrag (security.client_ip).
+# Traefik setzt X-Forwarded-For. Für Sperren zählt der von Traefik angehängte letzte Eintrag – aber nur, wenn die
+# Verbindung aus TRUSTED_PROXIES kommt (security.client_ip); uvicorn selbst wertet die Header nicht aus.
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", \
-     "--proxy-headers", "--forwarded-allow-ips", "*", "--no-server-header"]
+     "--no-proxy-headers", "--no-server-header"]

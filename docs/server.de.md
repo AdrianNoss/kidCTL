@@ -40,6 +40,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # Ausgabe als SE
 | `INVOICE_NUMBER_FORMAT` | Rechnungsnummer, Standard `RE-{YYYY}-{NNNN}` (fortlaufend je Jahr, lückenlos). |
 | `INVOICE_DUE_DAYS` | Zahlungsziel in Tagen (Standard 14). |
 | `ADMIN_ALLOW_NETS` | Optional. Verwaltungsbereich `/admin` nur aus diesen Netzen, kommagetrennt (z. B. `192.168.1.0/24,2001:db8::/32`); von anderswo antwortet er mit 404. Leer = von überall (Passwort + Authenticator bleiben Pflicht). |
+| `TRUSTED_PROXIES` | Optional. Nur von diesen Adressen/Netzen wird `X-Forwarded-For` ausgewertet (für Login-Sperren und `ADMIN_ALLOW_NETS`), kommagetrennt. Standard: private Netze (`10.0.0.0/8,172.16.0.0/12,192.168.0.0/16`, Loopback, `fc00::/7`). Empfohlen: feste Adresse des Traefik-Containers, z. B. `172.18.0.2/32`. |
 | `TOTP_ISSUER` | Name in der Authenticator-App (Standard: Name aus „Erscheinungsbild“, sonst `KidCTL`) |
 | `WEBAUTHN_RP_ID` | Domain, an die Passkeys gebunden sind (Standard: Host aus `BASE_URL`). Nur ändern, wenn Passkeys für eine übergeordnete Domain gelten sollen. |
 | `SOURCE_URL` | Link „Quellcode“ in der Fußzeile (AGPL-3.0 §13); bei eigenen Änderungen auf den eigenen Fork setzen. Standard: das KidCTL-Repo |

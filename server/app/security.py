@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import ipaddress
 import io
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -151,12 +152,26 @@ def record_failure(db: Session, kind: str, ip: str, username: str = "") -> None:
     db.commit()
 
 
+def _trusted_proxy(host: str) -> bool:
+    nets = settings.trusted_proxies
+    if "*" in nets:
+        return True
+    try:
+        addr = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return any(addr in net for net in nets)
+
+
 def client_ip(request: Request) -> str:
+    peer = request.client.host if request.client else "unknown"
+    if not _trusted_proxy(peer):
+        return peer   # direkt verbunden: X-Forwarded-For stammt vom Client selbst
     # Traefik hängt die echte Gegenstelle rechts an; alles links davon kann der Client selbst mitschicken
     forwarded = ",".join(request.headers.getlist("x-forwarded-for"))
     if last := forwarded.rsplit(",", 1)[-1].strip():
         return last[:64]
-    return request.client.host if request.client else "unknown"
+    return peer
 
 
 # ---------- Sessions ----------

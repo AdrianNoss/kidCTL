@@ -51,6 +51,7 @@ os.environ.update({
     "KIDCTL_DATA_DIR": _tmp,
     "BASE_URL": "http://testserver",
     "COOKIE_SECURE": "0",
+    "TRUSTED_PROXIES": "*",   # TestClient meldet sich als „testclient“; Tests setzen X-Forwarded-For selbst
 })
 
 ROOT = Path(__file__).resolve().parents[2]

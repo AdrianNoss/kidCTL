@@ -154,3 +154,19 @@ def test_language_switch_rejects_foreign_targets(client):
     r = client.get("/lang/en", params={"next": "/reset"}, follow_redirects=False)
     assert r.headers["location"] == "/reset"
 
+
+
+def test_forwarded_for_only_from_trusted_proxy(monkeypatch):
+    import dataclasses
+    import ipaddress
+
+    from app import security
+    monkeypatch.setattr(security, "settings", dataclasses.replace(
+        security.settings, trusted_proxies=(ipaddress.ip_network("172.18.0.5/32"),)))
+
+    def req(peer, *values):
+        return SimpleNamespace(headers=SimpleNamespace(getlist=lambda name: list(values)),
+                               client=SimpleNamespace(host=peer))
+    assert client_ip(req("172.18.0.5", "1.1.1.1, 9.9.9.9")) == "9.9.9.9"   # Traefik: letzter Eintrag
+    assert client_ip(req("172.18.0.7", "9.9.9.9")) == "172.18.0.7"         # anderer Container: Header zählt nicht
+    assert client_ip(req("203.0.113.9", "10.0.0.1")) == "203.0.113.9"

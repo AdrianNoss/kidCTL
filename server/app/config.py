@@ -51,6 +51,7 @@ class Settings:
     invoice_tax_mode: str = "small_business"   # INVOICE_TAX_MODE: small_business | standard
     invoice_number_format: str = "RE-{YYYY}-{NNNN}"   # INVOICE_NUMBER_FORMAT
     invoice_due_days: int = 14        # INVOICE_DUE_DAYS
+    trusted_proxies: tuple = ()    # TRUSTED_PROXIES: nur von dort zählt X-Forwarded-For („*“ = von überall)
     admin_allow_nets: tuple = ()   # ADMIN_ALLOW_NETS: Verwaltungsbereich nur aus diesen Netzen (leer = alle)
     relocate_to: str = ""  # KIDCTL_RELOCATE_TO: Server-Umzug – Agenten wechseln, wenn der neue Server sie anerkennt
 
@@ -134,6 +135,20 @@ def _admin_nets() -> tuple:
         raise RuntimeError(f"ADMIN_ALLOW_NETS ungültig ({e}) – z. B. 192.168.1.0/24,2001:db8::/32") from e
 
 
+DEFAULT_TRUSTED_PROXIES = "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8,::1/128,fc00::/7"
+
+
+def _trusted_proxies() -> tuple:
+    import ipaddress
+    raw = os.environ.get("TRUSTED_PROXIES", "").strip() or DEFAULT_TRUSTED_PROXIES
+    if raw == "*":
+        return ("*",)
+    try:
+        return tuple(ipaddress.ip_network(n.strip(), strict=False) for n in raw.split(",") if n.strip())
+    except ValueError as e:
+        raise RuntimeError(f"TRUSTED_PROXIES ungültig ({e}) – z. B. 172.18.0.2/32") from e
+
+
 def _mode() -> str:
     mode = os.environ.get("KIDCTL_MODE", "single").strip().lower() or "single"
     if mode not in ("single", "saas"):
@@ -167,6 +182,7 @@ def load_settings() -> Settings:
         registration=_registration(_mode()),
         master_key=_master_key(dev),
         relocate_to=_relocate_to(),
+        trusted_proxies=_trusted_proxies(),
         admin_allow_nets=_admin_nets(),
         invoice_tax_mode=_tax_mode(),
         invoice_number_format=_number_format(),

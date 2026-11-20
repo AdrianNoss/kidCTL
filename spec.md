@@ -3257,3 +3257,9 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   `--insecure-http` gekoppelten Geräten); andere Ziele werden ohne Verbindungsversuch abgelehnt. Die Prüfung von
   `KIDCTL_RELOCATE_TO` im Server bestand schon. Getestet: `test_relocate_paused.py` (http/ftp/ohne Schema abgelehnt,
   keine Probe), alle Agent-Tests grün; Prüfung in der Test-VM offen.
+- 2026-11-20: Server: `X-Forwarded-For` zählt nur noch, wenn die Verbindung aus `TRUSTED_PROXIES` kommt (neue
+  Env-Variable, Standard: private Netze und Loopback; `*` = alle, nur für Tests). uvicorn wertet Proxy-Header nicht
+  mehr selbst aus (`--no-proxy-headers` statt `--forwarded-allow-ips *`), damit `request.client` die echte
+  Gegenstelle bleibt. Doku (`server*.md`) ergänzt; Restlücke „gemeinsames Docker-Netz“ siehe
+  [Grenzen](docs/limitations.de.md). Getestet: `test_security.py` (Header nur vom vertrauten Proxy), alle
+  Server-Tests grün. Offen: Container-Build/Deploy mit Traefik (macht Adrian).

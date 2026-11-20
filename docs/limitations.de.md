@@ -28,6 +28,10 @@ steht im README.
   der Familie alle Einschränkungen auf.
 - **Kein Browserverlauf:** KidCTL speichert bewusst nicht, welche erlaubten Websites besucht wurden – nur, was
   gesperrt wurde.
+- **Server im gemeinsamen Docker-Netz:** Für Login-Sperren und `ADMIN_ALLOW_NETS` zählt die von Traefik gemeldete
+  Adresse, sofern die Verbindung aus `TRUSTED_PROXIES` kommt (Standard: private Netze). Andere Container im selben
+  Netz können sich dann als beliebige Adresse ausgeben; dagegen hilft nur, `TRUSTED_PROXIES` auf die Adresse des
+  Traefik-Containers zu setzen (siehe [Server](server.de.md)).
 
 ## Linux
 

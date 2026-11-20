@@ -40,6 +40,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # enter the outp
 | `INVOICE_NUMBER_FORMAT` | Invoice number, default `RE-{YYYY}-{NNNN}` (consecutive per year, without gaps). |
 | `INVOICE_DUE_DAYS` | Payment term in days (default 14). |
 | `ADMIN_ALLOW_NETS` | Optional. Administration area `/admin` only from these networks, comma-separated (e.g. `192.168.1.0/24,2001:db8::/32`); from anywhere else it answers 404. Empty = from anywhere (password + authenticator are still required). |
+| `TRUSTED_PROXIES` | Optional. `X-Forwarded-For` is only evaluated for connections from these addresses/networks (for login locks and `ADMIN_ALLOW_NETS`), comma-separated. Default: private networks (`10.0.0.0/8,172.16.0.0/12,192.168.0.0/16`, loopback, `fc00::/7`). Recommended: the fixed address of the Traefik container, e.g. `172.18.0.2/32`. |
 | `TOTP_ISSUER` | Name in the authenticator app (default: the name from "Appearance", otherwise `KidCTL`) |
 | `WEBAUTHN_RP_ID` | Domain that passkeys are bound to (default: host of `BASE_URL`). Only change it if passkeys should apply to a parent domain. |
 | `SOURCE_URL` | "Source code" link in the footer (AGPL-3.0 §13); set it to your own fork if you make changes. Default: the KidCTL repository |

@@ -28,6 +28,10 @@ version is in the README.
   is deleted.
 - **No browsing history:** KidCTL deliberately doesn't store which allowed websites were visited – only what
   was blocked.
+- **Server in a shared Docker network:** login locks and `ADMIN_ALLOW_NETS` use the address reported by Traefik,
+  provided the connection comes from `TRUSTED_PROXIES` (default: private networks). Other containers in the same
+  network can then pose as any address; the only remedy is to set `TRUSTED_PROXIES` to the address of the Traefik
+  container (see [Server](server.md)).
 
 ## Linux
 
