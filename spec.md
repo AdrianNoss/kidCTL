@@ -3120,3 +3120,9 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   - `hugo --minify --panicOnWarning` mit und ohne `checks.json`.
   - YAML der Workflows geprüft, keine ungepinnten Actions mehr.
   - Läufe der Workflows erst nach dem Push auf `main` möglich.
+- 2026-11-20: Screenshot „Tray-App mit Restzeit“ (Windows 11, DE und EN) auf der Startseite (Funktion „Was das
+  Kind sieht“, `static/img/client/tray-<lang>.webp`) und im Wiki (`docs/img/<lang>/tray-windows.webp`,
+  Kinderrechner Windows). Für die englischen Bilder wurde in der Test-VM das Sprachpaket en-US installiert; `kind`
+  läuft danach wieder auf Deutsch. Desktop-Abzüge per QMP in voller Auflösung, Tooltip und Menü je hell/dunkel unter
+  `build/winshots/desktop/` (nicht im Repo). Getestet: `hugo --minify --panicOnWarning`, Doku-Parität, Bild je
+  Sprache auf Start- und Wiki-Seite.

@@ -35,6 +35,8 @@ Wargaming startet; weitere Apps lassen sich im WebUI als „Spiel“ markieren).
 - **Aussehen:** Die Tray-App folgt dem Stil von Windows 11 (hell oder dunkel und Akzentfarbe wie in Windows
   eingestellt; unter Windows 10 ohne Mica). Das Tray-Symbol ist das KidCTL-Symbol mit einem farbigen Statuspunkt;
   die Restzeit steht im Tooltip und oben im Menü.
+
+  ![Tray-Menü mit Restzeit in der Taskleiste von Windows 11](img/de/tray-windows.webp)
 - **Benachrichtigungen** sind Windows-Toasts. Ist „Bitte nicht stören“ an (auch automatisch bei Vollbildspielen),
   zeigt die Tray-App die letzte Minute und den Countdown zusätzlich als Fenster im Vordergrund.
 - Prüfen: `"C:\Program Files\KidCTL\kidctl.cmd" status`, Dienst „KidCTL“ (`services.msc`), Log unter

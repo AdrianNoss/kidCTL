@@ -35,6 +35,8 @@ Wargaming; further apps can be marked as "Game" in the web interface).
 - **Appearance:** the tray app follows the Windows 11 style (light or dark and accent colour as set in Windows;
   without Mica on Windows 10). The tray icon is the KidCTL symbol with a coloured status dot; the remaining time is
   shown in the tooltip and at the top of the menu.
+
+  ![Tray menu with remaining time in the Windows 11 taskbar](img/en/tray-windows.webp)
 - **Notifications** are Windows toasts. If "Do not disturb" is on (also automatically during full-screen games),
   the tray app additionally shows the last minute and the countdown as a window in the foreground.
 - Check: `"C:\Program Files\KidCTL\kidctl.cmd" status`, service "KidCTL" (`services.msc`), log at
