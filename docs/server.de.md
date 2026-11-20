@@ -88,7 +88,9 @@ Authenticator selbst fest) oder entfernt sie.
 ## Verwaltungsbereich (Betreiber)
 
 Für den Betrieb mit mehreren Familien (`KIDCTL_MODE=saas`) gibt es unter `https://kids.example.org/admin` einen
-eigenen Verwaltungsbereich. Er hat eigene Accounts, getrennt von den Eltern-Accounts:
+eigenen Verwaltungsbereich. Er hat eigene Accounts, getrennt von den Eltern-Accounts. Die Navigation ist wie in der
+Eltern-Oberfläche: am Computer eine Leiste links mit allen Bereichen, am Handy unten Familien, Tickets, Rechnungen
+(bei *Support*: Protokoll) und „Mehr“ für den Rest.
 
 ```bash
 docker compose exec kidctl python -m app.cli create-operator

@@ -3076,3 +3076,16 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
     - Registrierungslink belegt Code und Adresse vor, die Adresse ist änderbar; nach dem Einlösen bzw. Ablauf ist sie
       gelöscht.
   - Migration 0022 hin und zurück.
+- 2026-11-20: Version 0.41.0 (Server): Verwaltungsbereich mit der Navigation der Elternoberfläche.
+  - `base.html` zeigt für Betreiber die `.navbar` mit den Bereichen je Rolle (`web.admin_nav`) und neuen Icons
+    (Familien, Rechnung, Schlüssel, Newsletter, Mail, Palette, Protokoll, Mehr).
+  - Desktop: alle Bereiche in der Leiste links. Lange Wörter bekommen weiche Trennstriche, da Browser Deutsch nicht
+    zuverlässig trennen.
+  - Handy: Familien, Tickets, Rechnungen (Support: Protokoll) und „Mehr“ (`/admin/more` mit den übrigen Bereichen,
+    Profil und Abmelden).
+  - Profil und Abmelden stehen oben rechts; der Seitenkopf zeigt nur den Titel, die Reiter entfallen.
+
+  Getestet:
+  - Server-Tests 333 grün, neu `test_admin_nav.py`: je Rolle alle Bereiche erreichbar, genau ein aktiver Eintrag
+    (auch auf der Familien-Detailseite), Handy-Leiste mit 3 + „Mehr“, keine Reiter, Rechte weiter serverseitig.
+  - Im Browser bei 1280 und 375 px.

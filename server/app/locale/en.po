@@ -3414,3 +3414,9 @@ msgstr "by email to {email}"
 
 msgid "Über KidCTL"
 msgstr "About KidCTL"
+
+msgid "Mehr"
+msgstr "More"
+
+msgid "Weitere Bereiche"
+msgstr "More areas"

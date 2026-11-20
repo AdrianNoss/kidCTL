@@ -83,6 +83,27 @@ templates.env.globals.update(_=i18n.gettext, gettext=i18n.gettext, ngettext=i18n
                              update_for=versions.update_for, fmt_datetime=i18n.fmt_datetime, fmt_size=_fmt_size,
                              today_minus=_today_minus, asset=asset, fmt_relative=fmt_relative)
 from . import branding  # noqa: E402
+def admin_nav(operator) -> list[tuple[str, str, str, bool]]:
+    """Bereiche des Verwaltungsbereichs je Rolle: (Pfad, Text, Icon, in der unteren Leiste am Handy). Am Handy drei
+    Einträge + „Mehr“ (/admin/more mit allen übrigen); ab 840 px alle in der Leiste links."""
+    _ = i18n.gettext
+    items = [("/admin", _("Familien"), "families", True), ("/admin/tickets", _("Tickets"), "support", True)]
+    if operator.role == "admin":
+        items.append(("/admin/invoices", _("Rechnungen"), "invoice", True))
+        items.append(("/admin/codes", _("Einladungscodes"), "key", False))
+        if settings.saas:
+            items.append(("/admin/newsletter", _("Newsletter"), "newsletter", False))
+        items += [("/admin/mail-preview", _("Mails"), "mail", False),
+                  ("/admin/branding", _("Erscheinungsbild"), "palette", False)]
+        items.append(("/admin/log", _("Protokoll"), "log", False))
+    else:
+        items.append(("/admin/log", _("Protokoll"), "log", True))
+    # Lange Wörter in der schmalen Leiste mit weichem Trennstrich umbrechen (Browser trennen Deutsch nicht immer)
+    soft = {"Einladungscodes": "Einladungs\u00adcodes", "Erscheinungsbild": "Erscheinungs\u00adbild"}
+    return [(href, soft.get(label, label), ic, mobile) for href, label, ic, mobile in items]
+
+
+templates.env.globals["admin_nav"] = admin_nav
 templates.env.globals["brand"] = branding.current          # Whitelabel: Name, Logo, Icon (kurz zwischengespeichert)
 templates.env.filters["brand"] = branding.apply            # „KidCTL“ in Texten an Familien → eigener Name
 templates.env.globals["SOURCE_URL"] = settings.source_url

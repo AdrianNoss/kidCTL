@@ -1,3 +1,3 @@
 """kidctl Root-Agent: Bildschirmzeit-Durchsetzung auf dem Kinderrechner."""
 
-__version__ = "0.40.0"
+__version__ = "0.41.0"

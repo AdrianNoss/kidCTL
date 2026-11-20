@@ -1,15 +1,1 @@
-<div class="page-head"><div><span class="eyebrow">{{ _("Verwaltung") }} · <a href="/admin/profile">{{ operator.username }}</a> · {{ operator.role | capitalize }}</span><h1>{{ heading }}</h1></div>
-  <form method="post" action="/admin/logout" class="inline">
-    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-    <button type="submit" class="secondary small">{{ _("Abmelden") }}</button>
-  </form>
-</div>
-<nav class="tabs" aria-label="{{ _('Verwaltung') }}">
-  {% set tabs = [("/admin", _("Familien"))] %}
-  {% if operator.role == "admin" %}{% set tabs = tabs + [("/admin/codes", _("Einladungscodes")), ("/admin/invoices", _("Rechnungen")), ("/admin/branding", _("Erscheinungsbild")), ("/admin/mail-preview", _("Mails"))] %}{% endif %}
-  {% if operator.role == "admin" and SAAS %}{% set tabs = tabs + [("/admin/newsletter", _("Newsletter"))] %}{% endif %}
-  {% set tabs = tabs + [("/admin/tickets", _("Tickets")), ("/admin/log", _("Protokoll"))] %}
-  {% for href, label in tabs %}
-  <a href="{{ href }}" class="tab{% if path == href %} active{% endif %}"{% if path == href %} aria-current="page"{% endif %}>{{ label }}</a>
-  {% endfor %}
-</nav>
+<div class="page-head"><div><span class="eyebrow">{{ _("Verwaltung") }} · {{ operator.username }} · {{ operator.role | capitalize }}</span><h1>{{ heading }}</h1></div></div>

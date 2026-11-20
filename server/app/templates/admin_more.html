@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% from "_icons.html" import icon %}
+{% block title %}{{ _("Mehr") }} – {{ brand().name }}{% endblock %}
+{% block content %}
+{% set heading = _("Mehr") %}{% include "_admin_head.html" %}
+<nav class="card more-list" aria-label="{{ _('Weitere Bereiche') }}">
+  {% for href, label, ic, mobile in admin_nav(operator) if not mobile %}
+  <a href="{{ href }}" class="more-item">{{ icon(ic) }}<span>{{ label }}</span></a>
+  {% endfor %}
+  <a href="/admin/profile" class="more-item">{{ icon("account") }}<span>{{ _("Profil") }}</span></a>
+</nav>
+<form method="post" action="/admin/logout" class="card more-list">
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <button type="submit" class="more-item">{{ icon("logout") }}<span>{{ _("Abmelden") }}</span></button>
+</form>
+{% endblock %}

@@ -88,7 +88,9 @@ sets their own password and authenticator) or removes them.
 ## Administration area (operator)
 
 For running with many families (`KIDCTL_MODE=saas`) there is a separate administration area at
-`https://kids.example.org/admin`. It has its own accounts, separate from the parent accounts:
+`https://kids.example.org/admin`. It has its own accounts, separate from the parent accounts. Navigation works like
+the parent interface: on a computer a bar on the left with all areas, on a phone Families, Tickets, Invoices (for
+*Support*: Log) at the bottom and "More" for the rest.
 
 ```bash
 docker compose exec kidctl python -m app.cli create-operator

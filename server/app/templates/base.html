@@ -14,9 +14,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <script src="{{ asset('app.js') }}" defer></script>
 </head>
-<body class="{{ 'has-nav' if current_parent else 'no-nav' }}{{ ' support-view' if support_view }}">
+{%- set admin_area = operator is defined and operator -%}
+<body class="{{ 'has-nav' if current_parent or admin_area else 'no-nav' }}{{ " admin" if admin_area }}{{ ' support-view' if support_view }}">
 <header class="appbar">
-  <a href="/" class="brand">{{ brand_mark() }}</a>
+  <a href="{{ "/admin" if admin_area else "/" }}" class="brand">{{ brand_mark() }}</a>
   <div class="appbar-actions">
     <button type="button" class="icon-btn theme-toggle" data-theme-toggle hidden
             data-label-auto="{{ _('Darstellung: automatisch (wie das System)') }}"
@@ -24,7 +25,14 @@
             title="{{ _('Darstellung wechseln') }}" aria-label="{{ _('Darstellung wechseln') }}">
       {{ icon("theme-auto", "only-auto") }}{{ icon("theme-light", "only-light") }}{{ icon("theme-dark", "only-dark") }}
     </button>
-    {% if support_view %}
+    {% if admin_area %}
+    <a href="/admin/profile" class="icon-btn{% if path == '/admin/profile' %} active{% endif %}" title="{{ _('Profil') }}: {{ operator.username }}"
+       aria-label="{{ _('Profil') }}"{% if path == '/admin/profile' %} aria-current="page"{% endif %}>{{ icon("account") }}</a>
+    <form method="post" action="/admin/logout" class="inline">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <button type="submit" class="icon-btn" title="{{ _('Abmelden') }}" aria-label="{{ _('Abmelden') }}">{{ icon("logout") }}</button>
+    </form>
+    {% elif support_view %}
     <a href="/admin/support/end" class="btn secondary small">{{ _("Support-Ansicht beenden") }}</a>
     {% elif current_parent %}
     <a href="/profile" class="icon-btn{% if path == '/profile' %} active{% endif %}" title="{{ _('Profil') }}: {{ current_parent.display_name or current_parent.username }}"
@@ -36,7 +44,18 @@
     {% endif %}
   </div>
 </header>
-{% if current_parent %}
+{% if admin_area %}
+<nav class="navbar admin-nav" aria-label="{{ _('Verwaltung') }}">
+  {% for href, label, ic, mobile in admin_nav(operator) %}
+  {% set active = (href == '/admin' and (path == '/admin' or path.startswith('/admin/families'))) or (href != '/admin' and path.startswith(href)) %}
+  <a href="{{ href }}" class="nav-item{% if not mobile %} nav-rail-only{% endif %}{% if active %} active{% endif %}"{% if active %} aria-current="page"{% endif %}>
+    <span class="nav-icon">{{ icon(ic) }}</span><span class="nav-label">{{ label }}</span></a>
+  {% endfor %}
+  {% set more_active = path == '/admin/more' %}
+  <a href="/admin/more" class="nav-item nav-more{% if more_active %} active{% endif %}"{% if more_active %} aria-current="page"{% endif %}>
+    <span class="nav-icon">{{ icon("more") }}</span><span class="nav-label">{{ _("Mehr") }}</span></a>
+</nav>
+{% elif current_parent %}
 <nav class="navbar" aria-label="{{ _('Hauptnavigation') }}">
   {% for href, label, ic in [("/", _("Übersicht"), "home"), ("/children", _("Kinder"), "child"), ("/devices", _("Geräte"), "devices"),
                              ("/parents", _("Eltern"), "parents"), ("/settings", _("Einstellungen"), "settings")]

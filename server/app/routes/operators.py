@@ -291,6 +291,12 @@ def _codes_page(request, db, sess, status_code=200, **ctx):
                    mask=opr.mask_email, **ctx)
 
 
+@router.get("/more")
+def more(request: Request, sess: OperatorSession = Depends(opr.require_operator)):
+    """Handy: übrige Bereiche, Profil und Abmelden (untere Leiste hat nur Platz für drei Einträge)."""
+    return _render(request, "admin_more.html", sess)
+
+
 @router.get("/codes")
 def codes(request: Request, sess: OperatorSession = Depends(opr.require_admin),
           db: Session = Depends(get_platform_db)):
