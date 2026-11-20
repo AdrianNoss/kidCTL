@@ -1,0 +1,16 @@
+{% extends "mail/base.html" %}
+{#- Passkey hinzugefügt, entfernt oder bei Wiederherstellung alle entfernt.
+    ctx: name (Anrede), event (added | removed | reset), passkey (Name des Passkeys), admin (bool) -#}
+{% set subject = {"added": _("Neuer Passkey"), "removed": _("Passkey entfernt"), "reset": _("Passkeys entfernt")}[event] %}
+{% set heading = subject %}
+{% set greeting = _("Hallo {name},").format(name=name) %}
+{% set texts = {
+  "added": _("für dein Konto wurde der Passkey „{passkey}“ angelegt. Damit kann man sich ohne Passwort und Authenticator-Code anmelden.").format(passkey=passkey),
+  "removed": _("der Passkey „{passkey}“ wurde aus deinem Konto entfernt.").format(passkey=passkey),
+  "reset": _("deine Passkeys wurden entfernt, weil Passwort oder Authenticator neu eingerichtet wurden. Bitte lege sie bei Bedarf im Profil neu an."),
+} %}
+{% set preheader = texts[event] %}
+{% set paragraphs = [texts[event]] %}
+{% set action = (_("Zum Profil"), base_url ~ ("/admin/profile" if admin else "/profile")) %}
+{% set after = [_("Warst du das nicht? Ändere sofort dein Passwort und melde dich beim Betreiber.")] %}
+{% set reason = _("Du bekommst diese Mail, weil sich die Anmeldedaten deines Kontos geändert haben.") %}

@@ -41,6 +41,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # enter the outp
 | `INVOICE_DUE_DAYS` | Payment term in days (default 14). |
 | `ADMIN_ALLOW_NETS` | Optional. Administration area `/admin` only from these networks, comma-separated (e.g. `192.168.1.0/24,2001:db8::/32`); from anywhere else it answers 404. Empty = from anywhere (password + authenticator are still required). |
 | `TOTP_ISSUER` | Name in the authenticator app (default: the name from "Appearance", otherwise `KidCTL`) |
+| `WEBAUTHN_RP_ID` | Domain that passkeys are bound to (default: host of `BASE_URL`). Only change it if passkeys should apply to a parent domain. |
 | `SOURCE_URL` | "Source code" link in the footer (AGPL-3.0 §13); set it to your own fork if you make changes. Default: the KidCTL repository |
 | `TZ_HOME` | Time zone for daily allowances and allowed hours (default `Europe/Berlin`) |
 | `SECURITY_CONTACT` | Optional. Your own security contact (email address or https URL) for `/.well-known/security.txt`; listed before the project contact |
@@ -223,7 +224,8 @@ signing in. The profile also lets you change the display name, password and auth
 
 Signing in takes two steps: first email address (or username) and password, then the authenticator code. The
 second step allows 5 minutes and 5 attempts; after that, sign-in starts over. The admin area (`/admin/login`) works
-the same way.
+the same way. With a passkey, both steps are skipped
+(see [WebUI](webui.md#signing-in-and-passkeys)); operators create one under Administration → Profile.
 
 | Problem | Solution |
 |---|---|

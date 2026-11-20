@@ -23,6 +23,7 @@ class Settings:
     base_url: str
     timezone: str
     totp_issuer: str
+    webauthn_rp_id: str = ""         # WEBAUTHN_RP_ID; leer: Host aus BASE_URL (Passkeys sind daran gebunden)
     session_days: int = 30
     login_max_failures: int = 5        # je IP; „Passwort richtig, Code falsch“ auch je Benutzer
     login_user_max_failures: int = 50  # je Benutzer: hoch, sonst könnte jeder ein Elternteil aussperren
@@ -160,6 +161,7 @@ def load_settings() -> Settings:
         base_url=os.environ.get("BASE_URL", "https://kids.nossco.de").rstrip("/"),
         timezone=os.environ.get("TZ_HOME", "Europe/Berlin"),
         totp_issuer=os.environ.get("TOTP_ISSUER", ""),   # leer: Name aus dem Branding
+        webauthn_rp_id=os.environ.get("WEBAUTHN_RP_ID", "").strip().lower(),
         source_url=os.environ.get("SOURCE_URL", "https://github.com/AdrianNoss/kidCTL"),
         mode=_mode(),
         registration=_registration(_mode()),

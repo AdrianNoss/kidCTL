@@ -41,6 +41,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # Ausgabe als SE
 | `INVOICE_DUE_DAYS` | Zahlungsziel in Tagen (Standard 14). |
 | `ADMIN_ALLOW_NETS` | Optional. Verwaltungsbereich `/admin` nur aus diesen Netzen, kommagetrennt (z. B. `192.168.1.0/24,2001:db8::/32`); von anderswo antwortet er mit 404. Leer = von überall (Passwort + Authenticator bleiben Pflicht). |
 | `TOTP_ISSUER` | Name in der Authenticator-App (Standard: Name aus „Erscheinungsbild“, sonst `KidCTL`) |
+| `WEBAUTHN_RP_ID` | Domain, an die Passkeys gebunden sind (Standard: Host aus `BASE_URL`). Nur ändern, wenn Passkeys für eine übergeordnete Domain gelten sollen. |
 | `SOURCE_URL` | Link „Quellcode“ in der Fußzeile (AGPL-3.0 §13); bei eigenen Änderungen auf den eigenen Fork setzen. Standard: das KidCTL-Repo |
 | `TZ_HOME` | Zeitzone für Tageskontingente und Zeitfenster (Standard `Europe/Berlin`) |
 | `SECURITY_CONTACT` | Optional. Eigener Sicherheitskontakt (E-Mail-Adresse oder https-URL) für `/.well-known/security.txt`; wird vor dem Projektkontakt genannt |
@@ -228,7 +229,8 @@ Anmelden erhalten. Im Profil lassen sich auch Anzeigename, Passwort und der Auth
 
 Die Anmeldung läuft in zwei Schritten: erst E-Mail-Adresse (oder Benutzername) und Passwort, dann der
 Authenticator-Code. Für den zweiten Schritt bleiben 5 Minuten und 5 Versuche, danach beginnt die Anmeldung von vorn.
-Der Verwaltungsbereich (`/admin/login`) funktioniert genauso.
+Der Verwaltungsbereich (`/admin/login`) funktioniert genauso. Mit einem Passkey entfallen beide Schritte
+(siehe [WebUI](webui.de.md#anmelden-und-passkeys)); Betreiber legen ihn unter Verwaltung → Profil an.
 
 | Problem | Lösung |
 |---|---|

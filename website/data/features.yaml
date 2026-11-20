@@ -108,8 +108,8 @@
   small: true
   title: { de: "Mehrere Eltern", en: "Several parents" }
   text:
-    de: "Jedes Elternteil mit eigenem Login, eigener Sprache und eigenen Benachrichtigungen."
-    en: "Each parent with their own sign-in, language and notifications."
+    de: "Jedes Elternteil mit eigenem Login (auch per Passkey), eigener Sprache und eigenen Benachrichtigungen."
+    en: "Each parent with their own sign-in (also with a passkey), language and notifications."
 - id: app
   icon: phone
   small: true

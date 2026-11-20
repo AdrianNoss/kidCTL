@@ -170,6 +170,7 @@ def samples() -> dict[str, dict]:
         "operator_notice": dict(name="betrieb", title=_("Passwort geändert"),
                                 text=_("das Passwort deines Betreiber-Zugangs wurde geändert.")),
         "email_changed": dict(username="mama", email="neu@example.org"),
+        "passkey_notice": dict(name="Mama", event="added", passkey="iPhone", admin=False),
         "newsletter": _newsletter_sample(f"{url}/newsletter/unsubscribe/1/BEISPIEL"),
         "report": dict(parent=SimpleNamespace(display_name="Mama", username="mama"), period=period, reports=[],
                        fmt=sch.fmt_minutes, short=report._short, bar_height=report.BAR_HEIGHT,

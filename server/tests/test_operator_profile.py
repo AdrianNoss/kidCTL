@@ -6,7 +6,7 @@ import pytest
 from app import operators
 from app.models import AdminLog, Operator, OperatorSession
 from app.security import verify_password
-from conftest import PASSWORD, csrf_from, platform_db
+from conftest import next_code, PASSWORD, csrf_from, platform_db
 from test_operators import admin_login, operator  # noqa: F401  (Fixture)
 
 NEW = "ganz-neues-passwort-42"
@@ -62,9 +62,10 @@ def test_password_change(client, op, outbox):
     admin_login(client, op)
     _other_session(op.id)
     tok = csrf_from(client.get("/admin/profile").text)
-    data = {"csrf_token": tok, "current_password": PASSWORD, "password": NEW, "repeat": NEW}
+    data = {"csrf_token": tok, "current_password": PASSWORD, "current_totp": next_code(op.totp_secret),
+            "password": NEW, "repeat": NEW}
     r = client.post("/admin/profile/password", data={**data, "current_password": "falsch"})
-    assert r.status_code == 400 and "Aktuelles Passwort ist falsch" in r.text
+    assert r.status_code == 400 and "Passwort oder Code falsch" in r.text
     assert client.post("/admin/profile/password", data={**data, "repeat": "anders-anders-1"}).status_code == 400
     assert client.post("/admin/profile/password", data={**data, "password": "kurz", "repeat": "kurz"}).status_code == 400
     with platform_db() as db:
@@ -89,7 +90,7 @@ def test_totp_change(client, op, outbox):
     token = page.split('name="token" value="')[1].split('"')[0]
     with platform_db() as db:
         assert db.get(Operator, op.id).totp_secret != secret        # alter gilt bis zur Bestätigung
-    base = {"csrf_token": tok, "token": token, "current_password": PASSWORD}
+    base = {"csrf_token": tok, "token": token, "current_password": PASSWORD, "current_totp": next_code(op.totp_secret)}
     assert client.post("/admin/profile/totp/confirm", data={**base, "totp": "000000"}).status_code == 400
     forged = token.replace(secret, "A" * len(secret))
     r = client.post("/admin/profile/totp/confirm", data={**base, "token": forged, "totp": pyotp.TOTP(secret).now()})
@@ -105,8 +106,8 @@ def test_totp_change(client, op, outbox):
     with platform_db() as db:
         new_op = db.get(Operator, op.id)
     import time
-    next_code = pyotp.TOTP(secret).at(time.time() + 30)              # gleicher Code zweimal wäre ein Replay
-    assert admin_login(client, new_op, code=next_code).status_code == 303
+    later = pyotp.TOTP(secret).at(time.time() + 30)              # gleicher Code zweimal wäre ein Replay
+    assert admin_login(client, new_op, code=later).status_code == 303
 
 
 def test_end_other_sessions(client, op):

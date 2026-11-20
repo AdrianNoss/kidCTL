@@ -3126,3 +3126,32 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   läuft danach wieder auf Deutsch. Desktop-Abzüge per QMP in voller Auflösung, Tooltip und Menü je hell/dunkel unter
   `build/winshots/desktop/` (nicht im Repo). Getestet: `hugo --minify --panicOnWarning`, Doku-Parität, Bild je
   Sprache auf Start- und Wiki-Seite.
+- 2026-11-20: Version 0.43.0 (Server): Passkeys als vollständiger Login (Eltern und Betreiber).
+  - Bibliothek `webauthn` 3.0.1, gepinnt mit Abhängigkeiten.
+  - Neue Tabellen `passkey` (Plattform, Name mit Plattform-Schlüssel) und `webauthn_challenge` (nur der Hash des
+    Tokens, einmalig, 5 Minuten), dazu `confirmed_at` an den Sitzungen (Migration 0023).
+  - Loginseite: E-Mail-Feld mit `autocomplete="username webauthn"` (Conditional UI) und Knopf „Mit Passkey
+    anmelden“ (`static/passkey.js`, ohne Framework, ohne JS versteckt).
+  - Profil (Eltern und Betreiber): Liste, anlegen, umbenennen, löschen. Hinzufügen und Löschen nur nach frischer
+    Bestätigung.
+  - Gemeinsamer Mechanismus `passkeys.confirm` für Passwort und Authenticator ändern: Passwort + Code oder ein
+    Passkey, 5 Minuten gültig. Ohne JS stehen die Felder direkt im jeweiligen Formular.
+  - Neuer Mailtyp `passkey_notice` (hinzugefügt, entfernt, bei Wiederherstellung entfernt); bei Betreibern auch
+    ein Eintrag im Verwaltungsprotokoll.
+  - „Passwort vergessen“, Authenticator-Reset durch ein Mitelternteil und die CLI-Resets löschen alle Passkeys des
+    Kontos, ebenso das Löschen eines Elternteils oder einer Familie.
+  - Sign-Count-Rückgang bei nicht synchronisierten Schlüsseln wird abgelehnt und protokolliert.
+  - `WEBAUTHN_RP_ID` (Standard: Host aus `BASE_URL`), Origin = `BASE_URL`.
+  - Doku: `docs/webui*.md` (Anmelden und Passkeys, Domainbindung), `docs/server*.md`.
+
+  Getestet:
+  - Server-Tests 345 grün, neu `test_passkeys.py` mit Software-Authenticator (`tests/softauthn.py`):
+    - Anlegen und Anmelden ohne Passwort und Code; ohne frische Bestätigung kein Hinzufügen, Löschen, Passwort- oder
+      Authenticator-Wechsel.
+    - Falscher Origin bzw. falsche RP-ID abgelehnt, ebenso eine wiederverwendete Challenge und ein Sign-Count-
+      Rückgang; synchronisierte Passkeys mit Zähler 0 funktionieren.
+    - „Passwort vergessen“ und Authenticator-Reset entfernen alle Passkeys.
+    - Betreiber; Passkey der falschen Kontoart abgelehnt; klassischer Login unverändert.
+  - Chromium (Playwright) mit virtuellem Authenticator gegen `localhost`: anlegen, Anmeldung per Conditional UI und
+    per Knopf, Bestätigung per Passkey, löschen; ohne JavaScript kein Knopf.
+  - Migration 0023 hin und zurück.

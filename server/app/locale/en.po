@@ -3420,3 +3420,108 @@ msgstr "More"
 
 msgid "Weitere Bereiche"
 msgstr "More areas"
+
+msgid "Anmeldung mit Passkey fehlgeschlagen."
+msgstr "Sign-in with passkey failed."
+
+msgid "Bestätigt bis {time}."
+msgstr "Confirmed until {time}."
+
+msgid "Bestätigt. Für 5 Minuten kannst du Passwort, Authenticator und Passkeys ändern."
+msgstr "Confirmed. For 5 minutes you can change your password, authenticator and passkeys."
+
+msgid "Bestätigung fehlgeschlagen: Passwort oder Code falsch."
+msgstr "Confirmation failed: wrong password or code."
+
+msgid "Bestätigung mit Passkey fehlgeschlagen."
+msgstr "Confirmation with passkey failed."
+
+msgid "Bitte zuerst bestätigen."
+msgstr "Please confirm first."
+
+msgid "Der Passkey ließ sich nicht anlegen."
+msgstr "The passkey could not be created."
+
+msgid "Du bekommst diese Mail, weil sich die Anmeldedaten deines Kontos geändert haben."
+msgstr "You are receiving this email because the sign-in details of your account have changed."
+
+msgid "Mit Passkey anmelden"
+msgstr "Sign in with a passkey"
+
+msgid "Mit Passkey bestätigen"
+msgstr "Confirm with a passkey"
+
+msgid "Mit einem Passkey meldest du dich per Fingerabdruck, Gesicht oder Geräte-PIN an – ohne Passwort und Authenticator-Code. Passwort und Authenticator bleiben als zweiter Weg erhalten."
+msgstr "With a passkey you sign in with your fingerprint, face or device PIN – without password and authenticator code. Password and authenticator remain available as a second way."
+
+msgid "Name des Passkeys"
+msgstr "Passkey name"
+
+msgid "Neuer Passkey"
+msgstr "New passkey"
+
+msgid "Noch kein Passkey angelegt."
+msgstr "No passkey yet."
+
+msgid "Passkey angelegt."
+msgstr "Passkey created."
+
+msgid "Passkey entfernt"
+msgstr "Passkey removed"
+
+msgid "Passkey entfernt."
+msgstr "Passkey removed."
+
+msgid "Passkey hinzufügen"
+msgstr "Add passkey"
+
+msgid "Passkey umbenannt."
+msgstr "Passkey renamed."
+
+msgid "Passkeys"
+msgstr "Passkeys"
+
+msgid "Passkeys anlegen geht nur in einem Browser mit Passkey-Unterstützung und mit JavaScript."
+msgstr "Creating passkeys requires a browser with passkey support and JavaScript."
+
+msgid "Passkeys entfernt"
+msgstr "Passkeys removed"
+
+msgid "QR-Code mit der neuen Authenticator-App scannen, dann den Code der neuen App eingeben (ohne Bestätigung der letzten Minuten zusätzlich Passwort und Code der bisherigen App)."
+msgstr "Scan the QR code with the new authenticator app, then enter the code from the new app (without a confirmation in the last few minutes, also your password and the code from the previous app)."
+
+msgid "Umbenennen"
+msgstr "Rename"
+
+msgid "Warst du das nicht? Ändere sofort dein Passwort und melde dich beim Betreiber."
+msgstr "Wasn't you? Change your password right away and contact the operator."
+
+msgid "Zum Hinzufügen oder Löschen eines Passkeys (und zum Ändern von Passwort und Authenticator) bestätige kurz, dass du es bist – gilt dann 5 Minuten."
+msgstr "To add or delete a passkey (and to change your password and authenticator), briefly confirm that it is you – this then applies for 5 minutes."
+
+msgid "Zum Profil"
+msgstr "Go to profile"
+
+msgid "angelegt {date}"
+msgstr "created {date}"
+
+msgid "deine Passkeys wurden entfernt, weil Passwort oder Authenticator neu eingerichtet wurden. Bitte lege sie bei Bedarf im Profil neu an."
+msgstr "your passkeys were removed because your password or authenticator was set up again. Please create them again in your profile if needed."
+
+msgid "der Passkey „{passkey}“ wurde aus deinem Konto entfernt."
+msgstr "the passkey \"{passkey}\" was removed from your account."
+
+msgid "für dein Konto wurde der Passkey „{passkey}“ angelegt. Damit kann man sich ohne Passwort und Authenticator-Code anmelden."
+msgstr "the passkey \"{passkey}\" was created for your account. It can be used to sign in without password and authenticator code."
+
+msgid "noch nicht benutzt"
+msgstr "not used yet"
+
+msgid "synchronisiert"
+msgstr "synced"
+
+msgid "z. B. iPhone oder Laptop"
+msgstr "e.g. iPhone or laptop"
+
+msgid "zuletzt benutzt {date}"
+msgstr "last used {date}"

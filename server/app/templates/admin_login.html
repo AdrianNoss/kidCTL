@@ -5,9 +5,11 @@
   <div class="login-brand">{{ brand_mark() }}</div>
   <h2>{{ _("Verwaltung") }}</h2>
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-  <label>{{ _("Benutzername") }} <input name="username" value="{{ username or '' }}" autocomplete="username" required autofocus></label>
+  <label>{{ _("Benutzername") }} <input name="username" value="{{ username or '' }}" autocomplete="username webauthn" required autofocus></label>
   <label>{{ _("Passwort") }} <input type="password" name="password" autocomplete="current-password" required></label>
   <button type="submit" class="btn-block">{{ _("Weiter") }}</button>
+  <button type="button" class="secondary btn-block" data-passkey-login data-base="/admin/login" data-csrf="{{ csrf_token }}" hidden>{{ _("Mit Passkey anmelden") }}</button>
+  <p class="error" data-passkey-error hidden></p>
   {% include "_homepage.html" %}
   {% include "_langswitch.html" %}
 </form>

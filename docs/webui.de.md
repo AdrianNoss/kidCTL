@@ -43,6 +43,27 @@ Je Kind (Seite des Kindes):
 
 Je Gerät: Alarm, wenn das Gerät länger als X Stunden offline ist (Standard 48 h).
 
+## Anmelden und Passkeys
+
+Die Anmeldung hat zwei Schritte: erst E-Mail-Adresse und Passwort, dann der Code aus der Authenticator-App.
+Bequemer geht es mit einem **Passkey**. Dann meldest du dich per Fingerabdruck, Gesicht oder Geräte-PIN an, ohne
+Passwort und Code. Das Feld für die E-Mail-Adresse schlägt gespeicherte Passkeys vor, alternativ gibt es den Knopf
+„Mit Passkey anmelden“.
+
+- **Anlegen:** Profil → „Passkeys“. Zuerst bestätigst du kurz, dass du es bist: mit Passwort und Code oder mit einem
+  vorhandenen Passkey. Die Bestätigung gilt 5 Minuten. Dann gibst du einen Namen ein und tippst auf „Passkey
+  hinzufügen“. Auf diese Weise legst du auf Handy und Computer je einen an. Passkeys aus iCloud oder Google sind als
+  „synchronisiert“ markiert.
+- **Löschen** und das Ändern von Passwort oder Authenticator verlangen dieselbe frische Bestätigung. Bei jedem neuen
+  oder gelöschten Passkey kommt eine Hinweis-Mail.
+- **Wiederherstellung:** „Passwort vergessen“ und das Zurücksetzen des Authenticators entfernen alle Passkeys des
+  Kontos. Sie müssen danach neu angelegt werden. „Alle Sitzungen beenden“ lässt Passkeys bestehen.
+- Passwort und Authenticator bleiben immer als Weg zur Anmeldung erhalten, auch ohne JavaScript.
+
+> [!NOTE]
+> Passkeys sind an die Adresse des Servers gebunden (z. B. `kids.example.org`). Zieht der Server auf eine andere
+> Domain um, müssen alle Passkeys neu angelegt werden.
+
 ## Sprache
 
 KidCTL spricht Deutsch und Englisch. Eltern wählen die Sprache im Profil (Standard: Browsersprache).

@@ -164,6 +164,12 @@ def two_step_login(client, base, username, password, code, headers=None):
                        follow_redirects=False)
 
 
+def next_code(secret: str) -> str:
+    """Code des nächsten Zeitfensters (der des Logins ist durch den Replay-Schutz verbraucht)."""
+    import time
+    return pyotp.TOTP(secret).at(int(time.time()) + 30)
+
+
 def login(client, parent, password=PASSWORD, code=None):
     with SessionLocal() as db:  # Replay-Schutz für wiederholte Test-Logins zurücksetzen
         db.get(Parent, parent.id).totp_last_step = 0

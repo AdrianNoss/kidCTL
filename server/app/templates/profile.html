@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% from "_confirm.html" import confirm_fields %}
 {% block title %}{{ _("Profil") }} – {{ brand().name }}{% endblock %}
 {% block content %}
 {% set f = form or {"username": parent.username, "display_name": parent.display_name, "email": parent.email, "language": parent.language} %}
@@ -66,9 +66,8 @@
 <form method="post" action="/profile/password" class="card">
   <h2>{{ _("Passwort ändern") }}</h2>
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-  <input type="text" name="username" value="{{ parent.username }}" autocomplete="username" hidden>
   <div class="form-grid">
-    <label>{{ _("Aktuelles Passwort") }} <input type="password" name="current_password" required autocomplete="current-password"></label>
+    {{ confirm_fields(fresh, parent.username) }}
     <label>{{ _("Neues Passwort (min. 12 Zeichen)") }} <input type="password" name="password" minlength="12" required autocomplete="new-password"></label>
     <label>{{ _("Neues Passwort wiederholen") }} <input type="password" name="repeat" minlength="12" required autocomplete="new-password"></label>
   </div>
@@ -83,4 +82,6 @@
   <p class="muted"><small>{{ _("Authenticator verloren und nicht mehr angemeldet? Ein anderes Elternteil kann ihn unter „Eltern“ zurücksetzen.") }}</small></p>
   <button type="submit" class="secondary">{{ _("Neuen Authenticator einrichten") }}</button>
 </form>
+
+{% with username=parent.username %}{% include "_passkeys.html" %}{% endwith %}
 {% endblock %}

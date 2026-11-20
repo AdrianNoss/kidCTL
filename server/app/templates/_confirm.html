@@ -1,0 +1,8 @@
+{#- Frische Bestätigung: ohne Bestätigung der letzten 5 Minuten Passwort + aktueller Authenticator-Code. -#}
+{% macro confirm_fields(fresh, username) -%}
+{% if not fresh %}
+<input type="text" name="username" value="{{ username }}" autocomplete="username" hidden>
+<label>{{ _("Aktuelles Passwort") }} <input type="password" name="current_password" required autocomplete="current-password"></label>
+<label>{{ _("Authenticator-Code") }} <input name="current_totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
+{% endif %}
+{%- endmacro %}

@@ -62,7 +62,7 @@ gilt die Sprache der Desktop-Sitzung.
 - **Newsletter:** Neuigkeiten an alle Familien, die zugestimmt haben – auf Deutsch und Englisch, mit Markdown
   formatiert, mit Vorschau und Abmeldelink.
 - **Sicherheit**:
-  - Eltern-Login nur mit TOTP, Rate-Limiting, CSRF-Schutz.
+  - Eltern-Login nur mit TOTP (oder Passkey), Rate-Limiting, CSRF-Schutz.
   - Namen, Chat, Protokoll, Statistik und E-Mail-Adressen liegen auf dem Server verschlüsselt (eigener Schlüssel
     je Familie).
   - Signiertes Paket-Repository für Updates (Pacman und APT); der Windows-Agent aktualisiert sich selbst

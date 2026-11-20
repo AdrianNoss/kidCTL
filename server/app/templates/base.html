@@ -13,6 +13,7 @@
   <link rel="apple-touch-icon" href="{{ brand().icon_url(180) }}">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <script src="{{ asset('app.js') }}" defer></script>
+  <script src="{{ asset('passkey.js') }}" defer></script>
 </head>
 {%- set admin_area = operator is defined and operator -%}
 <body class="{{ 'has-nav' if current_parent or admin_area else 'no-nav' }}{{ " admin" if admin_area }}{{ ' support-view' if support_view }}">

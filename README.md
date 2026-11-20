@@ -62,7 +62,7 @@ child's computer the language of the desktop session is used.
 - **Newsletter:** news to all families that opted in – in German and English, formatted with Markdown, with a
   preview and an unsubscribe link.
 - **Security**:
-  - Parent sign-in only with TOTP, rate limiting, CSRF protection.
+  - Parent sign-in only with TOTP (or a passkey), rate limiting, CSRF protection.
   - Names, chat, activity log, statistics and email addresses are stored encrypted on the server (one key
     per family).
   - Signed package repository for updates (pacman and APT); the Windows agent updates itself

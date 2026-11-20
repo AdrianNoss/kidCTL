@@ -20,7 +20,7 @@ from ..models import (
     ParentSession,
     WeekdayRule, utcnow,
 )
-from .. import access, accounts, blocklog, chat, i18n, nowplaying, policy, programs, report, stats, webfilter
+from .. import access, accounts, blocklog, chat, i18n, nowplaying, passkeys, policy, programs, report, stats, webfilter
 from .. import lock as lk
 from .. import schedule as sch
 from ..i18n import N_, _
@@ -566,7 +566,10 @@ def parent_totp_reset(parent_id: int, request: Request, sess: ParentSession = De
     raw = accounts.create_token(db, parent, "totp_setup", timedelta(hours=accounts.TOTP_SETUP_HOURS), secret)
     parent.totp_secret, parent.totp_last_step = new_totp_secret(), 0   # alter Authenticator ungültig
     accounts.end_sessions(db, parent.id)
+    removed = passkeys.remove_all(db, "parent", parent.id)   # Entzug: auch Passkeys gelten nicht mehr
     db.commit()
+    if removed:
+        passkeys.notify_parent(parent, "reset")
     by = sess.parent.display_name or sess.parent.username
     accounts.notify(parent, N_("Authenticator zurückgesetzt"),
                     N_("{by} hat den Authenticator deines Accounts „{username}“ zurückgesetzt. "
@@ -584,6 +587,7 @@ def parent_delete(parent_id: int, sess: ParentSession = Depends(csrf_protect),
         raise HTTPException(400, "Eigenen Account nicht löschbar")
     if _role(db, parent_id) == ROLE_OWNER:
         raise HTTPException(400, "Inhaber nicht löschbar")
+    passkeys.remove_all(db, "parent", target.id)
     db.delete(target)
     db.commit()
     return _redirect("/parents")
@@ -592,8 +596,13 @@ def parent_delete(parent_id: int, sess: ParentSession = Depends(csrf_protect),
 # ---------- Profil ----------
 
 def _profile(request: Request, parent: Parent, status_code: int = 200, **ctx):
+    from sqlalchemy.orm import object_session
+    sess = request.state.session
     return render(request, "profile.html", status_code=status_code, parent=parent,
-                  mail_enabled=settings.mail_enabled, intervals=report.INTERVALS, send_hour=report.SEND_HOUR, **ctx)
+                  mail_enabled=settings.mail_enabled, intervals=report.INTERVALS, send_hour=report.SEND_HOUR,
+                  passkey_list=passkeys.list_for(object_session(parent), "parent", parent.id),
+                  fresh=passkeys.is_fresh(sess), fresh_until=sess.confirmed_at and sess.confirmed_at + passkeys.FRESH,
+                  **ctx)
 
 
 _check_password = accounts.check_password
@@ -602,7 +611,10 @@ _check_password = accounts.check_password
 PROFILE_NOTICES = {"saved": N_("Profil gespeichert."),
                    "email_sent": N_("Bestätigungslink gesendet – bitte das Postfach prüfen."), "password": N_("Passwort geändert. Andere Sitzungen wurden abgemeldet."),
                    "totp": N_("Neuer Authenticator eingerichtet. Andere Sitzungen wurden abgemeldet."),
-                   "report": N_("Nutzungsbericht gespeichert."), "report_sent": N_("Nutzungsbericht gesendet.")}
+                   "report": N_("Nutzungsbericht gespeichert."), "report_sent": N_("Nutzungsbericht gesendet."),
+                   "confirmed": N_("Bestätigt. Für 5 Minuten kannst du Passwort, Authenticator und Passkeys ändern."),
+                   "passkey_added": N_("Passkey angelegt."), "passkey_removed": N_("Passkey entfernt."),
+                   "passkey_renamed": N_("Passkey umbenannt.")}
 
 
 @router.get("/profile")
@@ -686,10 +698,12 @@ def profile_report_preview(request: Request, interval: str = "", db: Session = D
 
 
 @router.post("/profile/password")
-def profile_password(request: Request, current_password: str = Form(""), password: str = Form(""),
-                     repeat: str = Form(""), sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+def profile_password(request: Request, current_password: str = Form(""), current_totp: str = Form(""),
+                     password: str = Form(""), repeat: str = Form(""), sess: ParentSession = Depends(csrf_protect),
+                     db: Session = Depends(get_db)):
     parent = db.get(Parent, sess.parent_id)
-    error = _check_password(db, request, parent, current_password) or accounts.password_error(password, repeat)
+    error = accounts.password_error(password, repeat) or \
+        passkeys.confirm(db, request, sess, parent, current_password, current_totp, parent.username)
     if error:
         return _profile(request, parent, 400, error=error)
     parent.password_hash = hash_password(password)
@@ -712,18 +726,19 @@ def profile_totp_start(request: Request, sess: ParentSession = Depends(csrf_prot
 def _totp_change_page(request, parent, raw, secret, status_code=200, error=None):
     uri = accounts.totp_uri_for(secret, parent.username)
     return render(request, "profile_totp.html", status_code=status_code, parent=parent, token=raw, secret=secret,
-                  qr_svg=totp_qr_svg(uri), minutes=accounts.TOTP_CHANGE_MINUTES, error=error)
+                  qr_svg=totp_qr_svg(uri), minutes=accounts.TOTP_CHANGE_MINUTES, error=error,
+                  fresh=passkeys.is_fresh(request.state.session))
 
 
 @router.post("/profile/totp/confirm")
 def profile_totp_confirm(request: Request, token: str = Form(""), current_password: str = Form(""),
-                         totp: str = Form(""), sess: ParentSession = Depends(csrf_protect),
+                         current_totp: str = Form(""), totp: str = Form(""), sess: ParentSession = Depends(csrf_protect),
                          db: Session = Depends(get_db)):
     parent = db.get(Parent, sess.parent_id)
     t = accounts.get_token(db, token, "totp_change")
     if t is None or t.parent_id != parent.id:
         return _profile(request, parent, 400, error=_("Die Einrichtung ist abgelaufen. Bitte neu starten."))
-    error = _check_password(db, request, parent, current_password)
+    error = passkeys.confirm(db, request, sess, parent, current_password, current_totp, parent.username)
     step = accounts.totp_step(t.secret, totp)
     if not error and step is None:
         error = _("Der Code passt nicht zum neuen QR-Code.")
@@ -735,3 +750,96 @@ def profile_totp_confirm(request: Request, token: str = Form(""), current_passwo
     db.commit()
     accounts.notify(parent, N_("Authenticator geändert"), N_("für deinen Account wurde ein neuer Authenticator eingerichtet."))
     return _redirect("/profile?msg=totp")
+
+
+# ---------- Passkeys und frische Bestätigung ----------
+
+def _json(data: dict, status_code: int = 200):
+    from fastapi.responses import JSONResponse
+    return JSONResponse(data, status_code=status_code, headers={"Cache-Control": "no-store"})
+
+
+@router.post("/profile/confirm")
+def profile_confirm(request: Request, current_password: str = Form(""), current_totp: str = Form(""),
+                    sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    """Frische Bestätigung per Passwort + Code (5 Minuten)."""
+    parent = db.get(Parent, sess.parent_id)
+    if error := passkeys.confirm(db, request, sess, parent, current_password, current_totp, parent.username):
+        return _profile(request, parent, 400, error=error)
+    return _redirect("/profile?msg=confirmed#passkeys")
+
+
+@router.post("/profile/confirm/passkey/options")
+def profile_confirm_passkey_options(sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    options, token = passkeys.authentication_options(db, "parent", "confirm", sess.parent_id)
+    resp = _json({"options": options})
+    passkeys.set_cookie(resp, "parent", token)
+    return resp
+
+
+@router.post("/profile/confirm/passkey")
+def profile_confirm_passkey(request: Request, credential: str = Form(""), sess: ParentSession = Depends(csrf_protect),
+                            db: Session = Depends(get_db)):
+    """Frische Bestätigung mit einem Passkey dieses Kontos."""
+    try:
+        passkeys.authenticate(db, passkeys.cookie(request, "parent"), credential, "parent", "confirm", sess.parent_id)
+    except passkeys.PasskeyError as e:
+        passkeys.log.info("Bestätigung per Passkey abgelehnt: %s", e)
+        return _json({"error": _("Bestätigung mit Passkey fehlgeschlagen.")}, 400)
+    passkeys.mark_fresh(db, sess)
+    return _json({"redirect": "/profile?msg=confirmed#passkeys"})
+
+
+@router.post("/profile/passkeys/options")
+def profile_passkey_options(sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    if not passkeys.is_fresh(sess):
+        return _json({"error": _("Bitte zuerst bestätigen.")}, 403)
+    parent = db.get(Parent, sess.parent_id)
+    options, token = passkeys.registration_options(db, "parent", parent.id, parent.email or parent.username,
+                                                   parent.display_name or parent.username)
+    resp = _json({"options": options})
+    passkeys.set_cookie(resp, "parent", token)
+    return resp
+
+
+@router.post("/profile/passkeys")
+def profile_passkey_add(request: Request, credential: str = Form(""), name: str = Form(""),
+                        sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    if not passkeys.is_fresh(sess):
+        return _json({"error": _("Bitte zuerst bestätigen.")}, 403)
+    parent = db.get(Parent, sess.parent_id)
+    try:
+        pk = passkeys.register(db, passkeys.cookie(request, "parent"), credential, "parent", parent.id, name)
+    except passkeys.PasskeyError as e:
+        passkeys.log.info("Passkey-Registrierung abgelehnt: %s", e)
+        return _json({"error": _("Der Passkey ließ sich nicht anlegen.")}, 400)
+    passkeys.notify_parent(parent, "added", pk.name)
+    return _json({"redirect": "/profile?msg=passkey_added#passkeys"})
+
+
+@router.post("/profile/passkeys/{passkey_id}/rename")
+def profile_passkey_rename(passkey_id: int, name: str = Form(""), sess: ParentSession = Depends(csrf_protect),
+                           db: Session = Depends(get_db)):
+    pk = passkeys.get_own(db, "parent", sess.parent_id, passkey_id)
+    if pk is None:
+        raise HTTPException(404)
+    pk.name = " ".join(name.split())[:passkeys.MAX_NAME] or pk.name
+    db.commit()
+    return _redirect("/profile?msg=passkey_renamed#passkeys")
+
+
+@router.post("/profile/passkeys/{passkey_id}/delete")
+def profile_passkey_delete(passkey_id: int, request: Request, current_password: str = Form(""),
+                           current_totp: str = Form(""), sess: ParentSession = Depends(csrf_protect),
+                           db: Session = Depends(get_db)):
+    parent = db.get(Parent, sess.parent_id)
+    pk = passkeys.get_own(db, "parent", parent.id, passkey_id)
+    if pk is None:
+        raise HTTPException(404)
+    if error := passkeys.confirm(db, request, sess, parent, current_password, current_totp, parent.username):
+        return _profile(request, parent, 400, error=error)
+    name = pk.name
+    db.delete(pk)
+    db.commit()
+    passkeys.notify_parent(parent, "removed", name)
+    return _redirect("/profile?msg=passkey_removed#passkeys")

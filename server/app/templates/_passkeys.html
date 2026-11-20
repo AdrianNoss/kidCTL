@@ -1,0 +1,50 @@
+{% from "_confirm.html" import confirm_fields %}{#- Karte „Passkeys“ im Profil (Eltern und Betreiber). ctx: passkey_list, fresh, fresh_until, passkey_base
+    (/profile bzw. /admin/profile), username -#}
+{% set base = passkey_base | default("/profile") %}
+<section class="card" id="passkeys" data-passkeys data-base="{{ base }}" data-csrf="{{ csrf_token }}">
+  <h2>{{ _("Passkeys") }}</h2>
+  <p>{{ _("Mit einem Passkey meldest du dich per Fingerabdruck, Gesicht oder Geräte-PIN an – ohne Passwort und Authenticator-Code. Passwort und Authenticator bleiben als zweiter Weg erhalten.") }}</p>
+  {% if passkey_list %}
+  <table class="responsive passkey-list">
+    {% for pk in passkey_list %}
+    <tr>
+      <td><strong>{{ pk.name }}</strong>{% if pk.backed_up %} <span class="pill">{{ _("synchronisiert") }}</span>{% endif %}<br>
+        <small class="muted">{{ _("angelegt {date}").format(date=pk.created_at | localtime) }} · {{ _("zuletzt benutzt {date}").format(date=pk.last_used_at | localtime) if pk.last_used_at else _("noch nicht benutzt") }}</small></td>
+      <td class="right"><div class="actions">
+        <form method="post" action="{{ base }}/passkeys/{{ pk.id }}/rename" class="inline rename-form">
+          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+          <input name="name" maxlength="64" value="{{ pk.name }}" aria-label="{{ _('Name') }}" class="short">
+          <button type="submit" class="secondary small">{{ _("Umbenennen") }}</button>
+        </form>
+        {% if fresh %}
+        <form method="post" action="{{ base }}/passkeys/{{ pk.id }}/delete" class="inline">
+          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+          <button type="submit" class="danger small">{{ _("Löschen") }}</button>
+        </form>
+        {% endif %}
+      </div></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="muted">{{ _("Noch kein Passkey angelegt.") }}</p>
+  {% endif %}
+
+  {% if fresh %}
+  <p class="success">{{ _("Bestätigt bis {time}.").format(time=fresh_until | localtime("%H:%M")) }}</p>
+  <div class="passkey-add" data-passkey-add hidden>
+    <label>{{ _("Name des Passkeys") }} <input name="passkey_name" maxlength="64" placeholder="{{ _('z. B. iPhone oder Laptop') }}"></label>
+    <div class="row"><button type="button" data-passkey-add-button>{{ _("Passkey hinzufügen") }}</button></div>
+  </div>
+  <p class="muted" data-passkey-unsupported><small>{{ _("Passkeys anlegen geht nur in einem Browser mit Passkey-Unterstützung und mit JavaScript.") }}</small></p>
+  {% else %}
+  <p class="muted">{{ _("Zum Hinzufügen oder Löschen eines Passkeys (und zum Ändern von Passwort und Authenticator) bestätige kurz, dass du es bist – gilt dann 5 Minuten.") }}</p>
+  <form method="post" action="{{ base }}/confirm" class="form-grid">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    {{ confirm_fields(False, username) }}
+    <div class="row"><button type="submit" class="secondary">{{ _("Bestätigen") }}</button>
+      {% if passkey_list %}<button type="button" class="secondary" data-passkey-confirm hidden>{{ _("Mit Passkey bestätigen") }}</button>{% endif %}</div>
+  </form>
+  {% endif %}
+  <p class="error" data-passkey-error hidden></p>
+</section>

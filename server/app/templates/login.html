@@ -4,9 +4,11 @@
 <form method="post" action="/login" class="card narrow">
   <div class="login-brand">{{ brand_mark() }}</div>
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-  <label>{{ _("E-Mail-Adresse") if SAAS else _("E-Mail-Adresse oder Benutzername") }} <input name="username" value="{{ username or '' }}" autocomplete="username" inputmode="email" required autofocus></label>
+  <label>{{ _("E-Mail-Adresse") if SAAS else _("E-Mail-Adresse oder Benutzername") }} <input name="username" value="{{ username or '' }}" autocomplete="username webauthn" inputmode="email" required autofocus></label>
   <label>{{ _("Passwort") }} <input type="password" name="password" autocomplete="current-password" required></label>
   <button type="submit" class="btn-block">{{ _("Weiter") }}</button>
+  <button type="button" class="secondary btn-block" data-passkey-login data-base="/login" data-csrf="{{ csrf_token }}" hidden>{{ _("Mit Passkey anmelden") }}</button>
+  <p class="error" data-passkey-error hidden></p>
   <p class="login-help"><a href="/reset">{{ _("Passwort vergessen?") }}</a></p>
   {% if REGISTRATION != "closed" %}<p class="login-help"><a href="/signup">{{ _("Neu hier? Familie registrieren") }}</a></p>{% endif %}
   {% include "_homepage.html" %}

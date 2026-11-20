@@ -7,7 +7,7 @@ import pytest
 
 from app import mail
 from app.config import Settings
-from conftest import two_step_login, SessionLocal, add_parent
+from conftest import next_code, two_step_login, SessionLocal, add_parent
 from app.models import Parent, ParentSession, utcnow
 from app.security import hash_password, new_totp_secret
 from conftest import PASSWORD, csrf_from, login
@@ -107,9 +107,10 @@ def test_profile_password_change_ends_other_sessions(client, parent, outbox):
                              expires_at=__import__("datetime").datetime(2099, 1, 1)))
         db.commit()
     tok = csrf_from(client.get("/profile").text)
-    assert client.post("/profile/password", data={"csrf_token": tok, "current_password": "falsch",
+    code = next_code(parent.totp_secret)
+    assert client.post("/profile/password", data={"csrf_token": tok, "current_password": "falsch", "current_totp": code,
                                                   "password": NEW_PW, "repeat": NEW_PW}).status_code == 400
-    r = client.post("/profile/password", data={"csrf_token": tok, "current_password": PASSWORD,
+    r = client.post("/profile/password", data={"csrf_token": tok, "current_password": PASSWORD, "current_totp": code,
                                                "password": NEW_PW, "repeat": NEW_PW}, follow_redirects=False)
     assert r.status_code == 303
     with SessionLocal() as db:
@@ -124,8 +125,8 @@ def test_profile_totp_change(client, parent, outbox):
     secret = re.search(r"Schlüssel <code>([A-Z2-7]+)</code>", page).group(1)
     token = re.search(r'name="token" value="([^"]+)"', page).group(1)
     assert _get(parent.id).totp_secret == parent.totp_secret               # alter gilt bis zur Bestätigung
-    bad = client.post("/profile/totp/confirm", data={"csrf_token": tok, "token": token,
-                                                     "current_password": PASSWORD, "totp": "000000"})
+    bad = client.post("/profile/totp/confirm", data={"csrf_token": tok, "token": token, "current_password": PASSWORD,
+                                                     "current_totp": next_code(parent.totp_secret), "totp": "000000"})
     assert bad.status_code == 400 and "passt nicht" in bad.text
     ok = client.post("/profile/totp/confirm", data={"csrf_token": tok, "token": token, "current_password": PASSWORD,
                                                     "totp": pyotp.TOTP(secret).now()}, follow_redirects=False)

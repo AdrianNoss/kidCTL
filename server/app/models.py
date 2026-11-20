@@ -129,6 +129,7 @@ class ParentSession(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     expires_at: Mapped[datetime] = mapped_column(DateTime)
     user_agent: Mapped[str] = mapped_column(String(255), default="")
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)   # frische Bestätigung
 
     parent: Mapped[Parent] = relationship()
 
@@ -174,6 +175,7 @@ class OperatorSession(Base):
     csrf_token: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     expires_at: Mapped[datetime] = mapped_column(DateTime)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)   # frische Bestätigung
 
     operator: Mapped[Operator] = relationship()
 
@@ -444,6 +446,39 @@ class LoginTicket(Base):
     account_id: Mapped[int] = mapped_column(Integer)
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
+class Passkey(Base):
+    """Passkey (WebAuthn, auffindbarer Schlüssel) eines Elternteils oder Betreibers – vollständiger Login ohne
+    Passwort und Code. Plattform-Bereich, damit die Anmeldung vor der Familienzuordnung funktioniert; der Name ist
+    mit dem Plattform-Schlüssel verschlüsselt."""
+    __tablename__ = "passkey"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    kind: Mapped[str] = mapped_column(String(16))                    # parent | operator
+    account_id: Mapped[int] = mapped_column(Integer, index=True)
+    credential_id: Mapped[str] = mapped_column(String(512), unique=True)   # base64url
+    public_key: Mapped[bytes] = mapped_column(LargeBinary)
+    sign_count: Mapped[int] = mapped_column(Integer, default=0)
+    transports: Mapped[str] = mapped_column(String(128), default="")
+    backed_up: Mapped[bool] = mapped_column(Boolean, default=False)     # synchronisiert (z. B. iCloud, Google)
+    name: Mapped[str] = mapped_column(PlatformSealed("passkey.name"), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class WebAuthnChallenge(Base):
+    """Challenge für Registrierung, Anmeldung oder Bestätigung per Passkey: serverseitig, einmalig, 5 Minuten.
+    Das Cookie trägt nur ein Token, gespeichert ist dessen Hash."""
+    __tablename__ = "webauthn_challenge"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    purpose: Mapped[str] = mapped_column(String(16))                 # register | login | confirm
+    kind: Mapped[str] = mapped_column(String(16))
+    account_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    challenge: Mapped[bytes] = mapped_column(LargeBinary)
     expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
 
 

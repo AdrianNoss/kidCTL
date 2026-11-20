@@ -103,6 +103,8 @@ def delete_family(db: Session, family_id: int) -> dict[str, int]:
         from .invoices import drop_drafts
         drop_drafts(db, family_id)   # ausgestellte Rechnungen bleiben (Aufbewahrungspflicht)
         if parent_ids:
+            from .models import Passkey
+            db.execute(delete(Passkey).where(Passkey.kind == "parent", Passkey.account_id.in_(parent_ids)))
             db.execute(delete(Parent).where(Parent.id.in_(parent_ids)))
         db.execute(delete(Family).where(Family.id == family_id))
         db.commit()

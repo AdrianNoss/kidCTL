@@ -1,18 +1,17 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% from "_confirm.html" import confirm_fields %}
 {% block title %}{{ _("Neuer Authenticator") }} – {{ brand().name }}{% endblock %}
 {% block content %}
 <div class="page-head"><div><span class="eyebrow">{{ _("Profil") }}</span><h1>{{ _("Neuer Authenticator") }}</h1></div></div>
 <section class="card">
-  <p>{{ _("QR-Code mit der neuen Authenticator-App scannen, dann Passwort und den Code der neuen App eingeben.") }}
+  <p>{{ _("QR-Code mit der neuen Authenticator-App scannen, dann den Code der neuen App eingeben (ohne Bestätigung der letzten Minuten zusätzlich Passwort und Code der bisherigen App).") }}
     {{ _("Diese Seite gilt {minutes} Minuten.").format(minutes=minutes) }}</p>
   <div class="qr">{{ qr_svg | safe }}</div>
   <p class="muted"><small>{{ _("Ohne Kamera: Schlüssel") }} <code>{{ secret }}</code></small></p>
   <form method="post" action="/profile/totp/confirm">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <input type="hidden" name="token" value="{{ token }}">
-    <input type="text" name="username" value="{{ parent.username }}" autocomplete="username" hidden>
     <div class="form-grid">
-      <label>{{ _("Aktuelles Passwort") }} <input type="password" name="current_password" required autocomplete="current-password"></label>
+      {{ confirm_fields(fresh, parent.username) }}
       <label>{{ _("Code aus der neuen App") }} <input name="totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
     </div>
     <div class="actions"><button type="submit">{{ _("Bestätigen") }}</button><a href="/profile" class="btn ghost">{{ _("Abbrechen") }}</a></div>

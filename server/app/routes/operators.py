@@ -8,7 +8,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from .. import operators as opr
-from .. import audit, backup, billing, loginticket, support, tickets
+from .. import audit, backup, billing, loginticket, passkeys, support, tickets
 from ..config import settings
 from ..db import get_platform_db
 from ..i18n import N_, _
@@ -397,7 +397,10 @@ def admin_log(request: Request, family: str = "", actor: str = "", obj: str = ""
 TOTP_CHANGE_MINUTES = 15
 PROFILE_MESSAGES = {"1": N_("Gespeichert."), "password": N_("Passwort geändert. Andere Sitzungen wurden abgemeldet."),
                     "totp": N_("Neuer Authenticator eingerichtet. Andere Sitzungen wurden abgemeldet."),
-                    "sessions": N_("Alle anderen Sitzungen wurden abgemeldet.")}
+                    "sessions": N_("Alle anderen Sitzungen wurden abgemeldet."),
+                    "confirmed": N_("Bestätigt. Für 5 Minuten kannst du Passwort, Authenticator und Passkeys ändern."),
+                    "passkey_added": N_("Passkey angelegt."), "passkey_removed": N_("Passkey entfernt."),
+                    "passkey_renamed": N_("Passkey umbenannt.")}
 
 
 def _profile(request: Request, sess: OperatorSession, db: Session, status_code: int = 200, **ctx):
@@ -406,19 +409,9 @@ def _profile(request: Request, sess: OperatorSession, db: Session, status_code: 
         OperatorSession.expires_at > utcnow()))
     msg = PROFILE_MESSAGES.get(request.query_params.get("saved", ""))
     return _render(request, "admin_profile.html", sess, status_code, roles=opr.ROLES, other_sessions=others,
-                   message=_(msg) if msg else None, **ctx)
-
-
-def _check_operator_password(db: Session, request: Request, op: Operator, password: str) -> str | None:
-    """Aktuelles Passwort prüfen – mit demselben Fehlversuchszähler wie die Betreiber-Anmeldung."""
-    ip, key = client_ip(request), f"op:{op.username}"[:64]
-    if is_rate_limited(db, "admin", ip, key):
-        return _("Zu viele Fehlversuche. Bitte später erneut versuchen.")
-    if not verify_password(password, op.password_hash):
-        record_failure(db, "admin", ip, key)
-        db.commit()
-        return _("Aktuelles Passwort ist falsch.")
-    return None
+                   message=_(msg) if msg else None, passkey_list=passkeys.list_for(db, "operator", sess.operator_id),
+                   fresh=passkeys.is_fresh(sess), fresh_until=sess.confirmed_at and sess.confirmed_at + passkeys.FRESH,
+                   passkey_base="/admin/profile", **ctx)
 
 
 def _end_other_sessions(db: Session, sess: OperatorSession) -> None:
@@ -463,7 +456,7 @@ def _totp_page(request, sess, token: str, secret: str, status_code: int = 200, e
     from ..security import totp_qr_svg
     uri = accounts.totp_uri_for(secret, sess.operator.username)
     return _render(request, "admin_profile_totp.html", sess, status_code, token=token, secret=secret,
-                   qr_svg=totp_qr_svg(uri), minutes=TOTP_CHANGE_MINUTES, error=error)
+                   qr_svg=totp_qr_svg(uri), minutes=TOTP_CHANGE_MINUTES, error=error, fresh=passkeys.is_fresh(sess))
 
 
 @router.get("/profile")
@@ -491,13 +484,13 @@ def profile_save(request: Request, email: str = Form(""), ticket_mails: str = Fo
 
 
 @router.post("/profile/password")
-def profile_password(request: Request, current_password: str = Form(""), password: str = Form(""),
-                     repeat: str = Form(""), sess: OperatorSession = Depends(opr.operator_csrf),
+def profile_password(request: Request, current_password: str = Form(""), current_totp: str = Form(""),
+                     password: str = Form(""), repeat: str = Form(""), sess: OperatorSession = Depends(opr.operator_csrf),
                      db: Session = Depends(get_platform_db)):
     from .. import accounts
     from ..security import hash_password
     op = db.get(Operator, sess.operator_id)
-    error = _check_operator_password(db, request, op, current_password) or accounts.password_error(password, repeat)
+    error = accounts.password_error(password, repeat) or _op_confirm(db, request, sess, op, current_password, current_totp)
     if error:
         return _profile(request, sess, db, 400, card_error=error, card="password")
     op.password_hash = hash_password(password)
@@ -520,15 +513,15 @@ def profile_totp_start(request: Request, sess: OperatorSession = Depends(opr.ope
 
 @router.post("/profile/totp/confirm")
 def profile_totp_confirm(request: Request, token: str = Form(""), current_password: str = Form(""),
-                         totp: str = Form(""), sess: OperatorSession = Depends(opr.operator_csrf),
-                         db: Session = Depends(get_platform_db)):
+                         current_totp: str = Form(""), totp: str = Form(""),
+                         sess: OperatorSession = Depends(opr.operator_csrf), db: Session = Depends(get_platform_db)):
     from .. import accounts
     op = db.get(Operator, sess.operator_id)
     secret = _totp_from_token(op.id, token)
     if secret is None:
         return _profile(request, sess, db, 400, card_error=_("Die Einrichtung ist abgelaufen. Bitte neu starten."),
                         card="totp")
-    error = _check_operator_password(db, request, op, current_password)
+    error = _op_confirm(db, request, sess, op, current_password, current_totp)
     step = accounts.totp_step(secret, totp)
     if not error and step is None:
         error = _("Der Code passt nicht zum neuen QR-Code.")
@@ -541,6 +534,136 @@ def profile_totp_confirm(request: Request, token: str = Form(""), current_passwo
     _notify_operator(op, N_("Authenticator geändert"),
                      N_("für deinen Betreiber-Zugang wurde ein neuer Authenticator eingerichtet."))
     return RedirectResponse("/admin/profile?saved=totp", status_code=303)
+
+
+def _op_confirm(db, request, sess, op, password: str, code: str) -> str | None:
+    return passkeys.confirm(db, request, sess, op, password, code, f"op:{op.username}"[:64])
+
+
+def _json(data: dict, status_code: int = 200):
+    from fastapi.responses import JSONResponse
+    return JSONResponse(data, status_code=status_code, headers={"Cache-Control": "no-store"})
+
+
+@router.post("/profile/confirm")
+def profile_confirm(request: Request, current_password: str = Form(""), current_totp: str = Form(""),
+                    sess: OperatorSession = Depends(opr.operator_csrf), db: Session = Depends(get_platform_db)):
+    op = db.get(Operator, sess.operator_id)
+    if error := _op_confirm(db, request, sess, op, current_password, current_totp):
+        return _profile(request, sess, db, 400, card_error=error, card="passkeys")
+    return RedirectResponse("/admin/profile?saved=confirmed#passkeys", status_code=303)
+
+
+@router.post("/profile/confirm/passkey/options")
+def profile_confirm_passkey_options(sess: OperatorSession = Depends(opr.operator_csrf),
+                                    db: Session = Depends(get_platform_db)):
+    options, token = passkeys.authentication_options(db, "operator", "confirm", sess.operator_id)
+    resp = _json({"options": options})
+    passkeys.set_cookie(resp, "operator", token)
+    return resp
+
+
+@router.post("/profile/confirm/passkey")
+def profile_confirm_passkey(request: Request, credential: str = Form(""),
+                            sess: OperatorSession = Depends(opr.operator_csrf), db: Session = Depends(get_platform_db)):
+    try:
+        passkeys.authenticate(db, passkeys.cookie(request, "operator"), credential, "operator", "confirm",
+                              sess.operator_id)
+    except passkeys.PasskeyError as e:
+        passkeys.log.info("Bestätigung per Passkey (Betreiber) abgelehnt: %s", e)
+        return _json({"error": _("Bestätigung mit Passkey fehlgeschlagen.")}, 400)
+    passkeys.mark_fresh(db, sess)
+    return _json({"redirect": "/admin/profile?saved=confirmed#passkeys"})
+
+
+@router.post("/profile/passkeys/options")
+def profile_passkey_options(sess: OperatorSession = Depends(opr.operator_csrf), db: Session = Depends(get_platform_db)):
+    if not passkeys.is_fresh(sess):
+        return _json({"error": _("Bitte zuerst bestätigen.")}, 403)
+    op = db.get(Operator, sess.operator_id)
+    options, token = passkeys.registration_options(db, "operator", op.id, op.username, op.username)
+    resp = _json({"options": options})
+    passkeys.set_cookie(resp, "operator", token)
+    return resp
+
+
+@router.post("/profile/passkeys")
+def profile_passkey_add(request: Request, credential: str = Form(""), name: str = Form(""),
+                        sess: OperatorSession = Depends(opr.operator_csrf), db: Session = Depends(get_platform_db)):
+    if not passkeys.is_fresh(sess):
+        return _json({"error": _("Bitte zuerst bestätigen.")}, 403)
+    op = db.get(Operator, sess.operator_id)
+    try:
+        pk = passkeys.register(db, passkeys.cookie(request, "operator"), credential, "operator", op.id, name)
+    except passkeys.PasskeyError as e:
+        passkeys.log.info("Passkey-Registrierung (Betreiber) abgelehnt: %s", e)
+        return _json({"error": _("Der Passkey ließ sich nicht anlegen.")}, 400)
+    audit.record(db, audit.actor_of(sess), "operator", "passkey", None, pk.name, object_id=op.id)
+    db.commit()
+    passkeys.notify_operator(op, "added", pk.name)
+    return _json({"redirect": "/admin/profile?saved=passkey_added#passkeys"})
+
+
+@router.post("/profile/passkeys/{passkey_id}/rename")
+def profile_passkey_rename(passkey_id: int, name: str = Form(""), sess: OperatorSession = Depends(opr.operator_csrf),
+                           db: Session = Depends(get_platform_db)):
+    pk = passkeys.get_own(db, "operator", sess.operator_id, passkey_id)
+    if pk is None:
+        raise HTTPException(404)
+    pk.name = " ".join(name.split())[:passkeys.MAX_NAME] or pk.name
+    db.commit()
+    return RedirectResponse("/admin/profile?saved=passkey_renamed#passkeys", status_code=303)
+
+
+@router.post("/profile/passkeys/{passkey_id}/delete")
+def profile_passkey_delete(passkey_id: int, request: Request, current_password: str = Form(""),
+                           current_totp: str = Form(""), sess: OperatorSession = Depends(opr.operator_csrf),
+                           db: Session = Depends(get_platform_db)):
+    op = db.get(Operator, sess.operator_id)
+    pk = passkeys.get_own(db, "operator", op.id, passkey_id)
+    if pk is None:
+        raise HTTPException(404)
+    if error := _op_confirm(db, request, sess, op, current_password, current_totp):
+        return _profile(request, sess, db, 400, card_error=error, card="passkeys")
+    name = pk.name
+    db.delete(pk)
+    audit.record(db, audit.actor_of(sess), "operator", "passkey", name, None, object_id=op.id)
+    db.commit()
+    passkeys.notify_operator(op, "removed", name)
+    return RedirectResponse("/admin/profile?saved=passkey_removed#passkeys", status_code=303)
+
+
+# ---------- Passkey-Anmeldung (Betreiber) ----------
+
+@router.post("/login/passkey/options", dependencies=[Depends(csrf_protect_anon)])
+def login_passkey_options(request: Request, db: Session = Depends(get_platform_db)):
+    if is_rate_limited(db, "admin", client_ip(request)):
+        return _json({"error": _("Zu viele Fehlversuche. Bitte später erneut versuchen.")}, 429)
+    options, token = passkeys.authentication_options(db, "operator")
+    resp = _json({"options": options})
+    passkeys.set_cookie(resp, "operator", token)
+    return resp
+
+
+@router.post("/login/passkey", dependencies=[Depends(csrf_protect_anon)])
+def login_passkey(request: Request, credential: str = Form(""), db: Session = Depends(get_platform_db)):
+    ip = client_ip(request)
+    if is_rate_limited(db, "admin", ip):
+        return _json({"error": _("Zu viele Fehlversuche. Bitte später erneut versuchen.")}, 429)
+    try:
+        pk = passkeys.authenticate(db, passkeys.cookie(request, "operator"), credential, "operator")
+    except passkeys.PasskeyError as e:
+        passkeys.log.info("Passkey-Anmeldung (Betreiber) abgelehnt: %s", e)
+        record_failure(db, "admin", ip)
+        return _json({"error": _("Anmeldung mit Passkey fehlgeschlagen.")}, 400)
+    op = db.get(Operator, pk.account_id)
+    if op is None:
+        return _json({"error": _("Anmeldung mit Passkey fehlgeschlagen.")}, 400)
+    resp = _json({"redirect": "/admin"})
+    resp.set_cookie(opr.COOKIE, opr.create_session(db, op), max_age=opr.SESSION_HOURS * 3600, httponly=True,
+                    secure=settings.cookie_secure, samesite="strict", path="/admin")
+    resp.delete_cookie(passkeys.COOKIES["operator"][0], path="/admin")
+    return resp
 
 
 @router.post("/profile/sessions")

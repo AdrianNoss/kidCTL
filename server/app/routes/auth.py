@@ -5,7 +5,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from .. import accounts, loginticket
+from .. import accounts, loginticket, passkeys
 from .. import i18n
 from ..i18n import N_, _
 from ..config import settings
@@ -129,6 +129,47 @@ def login_code(request: Request, totp: str = Form(""), db: Session = Depends(get
     return resp
 
 
+# ---------- Passkey (vollständiger Login ohne Passwort und Code) ----------
+
+def _json(data: dict, status_code: int = 200):
+    from fastapi.responses import JSONResponse
+    return JSONResponse(data, status_code=status_code, headers={"Cache-Control": "no-store"})
+
+
+@router.post("/login/passkey/options", dependencies=[Depends(csrf_protect_anon)])
+def login_passkey_options(request: Request, db: Session = Depends(get_platform_db)):
+    ip = client_ip(request)
+    if is_rate_limited(db, "login", ip):
+        return _json({"error": _("Zu viele Fehlversuche. Bitte später erneut versuchen.")}, 429)
+    options, token = passkeys.authentication_options(db, "parent")
+    resp = _json({"options": options})
+    passkeys.set_cookie(resp, "parent", token)
+    return resp
+
+
+@router.post("/login/passkey", dependencies=[Depends(csrf_protect_anon)])
+def login_passkey(request: Request, credential: str = Form(""), db: Session = Depends(get_platform_db)):
+    ip = client_ip(request)
+    if is_rate_limited(db, "login", ip):
+        return _json({"error": _("Zu viele Fehlversuche. Bitte später erneut versuchen.")}, 429)
+    try:
+        pk = passkeys.authenticate(db, passkeys.cookie(request, "parent"), credential, "parent")
+    except passkeys.PasskeyError as e:
+        passkeys.log.info("Passkey-Anmeldung abgelehnt: %s", e)
+        record_failure(db, "login", ip)
+        return _json({"error": _("Anmeldung mit Passkey fehlgeschlagen.")}, 400)
+    parent = load_parent(db, pk.account_id)
+    if parent is None:
+        return _json({"error": _("Anmeldung mit Passkey fehlgeschlagen.")}, 400)
+    parent.detected_language = i18n.browser_language(request)
+    db.commit()
+    token = create_session(db, parent, request.headers.get("user-agent", ""))
+    resp = _json({"redirect": "/"})
+    set_cookie(resp, SESSION_COOKIE, token, max_age=settings.session_days * 86400)
+    resp.delete_cookie(passkeys.COOKIES["parent"][0], path="/")
+    return resp
+
+
 @router.post("/logout")
 def logout(sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
     db.execute(delete(ParentSession).where(ParentSession.id == sess.id))
@@ -183,8 +224,11 @@ def reset_password(token: str, request: Request, password: str = Form(""), repea
     parent.password_hash = hash_password(password)
     t.used_at = utcnow()
     accounts.end_sessions(db, parent.id)
+    removed = passkeys.remove_all(db, "parent", parent.id)   # Wiederherstellung: Passkeys neu anlegen
     db.commit()
     accounts.notify(parent, N_("Passwort geändert"), N_("dein Passwort wurde über „Passwort vergessen“ neu gesetzt."))
+    if removed:
+        passkeys.notify_parent(parent, "reset")
     return RedirectResponse("/login?msg=reset", status_code=303)
 
 

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% from "_confirm.html" import confirm_fields %}
 {% block title %}{{ _("Neuer Authenticator") }} – {{ brand().name }}{% endblock %}
 {% block content %}
 {% set heading = _("Neuer Authenticator") %}{% include "_admin_head.html" %}
@@ -10,9 +10,8 @@
   <form method="post" action="/admin/profile/totp/confirm">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <input type="hidden" name="token" value="{{ token }}">
-    <input type="text" name="username" value="{{ operator.username }}" autocomplete="username" hidden>
     <div class="form-grid">
-      <label>{{ _("Aktuelles Passwort") }} <input type="password" name="current_password" required autocomplete="current-password"></label>
+      {{ confirm_fields(fresh, operator.username) }}
       <label>{{ _("Code aus der neuen App") }} <input name="totp" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
     </div>
     <div class="actions"><button type="submit">{{ _("Bestätigen") }}</button><a href="/admin/profile" class="btn ghost">{{ _("Abbrechen") }}</a></div>

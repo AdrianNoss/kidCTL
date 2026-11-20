@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% from "_confirm.html" import confirm_fields %}
 {% block title %}{{ _("Profil") }} – {{ brand().name }}{% endblock %}
 {% block content %}
 {% set heading = _("Profil") %}{% include "_admin_head.html" %}
@@ -21,8 +21,7 @@
   <h2>{{ _("Passwort ändern") }}</h2>
   {% if card == "password" %}<p class="error">{{ card_error }}</p>{% endif %}
   <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
-  <input type="text" name="username" value="{{ operator.username }}" autocomplete="username" hidden>
-  <label>{{ _("Aktuelles Passwort") }} <input type="password" name="current_password" required autocomplete="current-password"></label>
+  {{ confirm_fields(fresh, operator.username) }}
   <label>{{ _("Neues Passwort") }} <input type="password" name="password" required minlength="12" autocomplete="new-password"></label>
   <label>{{ _("Neues Passwort wiederholen") }} <input type="password" name="repeat" required minlength="12" autocomplete="new-password"></label>
   <div class="row"><button type="submit">{{ _("Passwort ändern") }}</button></div>
@@ -49,6 +48,8 @@
   </form>
   {% endif %}
 </section>
+{% if card == "passkeys" %}<p class="error">{{ card_error }}</p>{% endif %}
+{% with username=operator.username %}{% include "_passkeys.html" %}{% endwith %}
 </div>
 <p class="muted"><small>{{ _("Benutzername und Rolle ändert ein Admin per Kommandozeile (create-operator --reset, set-operator-role).") }}</small></p>
 {% endblock %}

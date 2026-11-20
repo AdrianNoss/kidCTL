@@ -119,6 +119,8 @@ def create_operator(args: argparse.Namespace) -> int:
         db.flush()
         from sqlalchemy import delete
         db.execute(delete(OperatorSession).where(OperatorSession.operator_id == op.id))   # alte Sitzungen beenden
+        if args.reset:
+            _remove_passkeys(db, "operator", op.id)
         db.commit()
         uri, secret = totp_uri(op), op.totp_secret
     print(f"\nBetreiber {username!r} {'zurückgesetzt' if args.reset else 'angelegt'} – Anmeldung unter /admin.")
@@ -160,6 +162,12 @@ def _parent(db, username: str) -> Parent | None:
     return parent
 
 
+def _remove_passkeys(db, kind: str, account_id: int) -> None:
+    from . import passkeys
+    if n := passkeys.remove_all(db, kind, account_id):
+        print(f"{n} Passkey(s) entfernt – bei Bedarf im Profil neu anlegen.")
+
+
 def reset_password(args: argparse.Namespace) -> int:
     """Notfall: Passwort neu setzen (alle Sitzungen des Accounts enden)."""
     init_db()
@@ -172,6 +180,7 @@ def reset_password(args: argparse.Namespace) -> int:
             return 1
         parent.password_hash = hash_password(password)
         end_sessions(db, parent.id)
+        _remove_passkeys(db, "parent", parent.id)
         db.commit()
     print(f"Passwort für {args.username!r} gesetzt.")
     return 0
@@ -185,6 +194,7 @@ def reset_totp(args: argparse.Namespace) -> int:
             return 1
         parent.totp_secret, parent.totp_last_step = new_totp_secret(), 0
         end_sessions(db, parent.id)
+        _remove_passkeys(db, "parent", parent.id)
         db.commit()
         uri, secret = totp_uri(parent), parent.totp_secret
     print(f"Neuer Authenticator für {args.username!r}:")

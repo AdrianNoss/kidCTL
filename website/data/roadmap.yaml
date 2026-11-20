@@ -98,7 +98,8 @@
     de: "Fenster, Tray-Menü, Symbol, Benachrichtigungen und Installer im Stil von Windows 11, hell und dunkel."
     en: "Windows, tray menu, icon, notifications and installer in the Windows 11 style, light and dark."
 - id: passkeys
-  status: planned
+  status: done
+  version: "0.43"
   title: { de: "Anmelden mit Passkey", en: "Sign in with a passkey" }
   text:
     de: "Eltern melden sich per Fingerabdruck, Gesicht oder Geräte-PIN an – Passwort und Authenticator bleiben als Weg erhalten."
