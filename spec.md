@@ -1365,6 +1365,10 @@ Ziel: Verwaltungsbereich bei vielen Familien handhabbar und gut lesbar; Support-
   am Familienschlüssel und **überleben das Löschen der Familie** (Bezug wird „gelöschte Familie #<id>“). Automatische
   Löschung nach Ablauf der Aufbewahrungsfrist: 8 Jahre ab Ende des Ausstellungsjahres (§ 14b UStG, § 147 AO; Frist
   als Konstante). Nicht im Familien-Export.
+- **Rechnungskopf mit Erscheinungsbild** (*geplant*, entschieden 2026-11-20): Kopfzeile des PDFs mit **Logo** und
+  **Name des Dienstes** aus *Erscheinungsbild* (Whitelabel); ohne Logo nur der Name. Gilt nur für neu ausgestellte
+  Rechnungen: das PDF wird beim Ausstellen erzeugt und gespeichert, ausgestellte Rechnungen und ihre PDFs werden nie
+  neu gerendert. Absenderangaben bleiben unverändert im Kopf. Muster über `dev/sample_invoices.py` prüfen.
 - **`/admin/invoices`** (nur *Admin*): alle Rechnungen, filterbar (Jahr, Status, Familie), Summen je Jahr; **Export
   je Jahr** als CSV (Nummer, Datum, Familie, Leistungszeitraum, Netto/USt/Brutto, Status, Zahlungsdatum, Storno-Bezug)
   und ZIP mit allen PDFs.
@@ -3155,3 +3159,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   - Chromium (Playwright) mit virtuellem Authenticator gegen `localhost`: anlegen, Anmeldung per Conditional UI und
     per Knopf, Bestätigung per Passkey, löschen; ohne JavaScript kein Knopf.
   - Migration 0023 hin und zurück.
+- 2026-11-20: Entschieden (geplant, noch nicht umgesetzt): Rechnungs-PDF bekommt eine Kopfzeile mit Logo und Name
+  des Dienstes aus dem Erscheinungsbild; nur für neu ausgestellte Rechnungen, gespeicherte PDFs bleiben unverändert.
+  Kein Roadmap-Eintrag (Abrechnungsdetail). Ohne Code, daher ohne Test.
