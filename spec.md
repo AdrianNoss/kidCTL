@@ -3263,3 +3263,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Gegenstelle bleibt. Doku (`server*.md`) ergänzt; Restlücke „gemeinsames Docker-Netz“ siehe
   [Grenzen](docs/limitations.de.md). Getestet: `test_security.py` (Header nur vom vertrauten Proxy), alle
   Server-Tests grün. Offen: Container-Build/Deploy mit Traefik (macht Adrian).
+- 2026-11-20: Kopplung: Der Kopplungscode wird atomar eingelöst (bedingtes `UPDATE … used_at IS NULL`); bei
+  gleichzeitigen Anfragen mit demselben Code entsteht genau ein Gerät. Getestet: 8 Threads mit demselben Code →
+  1 Gerät, 7 × 400 (`test_smoke.py`), alle Server-Tests grün.

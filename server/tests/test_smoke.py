@@ -207,3 +207,37 @@ def test_repo_served_statically(client):
         link.symlink_to("kidctl.db.tar.zst")          # wie von repo-add angelegt
     assert client.get("/repo/kidctl.db").content == b"db"
     assert client.get("/repo/../config.py").status_code == 404
+
+
+def test_pairing_code_redeemed_once_under_concurrency(client, parent):
+    import threading
+    from types import SimpleNamespace
+
+    from fastapi import HTTPException
+
+    from app.models import Device
+    from app.routes import api
+    from conftest import platform_db
+    login(client, parent)
+    tok = csrf_from(client.get("/devices").text)
+    r = client.post("/devices/pair", data={"name": "PC", "csrf_token": tok})
+    code = r.text.split("sudo kidctl enroll http://testserver ")[1][:8]
+    req = SimpleNamespace(headers=SimpleNamespace(getlist=lambda name: []), client=SimpleNamespace(host="10.0.0.9"))
+    barrier, ok, failed = threading.Barrier(8), [], []
+
+    def work():
+        with platform_db() as db:
+            barrier.wait()
+            try:
+                api.enroll(p.EnrollRequest(code=code, hostname="pc"), req, db)
+                ok.append(1)
+            except HTTPException:
+                failed.append(1)
+    threads = [threading.Thread(target=work) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert (len(ok), len(failed)) == (1, 7)
+    with platform_db() as db:
+        assert len(db.scalars(select(Device.id)).all()) == 1

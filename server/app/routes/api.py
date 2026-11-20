@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from pydantic import ValidationError
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from kidctl_common import protocol as p
@@ -67,12 +67,17 @@ def enroll(req: p.EnrollRequest, request: Request, db: Session = Depends(get_pla
         raise HTTPException(400, "Kopplungscode ungültig oder abgelaufen")
 
     set_family(db, found.family_id)   # das Gerät gehört zur Familie, die den Code erzeugt hat
+    # Code atomar einlösen: nur eine von mehreren gleichzeitigen Anfragen bekommt ihn
+    claimed = db.execute(update(PairingCode).where(PairingCode.id == found.id, PairingCode.used_at.is_(None))
+                         .values(used_at=utcnow()).returning(PairingCode.id)).first()
+    if claimed is None:
+        db.rollback()
+        raise HTTPException(400, "Kopplungscode ungültig oder abgelaufen")
     pc = db.get(PairingCode, found.id)   # Gerätename ist mit dem Schlüssel dieser Familie verschlüsselt
     token = new_token()
     device = Device(name=pc.device_name, hostname=req.hostname, token_hash=token_hash(token))
     db.add(device)
     db.flush()
-    pc.used_at = utcnow()
     pc.device_id = device.id
     db.commit()
     log.info("Gerät %s (%s) gekoppelt", device.id, req.hostname)
