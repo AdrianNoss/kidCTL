@@ -3272,3 +3272,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-20: Zahlungs-Webhook: Der Body wird erst nach der Prüfung des Geheimnisses ausgewertet; ohne Geheimnis
   antwortet der Endpunkt unabhängig vom Inhalt mit 404, mit falschem Geheimnis mit 401. Getestet: `test_billing.py`
   (ungültiger Body ohne/mit falschem Geheimnis), alle Server-Tests grün.
+- 2026-11-20: Version 0.44.1 (Agent und Server): Sicherheits- und Robustheitsfixes aus dem Audit vom 2026-11-20
+  (Einträge oben), Security-News DE/EN. Funde 10 und 11 (Umbau Profil-Abläufe, Aufteilung `routes/operators.py`)
+  bewusst noch offen. Getestet: alle Server-, Agent- und Tray-Tests grün, `ruff check`, Doku-Parität, `hugo --minify`.
