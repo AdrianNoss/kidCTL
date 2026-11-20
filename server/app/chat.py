@@ -51,13 +51,18 @@ def device_ids_for_child(db: Session, child_id: int) -> set[int]:
         .where(DeviceUser.child_id == child_id, Device.revoked_at.is_(None))))
 
 
+def child_push_payloads(db: Session, msg: Message) -> list[tuple[int, dict]]:
+    """(Gerät, Nachricht) für alle Geräte des Kindes – ohne zu senden (Aufruf auch aus Worker-Threads)."""
+    payload = to_wire(db, msg).model_dump(mode="json")
+    return [(device_id, payload) for device_id in device_ids_for_child(db, msg.child_id)]
+
+
 async def push_to_child(db: Session, msg: Message) -> None:
     """Stellt einen (neuen oder geänderten) Eintrag allen online-Geräten des Kindes zu.
 
     Offline-Geräte holen ihn beim nächsten ``chat_sync`` nach.
     """
-    payload = to_wire(db, msg).model_dump(mode="json")
-    for device_id in device_ids_for_child(db, msg.child_id):
+    for device_id, payload in child_push_payloads(db, msg):
         try:
             await manager.send(device_id, payload)
         except Exception:

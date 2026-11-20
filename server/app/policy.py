@@ -111,12 +111,12 @@ def record_usage(db: Session, device_id: int, report: p.UsageReport) -> set[tupl
     mapping = dict(db.execute(select(DeviceUser.username, DeviceUser.child_id).where(
         DeviceUser.device_id == device_id)).all())
     changed: set[tuple[int, date]] = set()
-    for e in report.entries:
-        if not (today - timedelta(days=USAGE_DAYS_BACK) <= e.day <= today + timedelta(days=1)):
-            continue
-        rec = db.scalar(select(UsageRecord).where(
-            UsageRecord.device_id == device_id, UsageRecord.username == e.username,
-            UsageRecord.day == e.day))
+    entries = [e for e in report.entries
+               if today - timedelta(days=USAGE_DAYS_BACK) <= e.day <= today + timedelta(days=1)]
+    existing = {(r.username, r.day): r for r in db.scalars(select(UsageRecord).where(
+        UsageRecord.device_id == device_id, UsageRecord.day.in_({e.day for e in entries})))} if entries else {}
+    for e in entries:
+        rec = existing.get((e.username, e.day))
         if rec is None:
             child_id = mapping.get(e.username)
             if child_id is None:
@@ -124,6 +124,7 @@ def record_usage(db: Session, device_id: int, report: p.UsageReport) -> set[tupl
             rec = UsageRecord(device_id=device_id, username=e.username, day=e.day,
                               child_id=child_id, seconds=0)
             db.add(rec)
+            existing[(e.username, e.day)] = rec
         if e.seconds > rec.seconds or e.game_seconds > (rec.game_seconds or 0):
             rec.seconds, rec.updated_at = max(rec.seconds, e.seconds), utcnow()
             rec.game_seconds = max(rec.game_seconds or 0, e.game_seconds)
@@ -146,12 +147,20 @@ def usage_update(db: Session, device_id: int, child_id: int, day: date) -> p.Usa
                          others_game_seconds=others_seconds(db, device_id, child_id, day, games=True))
 
 
-async def push_usage_updates(db: Session, changed: set[tuple[int, date]], source_device: int) -> None:
-    """Informiert die *anderen* online-Geräte eines Kindes über neue Nutzungszeit."""
+def usage_update_payloads(db: Session, changed: set[tuple[int, date]], source_device: int) -> list[tuple[int, dict]]:
+    """(Gerät, Nachricht) für die *anderen* online-Geräte eines Kindes – ohne zu senden (auch aus Worker-Threads)."""
+    out = []
     for child_id, day in changed:
         for device_id in device_ids_for_child(db, child_id) - {source_device}:
             if manager.is_online(device_id):
-                await manager.send(device_id, usage_update(db, device_id, child_id, day).model_dump(mode="json"))
+                out.append((device_id, usage_update(db, device_id, child_id, day).model_dump(mode="json")))
+    return out
+
+
+async def push_usage_updates(db: Session, changed: set[tuple[int, date]], source_device: int) -> None:
+    """Informiert die *anderen* online-Geräte eines Kindes über neue Nutzungszeit."""
+    for device_id, payload in usage_update_payloads(db, changed, source_device):
+        await manager.send(device_id, payload)
 
 
 @dataclass

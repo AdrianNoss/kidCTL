@@ -3229,3 +3229,9 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   (`SELECT … FOR UPDATE`) und prüfen den Status auf dem frischen Stand. Gleichzeitige Aktionen auf dieselbe Rechnung
   ergeben damit genau eine Nummer bzw. genau eine Storno-Rechnung; Nummern bleiben lückenlos. Getestet: je 4 Threads
   stellen dieselbe Rechnung aus bzw. stornieren sie (`test_invoices.py`), alle Server-Tests grün.
+- 2026-11-20: Server: Agenten-Nachrichten werden im Worker-Thread verarbeitet (`asyncio.to_thread`); die
+  Event-Loop sendet nur noch. `record_usage` lädt die Zählerstände eines Berichts mit einer Abfrage statt einer je
+  Eintrag. `push.notify_parents` funktioniert auch aus Worker-Threads (eigener Thread statt Event-Loop).
+  Getestet: neuer Test prüft Worker-Thread und genau eine `usage_record`-Abfrage je Bericht (`test_policy.py`),
+  alle Server-Tests grün. Offen: Lastmessung vorher/nachher; `async`-Routen mit synchroner DB (z. B.
+  `invoice_paid`, `child_*` in `routes/admin.py`) unverändert.

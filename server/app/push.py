@@ -6,6 +6,7 @@ ausgewertet (``i18n.parent_language``)."""
 from __future__ import annotations
 
 import asyncio
+import threading
 import json
 import logging
 
@@ -77,10 +78,17 @@ _tasks: set[asyncio.Task] = set()
 
 
 def notify_parents(title, body, url: str = "/", tag: str | None = None, *, family_id: int) -> None:
-    """Nicht blockierend aus async-Code: Versand läuft im Thread-Pool."""
+    """Nicht blockierend: Versand läuft im Thread-Pool (aus async-Code) bzw. in einem eigenen Thread (aus einem
+    Worker-Thread ohne Event-Loop, z. B. Agenten-Nachrichten)."""
     if not settings.push_enabled:
         return
-    task = asyncio.get_running_loop().create_task(
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        threading.Thread(target=send_to_parents_sync, args=(title, body, url, tag), kwargs={"family_id": family_id},
+                         daemon=True, name="kidctl-push").start()
+        return
+    task = loop.create_task(
         asyncio.to_thread(send_to_parents_sync, title, body, url, tag, family_id=family_id))
     _tasks.add(task)
     task.add_done_callback(_tasks.discard)

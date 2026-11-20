@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, WebSocket, WebSocketDisconnect
@@ -158,47 +159,19 @@ async def agent_ws(ws: WebSocket):
                 await _close(ws, p.CLOSE_PROTOCOL_ERROR)
                 return
 
-            with family_session(family_id) as db:
-                dev = db.get(Device, device_id)
-                if dev is None or dev.revoked_at is not None:
-                    await _close(ws, p.CLOSE_REVOKED)
-                    return
-                if utcnow() - last_seen >= LAST_SEEN_INTERVAL:
-                    last_seen = dev.last_seen_at = utcnow()
-                if isinstance(msg, p.ReportUsers):
-                    _apply_user_report(dev, msg)
-                elif isinstance(msg, p.ReportApps):
-                    programs.apply_app_report(db, dev, msg)
-                elif isinstance(msg, p.BlockedReport):
-                    programs.apply_blocked_report(db, dev, msg)
-                elif isinstance(msg, p.AppUsageReport):
-                    stats.apply_app_report(db, dev, msg)
-                    nowplaying.update(dev.id, msg.playing, db)
-                elif isinstance(msg, p.IntegrityReport):
-                    integrity.alarm(dev, integrity.apply_report(dev, msg))
-                db.commit()
-
-                if isinstance(msg, p.Ping):
-                    await _send(ws, p.Pong())
-                elif isinstance(msg, (p.ChatSend, p.ExtensionRequest, p.AccessRequest)):
-                    if isinstance(msg, p.AccessRequest):
-                        ack, new = access.receive(db, device_id, msg)
-                    else:
-                        ack, new = chat.receive_from_agent(db, device_id, msg)
-                    await _send(ws, ack)
-                    if new is not None:
-                        await chat.push_to_child(db, new)
-                        chat.notify_parents_new(db, new)
-                elif isinstance(msg, p.PolicyAck):
-                    dev.policy_version = msg.version
-                    db.commit()
-                elif isinstance(msg, p.UsageReport):
-                    changed = policy.record_usage(db, device_id, msg)
-                    await policy.push_usage_updates(db, changed, device_id)
-                elif isinstance(msg, p.ChatSync):
-                    chat.expire_stale_requests(db)
-                    for m in chat.history_for_agent(db, device_id, msg):
-                        await _send(ws, chat.to_wire(db, m))
+            # DB-Arbeit im Worker-Thread, damit die Event-Loop alle anderen Verbindungen weiter bedient
+            out = await asyncio.to_thread(_process, family_id, device_id, msg, last_seen)
+            if out.revoked:
+                await _close(ws, p.CLOSE_REVOKED)
+                return
+            last_seen = out.last_seen
+            for m in out.reply:
+                await _send(ws, m)
+            for target, payload in out.push:
+                try:
+                    await manager.send(target, payload)
+                except Exception:
+                    log.warning("Zustellung an Gerät %s fehlgeschlagen", target, exc_info=True)
     except WebSocketDisconnect:
         pass
     finally:
@@ -209,6 +182,61 @@ async def agent_ws(ws: WebSocket):
                 dev.last_seen_at = utcnow()
                 db.commit()
         log.info("Gerät %s getrennt", device_id)
+
+
+@dataclass
+class _Outcome:
+    """Ergebnis einer Agenten-Nachricht: Antworten an das Gerät und Nachrichten an andere Geräte."""
+    last_seen: datetime
+    revoked: bool = False
+    reply: list = field(default_factory=list)
+    push: list[tuple[int, dict]] = field(default_factory=list)
+
+
+def _process(family_id: int, device_id: int, msg, last_seen: datetime) -> _Outcome:
+    """Verarbeitet eine Agenten-Nachricht synchron (läuft per ``asyncio.to_thread``, sendet selbst nichts)."""
+    out = _Outcome(last_seen=last_seen)
+    with family_session(family_id) as db:
+        dev = db.get(Device, device_id)
+        if dev is None or dev.revoked_at is not None:
+            out.revoked = True
+            return out
+        if utcnow() - last_seen >= LAST_SEEN_INTERVAL:
+            out.last_seen = dev.last_seen_at = utcnow()
+        if isinstance(msg, p.ReportUsers):
+            _apply_user_report(dev, msg)
+        elif isinstance(msg, p.ReportApps):
+            programs.apply_app_report(db, dev, msg)
+        elif isinstance(msg, p.BlockedReport):
+            programs.apply_blocked_report(db, dev, msg)
+        elif isinstance(msg, p.AppUsageReport):
+            stats.apply_app_report(db, dev, msg)
+            nowplaying.update(dev.id, msg.playing, db)
+        elif isinstance(msg, p.IntegrityReport):
+            integrity.alarm(dev, integrity.apply_report(dev, msg))
+        db.commit()
+
+        if isinstance(msg, p.Ping):
+            out.reply.append(p.Pong())
+        elif isinstance(msg, (p.ChatSend, p.ExtensionRequest, p.AccessRequest)):
+            if isinstance(msg, p.AccessRequest):
+                ack, new = access.receive(db, device_id, msg)
+            else:
+                ack, new = chat.receive_from_agent(db, device_id, msg)
+            out.reply.append(ack)
+            if new is not None:
+                out.push += chat.child_push_payloads(db, new)
+                chat.notify_parents_new(db, new)
+        elif isinstance(msg, p.PolicyAck):
+            dev.policy_version = msg.version
+            db.commit()
+        elif isinstance(msg, p.UsageReport):
+            changed = policy.record_usage(db, device_id, msg)
+            out.push += policy.usage_update_payloads(db, changed, device_id)
+        elif isinstance(msg, p.ChatSync):
+            chat.expire_stale_requests(db)
+            out.reply += [chat.to_wire(db, m) for m in chat.history_for_agent(db, device_id, msg)]
+    return out
 
 
 def _apply_user_report(dev: Device, msg: p.ReportUsers) -> None:

@@ -211,3 +211,42 @@ def test_no_offline_alarm_for_online_or_revoked(client, parent, pushes):
         dev.revoked_at = utcnow()
         db.commit()
     assert alarms.check_once() == 0 and pushes == []
+
+
+def test_agent_messages_processed_off_event_loop(client, parent, monkeypatch):
+    """DB-Arbeit je Agenten-Nachricht läuft im Worker-Thread, Nutzung mit einer Abfrage je Bericht."""
+    import asyncio
+
+    from sqlalchemy import event
+
+    from app import policy as policy_mod
+    cid, tok = _setup(client, parent)
+    today = today_local()
+    seen, selects = [], []
+    orig = policy_mod.record_usage
+
+    def spy(db, device_id, report):
+        try:
+            asyncio.get_running_loop()
+            seen.append("loop")
+        except RuntimeError:
+            seen.append("thread")
+
+        def count(conn, cursor, statement, *a):
+            if statement.lstrip().upper().startswith("SELECT") and "FROM usage_record" in statement:
+                selects.append(statement)
+        event.listen(db.get_bind(), "before_cursor_execute", count)
+        try:
+            return orig(db, device_id, report)
+        finally:
+            event.remove(db.get_bind(), "before_cursor_execute", count)
+    monkeypatch.setattr(policy_mod, "record_usage", spy)
+    with device(client, tok, "laptop", map_to=cid) as (ws, _):
+        _policy(ws)
+        ws.send_text(p.UsageReport(entries=[p.UsageEntry(username="max", day=today - timedelta(days=d), seconds=60)
+                                            for d in range(3)]).model_dump_json())
+        ws.send_text(p.Ping().model_dump_json())
+        while not isinstance(recv(ws, keep_policy=True), p.Pong):
+            pass
+    assert seen == ["thread"]
+    assert len(selects) == 1
