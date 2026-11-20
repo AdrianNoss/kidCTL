@@ -3266,3 +3266,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-20: Kopplung: Der Kopplungscode wird atomar eingelöst (bedingtes `UPDATE … used_at IS NULL`); bei
   gleichzeitigen Anfragen mit demselben Code entsteht genau ein Gerät. Getestet: 8 Threads mit demselben Code →
   1 Gerät, 7 × 400 (`test_smoke.py`), alle Server-Tests grün.
+- 2026-11-20: Statische Dateien mit Prüfsumme in der URL (`asset()`, `?v=…`) bekommen
+  `Cache-Control: public, max-age=31536000, immutable` (in `SecurityMiddleware`, nur bei Status 200). Getestet:
+  `test_security.py` (mit/ohne `v=`, fehlende Datei, normale Seite), alle Server-Tests grün.

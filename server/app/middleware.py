@@ -33,9 +33,15 @@ class SecurityMiddleware:
             await self.app(scope, receive, send)
             return
 
+        # Statische Dateien mit Prüfsumme in der URL (web.asset) ändern sich nie: lange zwischenspeichern
+        versioned = scope["path"].startswith("/static/") and b"v=" in scope.get("query_string", b"")
+
         async def send_with_csp(message) -> None:
             if message["type"] == "http.response.start":
-                MutableHeaders(scope=message).setdefault("Content-Security-Policy", CSP)
+                headers = MutableHeaders(scope=message)
+                headers.setdefault("Content-Security-Policy", CSP)
+                if versioned and message["status"] == 200:
+                    headers["Cache-Control"] = "public, max-age=31536000, immutable"
             await send(message)
 
         declared = Headers(scope=scope).get("content-length", "")

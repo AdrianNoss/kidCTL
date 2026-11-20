@@ -170,3 +170,12 @@ def test_forwarded_for_only_from_trusted_proxy(monkeypatch):
     assert client_ip(req("172.18.0.5", "1.1.1.1, 9.9.9.9")) == "9.9.9.9"   # Traefik: letzter Eintrag
     assert client_ip(req("172.18.0.7", "9.9.9.9")) == "172.18.0.7"         # anderer Container: Header zählt nicht
     assert client_ip(req("203.0.113.9", "10.0.0.1")) == "203.0.113.9"
+
+
+def test_versioned_static_files_cached_long(client):
+    from app.web import asset
+    r = client.get(asset("app.js"))
+    assert r.status_code == 200 and r.headers["cache-control"] == "public, max-age=31536000, immutable"
+    assert "immutable" not in client.get("/static/app.js").headers.get("cache-control", "")
+    assert "immutable" not in client.get("/static/fehlt.js?v=1").headers.get("cache-control", "")
+    assert "immutable" not in client.get("/login").headers.get("cache-control", "")
