@@ -154,6 +154,9 @@ def test_code_attempts_counted_atomically(client, parent):
 
     def begin(db):
         return security.begin_totp_attempt(db, "1.2.3.4", "mama") is not None
-    assert sum(_parallel(20, begin)) == settings.login_max_failures
+    admitted = sum(_parallel(20, begin))
+    assert 0 <= admitted <= settings.login_max_failures   # nie mehr; im Gedränge auch weniger
     with platform_db() as db:
-        assert security.totp_locked(db, "mama")
+        while security.begin_totp_attempt(db, "1.2.3.4", "mama") is not None:
+            admitted += 1
+        assert admitted == settings.login_max_failures and security.totp_locked(db, "mama")
