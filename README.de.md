@@ -12,7 +12,8 @@
 [English](README.md) · **Deutsch**
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/AdrianNoss/kidCTL/badge)](https://scorecard.dev/viewer/?uri=github.com/AdrianNoss/kidCTL)  
-<sub>Automatisch geprüft (Konfiguration und Repo-Praktiken, kein Siegel); Sicherheitslücken bitte wie in [SECURITY.de.md](SECURITY.de.md) beschrieben melden.</sub>
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/16981/badge)](https://www.bestpractices.dev/projects/16981)  
+<sub>Scorecard: automatisch geprüft (Konfiguration und Repo-Praktiken, kein Siegel); Best Practices: Selbstauskunft nach den OpenSSF-Kriterien; Sicherheitslücken bitte wie in [SECURITY.de.md](SECURITY.de.md) beschrieben melden.</sub>
 
 Selbst gehostete Kindersicherung für **Windows 10 (22H2) und Windows 11 (ab 23H2)** (x64, Home und Pro) sowie
 **Arch Linux, Debian und Ubuntu** (auch Mint, Pop!_OS) **mit KDE Plasma oder GNOME (Wayland)**. Ein zentraler Server
