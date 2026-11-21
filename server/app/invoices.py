@@ -369,11 +369,27 @@ def export_zip(db: Session, year: int) -> bytes:
 
 # ---------- PDF ----------
 
-def render_pdf(inv: Invoice) -> bytes:
-    """Schlichtes A4-Layout nahe DIN 5008 (Anschriftfeld links oben, Absender rechts, Positionen, Summen,
-    Zahlungsinformationen, Fußzeile). Deutsch."""
+def _brand_header() -> tuple[str, bytes | None, bool]:
+    """(Name des Dienstes, Logo-PNG oder None, Logo enthält den Namen) aus *Erscheinungsbild*."""
+    from . import branding
+    b = branding.current()
+    logo = None
+    if b.has_logo:
+        try:
+            logo = branding.image("logo")
+        except Exception:   # Datenbank nicht erreichbar – dann eben nur der Name
+            log.warning("Rechnungskopf: Logo nicht lesbar", exc_info=True)
+    return b.name, logo, b.logo_only and logo is not None
+
+
+def render_pdf(inv: Invoice, brand: tuple[str, bytes | None, bool] | None = None) -> bytes:
+    """Schlichtes A4-Layout nahe DIN 5008 (Kopf mit Logo/Name des Dienstes, Anschriftfeld links oben, Absender
+    rechts, Positionen, Summen, Zahlungsinformationen, Fußzeile). Deutsch. Nur beim Ausstellen aufrufen – das PDF
+    wird gespeichert und nie neu gerendert. `brand` = (Name, Logo-PNG, nur Logo); Standard: aktuelles Branding."""
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
+    from reportlab.lib.utils import ImageReader
+    from reportlab.pdfbase.pdfmetrics import stringWidth
     from reportlab.pdfgen import canvas
 
     a = json.loads(inv.address or "{}")
@@ -389,6 +405,26 @@ def render_pdf(inv: Invoice) -> bytes:
         c.setFont("Helvetica-Bold" if bold else "Helvetica", size)
         (c.drawRightString if right else c.drawString)(x, y, value)
 
+    # Kopf: Logo (max. 18 × 60 mm, Seitenverhältnis bleibt) und Name des Dienstes, 10–28 mm von oben links –
+    # über dem Absenderblock rechts (ab 25 mm) und dem Anschriftfeld (ab 45 mm)
+    brand_name, logo, logo_only = brand or _brand_header()
+    x, top, box_h = 20 * mm, height - 10 * mm, 18 * mm
+    if logo:
+        try:
+            img = ImageReader(io.BytesIO(logo))
+            iw, ih = img.getSize()
+            h = min(box_h, 60 * mm * ih / iw)
+            w = h * iw / ih
+            c.drawImage(img, x, top - box_h + (box_h - h) / 2, w, h, mask="auto")
+            x += w + 4 * mm
+        except Exception:   # kaputtes Bild darf das Ausstellen nicht verhindern
+            log.warning("Rechnungskopf: Logo nicht darstellbar", exc_info=True)
+            logo_only = False
+    if brand_name and not logo_only:
+        size, max_w = 14, width - 20 * mm - x
+        while brand_name and stringWidth(brand_name, "Helvetica-Bold", size) > max_w:
+            brand_name = brand_name[:-1]
+        text(x, top - box_h / 2 - 5, brand_name, size, bold=True)
     # Absenderzeile über dem Anschriftfeld, Anschrift (DIN 5008 Form B: 45 mm von oben, 20 mm von links)
     sender_line = f"{s.get('sender_name', '')} · {s.get('sender_street', '')} · {s.get('sender_postal_code', '')} {s.get('sender_city', '')}"
     text(20 * mm, height - 50 * mm, sender_line[:110], 7)

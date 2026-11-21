@@ -260,3 +260,51 @@ def test_same_invoice_canceled_once(ready):
     assert _race(4, act) == (1, 3)
     with platform_db() as db:
         assert len(db.scalars(select(Invoice).where(Invoice.storno_of == iid)).all()) == 1
+
+
+def _pdf_text(pdf: bytes) -> bytes:
+    """Alle (komprimierten) Streams eines PDFs entpackt – genügt, um gezeichneten Text zu finden."""
+    import base64
+    import re
+    import zlib
+    out = []
+    for m in re.finditer(rb"stream\r?\n(.*?)endstream", pdf, re.S):
+        data = m.group(1).strip()
+        try:
+            if data.endswith(b"~>"):      # reportlab: ASCII85 + Flate
+                data = base64.a85decode(data.removeprefix(b"<~").removesuffix(b"~>"))
+            out.append(zlib.decompress(data))
+        except (ValueError, zlib.error):
+            out.append(data)
+    return b"\n".join(out)
+
+
+def _logo_png(w=400, h=100):
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGBA", (w, h), (30, 90, 200, 255)).save(buf, "PNG")
+    return buf.getvalue()
+
+
+def test_pdf_header_with_brand_name_and_logo(ready):
+    from app import branding
+    from app.models import Branding
+    try:
+        with platform_db() as db:
+            inv = _draft(db)
+            invoices.issue(db, inv, ACTOR)
+            plain, first_id = invoices.pdf_bytes(inv), inv.id
+        assert b"KidCTL" in _pdf_text(plain) and b"/Subtype /Image" not in plain      # Standard: nur der Name
+        with platform_db() as db:
+            db.add(Branding(id=1, name="Waechter Cloud", logo=_logo_png()))
+            db.commit()
+        branding.invalidate()
+        with platform_db() as db:
+            inv2 = _draft(db)
+            invoices.issue(db, inv2, ACTOR)
+            pdf = invoices.pdf_bytes(inv2)
+            assert b"Waechter Cloud" in _pdf_text(pdf) and b"/Subtype /Image" in pdf
+            # ausgestellte Rechnung behält ihr gespeichertes PDF, auch nach Branding-Änderung
+            assert invoices.pdf_bytes(db.get(Invoice, first_id)) == plain
+    finally:
+        branding.invalidate()
