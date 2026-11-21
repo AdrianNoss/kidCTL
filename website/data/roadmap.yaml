@@ -128,3 +128,57 @@
   text:
     de: "Damit entfällt die SmartScreen-Rückfrage bei der Installation."
     en: "No more SmartScreen prompt when installing."
+- id: request-access
+  status: planned
+  title: { de: "Freigabe anfragen", en: "Ask for access" }
+  text:
+    de: "Das Kind fragt eine gesperrte Website oder ein Programm an, Eltern geben sie mit einem Klick frei."
+    en: "The child asks for a blocked website or app, parents allow it with one tap."
+- id: holidays
+  status: planned
+  title: { de: "Ferien und Feiertage", en: "School holidays and public holidays" }
+  text:
+    de: "Eigene Regeln für Ferien, Feiertage gelten wie ein Wochenendtag."
+    en: "Separate rules for school holidays; public holidays count like a weekend day."
+- id: time-windows
+  status: planned
+  title: { de: "Mehrere Zeitfenster am Tag", en: "Several time windows per day" }
+  text:
+    de: "Zum Beispiel während der Schulzeit sperren; Fenster auch über Mitternacht."
+    en: "For example, block during school hours; windows can also span midnight."
+- id: app-limits
+  status: planned
+  title: { de: "Limits je Programm", en: "Limits per app" }
+  text:
+    de: "Eigenes Tageskontingent für einzelne Programme oder Kategorien, etwa den Browser."
+    en: "A separate daily limit for single apps or categories, such as the browser."
+- id: free-apps
+  status: planned
+  title: { de: "Lern-Apps zählen nicht", en: "Learning apps don't count" }
+  text:
+    de: "Ausgewählte Programme verbrauchen keine Bildschirmzeit."
+    en: "Selected apps don't use up screen time."
+- id: time-bank
+  status: planned
+  title: { de: "Zeitkonto", en: "Time bank" }
+  text:
+    de: "Nicht genutzte Minuten teilweise auf spätere Tage übertragen."
+    en: "Carry part of the unused minutes over to later days."
+- id: chores
+  status: planned
+  title: { de: "Aufgaben gegen Bildschirmzeit", en: "Chores for screen time" }
+  text:
+    de: "Das Kind meldet erledigte Aufgaben, Eltern bestätigen und schreiben Zeit gut."
+    en: "The child reports finished chores, parents confirm and add time."
+- id: soft-mode
+  status: planned
+  title: { de: "Nur warnen statt sperren", en: "Warn instead of lock" }
+  text:
+    de: "Für ältere Kinder: bei Zeitende nur Hinweis an Kind und Eltern."
+    en: "For older children: when time is up, only a notice to child and parents."
+- id: alert-channels
+  status: planned
+  title: { de: "Benachrichtigung per ntfy, Matrix oder Webhook", en: "Alerts via ntfy, Matrix or webhook" }
+  text:
+    de: "Alarme und Anfragen zusätzlich über eigene Kanäle – nur Hinweis und Link, kein Inhalt."
+    en: "Alerts and requests also through your own channels – only a notice and a link, no content."

@@ -1634,6 +1634,43 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
 - Workflow `.github/workflows/audit.yml`: wöchentlich (und von Hand) `pip-audit` gegen die Pakete aus
   `packaging/windows/vendor.lock` (Dependabot kennt das Format nicht); Fund → Workflow schlägt fehl.
 
+## Geplante Funktionen (entschieden 2026-11-21, Planungssitzung; noch nicht umgesetzt)
+
+Priorisiert mit Adrian anhand einer Funktionsrecherche (verbreitete Kindersicherungen, Wünsche von Eltern und
+Self-Hostern). Plan mit Etappen: `dev/planung/PLAN-2026-11.md`. Fachliche Details je Funktion vor der Umsetzung per
+/grill-me klären und hier ergänzen.
+
+**Etappe 1 – Alltag (Ziel 0.46):**
+- **Freigabe anfragen:** Das Kind fragt aus der Tray-App (und aus der Sperr-Benachrichtigung) eine gesperrte Website
+  oder ein gesperrtes Programm an, mit Begründung. Die Anfrage erscheint wie eine Verlängerungsanfrage im Chat
+  (Genehmigen / Ablehnen, wahlweise nur heute oder dauerhaft). Übertragen wird nur die angefragte Domain bzw. App.
+- **Ferien und Feiertage:** Ferienzeiträume je Kind/Familie mit eigener Wochenvorlage; gesetzliche Feiertage je
+  Bundesland/Land gelten wie ein wählbarer Wochentag (z. B. „wie Sonntag“). Feiertagsdaten lokal im Server, kein
+  externer Abruf.
+- **Mehrere Zeitfenster je Tag:** mehrere erlaubte Fenster pro Wochentag (z. B. Schulzeit sperren), Fenster über
+  Mitternacht. Neue Protokollversion; Server liefert älteren Agenten weiterhin das bisherige Format (ein Fenster =
+  engste Näherung).
+- Parallel: **Lutris und Bottles** als Spielequellen (Roadmap `wine-launchers`).
+
+**Etappe 2 – Zeit-Logik (Ziel 0.47):**
+- **Limit je Programm/Kategorie:** Verallgemeinerung des Spiele-Limits (eigenes Tageskontingent für ein Programm
+  oder eine Kategorie, z. B. Browser).
+- **„Zählt nicht“-Programme:** Programme (z. B. Lern-Apps, Office) laufen im Zeitfenster, ohne das Kontingent zu
+  verbrauchen. Browser, Terminals und Launcher sind nie ausnehmbar (Umgehung).
+- **Zeitkonto:** nicht genutzte Minuten teilweise auf Folgetage übertragen, mit Deckel je Tag und Verfall; offline
+  mit gecachter Policy.
+
+**Etappe 3 – Belohnung, Benachrichtigung, Desktops (Ziel 0.48):**
+- **Aufgaben → Zeit verdienen:** Eltern legen Aufgaben mit Minutenwert an, das Kind meldet „erledigt“ in der
+  Tray-App, Eltern bestätigen → Gutschrift (bestehende Tagesausnahme).
+- **Weich-Modus:** je Kind wählbar – bei Zeitende nur warnen und Eltern informieren statt sperren (für Ältere).
+- **Weitere Alarmkanäle:** ntfy, generischer Webhook, Matrix für Push-Alarme und Anfragen; nur Hinweis + Link,
+  kein Inhalt; Kanäle tragen Eltern selbst ein.
+- **Cinnamon und COSMIC** (Roadmap `desktops`).
+
+**Ideen ohne Termin (nicht auf der Roadmap):** Lernmodus auf Knopfdruck, lokale API für Home Assistant, eigene
+Wochenstatistik für das Kind in der Tray-App, Clients für macOS/Android (bewusst nicht jetzt).
+
 ## Bewusst nicht umgesetzt / Restlücken
 
 Einzige Quelle für die Restlücken ist die öffentliche Doku **`docs/limitations.de.md`** (Englisch:
@@ -3359,3 +3396,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   signiert, im System vertraut, weitergeleitet an den Dev-Server), Dev-Server mit `KIDCTL_RELOCATE_TO` → Agent zieht
   um und verbindet sich per `wss://` (Gerät bleibt anerkannt); `dev/vm/relocatetest.py` grün (http-Ziel und unbekanntes
   https-Ziel abgelehnt, keine Ausnahme). Danach VM-Gerät auf den Dev-Server zurückgesetzt.
+- 2026-11-21: Planung der nächsten drei Etappen (Funktionsrecherche, mit Adrian abgestimmt): Abschnitt „Geplante
+  Funktionen“ – 0.46 Freigabe anfragen, Ferien/Feiertage, mehrere Zeitfenster (parallel Lutris/Bottles); 0.47 Limit
+  je Programm/Kategorie, „zählt nicht“-Programme, Zeitkonto; 0.48 Aufgaben → Zeit verdienen, Weich-Modus, Alarmkanäle
+  ntfy/Webhook/Matrix, Cinnamon/COSMIC. Plan in `dev/planung/PLAN-2026-11.md`, Roadmap der Website ergänzt. Keine
+  Umsetzung; geprüft: Doku-Parität und Hugo-Build.
