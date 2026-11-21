@@ -1,0 +1,5 @@
+# CI: Server- und Agent-Tests (tests.yml, Job tests). Erzeugen: siehe README.md in diesem Ordner.
+-r ../../server/requirements.in
+pytest==9.2.0
+dbus-next==0.2.3
+websockets==17.4

@@ -20,7 +20,7 @@ Spezifikation, Konventionen und Code-Kommentare sind deutsch.
 **Neue Funktionen brauchen automatisierte Tests**, Fehlerbehebungen nach Möglichkeit einen Test, der den Fehler
 nachstellt. Pull Requests ohne Tests werden in der Regel nicht übernommen.
 
-Tests der drei Komponenten starten (venv mit `server/requirements.txt` sowie `pytest httpx dbus-next websockets`;
+Tests der drei Komponenten starten (venv mit `pip install --require-hashes -r .github/requirements/tests.txt`;
 für die Tray-Tests `PySide6`):
 
 ```bash

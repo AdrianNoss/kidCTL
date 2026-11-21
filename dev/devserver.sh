@@ -16,7 +16,7 @@ PY="$D/venv/bin/python"
 
 if [[ ! -x "$PY" ]]; then
   python -m venv "$D/venv"
-  "$D/venv/bin/pip" install -q -r "$REPO/server/requirements.txt" pytest httpx dbus-next websockets
+  "$D/venv/bin/pip" install -q --require-hashes -r "$REPO/.github/requirements/tests.txt"   # Server + Testwerkzeuge
 fi
 
 # Datenbank: PostgreSQL im Podman-Container kidctl-pg (nur 127.0.0.1:55432), bei Bedarf anlegen bzw. starten

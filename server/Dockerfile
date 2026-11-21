@@ -1,5 +1,6 @@
 # Build-Kontext: Repo-Wurzel (wegen common/)
-FROM python:3.12-slim
+# Basis-Image per Digest festgelegt (Dependabot aktualisiert ihn, .github/dependabot.yml)
+FROM python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
     PYTHONPATH=/srv/server:/srv/common KIDCTL_DATA_DIR=/data
@@ -16,7 +17,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 
 WORKDIR /srv/server
 COPY server/requirements.txt /srv/server/requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# requirements.txt ist aus requirements.in erzeugt (pip-compile --generate-hashes): nur geprüfte Pakete
+RUN pip install --no-cache-dir --require-hashes --no-deps -r requirements.txt
 
 COPY common/kidctl_common /srv/common/kidctl_common
 COPY server/app /srv/server/app

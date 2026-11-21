@@ -165,7 +165,7 @@ The complete list is in the guides: [Limitations and known gaps](https://adriann
 ```bash
 dev/devserver.sh                 # local server on 127.0.0.1:8000 (creates a test account)
 
-# Tests (venv with server/requirements.txt + pytest httpx dbus-next websockets)
+# Tests (venv: pip install --require-hashes -r .github/requirements/tests.txt)
 python dev/check_docs_parity.py  # German/English docs are equal
 cd server && python -m pytest -q tests
 cd agent  && python -m pytest -q tests

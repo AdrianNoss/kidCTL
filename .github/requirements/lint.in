@@ -1,0 +1,2 @@
+# CI: Linter (tests.yml, Job lint). Erzeugen: siehe README.md in diesem Ordner.
+ruff==0.17.6

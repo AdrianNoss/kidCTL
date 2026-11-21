@@ -20,8 +20,8 @@ Specification, conventions and code comments are in German.
 **New functionality must come with automated tests**; bug fixes should, where possible, include a test that
 reproduces the bug. Pull requests without tests are usually not accepted.
 
-Running the tests of the three components (venv with `server/requirements.txt` plus `pytest httpx dbus-next
-websockets`; `PySide6` for the tray tests):
+Running the tests of the three components (venv with `pip install --require-hashes -r
+.github/requirements/tests.txt`; `PySide6` for the tray tests):
 
 ```bash
 podman start kidctl-pg           # PostgreSQL for the server tests (dev/devserver.sh creates the container)

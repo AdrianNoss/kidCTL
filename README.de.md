@@ -165,7 +165,7 @@ Die vollständige Liste steht in den Anleitungen: [Grenzen und bekannte Lücken]
 ```bash
 dev/devserver.sh                 # lokaler Server auf 127.0.0.1:8000 (Testaccount wird angelegt)
 
-# Tests (venv mit server/requirements.txt + pytest httpx dbus-next websockets)
+# Tests (venv: pip install --require-hashes -r .github/requirements/tests.txt)
 python dev/check_docs_parity.py  # Doku Deutsch/Englisch gleich
 cd server && python -m pytest -q tests
 cd agent  && python -m pytest -q tests

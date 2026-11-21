@@ -23,7 +23,7 @@ Daten (SQLite) liegen unter `./data` (Bind-Mount) – extern sichern.
 
 ```bash
 cd server
-python -m venv .venv && .venv/bin/pip install -r requirements.txt pytest httpx
+python -m venv .venv && .venv/bin/pip install --require-hashes -r ../.github/requirements/tests.txt
 export KIDCTL_DEV=1 KIDCTL_DATA_DIR=./data BASE_URL=http://127.0.0.1:8000 PYTHONPATH=$PWD:$PWD/../common
 .venv/bin/python -m app.cli create-parent
 .venv/bin/uvicorn app.main:app --reload

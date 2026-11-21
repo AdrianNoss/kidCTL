@@ -3275,3 +3275,11 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-20: Version 0.44.1 (Agent und Server): Sicherheits- und Robustheitsfixes aus dem Audit vom 2026-11-20
   (Einträge oben), Security-News DE/EN. Funde 10 und 11 (Umbau Profil-Abläufe, Aufteilung `routes/operators.py`)
   bewusst noch offen. Getestet: alle Server-, Agent- und Tray-Tests grün, `ruff check`, Doku-Parität, `hugo --minify`.
+- 2026-11-21: Lieferkette: Python-Pakete werden nur noch mit Hash-Prüfung installiert. `server/requirements.in`
+  nennt die direkten Abhängigkeiten, `server/requirements.txt` ist daraus mit `pip-compile --generate-hashes`
+  erzeugt (alle transitiven Pakete fest); Docker-Image installiert mit `--require-hashes --no-deps`, Basis-Image per
+  Digest festgelegt. CI-Pakete in `.github/requirements/{lint,tests,tray}.{in,txt}` ebenso; Dependabot für beide
+  Ordner und das Docker-Image ergänzt. Dev-Skript und Doku installieren aus `.github/requirements/tests.txt`.
+  Behebt die Scorecard-Einträge „Pinned-Dependencies“. Getestet: Image gebaut und `app.main` importiert, alle drei
+  CI-Dateien in frischem Python-3.12-venv mit `--require-hashes` installiert (`pip check` ok), Dry-Run im lokalen
+  3.14-venv ok, YAML gültig, Doku-Parität ok.

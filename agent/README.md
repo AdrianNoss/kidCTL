@@ -44,5 +44,5 @@ Bis zum PKGBUILD: `sudo env PYTHONPATH=<repo>/agent:<repo>/common python3 -m kid
 ## Tests
 
 ```bash
-cd agent && python -m pytest -q tests   # benötigt server/requirements.txt + dbus-next, pytest
+cd agent && python -m pytest -q tests   # benötigt .github/requirements/tests.txt
 ```
