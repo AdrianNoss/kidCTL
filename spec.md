@@ -3353,3 +3353,9 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   (30/10 min) greift online wie offline, Outbox wird nach Wiederverbindung abgearbeitet; Fund 8 – Umzug auf `http://`
   wird abgelehnt (Parser und Agent), Gerät bleibt beim alten Server. Zwei Auffälligkeiten intern gemeldet (Nachbesserung
   offen, Belege: die beiden Skripte).
+- 2026-11-21: VM-Nachprüfung 0.45.0 (ohne neue Version; Paket von main in der Arch-VM gebaut). Tray-Client, der nicht
+  liest (`dev/vm/traytest.py stall 90` als Kind): nach 17 s getrennt, 2 Log-Warnungen statt Dauer-Spam, Zählung und
+  Policy laufen weiter, kein Neustart. Linux-TLS: in der VM ein TLS-Endpunkt `https://localhost:8443` (selbst
+  signiert, im System vertraut, weitergeleitet an den Dev-Server), Dev-Server mit `KIDCTL_RELOCATE_TO` → Agent zieht
+  um und verbindet sich per `wss://` (Gerät bleibt anerkannt); `dev/vm/relocatetest.py` grün (http-Ziel und unbekanntes
+  https-Ziel abgelehnt, keine Ausnahme). Danach VM-Gerät auf den Dev-Server zurückgesetzt.
