@@ -1,4 +1,4 @@
-"""Schutz für jede Anfrage: Größenlimit (ohne Anmeldung erreichbar) und Content-Security-Policy.
+"""Schutz für jede Anfrage: Größenlimit (ohne Anmeldung erreichbar), Content-Security-Policy und Schutz-Header.
 
 Als reine ASGI-Middleware, damit das Limit greift, bevor irgendetwas den Body in den Speicher liest. Weder uvicorn
 noch Traefik begrenzen ihn von sich aus.
@@ -16,6 +16,14 @@ MAX_BODY_BYTES = 2 * 1024 * 1024
 _CSP = ("default-src 'self'; script-src 'self'; style-src 'self'{nonce}; img-src 'self' data:; "
         "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
 CSP = _CSP.format(nonce="")
+# Weitere Schutz-Header (Web-Scan, Issue #3). Passkeys (publickey-credentials-*) bleiben erlaubt.
+HEADERS = {
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=()",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    "Cross-Origin-Embedder-Policy": "require-corp",
+}
 
 
 def csp(style_nonce: str = "") -> str:
@@ -40,8 +48,12 @@ class SecurityMiddleware:
             if message["type"] == "http.response.start":
                 headers = MutableHeaders(scope=message)
                 headers.setdefault("Content-Security-Policy", CSP)
+                for name, value in HEADERS.items():
+                    headers.setdefault(name, value)
                 if versioned and message["status"] == 200:
                     headers["Cache-Control"] = "public, max-age=31536000, immutable"
+                elif not scope["path"].startswith(("/static/", "/repo/")):
+                    headers.setdefault("Cache-Control", "no-store")   # Seiten mit Familiendaten nie zwischenspeichern
             await send(message)
 
         declared = Headers(scope=scope).get("content-length", "")

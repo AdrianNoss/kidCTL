@@ -3296,3 +3296,11 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   wechseln per `KIDCTL_RELOCATE_TO`. Doku „Adresse wechseln“ in `docs/server*.md` (inkl. Passkeys neu anlegen,
   Neuanmeldung, PWA/Push, Paketquellen). GPG-Schlüsselkennung bleibt. Getestet: Server-Tests (358), Doku-Parität,
   `ruff check`, Hugo, YAML der Zusatzdatei; Traefik-Weiterleitung erst beim Deploy prüfbar.
+- 2026-11-21: Version 0.44.2 (Server): weitere Schutz-Header aus dem Web-Scan (Issue #3). Jede Antwort trägt
+  `Permissions-Policy` (Kamera, Mikrofon, Standort, Zahlung, USB, seriell aus; Passkeys bleiben erlaubt),
+  `Referrer-Policy: strict-origin-when-cross-origin`, `Cross-Origin-Opener/Resource-Policy: same-origin` und
+  `Cross-Origin-Embedder-Policy: require-corp`; Seiten außer `/static/` und `/repo/` mit `Cache-Control: no-store`.
+  Die CSP-Warnung `style-src unsafe-inline` ist seit 0.44.0 behoben. Bewusst offen: ZAP-Hinweise ohne Handlungsbedarf
+  (Session-/Login-Erkennung, „Cookie Poisoning“ bei reflektierten Formularwerten, „Non-Storable Content“).
+  Getestet: Server-Tests (359, neuer `test_security_headers`), Agent-Versionstest, Design-Review-Skript in Chromium
+  über alle 36 Seiten (hell/dunkel, mobil/Desktop) ohne Konsolenfehler oder CSP-/Policy-Verstöße.
