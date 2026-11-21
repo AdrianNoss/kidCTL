@@ -3279,3 +3279,9 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   GHSA-9j39-9rgp-64qj, GHSA-mj6x-2wj9-rfx2, GHSA-p67g-62fj-w22c, GHSA-pc77-rv46-jjjp, GHSA-j2pc-62p2-gg7j,
   GHSA-cxr8-m76j-x35w, GHSA-5cv2-m8xm-h356) veröffentlicht und in der News 0.44.1 verlinkt. Getestet: `hugo --minify
   --panicOnWarning`.
+- 2026-11-21: Agent-Tests unabhängig vom Testrechner (ohne neue Version): Der Workflow „Tests“ scheiterte auf Ubuntu
+  mit 10 Agent-Tests, weil Sprache (Sitzungsprozesse, AccountsService, `/etc/locale.conf`), Distribution (dpkg/pacman)
+  und PAM-Datei vom Rechner kamen. `tests/conftest.py` setzt jetzt Deutsch, Arch und die Arch-PAM-Datei fest;
+  `integrity.install_hint` liest die Pfade aus Modulkonstanten. Getestet: Agent-Tests lokal (290) und in einer
+  bwrap-Sandbox wie Ubuntu-CI (ohne `locale.conf`-Sprache, dpkg statt pacman, Debian-PAM, `LANG=C`): vorher 10 rot,
+  nachher grün; `ruff check` ok.

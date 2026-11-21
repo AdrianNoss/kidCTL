@@ -40,6 +40,18 @@ def state_dir(tmp_path, monkeypatch):
     from kidctl_agent import integrity
     monkeypatch.setattr(integrity, "_run", fake_run)
     monkeypatch.setattr(integrity.check_dns, "__defaults__", (fake_run,))
+    # Unabhängig vom Testrechner (CI: Ubuntu, LANG=C): Arch als Distribution, Arch-PAM-Datei, Deutsch als Sprache
+    # der Kinder – weder Sitzungsprozesse noch AccountsService oder /etc/locale.conf des Rechners zählen.
+    monkeypatch.setattr(integrity, "DPKG_STATUS", tmp_path / "kein-dpkg")
+    monkeypatch.setattr(integrity, "PACMAN_DB", tmp_path)
+    monkeypatch.setattr(integrity.check_pam, "__defaults__", (tmp_path / "kein-debian-pam",))
+    from kidctl_agent import lang
+    locale_conf = tmp_path / "locale.conf"
+    locale_conf.write_text("LANG=de_DE.UTF-8\n")
+    monkeypatch.setattr(lang.system_language, "__defaults__", (locale_conf,))
+    monkeypatch.setattr(lang.accounts_language, "__defaults__", (tmp_path / "accounts",))
+    monkeypatch.setattr(lang.UserLanguages.__init__, "__defaults__",
+                        (lambda uids: [],) + lang.UserLanguages.__init__.__defaults__[1:])
     # Nie den echten Desktop des Entwicklers anfassen (Takt ruft trust_desktop für Programm-Kinder auf)
     monkeypatch.setattr(agent.Agent, "trust_desktops", lambda self: None)
     return d
