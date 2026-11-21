@@ -2,8 +2,9 @@
 
     KIDCTL_DEV=1 PYTHONPATH=server:common python dev/sample_invoices.py
 
-Schreibt dev/musterrechnung-kleinunternehmer.pdf, dev/musterrechnung-regelbesteuerung.pdf und
-dev/musterrechnung-storno.pdf. Absender und Empfänger sind Platzhalter.
+Schreibt dev/musterrechnung-kleinunternehmer.pdf, dev/musterrechnung-regelbesteuerung.pdf,
+dev/musterrechnung-storno.pdf (Kopf nur mit Namen) und dev/musterrechnung-logo.pdf (Kopf mit Logo und eigenem
+Namen aus *Erscheinungsbild*). Absender und Empfänger sind Platzhalter.
 """
 
 import json
@@ -37,9 +38,12 @@ def sample(mode: str, number: str, storno_of: int | None = None, sign: int = 1) 
 
 
 if __name__ == "__main__":
-    for name, inv in (("kleinunternehmer", sample("small_business", "RE-2027-0001")),
-                      ("regelbesteuerung", sample("standard", "RE-2027-0002")),
-                      ("storno", sample("small_business", "RE-2027-0003", storno_of=1, sign=-1))):
+    plain = ("KidCTL", None, False)
+    logo = ("Wächter Familien-Cloud", (OUT.parent / "server/app/static/mail-logo.png").read_bytes(), False)
+    for name, inv, brand in (("kleinunternehmer", sample("small_business", "RE-2027-0001"), plain),
+                             ("regelbesteuerung", sample("standard", "RE-2027-0002"), plain),
+                             ("storno", sample("small_business", "RE-2027-0003", storno_of=1, sign=-1), plain),
+                             ("logo", sample("standard", "RE-2027-0004"), logo)):
         path = OUT / f"musterrechnung-{name}.pdf"
-        path.write_bytes(invoices.render_pdf(inv))
+        path.write_bytes(invoices.render_pdf(inv, brand))
         print(f"{path}  {invoices.eur(inv.gross_cents)}")

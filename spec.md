@@ -1372,8 +1372,11 @@ Ziel: Verwaltungsbereich bei vielen Familien handhabbar und gut lesbar; Support-
   am Familienschlüssel und **überleben das Löschen der Familie** (Bezug wird „gelöschte Familie #<id>“). Automatische
   Löschung nach Ablauf der Aufbewahrungsfrist: 8 Jahre ab Ende des Ausstellungsjahres (§ 14b UStG, § 147 AO; Frist
   als Konstante). Nicht im Familien-Export.
-- **Rechnungskopf mit Erscheinungsbild** (*geplant*, entschieden 2026-11-20): Kopfzeile des PDFs mit **Logo** und
-  **Name des Dienstes** aus *Erscheinungsbild* (Whitelabel); ohne Logo nur der Name. Gilt nur für neu ausgestellte
+- **Rechnungskopf mit Erscheinungsbild** (umgesetzt in 0.45.0, entschieden 2026-11-20): Kopfzeile des PDFs mit
+  **Logo** und **Name des Dienstes** aus *Erscheinungsbild* (Whitelabel); ohne Logo nur der Name, mit „Logo enthält
+  den Namen“ nur das Logo. Logo links oben (10–28 mm von oben, höchstens 18 mm hoch und 60 mm breit,
+  Seitenverhältnis bleibt; gespeichert ist es immer als PNG, SVG wird beim Hochladen nicht angenommen), Name daneben,
+  zu lange Namen werden gekürzt. Gilt nur für neu ausgestellte
   Rechnungen: das PDF wird beim Ausstellen erzeugt und gespeichert, ausgestellte Rechnungen und ihre PDFs werden nie
   neu gerendert. Absenderangaben bleiben unverändert im Kopf. Muster über `dev/sample_invoices.py` prüfen.
 - **`/admin/invoices`** (nur *Admin*): alle Rechnungen, filterbar (Jahr, Status, Familie), Summen je Jahr; **Export
@@ -3334,3 +3337,10 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Router-Aufbau (Präfix `/admin`, Netzprüfung) und Seiten-Rendering in `operator_base.py`. Rollenprüfung je Route
   unverändert. Getestet: alle Server-Tests grün, `ruff check` sauber, Routenliste (Methode, Pfad, Name) vor/nach
   identisch.
+- 2026-11-21: Version 0.45.0 – Rechnungskopf mit Erscheinungsbild umgesetzt (`invoices.render_pdf`): Logo und Name
+  des Dienstes oben links über dem Absenderblock; Absenderangaben unverändert. Wirkt nur auf neu ausgestellte
+  Rechnungen, gespeicherte PDFs bleiben unangetastet (keine Migration). `dev/sample_invoices.py` erzeugt zusätzlich
+  `musterrechnung-logo.pdf`. Getestet: neuer Test (Standard nur Name ohne Bild; mit Logo und eigenem Namen Text und
+  eingebettetes Bild im PDF; zuvor ausgestellte Rechnung behält ihr PDF byte-gleich nach Branding-Änderung), volle
+  Testsuite, Muster-PDFs als Bild geprüft (quadratisches Logo und Grenzfall 4:1-Logo mit überlangem Namen: nichts
+  überdeckt).
