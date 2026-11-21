@@ -1,6 +1,6 @@
 [Unit]
 Description=kidctl: noexec für /tmp, /var/tmp, /dev/shm
-Documentation=https://kids.nossco.de
+Documentation=https://kidctl.de/docs/
 After=tmp.mount local-fs.target
 Before=systemd-user-sessions.service display-manager.service
 DefaultDependencies=no

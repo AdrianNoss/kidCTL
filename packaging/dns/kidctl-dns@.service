@@ -1,6 +1,6 @@
 [Unit]
 Description=kidctl DNS-Filter (Unbound) für Kind %i
-Documentation=https://kids.nossco.de
+Documentation=https://kidctl.de/docs/
 After=network.target systemd-resolved.service
 # Konfiguration erzeugt der kidctl-Agent unter /run/kidctl/dns/%i.conf
 

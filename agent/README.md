@@ -6,7 +6,7 @@ die gecachte Policy auch offline durch. Nicht zugeordnete Linux-User werden nie 
 ## Befehle
 
 ```bash
-sudo kidctl enroll https://kids.nossco.de ABCD2345   # Kopplungscode aus dem WebUI
+sudo kidctl enroll https://app.kidctl.de ABCD2345   # Kopplungscode aus dem WebUI
 sudo kidctl run                                       # Agent (später per systemd-Unit)
 sudo kidctl status                                    # Policy + heutige Nutzung je User
 ```

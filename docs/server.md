@@ -53,7 +53,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # enter the outp
 
 Adjust in `docker-compose.yml`:
 
-- `Host(\`kids.nossco.de\`)` → your own subdomain
+- `Host(\`app.kidctl.de\`)` → your own subdomain
 - network name under `networks.traefik.name` and `traefik.docker.network` → the actual name
   (`docker network ls`)
 
@@ -64,6 +64,29 @@ docker compose logs -f kidctl      # "Application startup complete"
 
 Test: `https://kids.example.org` shows the sign-in page. At `https://kids.example.org/.well-known/security.txt`
 the server provides the security contacts (RFC 9116, see [security policy](../SECURITY.md)).
+
+## Changing the address
+
+How to move a server to a new address (same server, same database, e.g. `kids.example.org` →
+`app.example.org`):
+
+1. Point the DNS of the new address to the server.
+2. In `.env`:
+   - `BASE_URL=https://app.example.org`
+   - `KIDCTL_RELOCATE_TO=https://app.example.org` – the agents switch by themselves the next time they connect.
+   - `OLD_HOST=kids.example.org` and `COMPOSE_FILE=docker-compose.yml:docker-compose.legacy-host.yml` – the old
+     address stays reachable for agents (`/api/`) and package sources (`/repo/`), everything else redirects
+     permanently to the new one.
+3. In `docker-compose.yml` set `Host(\`…\`)` to the new address, then `docker compose up -d --build`.
+4. Afterwards:
+   - Parents and operators sign in once again (sign-ins are per address). Password and authenticator stay the
+     same.
+   - **Passkeys** are bound to the old address and no longer work: delete them under *Profile* and create new ones.
+   - Phone: add the app (PWA) to the home screen again under the new address and allow push again.
+   - Switch the package sources of the child computers (Arch/Debian/Ubuntu) to `https://app.example.org/repo/` when
+     convenient (`kidctl-repo-client.sh`); until then the old address keeps working.
+5. Once all devices have moved (*Devices* shows them connected) and the package sources are switched: remove
+   `KIDCTL_RELOCATE_TO`, `OLD_HOST` and `COMPOSE_FILE` and restart.
 
 ## Web Push (recommended)
 

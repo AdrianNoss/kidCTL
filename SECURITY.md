@@ -63,7 +63,7 @@ Please report confidentially:
 
 ## Testing rules
 
-- Only test against **your own installation** or a test VM – never against `kids.nossco.de` or other third-party
+- Only test against **your own installation** or a test VM – never against `app.kidctl.de` or other third-party
   instances.
 - Only use **your own child computers**.
 - No DoS, no social engineering, no access to other people's data. If it happens anyway: stop immediately, don't

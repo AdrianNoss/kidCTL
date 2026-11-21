@@ -19,7 +19,7 @@ post_install() {
     (Sicherung: system-login.kidctl.bak).
 ==> Je Desktop zusätzlich: kidctl-plasma (KDE Plasma) bzw. kidctl-gnome (GNOME).
 ==> Gerät koppeln und Agent starten:
-      sudo kidctl enroll https://kids.nossco.de <KOPPLUNGSCODE>
+      sudo kidctl enroll https://app.kidctl.de <KOPPLUNGSCODE>
       sudo systemctl enable --now kidctl-agent.service
 MSG
   _desktop_hint

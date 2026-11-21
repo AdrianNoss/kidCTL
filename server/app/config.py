@@ -173,7 +173,7 @@ def load_settings() -> Settings:
         database_url=_database_url(dev),
         data_dir=data_dir,
         cookie_secure=_bool("COOKIE_SECURE", not dev),
-        base_url=os.environ.get("BASE_URL", "https://kids.nossco.de").rstrip("/"),
+        base_url=os.environ.get("BASE_URL", "https://app.kidctl.de").rstrip("/"),
         timezone=os.environ.get("TZ_HOME", "Europe/Berlin"),
         totp_issuer=os.environ.get("TOTP_ISSUER", ""),   # leer: Name aus dem Branding
         webauthn_rp_id=os.environ.get("WEBAUTHN_RP_ID", "").strip().lower(),

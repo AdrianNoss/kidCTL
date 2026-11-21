@@ -53,7 +53,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # Ausgabe als SE
 
 In `docker-compose.yml` anpassen:
 
-- `Host(\`kids.nossco.de\`)` → eigene Subdomain
+- `Host(\`app.kidctl.de\`)` → eigene Subdomain
 - Netzwerkname unter `networks.traefik.name` und `traefik.docker.network` → tatsächlicher Name
   (`docker network ls`)
 
@@ -64,6 +64,30 @@ docker compose logs -f kidctl      # „Application startup complete“
 
 Test: `https://kids.example.org` zeigt die Anmeldeseite. Unter `https://kids.example.org/.well-known/security.txt`
 liefert der Server die Sicherheitskontakte (RFC 9116, siehe [Sicherheitsrichtlinie](../SECURITY.de.md)).
+
+## Adresse wechseln
+
+So zieht ein Server auf eine neue Adresse um (gleicher Server, gleiche Datenbank, z. B. `kids.example.org` →
+`app.example.org`):
+
+1. DNS der neuen Adresse auf den Server zeigen lassen.
+2. In `.env`:
+   - `BASE_URL=https://app.example.org`
+   - `KIDCTL_RELOCATE_TO=https://app.example.org` – die Agenten wechseln beim nächsten Verbinden selbst.
+   - `OLD_HOST=kids.example.org` und `COMPOSE_FILE=docker-compose.yml:docker-compose.legacy-host.yml` – die alte
+     Adresse bleibt für Agenten (`/api/`) und Paketquellen (`/repo/`) erreichbar, alles andere leitet dauerhaft auf
+     die neue um.
+3. In `docker-compose.yml` `Host(\`…\`)` auf die neue Adresse setzen, dann `docker compose up -d --build`.
+4. Danach:
+   - Eltern und Betreiber melden sich einmal neu an (Anmeldungen gelten je Adresse). Passwort und Authenticator
+     bleiben gleich.
+   - **Passkeys** sind an die alte Adresse gebunden und funktionieren nicht mehr: unter *Profil* löschen und neu
+     anlegen.
+   - Handy: die App (PWA) unter der neuen Adresse neu zum Startbildschirm hinzufügen und Push neu erlauben.
+   - Paketquellen der Kinderrechner (Arch/Debian/Ubuntu) bei Gelegenheit auf `https://app.example.org/repo/`
+     umstellen (`kidctl-repo-client.sh`); bis dahin funktioniert die alte Adresse weiter.
+5. Wenn alle Geräte umgezogen sind (*Geräte* zeigt sie verbunden) und die Paketquellen umgestellt sind:
+   `KIDCTL_RELOCATE_TO`, `OLD_HOST` und `COMPOSE_FILE` entfernen und neu starten.
 
 ## Web Push (empfohlen)
 

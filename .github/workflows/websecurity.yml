@@ -1,4 +1,4 @@
-# Monatlicher Web-Scan der öffentlichen Seiten von kids.nossco.de – nur passiv, ohne Anmeldung:
+# Monatlicher Web-Scan der öffentlichen Seiten von app.kidctl.de – nur passiv, ohne Anmeldung:
 # - OWASP ZAP Baseline (Spider + passive Regeln, keine Angriffe),
 # - MDN HTTP Observatory (Header, TLS-Weiterleitung, Cookies).
 # Funde ab „Medium“ bzw. Observatory-Note schlechter als A → GitHub-Issue nur mit Verweis auf den Lauf (keine Details
@@ -15,8 +15,8 @@ permissions:
   contents: read
 
 env:
-  TARGET: https://kids.nossco.de
-  HOST: kids.nossco.de
+  TARGET: https://app.kidctl.de
+  HOST: app.kidctl.de
 
 jobs:
   scan:

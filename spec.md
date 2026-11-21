@@ -1,7 +1,7 @@
 # Parental Control für Arch Linux – Spezifikation
 
 Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Serverseite für Bildschirmzeit, Chat/Verlängerungen, PWA/Web Push, Policy-Verteilung und Offline-Alarm umgesetzt; Agent (Bildschirmzeit, PAM-Login-Sperre), Tray-App und Paket umgesetzt.
-Projektname: **KidCTL** (Paket, Befehle und Pfade technisch `kidctl`). Deploy unter `kids.nossco.de` (Annahme).
+Projektname: **KidCTL** (Paket, Befehle und Pfade technisch `kidctl`). Deploy unter `app.kidctl.de` (bis 2026-11-21 `kids.nossco.de`).
 Lizenz: AGPL-3.0-or-later (`LICENSE`, seit 2026-11-10; vorher PolyForm Noncommercial 1.0.0) – Open Source
 nach OSI, Voraussetzung für eine kostenlose Code-Signatur über die SignPath Foundation (Antrag 2026-11
 wegen zu geringer Bekanntheit abgelehnt, Installer vorerst unsigniert; `docs/code-signing.md`). Die Weboberfläche verlinkt den Quelltext (`SOURCE_URL`, AGPL §13).
@@ -1010,7 +1010,7 @@ Anti-Ziele: Elternkonto mit einem einzelnen schwachen Faktor erreichbar; klassis
   `dev/openssf-best-practices.md` vor (mit Belegen/Links ins Repo) und listet fehlende Punkte; Adrian legt das
   Projekt auf bestpractices.dev an und trägt ein; Badge danach in README/Homepage.
 - **Monatlicher Scan** `.github/workflows/websecurity.yml`: OWASP ZAP **Baseline** (passiv, keine Angriffe) und
-  MDN HTTP Observatory gegen `kids.nossco.de` (Login-Seite und öffentliche Seiten, ohne Anmeldung); Funde ab
+  MDN HTTP Observatory gegen `app.kidctl.de` (Login-Seite und öffentliche Seiten, ohne Anmeldung); Funde ab
   Stufe „Medium“ bzw. Note schlechter als A → GitHub-Issue (ohne Details zu Lücken öffentlich, nur „Scan-Befund,
   siehe Workflow-Lauf“). Observatory-Note mit Link in der Homepage-Box.
 - **Später (nicht heute):** internet.nl (100 % braucht IPv6 + DNSSEC, Badge nur für exakt die getestete Domain) mit
@@ -1604,7 +1604,7 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
 - **Veröffentlichung:** GitHub Security Advisory je bestätigter Lücke (betroffene/behobene Version, CVSS,
   Beschreibung ohne fertige Ausnutzungsanleitung, Dank an den Melder, wenn gewünscht); CVE über GitHub ab
   mittlerer Schwere. News und Release-Text verlinken das Advisory. **Kein Bug-Bounty.**
-- **Testregeln:** nur an eigener Installation bzw. Test-VM, nie an `kids.nossco.de` oder anderen fremden
+- **Testregeln:** nur an eigener Installation bzw. Test-VM, nie an `app.kidctl.de` oder anderen fremden
   Instanzen; nur eigene Kinderrechner; kein DoS, kein Social Engineering, kein Zugriff auf fremde Daten (passiert
   es doch: sofort aufhören, nichts speichern, melden).
 - **Safe Harbor:** Wer in gutem Glauben und nach diesen Regeln forscht und meldet, gegen den wird nicht rechtlich
@@ -1641,7 +1641,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 
 ## Offene Punkte
 
-- Subdomain (Annahme `kids.nossco.de`).
+- Subdomain `app.kidctl.de` (bis 2026-11-21 `kids.nossco.de`, alte Adresse leitet weiter).
 
 ## Changelog
 
@@ -3289,3 +3289,10 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Server (Projekt-Link in Mails/Fußzeile, `security.txt`-Policy, Repo-Seite, Fehlermeldung), Release-Skript, Doku-Paritäts-
   Check und Tests umgestellt; alte `adriannoss.github.io/kidCTL/`-Links leitet GitHub weiter. Getestet: Server-Tests (358),
   Doku-Parität, `ruff check`, `hugo --minify --panicOnWarning`; DNS (A/AAAA/www) und Zertifikat geprüft.
+- 2026-11-21: Server-Adresse `app.kidctl.de` statt `kids.nossco.de` (ohne neue Version): Traefik-Regel, Standard von
+  `BASE_URL`, Beispiele, Web-Scan und Observatory, Kopplungshinweise, `Documentation=` der systemd-Units (jetzt
+  Projektseite) und Sicherheitsrichtlinie umgestellt. Neu `docker-compose.legacy-host.yml`: alte Adresse bleibt für
+  Agenten (`/api/`), Paketquellen (`/repo/`) und `/.well-known/` erreichbar, der Rest leitet dauerhaft um; Agenten
+  wechseln per `KIDCTL_RELOCATE_TO`. Doku „Adresse wechseln“ in `docs/server*.md` (inkl. Passkeys neu anlegen,
+  Neuanmeldung, PWA/Push, Paketquellen). GPG-Schlüsselkennung bleibt. Getestet: Server-Tests (358), Doku-Parität,
+  `ruff check`, Hugo, YAML der Zusatzdatei; Traefik-Weiterleitung erst beim Deploy prüfbar.

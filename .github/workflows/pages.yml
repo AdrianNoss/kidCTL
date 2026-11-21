@@ -61,7 +61,7 @@ jobs:
         # Für die Box „Automatisch geprüft“ auf der Startseite – als Text, keine externen Bilder. Fehler: Box ohne Wert.
         run: |
           sc=$(curl -fsS "https://api.securityscorecards.dev/projects/github.com/${GITHUB_REPOSITORY}" || echo '{}')
-          ob=$(curl -fsS -X POST "https://observatory-api.mdn.mozilla.net/api/v2/scan?host=kids.nossco.de" || echo '{}')
+          ob=$(curl -fsS -X POST "https://observatory-api.mdn.mozilla.net/api/v2/scan?host=app.kidctl.de" || echo '{}')
           jq -n --argjson sc "$sc" --argjson ob "$ob" '{
             scorecard: {score: ($sc.score // null), date: ($sc.date // null)},
             observatory: {grade: ($ob.grade // null), date: ($ob.scanned_at // null), url: ($ob.details_url // null)}
