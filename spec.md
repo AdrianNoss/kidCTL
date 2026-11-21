@@ -3316,3 +3316,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   `kidctl-http` auf dem Entrypoint `web` mit `redirectscheme`); bisher antwortete Traefik dort mit 404, was im
   Web-Scan (Observatory „redirection-missing“, Note B+) auffiel. Getestet: YAML gültig; Wirkung erst
   nach dem Deploy prüfbar (`curl -I http://app.kidctl.de/` → 308 auf https, danach Web-Scan erneut).
+- 2026-11-21: Umbau ohne Verhaltensänderung (Audit-Fund 10, ohne neue Version): Profiländerungen von Eltern und
+  Betreibern nutzen gemeinsame Bausteine in `server/app/routes/profile_shared.py` (Bestätigung per Passkey,
+  Passkeys anlegen/umbenennen/auswählen, Prüfung des neuen Authenticator-Codes, JSON-Antworten); Kontoart,
+  Protokoll, Hinweis-Mails und Redirect-Ziele bleiben in den Routen. Getestet: alle Server-Tests grün,
+  `ruff check` sauber, Routenliste (Methode, Pfad, Name) vor/nach identisch.

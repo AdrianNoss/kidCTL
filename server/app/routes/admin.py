@@ -30,6 +30,7 @@ from ..security import (
     csrf_protect, hash_password, new_pairing_code, new_totp_secret, require_session, token_hash, totp_qr_svg,
 )
 from ..web import local_redirect, render
+from . import profile_shared as ps
 from ..ws import manager
 
 router = APIRouter(dependencies=[Depends(require_session)])
@@ -742,10 +743,8 @@ def profile_totp_confirm(request: Request, token: str = Form(""), current_passwo
     t = accounts.get_token(db, token, "totp_change")
     if t is None or t.parent_id != parent.id:
         return _profile(request, parent, 400, error=_("Die Einrichtung ist abgelaufen. Bitte neu starten."))
-    error = passkeys.confirm(db, request, sess, parent, current_password, current_totp, parent.username)
-    step = accounts.totp_step(t.secret, totp)
-    if not error and step is None:
-        error = _("Der Code passt nicht zum neuen QR-Code.")
+    error, step = ps.new_totp_step(
+        passkeys.confirm(db, request, sess, parent, current_password, current_totp, parent.username), t.secret, totp)
     if error:
         return _totp_change_page(request, parent, token, t.secret, 400, error)
     parent.totp_secret, parent.totp_last_step = t.secret, step
@@ -757,11 +756,6 @@ def profile_totp_confirm(request: Request, token: str = Form(""), current_passwo
 
 
 # ---------- Passkeys und frische Bestätigung ----------
-
-def _json(data: dict, status_code: int = 200):
-    from fastapi.responses import JSONResponse
-    return JSONResponse(data, status_code=status_code, headers={"Cache-Control": "no-store"})
-
 
 @router.post("/profile/confirm")
 def profile_confirm(request: Request, current_password: str = Form(""), current_totp: str = Form(""),
@@ -775,60 +769,42 @@ def profile_confirm(request: Request, current_password: str = Form(""), current_
 
 @router.post("/profile/confirm/passkey/options")
 def profile_confirm_passkey_options(sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
-    options, token = passkeys.authentication_options(db, "parent", "confirm", sess.parent_id)
-    resp = _json({"options": options})
-    passkeys.set_cookie(resp, "parent", token)
-    return resp
+    return ps.confirm_passkey_options(db, "parent", sess.parent_id)
 
 
 @router.post("/profile/confirm/passkey")
 def profile_confirm_passkey(request: Request, credential: str = Form(""), sess: ParentSession = Depends(csrf_protect),
                             db: Session = Depends(get_db)):
     """Frische Bestätigung mit einem Passkey dieses Kontos."""
-    try:
-        passkeys.authenticate(db, passkeys.cookie(request, "parent"), credential, "parent", "confirm", sess.parent_id)
-    except passkeys.PasskeyError as e:
-        passkeys.log.info("Bestätigung per Passkey abgelehnt: %s", e)
-        return _json({"error": _("Bestätigung mit Passkey fehlgeschlagen.")}, 400)
-    passkeys.mark_fresh(db, sess)
-    return _json({"redirect": "/profile?msg=confirmed#passkeys"})
+    return ps.confirm_passkey(db, request, sess, "parent", sess.parent_id, credential, "/profile?msg=confirmed#passkeys")
 
 
 @router.post("/profile/passkeys/options")
 def profile_passkey_options(sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
     if not passkeys.is_fresh(sess):
-        return _json({"error": _("Bitte zuerst bestätigen.")}, 403)
+        return ps.not_fresh()
     parent = db.get(Parent, sess.parent_id)
-    options, token = passkeys.registration_options(db, "parent", parent.id, parent.email or parent.username,
-                                                   parent.display_name or parent.username)
-    resp = _json({"options": options})
-    passkeys.set_cookie(resp, "parent", token)
-    return resp
+    return ps.registration_options(db, "parent", parent.id, parent.email or parent.username,
+                                   parent.display_name or parent.username)
 
 
 @router.post("/profile/passkeys")
 def profile_passkey_add(request: Request, credential: str = Form(""), name: str = Form(""),
                         sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
     if not passkeys.is_fresh(sess):
-        return _json({"error": _("Bitte zuerst bestätigen.")}, 403)
+        return ps.not_fresh()
     parent = db.get(Parent, sess.parent_id)
-    try:
-        pk = passkeys.register(db, passkeys.cookie(request, "parent"), credential, "parent", parent.id, name)
-    except passkeys.PasskeyError as e:
-        passkeys.log.info("Passkey-Registrierung abgelehnt: %s", e)
-        return _json({"error": _("Der Passkey ließ sich nicht anlegen.")}, 400)
+    pk, error = ps.register_passkey(db, request, "parent", parent.id, credential, name)
+    if error:
+        return error
     passkeys.notify_parent(parent, "added", pk.name)
-    return _json({"redirect": "/profile?msg=passkey_added#passkeys"})
+    return ps.json_response({"redirect": "/profile?msg=passkey_added#passkeys"})
 
 
 @router.post("/profile/passkeys/{passkey_id}/rename")
 def profile_passkey_rename(passkey_id: int, name: str = Form(""), sess: ParentSession = Depends(csrf_protect),
                            db: Session = Depends(get_db)):
-    pk = passkeys.get_own(db, "parent", sess.parent_id, passkey_id)
-    if pk is None:
-        raise HTTPException(404)
-    pk.name = " ".join(name.split())[:passkeys.MAX_NAME] or pk.name
-    db.commit()
+    ps.rename_passkey(db, "parent", sess.parent_id, passkey_id, name)
     return _redirect("/profile?msg=passkey_renamed#passkeys")
 
 
@@ -837,9 +813,7 @@ def profile_passkey_delete(passkey_id: int, request: Request, current_password: 
                            current_totp: str = Form(""), sess: ParentSession = Depends(csrf_protect),
                            db: Session = Depends(get_db)):
     parent = db.get(Parent, sess.parent_id)
-    pk = passkeys.get_own(db, "parent", parent.id, passkey_id)
-    if pk is None:
-        raise HTTPException(404)
+    pk = ps.own_passkey_or_404(db, "parent", parent.id, passkey_id)
     if error := passkeys.confirm(db, request, sess, parent, current_password, current_totp, parent.username):
         return _profile(request, parent, 400, error=error)
     name = pk.name
