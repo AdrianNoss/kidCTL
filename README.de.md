@@ -1,5 +1,5 @@
 <div align="center">
-<a href="https://adriannoss.github.io/kidCTL/de/">
+<a href="https://kidctl.de/de/">
 <picture>
 <source media="(prefers-color-scheme: dark)" srcset="docs/img/de/banner-dark.webp">
 <img src="docs/img/de/banner-light.webp" alt="KidCTL – Kindersicherung, die zu Hause bleibt: selbst gehostet für Windows und Linux" width="1280">
@@ -100,8 +100,8 @@ Grundregel: root, Accounts in `wheel`/`sudo`/`admin` und Windows-Administratoren
 
 Quellcode: <https://github.com/AdrianNoss/kidCTL>
 
-Anleitungen: **[Wiki](https://adriannoss.github.io/kidCTL/de/docs/)** (Quelle: [`docs/`](docs/installation.de.md)).
-Schritt für Schritt in der **[Installationsanleitung](https://adriannoss.github.io/kidCTL/de/docs/installation/)**:
+Anleitungen: **[Wiki](https://kidctl.de/de/docs/)** (Quelle: [`docs/`](docs/installation.de.md)).
+Schritt für Schritt in der **[Installationsanleitung](https://kidctl.de/de/docs/installation/)**:
 Server, Paket-Repository, Kinderrechner und WebUI. Kurzfassung:
 
 ```bash
@@ -120,9 +120,9 @@ sudo systemctl enable --now kidctl-agent.service
 Windows-Kinderrechner (als Administrator): `KidCTL-Setup-<Version>.exe` von `https://kids.example.org/repo/windows/`
 oder aus den [GitHub-Releases](https://github.com/AdrianNoss/kidCTL/releases) herunterladen, ausführen,
 Server-Adresse und Kopplungscode eintragen. Der Installer ist noch nicht signiert, SmartScreen fragt einmal nach
-(„Weitere Informationen“ → „Trotzdem ausführen“). Details: [Kinderrechner (Windows)](https://adriannoss.github.io/kidCTL/de/docs/child-windows/).
+(„Weitere Informationen“ → „Trotzdem ausführen“). Details: [Kinderrechner (Windows)](https://kidctl.de/de/docs/child-windows/).
 
-Danach die Rechner gegen physischen Zugriff härten: **[Härtung](https://adriannoss.github.io/kidCTL/de/docs/hardening/)**.
+Danach die Rechner gegen physischen Zugriff härten: **[Härtung](https://kidctl.de/de/docs/hardening/)**.
 
 ## Grenzen
 
@@ -141,7 +141,7 @@ Danach die Rechner gegen physischen Zugriff härten: **[Härtung](https://adrian
   - Bei aktiver Programmkontrolle kann das Kind nichts selbst installieren.
   - Installer ohne Code-Signatur: SmartScreen-Warnung, mögliche Fehlalarme in Defender.
 
-Die vollständige Liste steht in den Anleitungen: [Grenzen und bekannte Lücken](https://adriannoss.github.io/kidCTL/de/docs/limitations/)
+Die vollständige Liste steht in den Anleitungen: [Grenzen und bekannte Lücken](https://kidctl.de/de/docs/limitations/)
 (Quelle [`docs/limitations.de.md`](docs/limitations.de.md)).
 
 ## Repository-Struktur
@@ -193,7 +193,7 @@ Feste Regeln halten das verlässlich: Jede Änderung steht zuerst in [`spec.md`]
 Testvermerk festgehalten; keine Funktion ohne automatische Tests; Systemnahes zuerst in Test-VMs; CodeQL, OpenSSF
 Scorecard und ein monatlicher Web-Scan prüfen mit. Die Arbeitsanweisungen für die KI stehen offen in
 [`CLAUDE.md`](CLAUDE.md). kidCTL selbst nutzt keine KI und schickt nichts an KI-Dienste. Ein unabhängiges
-Sicherheits-Audit durch Menschen gibt es noch nicht. Mehr: [So entsteht kidCTL](https://adriannoss.github.io/kidCTL/de/how-kidctl-is-built/).
+Sicherheits-Audit durch Menschen gibt es noch nicht. Mehr: [So entsteht kidCTL](https://kidctl.de/de/how-kidctl-is-built/).
 
 ## Sicherheit
 

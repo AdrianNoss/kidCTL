@@ -11,7 +11,7 @@ import time
 from dataclasses import dataclass
 
 DEFAULT_NAME = "KidCTL"
-PROJECT_SITE = "https://adriannoss.github.io/kidCTL/"
+PROJECT_SITE = "https://kidctl.de/"
 POWERED_BY = "powered by KidCTL"
 MAX_UPLOAD = 2 * 1024 * 1024          # Bytes je Bild beim Hochladen
 LOGO_MAX = (512, 128)                 # Logo wird höchstens so groß gespeichert

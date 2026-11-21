@@ -1429,9 +1429,9 @@ News-Bereich hat, den Claude Code pflegt.
 - **Zielgruppe jetzt:** Self-Hoster und Technikaffine. Struktur lässt Platz für spätere SaaS-Bereiche
   („Gehostet nutzen“, Preise), die erst nach SaaS-Etappe 4 kommen.
 - **Hosting:** GitHub Pages, Quellcode in `website/` im kidCTL-Repo.
-- **Adresse:** Produkt-Domain (`kidctl.*`), sobald gesichert; bis dahin `https://adriannoss.github.io/kidCTL/`.
-  Wechsel nur über `baseURL` in der Hugo-Konfiguration und eine `CNAME`-Datei. SaaS später unter `app.`/`my.`
-  derselben Domain.
+- **Adresse:** `https://kidctl.de/` (seit 2026-11-21; vorher `https://adriannoss.github.io/kidCTL/`, GitHub leitet
+  weiter). Domain in den Pages-Einstellungen des Repos (Veröffentlichung per Actions, keine `CNAME`-Datei) und
+  `baseURL` in der Hugo-Konfiguration. SaaS später unter `app.`/`my.` derselben Domain.
 - **Sprache:** Deutsch und Englisch mit Umschalter; Englisch Standard (`/`), Deutsch unter `/de/`.
 
 ### Technik und Design
@@ -1618,7 +1618,7 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
 
 ### `security.txt` (RFC 9116)
 - **Projektseite:** `website/static/.well-known/security.txt`; `Expires` setzt der Pages-Build auf heute + 1 Jahr.
-  Wirksam erst mit eigener Domain (unter `adriannoss.github.io/kidCTL/` nicht im Domain-Root).
+  Wirksam seit der eigenen Domain (`https://kidctl.de/.well-known/security.txt`).
 - **kidCTL-Server:** Route `/.well-known/security.txt` (ohne Login), `Expires` dynamisch (+ 1 Jahr),
   `Contact: mailto:security@nossco.de` und GitHub-Meldeweg, `Policy:` auf `SECURITY.md`, `Preferred-Languages:
   en, de`. Optionale Umgebungsvariable `SECURITY_CONTACT`: zusätzlicher Kontakt des Betreibers (zuerst gelistet).
@@ -3285,3 +3285,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   `integrity.install_hint` liest die Pfade aus Modulkonstanten. Getestet: Agent-Tests lokal (290) und in einer
   bwrap-Sandbox wie Ubuntu-CI (ohne `locale.conf`-Sprache, dpkg statt pacman, Debian-PAM, `LANG=C`): vorher 10 rot,
   nachher grün; `ruff check` ok.
+- 2026-11-21: Projektseite unter eigener Domain `https://kidctl.de/` (ohne neue Version): `baseURL`, Verweise in README,
+  Server (Projekt-Link in Mails/Fußzeile, `security.txt`-Policy, Repo-Seite, Fehlermeldung), Release-Skript, Doku-Paritäts-
+  Check und Tests umgestellt; alte `adriannoss.github.io/kidCTL/`-Links leitet GitHub weiter. Getestet: Server-Tests (358),
+  Doku-Parität, `ruff check`, `hugo --minify --panicOnWarning`; DNS (A/AAAA/www) und Zertifikat geprüft.

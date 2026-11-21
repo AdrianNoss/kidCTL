@@ -1,5 +1,5 @@
-# kidCTL-Projektseite (Hugo, eigenes Theme, kein Node). Domain-Wechsel: baseURL ändern + static/CNAME anlegen.
-baseURL = "https://adriannoss.github.io/kidCTL/"
+# kidCTL-Projektseite (Hugo, eigenes Theme, kein Node). Domain: kidctl.de (Repo-Einstellung Pages → Custom domain).
+baseURL = "https://kidctl.de/"
 title = "KidCTL"
 theme = "kidctl"
 defaultContentLanguage = "en"

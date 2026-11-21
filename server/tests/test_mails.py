@@ -57,12 +57,12 @@ def test_whitelabel_and_provider_footer(client, monkeypatch):
     assert "powered by KidCTL" in r.html and "Wächter · powered by KidCTL" in r.text
     assert "Beispiel GmbH · Weg 1, 12345 Ort · hallo@example.org" in r.html
     assert 'href="https://example.org/impressum"' in r.html and "Datenschutz" not in r.html   # leer: entfällt
-    assert "/support" in r.html and "adriannoss.github.io/kidCTL/de/news/" in r.html
+    assert "/support" in r.html and "kidctl.de/de/news/" in r.html
 
 
 def test_single_mode_footer_without_support(client):
     r = mailer.render("email_verify", "en", **mailer.samples()["email_verify"])
-    assert "/support" not in r.html and "adriannoss.github.io/kidCTL/news/" in r.text and "Imprint" not in r.html
+    assert "/support" not in r.html and "kidctl.de/news/" in r.text and "Imprint" not in r.html
 
 
 def test_send_uses_cid_logo_and_alternative(client, monkeypatch):

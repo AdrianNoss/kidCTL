@@ -23,7 +23,7 @@ def _homepage(client, **data):
 
 def test_homepage_link_on_login_pages(client, operator):  # noqa: F811
     page = client.get("/login").text                                                # Standard: Projektseite
-    assert 'href="https://adriannoss.github.io/kidCTL/de/"' in page and "Über KidCTL" in page
+    assert 'href="https://kidctl.de/de/"' in page and "Über KidCTL" in page
     admin_login(client, operator)
     assert _homepage(client, homepage_url="http://example.org").status_code == 400   # nur https
     assert _homepage(client, homepage_url="https://").status_code == 400
@@ -38,7 +38,7 @@ def test_homepage_link_on_login_pages(client, operator):  # noqa: F811
         assert 'href="https://familie.example.org"' in page and "Zur Startseite" in page, path
     assert "Home</a>" in anon.get("/login", headers={"accept-language": "en"}).text
     _homepage(client)
-    assert "adriannoss.github.io" in anon.get("/login").text                        # leer: wieder Standard
+    assert "https://kidctl.de/" in anon.get("/login").text                        # leer: wieder Standard
 
 
 def test_invite_mail_and_resend(client, operator, monkeypatch, outbox):  # noqa: F811

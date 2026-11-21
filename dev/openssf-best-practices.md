@@ -12,13 +12,13 @@ Stand: 2026-11-20 (Version 0.43). Offen ist nur noch der Branch-Schutz (Ende des
 | Kriterium | Status | Antwort / Beleg |
 |---|---|---|
 | description_good | Met | README: "Parental control that stays at home: self-hosted for Windows and Linux." https://github.com/AdrianNoss/kidCTL#readme |
-| interact | Met | GitHub Issues; project page https://adriannoss.github.io/kidCTL/ |
+| interact | Met | GitHub Issues; project page https://kidctl.de/ |
 | contribution | Met | "How to contribute: CONTRIBUTING.md (issue first, then pull request; tests; bilingual docs)." https://github.com/AdrianNoss/kidCTL/blob/main/CONTRIBUTING.md |
 | contribution_requirements | Met | `CONTRIBUTING.md`: required tests, linter (`ruff check`), docs parity check; conventions in `CLAUDE.md`. |
 | floss_license | Met | AGPL-3.0-or-later, `LICENSE` |
 | floss_license_osi | Met | AGPL-3.0 is OSI-approved. |
 | license_location | Met | `LICENSE` in the repository root. |
-| documentation_basics | Met | Installation and use: https://adriannoss.github.io/kidCTL/docs/ (sources in `docs/`). |
+| documentation_basics | Met | Installation and use: https://kidctl.de/docs/ (sources in `docs/`). |
 | documentation_interface | Met | Agent/server protocol in `common/kidctl_common/protocol.py` (versioned); CLI `kidctl --help`; WebUI documented in `docs/webui.md`. |
 | sites_https | Met | GitHub, GitHub Pages and the package repository use HTTPS only. |
 | discussion | Met | GitHub Issues (searchable, URL-addressable, no proprietary client needed). |
@@ -36,7 +36,7 @@ Stand: 2026-11-20 (Version 0.43). Offen ist nur noch der Branch-Schutz (Ende des
 | version_unique | Met | Version in `agent/kidctl_agent/__init__.py` and `packaging/arch/PKGBUILD`; CI checks both match and tags `v<version>`. |
 | version_semver | Met | Semantic versioning (MAJOR.MINOR.PATCH). |
 | version_tags | Met | Git tags `v<version>` created by `.github/workflows/release.yml`. |
-| release_notes | Met | GitHub Releases with notes; human-readable news at https://adriannoss.github.io/kidCTL/news/ |
+| release_notes | Met | GitHub Releases with notes; human-readable news at https://kidctl.de/news/ |
 | release_notes_vulns | Met | Security fixes are listed with a link to the GitHub Security Advisory (see SECURITY.md, news for 0.34.1). |
 
 ## Reporting

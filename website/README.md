@@ -1,6 +1,6 @@
 # Projektseite (Hugo)
 
-Quelle der Seite <https://adriannoss.github.io/kidCTL/> (später Produkt-Domain). Hugo ohne Extended, eigenes Theme
+Quelle der Seite <https://kidctl.de/>. Hugo ohne Extended, eigenes Theme
 `themes/kidctl`, kein Node. Veröffentlicht wird über `.github/workflows/pages.yml`.
 
 ```bash

@@ -91,7 +91,7 @@ else
   [[ -n "$highlights" ]] && highlights="Changelog (German):"$'\n\n'"$highlights"
 fi
 blob="https://github.com/$GITHUB_REPO/blob/main"
-wiki="https://adriannoss.github.io/kidCTL/docs"
+wiki="https://kidctl.de/docs"
 body="$(cat <<EOT
 KidCTL is self-hosted parental control for **Windows 10/11** and **Linux** (Arch, Debian, Ubuntu with KDE Plasma or GNOME on Wayland). A server you run yourself gives parents a web interface to manage screen time, game time, allowed apps and websites; an agent on each child's computer enforces the rules, also offline. No cloud, no telemetry.
 

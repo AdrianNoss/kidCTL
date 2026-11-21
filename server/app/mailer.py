@@ -209,7 +209,7 @@ def samples() -> dict[str, dict]:
 def _newsletter_sample(unsubscribe_url: str) -> dict:
     from . import mdmail
     body = ("Mit **Version 0.36** kommen zwei Neuerungen:\n\n## Was ist neu?\n\n- Einheitliche Mails\n"
-            "- Mehr Spiele unter Windows\n\nAlle Details in den [Neuigkeiten](https://adriannoss.github.io/kidCTL/news/)."
+            "- Mehr Spiele unter Windows\n\nAlle Details in den [Neuigkeiten](https://kidctl.de/news/)."
             "\n\n---\n\nViele Grüße")
     return dict(name="Mama", nl_subject="Version 0.36", body=body, body_html=mdmail.to_html(body),
                 preheader_text=mdmail.preheader(body), unsubscribe_url=unsubscribe_url)

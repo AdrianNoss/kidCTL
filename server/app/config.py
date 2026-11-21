@@ -78,7 +78,7 @@ def _database_url(dev: bool) -> str:
         raise RuntimeError("DATABASE_URL fehlt (in .env setzen, z. B. postgresql+psycopg://kidctl:…@db:5432/kidctl).")
     if url.startswith("sqlite"):
         raise RuntimeError("SQLite wird nicht mehr unterstützt. Daten übernehmen: python -m app.cli import-sqlite "
-                           "<pfad/kidctl.db> --apply (Anleitung: https://adriannoss.github.io/kidCTL/docs/postgresql-migration/,"
+                           "<pfad/kidctl.db> --apply (Anleitung: https://kidctl.de/docs/postgresql-migration/,"
                            " Datei docs/postgresql-migration.md).")
     if url.startswith("postgresql://"):
         url = "postgresql+psycopg://" + url.removeprefix("postgresql://")
