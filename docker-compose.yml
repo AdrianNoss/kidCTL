@@ -49,6 +49,13 @@ services:
       - traefik.http.routers.kidctl.tls.certresolver=letsencrypt
       - traefik.http.routers.kidctl.middlewares=secHeaders@file
       - traefik.http.services.kidctl.loadbalancer.server.port=8000
+      # http:// dauerhaft auf https:// umleiten (Entrypoint-Name „web“ ggf. an die Traefik-Konfiguration anpassen)
+      - traefik.http.routers.kidctl-http.rule=Host(`app.kidctl.de`)
+      - traefik.http.routers.kidctl-http.entrypoints=web
+      - traefik.http.routers.kidctl-http.middlewares=kidctl-https
+      - traefik.http.routers.kidctl-http.service=kidctl
+      - traefik.http.middlewares.kidctl-https.redirectscheme.scheme=https
+      - traefik.http.middlewares.kidctl-https.redirectscheme.permanent=true
 
 networks:
   traefik:

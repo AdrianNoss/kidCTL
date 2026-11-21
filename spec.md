@@ -3312,3 +3312,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Behebt die Scorecard-Einträge „Pinned-Dependencies“. Getestet: Image gebaut und `app.main` importiert, alle drei
   CI-Dateien in frischem Python-3.12-venv mit `--require-hashes` installiert (`pip check` ok), Dry-Run im lokalen
   3.14-venv ok, YAML gültig, Doku-Parität ok.
+- 2026-11-21: Docker/Traefik (ohne neue Version): `http://app.kidctl.de` leitet dauerhaft auf https um (Router
+  `kidctl-http` auf dem Entrypoint `web` mit `redirectscheme`); bisher antwortete Traefik dort mit 404, was im
+  Web-Scan (Observatory „redirection-missing“, Note B+) auffiel. Getestet: YAML gültig; Wirkung erst
+  nach dem Deploy prüfbar (`curl -I http://app.kidctl.de/` → 308 auf https, danach Web-Scan erneut).
