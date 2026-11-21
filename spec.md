@@ -3344,3 +3344,12 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   eingebettetes Bild im PDF; zuvor ausgestellte Rechnung behält ihr PDF byte-gleich nach Branding-Änderung), volle
   Testsuite, Muster-PDFs als Bild geprüft (quadratisches Logo und Grenzfall 4:1-Logo mit überlangem Namen: nichts
   überdeckt).
+- 2026-11-21: VM-Prüfung der Audit-Fixes 1, 5, 6, 8 (ohne neue Version) mit dem Agenten von main (0.44.2, Paket in
+  der Arch-VM gebaut, gekoppelt mit dem Dev-Server, Kind-Konto mit Sitzung). Neue Hilfsskripte
+  `dev/vm/traytest.py` (Tray-Socket als Kind: Zustand, nicht lesende Verbindung, Nachrichtenflut) und
+  `dev/vm/relocatetest.py` (Umzugsnachricht gegen den installierten Agenten). Ergebnis: Fund 1 – Takt und Zählung
+  laufen weiter, kein Neustart; Fund 5 – beschädigte `usage`/`policy`/`apptime`/`outbox` werden nach `.broken`
+  verschoben und gemeldet, Agent startet und setzt durch; Fund 6 – Begrenzung im Agenten (20 offen) und im Server
+  (30/10 min) greift online wie offline, Outbox wird nach Wiederverbindung abgearbeitet; Fund 8 – Umzug auf `http://`
+  wird abgelehnt (Parser und Agent), Gerät bleibt beim alten Server. Zwei Auffälligkeiten intern gemeldet (Nachbesserung
+  offen, Belege: die beiden Skripte).
