@@ -1,15 +1,15 @@
-fastapi==0.163.0
+fastapi==0.164.0
 uvicorn[standard]==0.54.0
-SQLAlchemy==2.1.8
+SQLAlchemy==2.1.9
 # PostgreSQL (seit Etappe 1 Multi-Tenant) und versionierte Migrationen
 psycopg[binary]==3.3.9
 alembic==1.20.1
 Jinja2==3.1.6
-python-multipart==0.0.33
+python-multipart==0.0.34
 passlib[bcrypt]==1.7.4
 # passlib ist mit bcrypt 5.x inkompatibel ("password cannot be longer than 72 bytes")
 bcrypt==4.0.1
-pyotp==2.10.0
+pyotp==2.12.0
 qrcode==8.2
 pydantic==2.14.3
 pywebpush==2.5.0
@@ -17,7 +17,7 @@ pywebpush==2.5.0
 cryptography==50.0.2
 httpx==0.28.1
 # Rechnungs-PDFs (reines Python, keine Systembibliotheken im Image)
-reportlab==4.4.10
+reportlab==5.1.0
 # Whitelabel: Logo/App-Icon prüfen und skalieren (ohnehin Abhängigkeit von reportlab)
 pillow==13.0.0
 # Newsletter: Markdown-Teilmenge ohne HTML in Mails umwandeln
