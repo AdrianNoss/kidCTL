@@ -3321,3 +3321,10 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Passkeys anlegen/umbenennen/auswählen, Prüfung des neuen Authenticator-Codes, JSON-Antworten); Kontoart,
   Protokoll, Hinweis-Mails und Redirect-Ziele bleiben in den Routen. Getestet: alle Server-Tests grün,
   `ruff check` sauber, Routenliste (Methode, Pfad, Name) vor/nach identisch.
+- 2026-11-21: Umbau ohne Verhaltensänderung (Audit-Fund 11, ohne neue Version): `server/app/routes/operators.py`
+  (über 1.300 Zeilen) nach Aufgaben aufgeteilt – `operators.py` (Anmeldung, Passkey-Anmeldung, Menü),
+  `operator_families.py`, `operator_codes.py`, `operator_log.py`, `operator_profile.py`, `operator_tickets.py`,
+  `operator_invoices.py`, `operator_branding.py`, `operator_mails.py` (Mail-Vorschau, Newsletter); gemeinsamer
+  Router-Aufbau (Präfix `/admin`, Netzprüfung) und Seiten-Rendering in `operator_base.py`. Rollenprüfung je Route
+  unverändert. Getestet: alle Server-Tests grün, `ruff check` sauber, Routenliste (Methode, Pfad, Name) vor/nach
+  identisch.
