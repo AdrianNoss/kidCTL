@@ -16,6 +16,10 @@ from .tenant import platform_session
 from .middleware import SecurityMiddleware
 from .routes import admin, api, auth, billing as billing_routes, operators, pwa, signup, wellknown
 from .routes import tickets as ticket_routes
+from .routes import (
+    operator_branding, operator_codes, operator_families, operator_invoices, operator_log, operator_mails,
+    operator_profile, operator_tickets,
+)
 from .security import FamilyPaused, LoginRequired
 from .web import render
 
@@ -105,6 +109,9 @@ def healthz():
 
 app.include_router(auth.router)
 app.include_router(operators.router)
+for _mod in (operator_families, operator_codes, operator_log, operator_profile, operator_tickets, operator_invoices,
+             operator_branding, operator_mails):
+    app.include_router(_mod.router)
 app.include_router(signup.router)
 app.include_router(billing_routes.router)
 app.include_router(ticket_routes.router)

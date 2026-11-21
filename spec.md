@@ -3322,3 +3322,15 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   nicht lesen, nach dem Sende-Timeout abgebrochen statt geschlossen (`close` wartete auf den nie geleerten Puffer;
   Befund der VM-Prüfung). Getestet: Agent-Tests (295, neu `test_tls_connect.py` mit echtem `connect` für `wss://`
   und `ws://`, Abbruch-Test im Tray), echter Verbindungsaufbau gegen `wss://app.kidctl.de`; VM-Nachprüfung offen.
+- 2026-11-21: Umbau ohne Verhaltensänderung (Audit-Fund 10, ohne neue Version): Profiländerungen von Eltern und
+  Betreibern nutzen gemeinsame Bausteine in `server/app/routes/profile_shared.py` (Bestätigung per Passkey,
+  Passkeys anlegen/umbenennen/auswählen, Prüfung des neuen Authenticator-Codes, JSON-Antworten); Kontoart,
+  Protokoll, Hinweis-Mails und Redirect-Ziele bleiben in den Routen. Getestet: alle Server-Tests grün,
+  `ruff check` sauber, Routenliste (Methode, Pfad, Name) vor/nach identisch.
+- 2026-11-21: Umbau ohne Verhaltensänderung (Audit-Fund 11, ohne neue Version): `server/app/routes/operators.py`
+  (über 1.300 Zeilen) nach Aufgaben aufgeteilt – `operators.py` (Anmeldung, Passkey-Anmeldung, Menü),
+  `operator_families.py`, `operator_codes.py`, `operator_log.py`, `operator_profile.py`, `operator_tickets.py`,
+  `operator_invoices.py`, `operator_branding.py`, `operator_mails.py` (Mail-Vorschau, Newsletter); gemeinsamer
+  Router-Aufbau (Präfix `/admin`, Netzprüfung) und Seiten-Rendering in `operator_base.py`. Rollenprüfung je Route
+  unverändert. Getestet: alle Server-Tests grün, `ruff check` sauber, Routenliste (Methode, Pfad, Name) vor/nach
+  identisch.
