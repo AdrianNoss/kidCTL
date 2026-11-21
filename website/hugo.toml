@@ -1,5 +1,5 @@
-# kidCTL-Projektseite (Hugo, eigenes Theme, kein Node). Domain-Wechsel: baseURL ändern + static/CNAME anlegen.
-baseURL = "https://adriannoss.github.io/kidCTL/"
+# kidCTL-Projektseite (Hugo, eigenes Theme, kein Node). Domain: kidctl.de (Repo-Einstellung Pages → Custom domain).
+baseURL = "https://kidctl.de/"
 title = "KidCTL"
 theme = "kidctl"
 defaultContentLanguage = "en"
@@ -12,6 +12,8 @@ disableKinds = ["taxonomy", "term"]
   # Wiki (Anleitungen aus ../docs, eingebunden per Mount unten); Pfad relativ zur Sprachstartseite
   docs = "docs/"
   license = "AGPL-3.0-or-later"
+  # OpenSSF-Best-Practices-Projekt (Link in der Box „Automatisch geprüft“)
+  bestpractices_id = 16981
 
 [languages]
   [languages.en]

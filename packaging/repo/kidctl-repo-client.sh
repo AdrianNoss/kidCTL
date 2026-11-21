@@ -2,7 +2,7 @@
 # Kinderrechner: kidctl-Repository einrichten (als root).
 #
 #   kidctl-repo-client.sh <REPO-URL> <FINGERABDRUCK> [--apply]
-#   z. B. kidctl-repo-client.sh https://kids.nossco.de/repo 0123…ABCD --apply
+#   z. B. kidctl-repo-client.sh https://app.kidctl.de/repo 0123…ABCD --apply
 #
 # Lädt den öffentlichen Schlüssel und prüft ihn gegen den angegebenen Fingerabdruck (aus
 # kidctl-repo-key.sh).

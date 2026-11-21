@@ -1,6 +1,6 @@
 [Unit]
 Description=kidctl Agent (Bildschirmzeit, Login-Sperre)
-Documentation=https://kids.nossco.de
+Documentation=https://kidctl.de/docs/
 After=dbus.service systemd-logind.service kidctl-noexec.service
 # noexec für /tmp, /var/tmp, /dev/shm (Kinder-Homes hängt der Agent selbst ein)
 Wants=kidctl-noexec.service

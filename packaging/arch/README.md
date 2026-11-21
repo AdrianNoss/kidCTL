@@ -17,7 +17,7 @@ installierten Desktop, meldet die Integritätsprüfung das.
 cd packaging/arch
 makepkg -f                       # im Repo-Checkout
 sudo pacman -U kidctl-0*.pkg.tar.zst kidctl-plasma-*.pkg.tar.zst   # bzw. kidctl-gnome-*
-sudo kidctl enroll https://kids.nossco.de <KOPPLUNGSCODE>
+sudo kidctl enroll https://app.kidctl.de <KOPPLUNGSCODE>
 sudo systemctl enable --now kidctl-agent.service
 ```
 

@@ -63,7 +63,7 @@ Bitte vertraulich melden:
 
 ## Testregeln
 
-- Nur an der **eigenen Installation** bzw. einer Test-VM testen – nie an `kids.nossco.de` oder anderen fremden
+- Nur an der **eigenen Installation** bzw. einer Test-VM testen – nie an `app.kidctl.de` oder anderen fremden
   Instanzen.
 - Nur **eigene Kinderrechner** verwenden.
 - Kein DoS, kein Social Engineering, kein Zugriff auf fremde Daten. Passiert es doch: sofort aufhören, nichts

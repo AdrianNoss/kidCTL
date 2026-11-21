@@ -43,7 +43,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik
-      - traefik.http.routers.kidctl.rule=Host(`kids.nossco.de`)
+      - traefik.http.routers.kidctl.rule=Host(`app.kidctl.de`)
       - traefik.http.routers.kidctl.entrypoints=websecure
       - traefik.http.routers.kidctl.tls=true
       - traefik.http.routers.kidctl.tls.certresolver=letsencrypt

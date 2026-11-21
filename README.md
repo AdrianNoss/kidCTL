@@ -1,5 +1,5 @@
 <div align="center">
-<a href="https://adriannoss.github.io/kidCTL/">
+<a href="https://kidctl.de/">
 <picture>
 <source media="(prefers-color-scheme: dark)" srcset="docs/img/en/banner-dark.webp">
 <img src="docs/img/en/banner-light.webp" alt="KidCTL – parental control that stays at home: self-hosted for Windows and Linux" width="1280">
@@ -12,7 +12,8 @@
 **English** · [Deutsch](README.de.md)
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/AdrianNoss/kidCTL/badge)](https://scorecard.dev/viewer/?uri=github.com/AdrianNoss/kidCTL)  
-<sub>Automatically checked (configuration and repository practices, not a seal); report vulnerabilities as described in [SECURITY.md](SECURITY.md).</sub>
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/16981/badge)](https://www.bestpractices.dev/projects/16981)  
+<sub>Scorecard: automatically checked (configuration and repository practices, not a seal); Best Practices: self-assessment against the OpenSSF criteria; report vulnerabilities as described in [SECURITY.md](SECURITY.md).</sub>
 
 Self-hosted parental control for **Windows 10 (22H2) and Windows 11 (23H2 or later)** (x64, Home and Pro) and
 **Arch Linux, Debian and Ubuntu** (also Mint, Pop!_OS) **with KDE Plasma or GNOME (Wayland)**. A central server
@@ -100,8 +101,8 @@ Basic rule: root, accounts in `wheel`/`sudo`/`admin` and Windows administrators 
 
 Source code: <https://github.com/AdrianNoss/kidCTL>
 
-Guides: **[wiki](https://adriannoss.github.io/kidCTL/docs/)** (source: [`docs/`](docs/installation.md)).
-Step by step in the **[installation guide](https://adriannoss.github.io/kidCTL/docs/installation/)**:
+Guides: **[wiki](https://kidctl.de/docs/)** (source: [`docs/`](docs/installation.md)).
+Step by step in the **[installation guide](https://kidctl.de/docs/installation/)**:
 server, package repository, child computers and web interface. Short version:
 
 ```bash
@@ -120,9 +121,9 @@ sudo systemctl enable --now kidctl-agent.service
 Windows child's computer (as administrator): download `KidCTL-Setup-<version>.exe` from `https://kids.example.org/repo/windows/`
 or from the [GitHub releases](https://github.com/AdrianNoss/kidCTL/releases), run it and enter
 the server address and pairing code. The installer is not code-signed yet, so SmartScreen asks once
-("More info" → "Run anyway"). Details: [Child's computer (Windows)](https://adriannoss.github.io/kidCTL/docs/child-windows/).
+("More info" → "Run anyway"). Details: [Child's computer (Windows)](https://kidctl.de/docs/child-windows/).
 
-Then harden the computers against physical access: **[Hardening](https://adriannoss.github.io/kidCTL/docs/hardening/)**.
+Then harden the computers against physical access: **[Hardening](https://kidctl.de/docs/hardening/)**.
 
 ## Limitations
 
@@ -141,7 +142,7 @@ Then harden the computers against physical access: **[Hardening](https://adriann
   - With app control active, the child can't install anything themselves.
   - Installer without code signature: SmartScreen warning, possible false positives in Defender.
 
-The complete list is in the guides: [Limitations and known gaps](https://adriannoss.github.io/kidCTL/docs/limitations/)
+The complete list is in the guides: [Limitations and known gaps](https://kidctl.de/docs/limitations/)
 (source [`docs/limitations.md`](docs/limitations.md)).
 
 ## Repository layout
@@ -193,7 +194,7 @@ Fixed rules keep this reliable: every change is written into [`spec.md`](spec.md
 date and test note; no feature without automated tests; system-level parts go to test VMs first; CodeQL, OpenSSF
 Scorecard and a monthly web scan keep checking. The AI's working instructions are public in
 [`CLAUDE.md`](CLAUDE.md). kidCTL itself uses no AI and sends nothing to AI services. An independent security audit
-by humans has not taken place yet. More: [How kidCTL is built](https://adriannoss.github.io/kidCTL/how-kidctl-is-built/).
+by humans has not taken place yet. More: [How kidCTL is built](https://kidctl.de/how-kidctl-is-built/).
 
 ## Security
 

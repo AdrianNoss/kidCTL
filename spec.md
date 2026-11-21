@@ -1,7 +1,7 @@
 # Parental Control für Arch Linux – Spezifikation
 
 Status: Anforderungen per /grill-me abgestimmt (2026-10-13). Serverseite für Bildschirmzeit, Chat/Verlängerungen, PWA/Web Push, Policy-Verteilung und Offline-Alarm umgesetzt; Agent (Bildschirmzeit, PAM-Login-Sperre), Tray-App und Paket umgesetzt.
-Projektname: **KidCTL** (Paket, Befehle und Pfade technisch `kidctl`). Deploy unter `kids.nossco.de` (Annahme).
+Projektname: **KidCTL** (Paket, Befehle und Pfade technisch `kidctl`). Deploy unter `app.kidctl.de` (bis 2026-11-21 `kids.nossco.de`).
 Lizenz: AGPL-3.0-or-later (`LICENSE`, seit 2026-11-10; vorher PolyForm Noncommercial 1.0.0) – Open Source
 nach OSI, Voraussetzung für eine kostenlose Code-Signatur über die SignPath Foundation (Antrag 2026-11
 wegen zu geringer Bekanntheit abgelehnt, Installer vorerst unsigniert; `docs/code-signing.md`). Die Weboberfläche verlinkt den Quelltext (`SOURCE_URL`, AGPL §13).
@@ -1010,7 +1010,7 @@ Anti-Ziele: Elternkonto mit einem einzelnen schwachen Faktor erreichbar; klassis
   `dev/openssf-best-practices.md` vor (mit Belegen/Links ins Repo) und listet fehlende Punkte; Adrian legt das
   Projekt auf bestpractices.dev an und trägt ein; Badge danach in README/Homepage.
 - **Monatlicher Scan** `.github/workflows/websecurity.yml`: OWASP ZAP **Baseline** (passiv, keine Angriffe) und
-  MDN HTTP Observatory gegen `kids.nossco.de` (Login-Seite und öffentliche Seiten, ohne Anmeldung); Funde ab
+  MDN HTTP Observatory gegen `app.kidctl.de` (Login-Seite und öffentliche Seiten, ohne Anmeldung); Funde ab
   Stufe „Medium“ bzw. Note schlechter als A → GitHub-Issue (ohne Details zu Lücken öffentlich, nur „Scan-Befund,
   siehe Workflow-Lauf“). Observatory-Note mit Link in der Homepage-Box.
 - **Später (nicht heute):** internet.nl (100 % braucht IPv6 + DNSSEC, Badge nur für exakt die getestete Domain) mit
@@ -1429,9 +1429,9 @@ News-Bereich hat, den Claude Code pflegt.
 - **Zielgruppe jetzt:** Self-Hoster und Technikaffine. Struktur lässt Platz für spätere SaaS-Bereiche
   („Gehostet nutzen“, Preise), die erst nach SaaS-Etappe 4 kommen.
 - **Hosting:** GitHub Pages, Quellcode in `website/` im kidCTL-Repo.
-- **Adresse:** Produkt-Domain (`kidctl.*`), sobald gesichert; bis dahin `https://adriannoss.github.io/kidCTL/`.
-  Wechsel nur über `baseURL` in der Hugo-Konfiguration und eine `CNAME`-Datei. SaaS später unter `app.`/`my.`
-  derselben Domain.
+- **Adresse:** `https://kidctl.de/` (seit 2026-11-21; vorher `https://adriannoss.github.io/kidCTL/`, GitHub leitet
+  weiter). Domain in den Pages-Einstellungen des Repos (Veröffentlichung per Actions, keine `CNAME`-Datei) und
+  `baseURL` in der Hugo-Konfiguration. SaaS später unter `app.`/`my.` derselben Domain.
 - **Sprache:** Deutsch und Englisch mit Umschalter; Englisch Standard (`/`), Deutsch unter `/de/`.
 
 ### Technik und Design
@@ -1604,7 +1604,7 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
 - **Veröffentlichung:** GitHub Security Advisory je bestätigter Lücke (betroffene/behobene Version, CVSS,
   Beschreibung ohne fertige Ausnutzungsanleitung, Dank an den Melder, wenn gewünscht); CVE über GitHub ab
   mittlerer Schwere. News und Release-Text verlinken das Advisory. **Kein Bug-Bounty.**
-- **Testregeln:** nur an eigener Installation bzw. Test-VM, nie an `kids.nossco.de` oder anderen fremden
+- **Testregeln:** nur an eigener Installation bzw. Test-VM, nie an `app.kidctl.de` oder anderen fremden
   Instanzen; nur eigene Kinderrechner; kein DoS, kein Social Engineering, kein Zugriff auf fremde Daten (passiert
   es doch: sofort aufhören, nichts speichern, melden).
 - **Safe Harbor:** Wer in gutem Glauben und nach diesen Regeln forscht und meldet, gegen den wird nicht rechtlich
@@ -1618,7 +1618,7 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
 
 ### `security.txt` (RFC 9116)
 - **Projektseite:** `website/static/.well-known/security.txt`; `Expires` setzt der Pages-Build auf heute + 1 Jahr.
-  Wirksam erst mit eigener Domain (unter `adriannoss.github.io/kidCTL/` nicht im Domain-Root).
+  Wirksam seit der eigenen Domain (`https://kidctl.de/.well-known/security.txt`).
 - **kidCTL-Server:** Route `/.well-known/security.txt` (ohne Login), `Expires` dynamisch (+ 1 Jahr),
   `Contact: mailto:security@nossco.de` und GitHub-Meldeweg, `Policy:` auf `SECURITY.md`, `Preferred-Languages:
   en, de`. Optionale Umgebungsvariable `SECURITY_CONTACT`: zusätzlicher Kontakt des Betreibers (zuerst gelistet).
@@ -1641,7 +1641,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 
 ## Offene Punkte
 
-- Subdomain (Annahme `kids.nossco.de`).
+- Subdomain `app.kidctl.de` (bis 2026-11-21 `kids.nossco.de`, alte Adresse leitet weiter).
 
 ## Changelog
 
@@ -3275,6 +3275,35 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-20: Version 0.44.1 (Agent und Server): Sicherheits- und Robustheitsfixes aus dem Audit vom 2026-11-20
   (Einträge oben), Security-News DE/EN. Funde 10 und 11 (Umbau Profil-Abläufe, Aufteilung `routes/operators.py`)
   bewusst noch offen. Getestet: alle Server-, Agent- und Tray-Tests grün, `ruff check`, Doku-Parität, `hugo --minify`.
+- 2026-11-21: Release 0.44.1 veröffentlicht; neun Security Advisories (GHSA-8rhw-3w88-c4q5, GHSA-9jpp-3jrg-6832,
+  GHSA-9j39-9rgp-64qj, GHSA-mj6x-2wj9-rfx2, GHSA-p67g-62fj-w22c, GHSA-pc77-rv46-jjjp, GHSA-j2pc-62p2-gg7j,
+  GHSA-cxr8-m76j-x35w, GHSA-5cv2-m8xm-h356) veröffentlicht und in der News 0.44.1 verlinkt. Getestet: `hugo --minify
+  --panicOnWarning`.
+- 2026-11-21: Agent-Tests unabhängig vom Testrechner (ohne neue Version): Der Workflow „Tests“ scheiterte auf Ubuntu
+  mit 10 Agent-Tests, weil Sprache (Sitzungsprozesse, AccountsService, `/etc/locale.conf`), Distribution (dpkg/pacman)
+  und PAM-Datei vom Rechner kamen. `tests/conftest.py` setzt jetzt Deutsch, Arch und die Arch-PAM-Datei fest;
+  `integrity.install_hint` liest die Pfade aus Modulkonstanten. Getestet: Agent-Tests lokal (290) und in einer
+  bwrap-Sandbox wie Ubuntu-CI (ohne `locale.conf`-Sprache, dpkg statt pacman, Debian-PAM, `LANG=C`): vorher 10 rot,
+  nachher grün; `ruff check` ok.
+- 2026-11-21: Projektseite unter eigener Domain `https://kidctl.de/` (ohne neue Version): `baseURL`, Verweise in README,
+  Server (Projekt-Link in Mails/Fußzeile, `security.txt`-Policy, Repo-Seite, Fehlermeldung), Release-Skript, Doku-Paritäts-
+  Check und Tests umgestellt; alte `adriannoss.github.io/kidCTL/`-Links leitet GitHub weiter. Getestet: Server-Tests (358),
+  Doku-Parität, `ruff check`, `hugo --minify --panicOnWarning`; DNS (A/AAAA/www) und Zertifikat geprüft.
+- 2026-11-21: Server-Adresse `app.kidctl.de` statt `kids.nossco.de` (ohne neue Version): Traefik-Regel, Standard von
+  `BASE_URL`, Beispiele, Web-Scan und Observatory, Kopplungshinweise, `Documentation=` der systemd-Units (jetzt
+  Projektseite) und Sicherheitsrichtlinie umgestellt. Neu `docker-compose.legacy-host.yml`: alte Adresse bleibt für
+  Agenten (`/api/`), Paketquellen (`/repo/`) und `/.well-known/` erreichbar, der Rest leitet dauerhaft um; Agenten
+  wechseln per `KIDCTL_RELOCATE_TO`. Doku „Adresse wechseln“ in `docs/server*.md` (inkl. Passkeys neu anlegen,
+  Neuanmeldung, PWA/Push, Paketquellen). GPG-Schlüsselkennung bleibt. Getestet: Server-Tests (358), Doku-Parität,
+  `ruff check`, Hugo, YAML der Zusatzdatei; Traefik-Weiterleitung erst beim Deploy prüfbar.
+- 2026-11-21: Version 0.44.2 (Server): weitere Schutz-Header aus dem Web-Scan (Issue #3). Jede Antwort trägt
+  `Permissions-Policy` (Kamera, Mikrofon, Standort, Zahlung, USB, seriell aus; Passkeys bleiben erlaubt),
+  `Referrer-Policy: strict-origin-when-cross-origin`, `Cross-Origin-Opener/Resource-Policy: same-origin` und
+  `Cross-Origin-Embedder-Policy: require-corp`; Seiten außer `/static/` und `/repo/` mit `Cache-Control: no-store`.
+  Die CSP-Warnung `style-src unsafe-inline` ist seit 0.44.0 behoben. Bewusst offen: ZAP-Hinweise ohne Handlungsbedarf
+  (Session-/Login-Erkennung, „Cookie Poisoning“ bei reflektierten Formularwerten, „Non-Storable Content“).
+  Getestet: Server-Tests (359, neuer `test_security_headers`), Agent-Versionstest, Design-Review-Skript in Chromium
+  über alle 36 Seiten (hell/dunkel, mobil/Desktop) ohne Konsolenfehler oder CSP-/Policy-Verstöße.
 - 2026-11-21: Lieferkette: Python-Pakete werden nur noch mit Hash-Prüfung installiert. `server/requirements.in`
   nennt die direkten Abhängigkeiten, `server/requirements.txt` ist daraus mit `pip-compile --generate-hashes`
   erzeugt (alle transitiven Pakete fest); Docker-Image installiert mit `--require-hashes --no-deps`, Basis-Image per

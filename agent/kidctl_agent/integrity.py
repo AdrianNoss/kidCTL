@@ -101,9 +101,13 @@ def check_noexec(kid_users: set[str], mounts=noexec_mounts, libraries: set[str] 
     return out
 
 
+DPKG_STATUS = Path("/var/lib/dpkg/status")
+PACMAN_DB = Path("/var/lib/pacman/local")
+
+
 def install_hint(package: str) -> str:
-    return f"sudo apt install {package}" if Path("/var/lib/dpkg/status").exists() and not Path(
-        "/var/lib/pacman/local").exists() else f"sudo pacman -S {package}"
+    return (f"sudo apt install {package}" if DPKG_STATUS.exists() and not PACMAN_DB.exists()
+            else f"sudo pacman -S {package}")
 
 
 def check_desktop_packages(packages: dict[str, tuple[str, str]] = DESKTOP_PACKAGES) -> list[IntegrityCheck]:

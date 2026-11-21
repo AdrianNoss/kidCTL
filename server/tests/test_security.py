@@ -88,6 +88,20 @@ def test_csp_on_every_response(client):
         assert "script-src 'self'" in csp and "frame-ancestors 'none'" in csp and "unsafe-eval" not in csp
 
 
+def test_security_headers(client):
+    """Web-Scan (Issue #3): Permissions-, Referrer- und Cross-Origin-Policies auf jeder Antwort; Seiten werden nicht
+    zwischengespeichert, versionierte statische Dateien und Paketquellen schon."""
+    for path in ("/login", "/healthz", "/static/app.js", "/gibtsnicht"):
+        h = client.get(path).headers
+        assert "camera=()" in h["permissions-policy"] and "publickey-credentials" not in h["permissions-policy"]
+        assert h["referrer-policy"] == "strict-origin-when-cross-origin"
+        assert h["cross-origin-opener-policy"] == "same-origin"
+        assert h["cross-origin-resource-policy"] == "same-origin"
+        assert h["cross-origin-embedder-policy"] == "require-corp"
+    assert client.get("/login").headers["cache-control"] == "no-store"
+    assert "no-store" not in client.get("/static/app.js").headers.get("cache-control", "")
+
+
 def test_templates_need_no_inline_script():
     """Die CSP verbietet Inline-Skripte: Eintrag hier = kaputter Knopf im Browser."""
     templates = Path(__file__).resolve().parents[1] / "app" / "templates"

@@ -14,7 +14,7 @@ from ..config import settings
 router = APIRouter()
 
 PROJECT_CONTACTS = ("mailto:security@nossco.de", "https://github.com/AdrianNoss/kidCTL/security/advisories/new")
-POLICY = "https://adriannoss.github.io/kidCTL/docs/security/"
+POLICY = "https://kidctl.de/docs/security/"
 
 
 def _contact(value: str) -> str:

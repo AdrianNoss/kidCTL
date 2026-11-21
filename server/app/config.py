@@ -78,7 +78,7 @@ def _database_url(dev: bool) -> str:
         raise RuntimeError("DATABASE_URL fehlt (in .env setzen, z. B. postgresql+psycopg://kidctl:…@db:5432/kidctl).")
     if url.startswith("sqlite"):
         raise RuntimeError("SQLite wird nicht mehr unterstützt. Daten übernehmen: python -m app.cli import-sqlite "
-                           "<pfad/kidctl.db> --apply (Anleitung: https://adriannoss.github.io/kidCTL/docs/postgresql-migration/,"
+                           "<pfad/kidctl.db> --apply (Anleitung: https://kidctl.de/docs/postgresql-migration/,"
                            " Datei docs/postgresql-migration.md).")
     if url.startswith("postgresql://"):
         url = "postgresql+psycopg://" + url.removeprefix("postgresql://")
@@ -173,7 +173,7 @@ def load_settings() -> Settings:
         database_url=_database_url(dev),
         data_dir=data_dir,
         cookie_secure=_bool("COOKIE_SECURE", not dev),
-        base_url=os.environ.get("BASE_URL", "https://kids.nossco.de").rstrip("/"),
+        base_url=os.environ.get("BASE_URL", "https://app.kidctl.de").rstrip("/"),
         timezone=os.environ.get("TZ_HOME", "Europe/Berlin"),
         totp_issuer=os.environ.get("TOTP_ISSUER", ""),   # leer: Name aus dem Branding
         webauthn_rp_id=os.environ.get("WEBAUTHN_RP_ID", "").strip().lower(),

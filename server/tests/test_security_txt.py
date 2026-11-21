@@ -17,7 +17,7 @@ def test_served_without_login(client, monkeypatch):
     f = _fields(r.text)
     assert [v for k, v in f if k == "Contact"] == list(wellknown.PROJECT_CONTACTS)
     assert ("Preferred-Languages", "en, de") in f
-    assert ("Policy", "https://adriannoss.github.io/kidCTL/docs/security/") in f
+    assert ("Policy", "https://kidctl.de/docs/security/") in f
     assert dict(f)["Canonical"].endswith("/.well-known/security.txt")
     expires = datetime.strptime(dict(f)["Expires"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
     assert 364 <= (expires - datetime.now(timezone.utc)).days <= 365

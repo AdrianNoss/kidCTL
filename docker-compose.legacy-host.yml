@@ -1,0 +1,24 @@
+# Zusatz für den Adresswechsel auf demselben Server (Anleitung: docs/server.md, „Adresse wechseln“).
+# Die alte Adresse bleibt für Agenten (/api/) und Paketquellen (/repo/) erreichbar; alles andere leitet dauerhaft auf
+# die neue Adresse um. Einbinden per .env: COMPOSE_FILE=docker-compose.yml:docker-compose.legacy-host.yml
+# OLD_HOST und BASE_URL kommen aus .env. Entfernen, wenn alle Geräte und Paketquellen umgestellt sind.
+services:
+  kidctl:
+    labels:
+      - traefik.http.routers.kidctl-old-api.rule=Host(`${OLD_HOST}`) && (PathPrefix(`/api/`) || PathPrefix(`/repo/`) || PathPrefix(`/.well-known/`))
+      - traefik.http.routers.kidctl-old-api.priority=200
+      - traefik.http.routers.kidctl-old-api.entrypoints=websecure
+      - traefik.http.routers.kidctl-old-api.tls=true
+      - traefik.http.routers.kidctl-old-api.tls.certresolver=letsencrypt
+      - traefik.http.routers.kidctl-old-api.middlewares=secHeaders@file
+      - traefik.http.routers.kidctl-old-api.service=kidctl
+      - traefik.http.routers.kidctl-old.rule=Host(`${OLD_HOST}`)
+      - traefik.http.routers.kidctl-old.priority=100
+      - traefik.http.routers.kidctl-old.entrypoints=websecure
+      - traefik.http.routers.kidctl-old.tls=true
+      - traefik.http.routers.kidctl-old.tls.certresolver=letsencrypt
+      - traefik.http.routers.kidctl-old.middlewares=kidctl-moved
+      - traefik.http.routers.kidctl-old.service=kidctl
+      - traefik.http.middlewares.kidctl-moved.redirectregex.regex=^https?://[^/]+/(.*)
+      - traefik.http.middlewares.kidctl-moved.redirectregex.replacement=${BASE_URL}/$${1}
+      - traefik.http.middlewares.kidctl-moved.redirectregex.permanent=true
