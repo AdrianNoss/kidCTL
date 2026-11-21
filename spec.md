@@ -3275,3 +3275,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-20: Version 0.44.1 (Agent und Server): Sicherheits- und Robustheitsfixes aus dem Audit vom 2026-11-20
   (Einträge oben), Security-News DE/EN. Funde 10 und 11 (Umbau Profil-Abläufe, Aufteilung `routes/operators.py`)
   bewusst noch offen. Getestet: alle Server-, Agent- und Tray-Tests grün, `ruff check`, Doku-Parität, `hugo --minify`.
+- 2026-11-21: Release 0.44.1 veröffentlicht; neun Security Advisories (GHSA-8rhw-3w88-c4q5, GHSA-9jpp-3jrg-6832,
+  GHSA-9j39-9rgp-64qj, GHSA-mj6x-2wj9-rfx2, GHSA-p67g-62fj-w22c, GHSA-pc77-rv46-jjjp, GHSA-j2pc-62p2-gg7j,
+  GHSA-cxr8-m76j-x35w, GHSA-5cv2-m8xm-h356) veröffentlicht und in der News 0.44.1 verlinkt. Getestet: `hugo --minify
+  --panicOnWarning`.
