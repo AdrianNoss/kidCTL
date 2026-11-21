@@ -36,6 +36,7 @@ class _Client:
         self.last_state: t.TrayState | None = None
         self.last_sent = 0.0
         self.tray_icon: bool | None = None
+        self.dead = False   # nach Sende-Timeout abgebrochen: nichts mehr senden
 
 
 class TrayServer:
@@ -68,6 +69,8 @@ class TrayServer:
     # ---------- Senden ----------
 
     async def _send(self, client: _Client, msg: BaseModel) -> None:
+        if client.dead:
+            return
         try:
             client.writer.write(msg.model_dump_json().encode() + b"\n")
             await asyncio.wait_for(client.writer.drain(), SEND_TIMEOUT)
@@ -75,8 +78,11 @@ class TrayServer:
             self.clients.discard(client)
         except asyncio.TimeoutError:
             log.warning("Tray-Client von %s reagiert nicht, Verbindung getrennt", client.user)
+            client.dead = True
             self.clients.discard(client)
-            client.writer.close()
+            # abort statt close: close wartet, bis der Puffer geleert ist – das passiert bei diesem Client nie
+            abort = getattr(getattr(client.writer, "transport", None), "abort", None)
+            abort() if abort else client.writer.close()
 
     async def send_to_user(self, user: str, msg: BaseModel) -> int:
         targets = [c for c in self.clients if c.user == user]

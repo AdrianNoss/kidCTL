@@ -52,12 +52,12 @@ def _ssl_argument(monkeypatch, device):
         asyncio.run(connection.Connection(device, None)._session())
     except OSError:
         pass
-    return seen["ssl"]
+    return seen.get("ssl", "nicht übergeben")
 
 
 def test_connection_sets_context_only_for_wss(monkeypatch):
     assert _ssl_argument(monkeypatch, {"server_url": "https://k.example", "token": "t"}) == "ctx"
-    assert _ssl_argument(monkeypatch, {"server_url": "http://k.example", "token": "t", "insecure_http": True}) is None
+    assert _ssl_argument(monkeypatch, {"server_url": "http://k.example", "token": "t", "insecure_http": True}) == "nicht übergeben"
 
 
 def test_windows_package_ships_truststore():

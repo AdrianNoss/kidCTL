@@ -240,6 +240,34 @@ def test_push_states_does_not_hang_on_unread_client():
     asyncio.run(scenario())
 
 
+def test_unread_client_is_aborted_not_waited_for():
+    """Ein Client, der nie liest, wird sofort abgebrochen (``close`` würde auf den vollen Puffer warten); weitere
+    Antworten an ihn kosten keine Wartezeit mehr."""
+    import time
+
+    from kidctl_agent import trayserver
+
+    class Transport:
+        aborted = False
+
+        def abort(self):
+            self.aborted = True
+
+    async def scenario():
+        a, _ = make_agent()
+        srv = a.tray
+        writer = _StuckWriter()
+        writer.transport = Transport()
+        stuck = trayserver._Client(ME, writer)
+        srv.clients.add(stuck)
+        await srv._send(stuck, t.TrayError(message="x"))
+        assert writer.transport.aborted
+        start = time.monotonic()
+        await srv._send(stuck, t.TrayError(message="y"))
+        assert time.monotonic() - start < 0.5
+    asyncio.run(scenario())
+
+
 def test_pipe_writer_closes_when_queue_full():
     from kidctl_agent.win import pipeserver as ps
 

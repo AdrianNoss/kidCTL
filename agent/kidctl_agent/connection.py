@@ -32,6 +32,13 @@ def ws_url(server_url: str) -> str:
     return base + p.WS_PATH
 
 
+
+def _tls(url: str) -> dict:
+    """``ssl``-Argument für ``connect``: nur ein eigener Kontext (Windows) bei ``wss://``. Sonst nichts übergeben –
+    websockets wählt bei ``wss://`` selbst den Standardkontext und lehnt ``ssl=None`` dort ab."""
+    ctx = tls.context()
+    return {"ssl": ctx} if ctx is not None and url.startswith("wss://") else {}
+
 class Connection:
     """Ruft ``handler.on_connected(conn)`` und ``handler.on_message(msg)`` auf."""
 
@@ -88,8 +95,7 @@ class Connection:
             await asyncio.sleep(delay * random.uniform(0.8, 1.2))
 
     async def _session(self) -> None:
-        ssl_context = tls.context() if self.url.startswith("wss://") else None
-        async with connect(self.url, ssl=ssl_context, additional_headers={"Authorization": f"Bearer {self.token}"},
+        async with connect(self.url, **_tls(self.url), additional_headers={"Authorization": f"Bearer {self.token}"},
                            open_timeout=15, ping_interval=30, ping_timeout=30,
                            max_size=4 * 1024 * 1024) as ws:
             await ws.send(self._hello())
@@ -121,7 +127,7 @@ class Connection:
     async def _probe(self, url: str) -> bool:
         """Meldet sich das Gerät mit seinem Token beim neuen Server erfolgreich an (``welcome``)?"""
         try:
-            async with connect(url, ssl=tls.context(), additional_headers={"Authorization": f"Bearer {self.token}"},
+            async with connect(url, **_tls(url), additional_headers={"Authorization": f"Bearer {self.token}"},
                                open_timeout=15, max_size=4 * 1024 * 1024) as ws:
                 await ws.send(self._hello())
                 first = p.server_message_adapter.validate_json(await asyncio.wait_for(ws.recv(), 15))

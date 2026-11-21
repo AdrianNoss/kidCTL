@@ -3316,3 +3316,9 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   `kidctl-http` auf dem Entrypoint `web` mit `redirectscheme`); bisher antwortete Traefik dort mit 404, was im
   Web-Scan (Observatory „redirection-missing“, Note B+) auffiel. Getestet: YAML gültig; Wirkung erst
   nach dem Deploy prüfbar (`curl -I http://app.kidctl.de/` → 308 auf https, danach Web-Scan erneut).
+- 2026-11-21: Agent (in 0.45.0): Verbindung zu https-Servern unter Linux repariert – der Agent übergab `ssl=None`, das
+  websockets ab Version 14 bei `wss://` ablehnt (Fehler seit 0.32.4, sichtbar mit `python-websockets` 17.2 auf Arch);
+  jetzt wird `ssl` nur mit eigenem Kontext (Windows) übergeben, auch beim Umzugstest. Außerdem werden Tray-Clients, die
+  nicht lesen, nach dem Sende-Timeout abgebrochen statt geschlossen (`close` wartete auf den nie geleerten Puffer;
+  Befund der VM-Prüfung). Getestet: Agent-Tests (295, neu `test_tls_connect.py` mit echtem `connect` für `wss://`
+  und `ws://`, Abbruch-Test im Tray), echter Verbindungsaufbau gegen `wss://app.kidctl.de`; VM-Nachprüfung offen.
