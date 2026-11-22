@@ -80,6 +80,8 @@ CLAUDE.md
 - **News:** Bei jeder Versionsänderung prüfen: neue Minor-Version (x.Y.0) oder sicherheitsrelevanter Patch →
   im selben Commit eine News unter `website/content/news/` anlegen (DE+EN, für Nutzer formuliert, nicht der
   technische Changelog). Normale Patches: keine News. Meilenstein-News nur auf ausdrücklichen Wunsch.
+- **Release Notes im Server:** Bei jeder Versionsänderung oben in `server/app/release_notes.py` einen Eintrag ergänzen
+  (Version, Datum, 2–4 Stichpunkte DE/EN für Eltern); Eltern sehen ihn nach dem Update auf der Übersicht.
 - **Roadmap:** Wird in `spec.md` ein Feature entschieden, begonnen oder abgeschlossen, `website/data/roadmap.yaml`
   anpassen (Status, ggf. Version). Keine Termine, keine Abrechnungs-/Rechtsdetails.
 - **Feature-Texte und README:** Neue Plattform oder neues bzw. geändertes nutzersichtbares Feature → README.md,

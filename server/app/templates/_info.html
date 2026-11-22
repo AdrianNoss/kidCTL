@@ -1,0 +1,24 @@
+{# Info zur laufenden Version: Eltern-Einstellungen (#info) und Verwaltungsbereich (/admin/info). #}
+{% set info = about_info() %}{% set b = brand() %}
+<section class="card" id="info">
+  <div class="card-head"><h2>{{ _("Info") }}</h2></div>
+  {% if info.newer %}<p class="notice">{{ _("Version {version} ist verfügbar.").format(version=info.newer) }}
+    <a href="{{ info.releases_url }}" rel="noopener">{{ _("Release Notes") }}</a></p>{% endif %}
+  <dl class="facts">
+    {% if b.custom %}<dt>{{ _("Dienst") }}</dt><dd>{{ _("{name} basiert auf KidCTL").format(name=b.name) }}</dd>{% endif %}
+    <dt>{{ _("Version") }}</dt><dd>KidCTL {{ info.version }}</dd>
+    <dt>{{ _("Veröffentlicht") }}</dt><dd>{{ fmt_date(info.release_date) }}</dd>
+    <dt>{{ _("Protokollversion") }}</dt><dd>{{ info.protocol }}</dd>
+    <dt>{{ _("Lizenz") }}</dt><dd><a href="{{ info.license_url }}" rel="noopener">AGPL-3.0</a></dd>
+    <dt>{{ _("Sicherheit") }}</dt><dd><a href="mailto:{{ info.security_email }}">{{ info.security_email }}</a></dd>
+  </dl>
+  <h3>{{ _("Neu in Version {version}").format(version=info.version) }}</h3>
+  <ul>{% for item in info.notes.items %}<li>{{ item }}</li>{% endfor %}</ul>
+  <div class="actions">
+    <a class="btn secondary small" href="{{ info.homepage }}" rel="noopener">{{ _("Projektseite") }}</a>
+    <a class="btn secondary small" href="{{ info.releases_url }}" rel="noopener">{{ _("Release Notes") }}</a>
+    <a class="btn secondary small" href="{{ info.docs_url }}" rel="noopener">{{ _("Dokumentation") }}</a>
+    <a class="btn secondary small" href="{{ info.source_url }}" rel="noopener">{{ _("Quellcode") }}</a>
+  </div>
+  {% if not info.update_check %}<p class="muted"><small>{{ _("Die Prüfung auf neue Versionen ist abgeschaltet (UPDATE_CHECK=0).") }}</small></p>{% endif %}
+</section>

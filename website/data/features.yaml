@@ -129,8 +129,8 @@
   small: true
   title: { de: "Updates", en: "Updates" }
   text:
-    de: "Linux über Pacman bzw. APT aus deinem Repository, Windows aktualisiert sich selbst."
-    en: "Linux via pacman or APT from your repository, Windows updates itself."
+    de: "Linux über Pacman bzw. APT aus deinem Repository, Windows aktualisiert sich selbst. Nach einem Update zeigt die Weboberfläche, was neu ist."
+    en: "Linux via pacman or APT from your repository, Windows updates itself. After an update, the web interface shows what's new."
 - id: export
   icon: download
   small: true

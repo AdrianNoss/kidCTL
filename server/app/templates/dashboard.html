@@ -1,6 +1,21 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="page-head"><h1>{{ _("Übersicht") }}</h1></div>
+{% set notes = unseen_notes(current_parent) %}
+{% if notes %}
+<section class="card release-notes" aria-labelledby="release-notes-title">
+  <h2 id="release-notes-title">{{ _("Neu in Version {version}").format(version=notes[0].version) }}</h2>
+  {% for n in notes %}
+  {% if not loop.first %}<h3>{{ _("Version {version}").format(version=n.version) }}</h3>{% endif %}
+  <ul>{% for item in n.items %}<li>{{ item }}</li>{% endfor %}</ul>
+  {% endfor %}
+  <form method="post" action="/info/seen" class="actions">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <button type="submit">{{ _("Verstanden") }}</button>
+    <a class="btn secondary" href="https://kidctl.de/releases/" rel="noopener">{{ _("Release Notes") }}</a>
+  </form>
+</section>
+{% endif %}
 <h2 class="section-title first">{{ _("Kinder") }}</h2>
 {% if children %}
 <div class="kids">

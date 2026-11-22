@@ -38,7 +38,8 @@ KidCTL does not transfer any information to networked systems other than the Kid
 person installing it specifies (the parents' own, self-hosted server). The agent on the child's
 computer sends usage times, blocked actions, the list of installed programs, local user names and
 chat messages to that server and fetches rules and updates from it. There is no telemetry and no
-connection to the KidCTL developers or other third parties. The web filter's block lists are downloaded
+connection to the KidCTL developers or other third parties. The only exception: once a day, the server asks
+`https://kidctl.de/version.json` for the latest version, without identifiers (turn off with `UPDATE_CHECK=0`). The web filter's block lists are downloaded
 by the server from the list providers selected by the parents.
 
 Because KidCTL is parental-control software, it is meant to be installed by a parent or administrator

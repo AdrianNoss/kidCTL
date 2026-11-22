@@ -3534,3 +3534,45 @@ msgstr "e.g. iPhone or laptop"
 
 msgid "zuletzt benutzt {date}"
 msgstr "last used {date}"
+
+msgid "Info"
+msgstr "About"
+
+msgid "Lizenz"
+msgstr "License"
+
+msgid "Sicherheit"
+msgstr "Security"
+
+msgid "Protokollversion"
+msgstr "Protocol version"
+
+msgid "Dokumentation"
+msgstr "Documentation"
+
+msgid "Projektseite"
+msgstr "Project website"
+
+msgid "Release Notes"
+msgstr "Release notes"
+
+msgid "Verstanden"
+msgstr "Got it"
+
+msgid "Dienst"
+msgstr "Service"
+
+msgid "{name} basiert auf KidCTL"
+msgstr "{name} is based on KidCTL"
+
+msgid "Neu in Version {version}"
+msgstr "New in version {version}"
+
+msgid "Version {version}"
+msgstr "Version {version}"
+
+msgid "Version {version} ist verfügbar."
+msgstr "Version {version} is available."
+
+msgid "Die Prüfung auf neue Versionen ist abgeschaltet (UPDATE_CHECK=0)."
+msgstr "Checking for new versions is turned off (UPDATE_CHECK=0)."

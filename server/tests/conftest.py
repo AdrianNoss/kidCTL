@@ -51,6 +51,7 @@ os.environ.update({
     "KIDCTL_DATA_DIR": _tmp,
     "BASE_URL": "http://testserver",
     "COOKIE_SECURE": "0",
+    "UPDATE_CHECK": "0",      # kein Abruf von kidctl.de in Tests
     "TRUSTED_PROXIES": "*",   # TestClient meldet sich als „testclient“; Tests setzen X-Forwarded-For selbst
 })
 

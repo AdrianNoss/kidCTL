@@ -98,6 +98,7 @@ def admin_nav(operator) -> list[tuple[str, str, str, bool]]:
         items.append(("/admin/log", _("Protokoll"), "log", False))
     else:
         items.append(("/admin/log", _("Protokoll"), "log", True))
+    items.append(("/admin/info", _("Info"), "info", False))
     # Lange Wörter in der schmalen Leiste mit weichem Trennstrich umbrechen (Browser trennen Deutsch nicht immer)
     soft = {"Einladungscodes": "Einladungs\u00adcodes", "Erscheinungsbild": "Erscheinungs\u00adbild"}
     return [(href, soft.get(label, label), ic, mobile) for href, label, ic, mobile in items]
@@ -114,6 +115,9 @@ templates.env.globals["admin_nav"] = admin_nav
 templates.env.globals["brand"] = branding.current          # Whitelabel: Name, Logo, Icon (kurz zwischengespeichert)
 templates.env.filters["brand"] = branding.apply            # „KidCTL“ in Texten an Familien → eigener Name
 templates.env.globals["SOURCE_URL"] = settings.source_url
+from . import about  # noqa: E402
+templates.env.globals["about_info"] = about.info              # Info-Abschnitt: Version, Links, neuere Version
+templates.env.globals["unseen_notes"] = about.unseen_notes    # Hinweis „Neu in Version …“ auf der Übersicht
 templates.env.globals["REGISTRATION"] = settings.registration   # open | invite | closed
 templates.env.globals["SAAS"] = settings.saas            # Betriebsart: viele Familien, Anmeldung nur per E-Mail
 

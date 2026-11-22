@@ -8,8 +8,8 @@ import pytest
 from test_admin_roles import _login, _operator, saas  # noqa: F401 (Fixture)
 
 ADMIN = ["/admin", "/admin/tickets", "/admin/invoices", "/admin/codes", "/admin/newsletter", "/admin/mail-preview",
-         "/admin/branding", "/admin/log"]
-SUPPORT = ["/admin", "/admin/tickets", "/admin/log"]
+         "/admin/branding", "/admin/log", "/admin/info"]
+SUPPORT = ["/admin", "/admin/tickets", "/admin/log", "/admin/info"]
 
 
 def _nav(html):
@@ -19,7 +19,7 @@ def _nav(html):
 
 @pytest.mark.parametrize("role,expected,mobile", [
     ("admin", ADMIN, ["/admin", "/admin/tickets", "/admin/invoices"]),
-    ("support", SUPPORT, SUPPORT),
+    ("support", SUPPORT, ["/admin", "/admin/tickets", "/admin/log"]),
 ])
 def test_nav_per_role(client, saas, role, expected, mobile):  # noqa: F811
     _login(client, _operator(role))

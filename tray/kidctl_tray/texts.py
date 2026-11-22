@@ -148,3 +148,25 @@ def first_notice() -> str:
         _("Das KidCTL-Symbol in der Taskleiste zeigt dir jederzeit deine Restzeit. Dort kannst du deinen Eltern auch "
           "schreiben und mehr Zeit anfragen."),
     ])
+
+
+HOMEPAGE = "https://kidctl.de/"
+SOURCE_URL = "https://github.com/AdrianNoss/kidCTL"
+LICENSE_URL = "https://www.gnu.org/licenses/agpl-3.0.html"
+
+
+def version() -> str:
+    """Installierte KidCTL-Version: Agent und Tray kommen aus demselben Paket, maßgeblich ist der Agent."""
+    try:
+        from kidctl_agent import __version__
+    except ImportError:   # nur Tray installiert (Entwicklung)
+        from . import __version__
+    return __version__
+
+
+def about_html() -> str:
+    """Inhalt des Info-Fensters (Linux und Windows gleich): Version und Links, kein Sicherheitskontakt für Kinder."""
+    links = " · ".join(f'<a href="{url}">{label}</a>' for url, label in (
+        (HOMEPAGE, _("Projektseite")), (SOURCE_URL, _("Quellcode")), (LICENSE_URL, _("Lizenz: AGPL-3.0"))))
+    return (f"<p>{_('Version {version}').format(version=version())}</p>"
+            f"<p>{_('KidCTL ist freie Software zur Begleitung der Bildschirmzeit.')}</p><p>{links}</p>")

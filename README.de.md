@@ -60,6 +60,8 @@ gilt die Sprache der Desktop-Sitzung.
   und ein Verwaltungsbereich für den Betreiber (Rollen, Protokoll, Suche).
 - **Eigenes Erscheinungsbild:** Name, Logo und App-Icon für Weboberfläche, App und Mails, mit „powered by KidCTL“.
   Alle Mails im selben Layout (hell/dunkel, mit Textfassung), Anbieter-Angaben und Impressum in der Fußzeile.
+- **Info und Neuigkeiten:** Versionsanzeige mit Links in WebUI und Tray-App; nach einem Server-Update sehen Eltern
+  einmalig, was neu ist; Hinweis, wenn eine neuere Version erschienen ist.
 - **Newsletter:** Neuigkeiten an alle Familien, die zugestimmt haben – auf Deutsch und Englisch, mit Markdown
   formatiert, mit Vorschau und Abmeldelink.
 - **Sicherheit**:
@@ -210,7 +212,8 @@ des Installers und verlinkt den Bau-Lauf. Ablauf und Verantwortliche: [Code-Sign
 ## Datenschutz
 
 KidCTL spricht nur mit dem selbst betriebenen KidCTL-Server – keine Telemetrie, keine Verbindung zu den
-Entwicklern oder Dritten. Siehe [Datenschutzhinweis](docs/code-signing.de.md#datenschutz).
+Entwicklern oder Dritten. Einzige Ausnahme ist die tägliche Versionsabfrage des Servers bei kidctl.de, ohne
+Kennungen und abschaltbar (`UPDATE_CHECK=0`). Siehe [Datenschutzhinweis](docs/code-signing.de.md#datenschutz).
 
 ## Lizenz
 

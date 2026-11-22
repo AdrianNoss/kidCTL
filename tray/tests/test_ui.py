@@ -224,3 +224,20 @@ def test_icon_change_and_single_instance(qapp, tmp_path, monkeypatch):
     monkeypatch.setattr(app_mod.QMessageBox, "information", lambda *a: shown.append(a[-1]))
     tray.info("Test")
     assert shown == ["Test"]
+
+
+def test_about_dialog(qapp, monkeypatch):
+    """Menüpunkt „Info“: Version des Pakets und Links, kein Sicherheitskontakt."""
+    import re
+    from pathlib import Path
+    from kidctl_tray import texts
+    from kidctl_tray.ui import AboutDialog
+    init = (Path(__file__).resolve().parents[2] / "agent" / "kidctl_agent" / "__init__.py").read_text()
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "agent"))
+    expected = re.search(r'__version__ = "([^"]+)"', init).group(1)
+    assert texts.version() == expected
+    dlg = AboutDialog()
+    body = dlg.body.text()
+    assert expected in body and "https://kidctl.de/" in body and "AGPL-3.0" in body and "security@" not in body
+    assert dlg.body.openExternalLinks()
+    dlg.close()
