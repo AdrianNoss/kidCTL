@@ -377,3 +377,17 @@ def test_steam_helper_is_reported_as_steam(state):
         assert fp.killed == [10]
         assert [(e.key, e.name) for e in w.pending] == [("exe:" + STEAM_DIR + r"\steam.exe", "Steam")]
     asyncio.run(main())
+
+
+def test_windowsapps_without_identity():
+    """Echter Fall (Minecraft, 2026-11-22): gamingservicesui.exe läuft ohne App-Identität aus WindowsApps (Pfad mit
+    Version) – gehört zum Paket Gaming Services (Basis), keine Einzelfreigabe je Version."""
+    gs = r"C:\Program Files\WindowsApps\Microsoft.GamingServices_39.118.30001.0_x64__8wekyb3d8bbwe\GamingServicesUI\gamingservicesui.exe"
+    assert classify(proc(gs), allowed()) is None
+    assert classify(proc(gs.replace("39.118.30001.0", "40.1.1.0")), allowed()) is None
+    # andere Pakete ohne Identität: wie Store-Apps (freigegeben bzw. Eintrag -> Eltern)
+    calc = r"C:\Program Files\WindowsApps\Microsoft.WindowsCalculator_11.2_x64__8wekyb3d8bbwe\helper.exe"
+    v = classify(proc(calc), allowed())
+    assert v.key == "appx:microsoft.windowscalculator_8wekyb3d8bbwe"
+    assert classify(proc(calc), allowed("appx:Microsoft.WindowsCalculator_8wekyb3d8bbwe")) is None
+    assert classify(proc(r"C:\Program Files\Other\x.exe"), allowed()).key.startswith("exe:")

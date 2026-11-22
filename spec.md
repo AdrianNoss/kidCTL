@@ -286,7 +286,9 @@ Abweichungen stehen hier und unter „Restlücken“.
   - Epic Games: Manifeste `ProgramData\Epic\EpicGamesLauncher\Data\Manifests\*.item` (`InstallLocation`,
     `AppName`, `DisplayName`) -> `game:epic:<AppName>`.
   - Store-/Xbox-Spiele: Katalog (Kategorie „Spiele“ bei `MicrosoftGame.config`). Launcher (Steam, Xbox-App, Game Bar
-    …) zählen nicht als Spiel; die Game Bar (startet mit jedem Spiel) gehört zur Basis.
+    …) zählen nicht als Spiel; die Game Bar (startet mit jedem Spiel) und die Gaming Services (`Microsoft.GamingServices`,
+    von Store-Spielen wie Minecraft gebraucht) gehören zur Basis. Programme unter `WindowsApps` ohne App-Identität
+    werden ihrem Paket zugeordnet (Ordnername -> Package Family Name) und wie Store-Apps geprüft.
   - **Launcher-Regel** (`win/games.LAUNCHERS`: Steam, Epic, Battle.net, EA App, Ubisoft Connect, GOG Galaxy, Riot):
     Ist der Launcher freigegeben, sind von ihm gestartete Prozesse erlaubt; bei Steam und Epic zusätzlich ihre
     Spieleordner – auch wenn die Dateien dem Kind gehören (Steam lädt unter dem Konto des Kindes).
@@ -3431,4 +3433,10 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   `game:ubisoft:<id>`) und gibt ihre Ordner mit Ubisoft Connect frei. Format aus Registry-Auszug und Prozessliste von
   Adrians Rechner (Testdaten anonymisiert in `win_launchers/registry.json`). EA, GOG, Battle.net erkennen Spiele
   bereits aus Registry/Datei, auch unterhalb des Launcher-Ordners (Index vor Katalog). Agent-Unittests 296 grün; nicht
+  live geprüft. Für 0.45.1.
+- 2026-11-22: Fehler (Windows): Für Minecraft musste `gamingservicesui.exe` aus
+  `WindowsApps\Microsoft.GamingServices_<Version>_x64__8wekyb3d8bbwe` einzeln freigegeben werden (Freigabe hing an der
+  Versionsnummer). Ursache: Der Prozess läuft ohne App-Identität, wurde also als normale `.exe` außerhalb jeder
+  Freigabe gesperrt. Jetzt: Programme unter `WindowsApps` ohne Identität zählen zu ihrem Paket; Gaming Services sind
+  Basis wie die Game Bar. Ältere Einzelfreigaben gelten weiter. Unittest mit dem echten Pfad (Agent 297 grün); nicht
   live geprüft. Für 0.45.1.

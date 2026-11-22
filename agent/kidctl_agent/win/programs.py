@@ -122,17 +122,19 @@ def classify(proc, allowed: WinAllowed, owner=lambda path: "", parent_exe=lambda
         return None
     if any(_under(exe, d) for d in BASE_DIRS):
         return None
-    if proc.pfn:
-        pfn = proc.pfn.lower()
-        key = "appx:" + proc.pfn
+    if not proc.pfn and "exe:" + exe in allowed.keys:
+        return None   # früher einzeln freigegeben (vor der Paket-Zuordnung)
+    if pkg := proc.pfn or package_of(exe):
+        pfn = pkg.lower()
+        key = "appx:" + pkg
         if "appx:" + pfn in allowed.keys or pfn.startswith(BASE_PFN_PREFIXES):
             return None
         if _under(exe, WINDIR + r"\system32") or _under(exe, WINDIR + r"\syswow64"):
             return None   # Windows-Helfer mit App-Identität (Hintergrundaufgabe, z. B. backgroundTaskHost)
         if pfn in allowed.catalog_pfns:
-            return Verdict(key, proc.pfn.split("_")[0])
+            return Verdict(key, pkg.split("_")[0])
         if pfn not in allowed.known_pfns:
-            return Verdict(key, proc.pfn.split("_")[0], unknown_package=True)
+            return Verdict(key, pkg.split("_")[0], unknown_package=True)
         return None   # Paket ohne Startmenü-Eintrag: Hintergrunddienst
     key = "exe:" + proc.exe
     if "exe:" + exe in allowed.keys:
@@ -173,6 +175,19 @@ def classify(proc, allowed: WinAllowed, owner=lambda path: "", parent_exe=lambda
     if any(_under(exe, d) for d in allowed.dirs):
         return None
     return Verdict(key, name)
+
+
+_WINDOWSAPPS = PROGRAM_FILES + "\\windowsapps\\"
+
+
+def package_of(exe: str) -> str:
+    """Paket eines Programms unter ``WindowsApps`` ohne App-Identität (z. B. ``gamingservicesui.exe``):
+    ``Microsoft.GamingServices_39.118.30001.0_x64__8wekyb3d8bbwe`` -> ``microsoft.gamingservices_8wekyb3d8bbwe``.
+    Der Ordner ist für Kinder nicht beschreibbar (TrustedInstaller)."""
+    if not exe.startswith(_WINDOWSAPPS):
+        return ""
+    parts = exe[len(_WINDOWSAPPS):].split("\\", 1)[0].split("_")
+    return f"{parts[0]}_{parts[-1]}" if len(parts) == 5 and parts[0] and parts[-1] else ""
 
 
 def _args(cmdline: str) -> str:
