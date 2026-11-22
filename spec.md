@@ -3406,7 +3406,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   je Programm/Kategorie, „zählt nicht“-Programme, Zeitkonto; 0.48 Aufgaben → Zeit verdienen, Weich-Modus, Alarmkanäle
   ntfy/Webhook/Matrix, Cinnamon/COSMIC. Plan in `dev/planung/PLAN-2026-11.md`, Roadmap der Website ergänzt. Keine
   Umsetzung; geprüft: Doku-Parität und Hugo-Build.
-- 2026-11-22: Version 0.45.1 – Agent (Linux/Windows): Bei neuer Zuordnung eines Geräts bzw. Users zu einem Kind kam
+- 2026-11-22: Agent (Linux/Windows, in 0.45.0): Bei neuer Zuordnung eines Geräts bzw. Users zu einem Kind kam
   der ganze Chatverlauf als Benachrichtigungsflut (nur die erste Nachricht des Abgleichs war still, weil „hat Verlauf“
   je Nachricht geprüft wurde). Jetzt merkt sich der Agent je Kind Zeitpunkt und Art der letzten `chat_sync`-Anfrage;
   ältere Nachrichten sind Verlauf (erster Abgleich still, sonst eine Sammelmeldung nach 2 s Ruhe). Die erste
@@ -3415,4 +3415,4 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   offenen Anfrage nach (`ChatStore.sync_after`), die Entscheidung kommt mit normaler Benachrichtigung. Getestet: Agent-Unittests
   (`test_chat_notify.py`: erster Abgleich still, danach live; erste Live-Nachricht ohne Verlauf; Offline-Sammelmeldung;
   einzelne nachgeholte Nachricht; offline gefallene Entscheidung), Agent-Testsuite grün; e2e-Tests mangels `httpx` lokal nicht gelaufen, nicht in der
-  VM geprüft.
+  VM geprüft. News 0.45 (DE/EN) ergänzt.
