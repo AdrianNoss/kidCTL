@@ -507,6 +507,16 @@ async def device_revoke(device_id: int, db: Session = Depends(get_db)):
     return _redirect(f"/devices/{device_id}")
 
 
+@router.post("/devices/{device_id}/delete", dependencies=[Depends(csrf_protect)])
+async def device_delete(device_id: int, db: Session = Depends(get_db)):
+    """Gerät samt Zuordnungen entfernen; Nutzungsstatistik je Kind bleibt (device_id → NULL)."""
+    device = _get_or_404(db, Device, device_id)
+    db.delete(device)
+    db.commit()
+    await manager.disconnect(device_id, CLOSE_REVOKED, "Gerät entfernt")
+    return _redirect("/devices")
+
+
 # ---------- Eltern-Accounts ----------
 
 @router.get("/parents")

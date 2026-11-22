@@ -82,4 +82,14 @@
   </form>
 </section>
 {% endif %}
+
+<section class="card">
+  <h2>{{ _("Gerät entfernen") }}</h2>
+  <p class="muted">{{ _("Entfernt das Gerät aus der Übersicht. Die Nutzungsstatistik der Kinder bleibt erhalten. Soll der Rechner wieder überwacht werden, muss er neu gekoppelt werden; sonst den Agenten auf dem Rechner deinstallieren.") }}</p>
+  <form method="post" action="/devices/{{ device.id }}/delete"
+        data-confirm="{{ _('Gerät endgültig entfernen? Es muss danach neu gekoppelt werden.') }}">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <button type="submit" class="danger">{{ _("Gerät entfernen") }}</button>
+  </form>
+</section>
 {% endblock %}

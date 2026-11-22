@@ -70,6 +70,7 @@ def test_foreign_actions_change_nothing(client, parent, other):
              (f"/children/{c}/exceptions/{other['exception']}/delete", {}),
              (f"/children/{c}/chat", {"body": "hallo"}),
              (f"/devices/{d}/mapping", {}), (f"/devices/{d}/alert", {"hours": "5"}), (f"/devices/{d}/revoke", {}),
+             (f"/devices/{d}/delete", {}),
              (f"/parents/{other['parent']}/delete", {}), (f"/parents/{other['parent']}/totp-reset", {})]
     for path, data in posts:
         r = client.post(path, data={"csrf_token": tok, **data})

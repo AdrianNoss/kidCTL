@@ -1078,6 +1078,10 @@ compliance), web.dev (Related Origin Requests), py_webauthn (PyPI/GitHub duo-lab
 - Agent meldet lokale Benutzer (UID ≥ 1000) und installierte Apps.
 - Zuordnung Linux-User → Kind im WebUI.
 - Geräte-Token im WebUI widerrufbar.
+- „Gerät entfernen“ in der Gerätedetailansicht (mit Bestätigung, auch für widerrufene Geräte): trennt eine laufende
+  Verbindung, löscht Gerät, User-Zuordnungen und gemeldete Apps; das alte Token ist danach ungültig, der Rechner
+  muss neu gekoppelt werden (sonst Agent deinstallieren). Nutzungsstatistik je Kind (`usage_record`, `app_usage`)
+  bleibt erhalten (`device_id` → NULL); Sperrprotokoll, Spielsitzungen und Chat behalten ihre Einträge ohne Gerät.
 
 ## Auswertung & Alarme
 
@@ -3401,3 +3405,10 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   je Programm/Kategorie, „zählt nicht“-Programme, Zeitkonto; 0.48 Aufgaben → Zeit verdienen, Weich-Modus, Alarmkanäle
   ntfy/Webhook/Matrix, Cinnamon/COSMIC. Plan in `dev/planung/PLAN-2026-11.md`, Roadmap der Website ergänzt. Keine
   Umsetzung; geprüft: Doku-Parität und Hugo-Build.
+- 2026-11-22: Geräte entfernen (`POST /devices/{id}/delete`, Knopf „Gerät entfernen“ in der Gerätedetailansicht).
+  Migration 0024: `usage_record.device_id`/`app_usage.device_id` nullable mit `ON DELETE SET NULL`, damit die
+  Statistik je Kind bleibt; „Nutzung auf anderen Geräten“ zählt Zeilen ohne Gerät mit. Doku zur Deinstallation
+  (DE/EN) nennt nun „Gerät entfernen“. Geprüft: Tests (Löschen inkl. CSRF, fremde Familie → 404, verbundenes Gerät
+  wird mit `CLOSE_REVOKED` getrennt, altes Token abgewiesen, Statistik bleibt; Kind löschen mit zugeordnetem Gerät
+  → Policy-Push ohne Zuordnung), komplette Suite gegen PostgreSQL, `alembic check`, Down-/Upgrade, Upgrade einer
+  0023-Datenbank mit Daten, Browser-Smoke-Test im Dev-Server.

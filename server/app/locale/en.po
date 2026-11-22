@@ -495,6 +495,15 @@ msgstr "Revoke device token? The device will have to be paired again."
 msgid "Token widerrufen"
 msgstr "Revoke token"
 
+msgid "Gerät entfernen"
+msgstr "Remove device"
+
+msgid "Entfernt das Gerät aus der Übersicht. Die Nutzungsstatistik der Kinder bleibt erhalten. Soll der Rechner wieder überwacht werden, muss er neu gekoppelt werden; sonst den Agenten auf dem Rechner deinstallieren."
+msgstr "Removes the device from the overview. The children's usage statistics are kept. To monitor the computer again, pair it anew; otherwise uninstall the agent on the computer."
+
+msgid "Gerät endgültig entfernen? Es muss danach neu gekoppelt werden."
+msgstr "Remove the device permanently? It will have to be paired again."
+
 msgid " und "
 msgstr " and "
 

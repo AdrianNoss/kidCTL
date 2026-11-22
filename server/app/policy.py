@@ -138,7 +138,7 @@ def others_seconds(db: Session, device_id: int, child_id: int, day: date, games:
     col = UsageRecord.game_seconds if games else UsageRecord.seconds
     return db.scalar(select(func.coalesce(func.sum(col), 0)).where(
         UsageRecord.child_id == child_id, UsageRecord.day == day,
-        UsageRecord.device_id != device_id)) or 0
+        UsageRecord.device_id.is_distinct_from(device_id))) or 0
 
 
 def usage_update(db: Session, device_id: int, child_id: int, day: date) -> p.UsageUpdate:

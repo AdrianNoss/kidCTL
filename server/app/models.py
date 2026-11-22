@@ -600,7 +600,8 @@ class UsageRecord(FamilyScoped, Base):
     __table_args__ = (UniqueConstraint("device_id", "username", "day"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    device_id: Mapped[int] = mapped_column(ForeignKey("device.id", ondelete="CASCADE"))
+    # NULL = Gerät entfernt; Statistik je Kind bleibt erhalten
+    device_id: Mapped[int | None] = mapped_column(ForeignKey("device.id", ondelete="SET NULL"), nullable=True)
     username: Mapped[str] = mapped_column(Matchable("usage_record.username"))
     day: Mapped[date] = mapped_column(Date, index=True)
     child_id: Mapped[int | None] = mapped_column(
@@ -755,7 +756,8 @@ class AppUsage(FamilyScoped, Base):
     __table_args__ = (UniqueConstraint("device_id", "username", "day", "key"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    device_id: Mapped[int] = mapped_column(ForeignKey("device.id", ondelete="CASCADE"))
+    # NULL = Gerät entfernt; Statistik je Kind bleibt erhalten
+    device_id: Mapped[int | None] = mapped_column(ForeignKey("device.id", ondelete="SET NULL"), nullable=True)
     username: Mapped[str] = mapped_column(Matchable("app_usage.username"))
     day: Mapped[date] = mapped_column(Date, index=True)
     key: Mapped[str] = mapped_column(Matchable("app_usage.key"))

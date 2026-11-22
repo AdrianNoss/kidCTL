@@ -8,7 +8,7 @@ from starlette.websockets import WebSocketDisconnect
 from kidctl_common import protocol as p
 
 from conftest import two_step_login, SessionLocal
-from app.models import Child, Device
+from app.models import AppUsage, Child, Device, DeviceUser, UsageRecord
 
 from conftest import PASSWORD, csrf_from, login, recv
 
@@ -136,6 +136,84 @@ def test_pairing_websocket_mapping_revoke(client, parent):
         with pytest.raises(WebSocketDisconnect) as exc:
             ws.receive_text()
         assert exc.value.code == p.CLOSE_UNAUTHORIZED
+
+
+def _paired_child_device(client):
+    """Kind „Max“ + gekoppeltes Gerät mit Linux-User max → Max; liefert (Token, device_id, child_id)."""
+    tok = csrf_from(client.get("/children").text)
+    client.post("/children", data={"name": "Max", "csrf_token": tok})
+    enrolled = p.EnrollResponse.model_validate(
+        client.post(p.ENROLL_PATH, json={"code": _pair(client), "hostname": "max-pc"}).json())
+    with SessionLocal() as db:
+        child_id = db.scalar(select(Child.id))
+        db.add(DeviceUser(device_id=enrolled.device_id, username="max", uid=1001, child_id=child_id))
+        db.commit()
+    return enrolled.token, enrolled.device_id, child_id
+
+
+def _hello(ws):
+    ws.send_text(p.Hello(protocol_version=p.PROTOCOL_VERSION, agent_version="0.1.0",
+                         hostname="max-pc").model_dump_json())
+    assert isinstance(recv(ws), p.Welcome)
+
+
+def test_device_delete(client, parent):
+    from datetime import date
+    login(client, parent)
+    token, dev_id, child_id = _paired_child_device(client)
+    with SessionLocal() as db:
+        db.add(UsageRecord(device_id=dev_id, username="max", day=date.today(), child_id=child_id, seconds=600))
+        db.add(AppUsage(device_id=dev_id, username="max", day=date.today(), key="exe:/usr/bin/x",
+                        child_id=child_id, seconds=60))
+        db.commit()
+    page = client.get(f"/devices/{dev_id}").text
+    assert f"/devices/{dev_id}/delete" in page and "Gerät entfernen" in page
+    assert client.post(f"/devices/{dev_id}/delete", data={}).status_code == 403  # CSRF
+
+    headers = {"Authorization": f"Bearer {token}"}
+    with client.websocket_connect(p.WS_PATH, headers=headers) as ws:
+        _hello(ws)
+        r = client.post(f"/devices/{dev_id}/delete", data={"csrf_token": csrf_from(page)}, follow_redirects=False)
+        assert r.status_code == 303 and r.headers["location"].endswith("/devices")
+        with pytest.raises(WebSocketDisconnect) as exc:
+            recv(ws)
+        assert exc.value.code == p.CLOSE_REVOKED
+
+    assert "max-pc" not in client.get("/devices").text and "max-pc" not in client.get("/").text
+    with SessionLocal() as db:
+        assert db.get(Device, dev_id) is None
+        assert db.scalar(select(DeviceUser).where(DeviceUser.device_id == dev_id)) is None
+        rec = db.scalar(select(UsageRecord))  # Statistik je Kind bleibt erhalten
+        assert rec.device_id is None and rec.child_id == child_id and rec.seconds == 600
+        assert db.scalar(select(AppUsage)).device_id is None
+    assert client.get(f"/devices/{dev_id}").status_code == 404
+
+    # Altes Token verbindet nicht mehr
+    with client.websocket_connect(p.WS_PATH, headers=headers) as ws:
+        with pytest.raises(WebSocketDisconnect) as exc:
+            ws.receive_text()
+        assert exc.value.code == p.CLOSE_UNAUTHORIZED
+
+
+def test_child_delete_with_mapped_device(client, parent):
+    login(client, parent)
+    token, dev_id, child_id = _paired_child_device(client)
+    with client.websocket_connect(p.WS_PATH, headers={"Authorization": f"Bearer {token}"}) as ws:
+        _hello(ws)
+        tok = csrf_from(client.get("/children").text)
+        r = client.post(f"/children/{child_id}/delete", data={"csrf_token": tok}, follow_redirects=False)
+        assert r.status_code == 303
+        for _ in range(5):  # ggf. erst die Policy vom Verbindungsaufbau, dann die nach dem Löschen
+            pol = recv(ws, keep_policy=True)
+            if isinstance(pol, p.Policy) and not pol.users:
+                break  # Zuordnung aufgehoben: max ist nicht mehr eingeschränkt
+        else:
+            pytest.fail("keine Policy ohne Zuordnung empfangen")
+    assert "Max" not in client.get("/children").text
+    with SessionLocal() as db:
+        assert db.get(Child, child_id) is None
+        du = db.scalar(select(DeviceUser).where(DeviceUser.device_id == dev_id))
+        assert du is not None and du.child_id is None and db.get(Device, dev_id) is not None
 
 
 def test_websocket_unsupported_version(client, parent):
