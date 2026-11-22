@@ -300,7 +300,8 @@ Abweichungen stehen hier und unter „Restlücken“.
   - Tray: letzte Minute Spielzeit als Fenster im Vordergrund mit „Mehr Spielzeit anfragen“ (`TrayState.gaming`).
   - **Neu, für alle Plattformen:** Schalter „zählt als Spiel“ je Kind und App in der Programmliste (Tabelle
     `child_game_app`, `ChildPolicy.game_apps`); Apps der Kategorie „Spiele“ sind fest markiert. Der Agent (Linux
-    und Windows) prüft Spiele je Kind (`AgentCore.is_game`).
+    und Windows) prüft Spiele je Kind (`AgentCore.is_game`). Markierte Apps (auch eigene Programme) zeigt die
+    Programmliste in der Gruppe „Spiele“ (ab 0.45.1; nicht mehr installierte bleiben unter „Nicht mehr installiert“).
 - **Spielerkennung erweitert (entschieden 2026-11-19 per /grill-me):**
   - **Auslöser:** Ein über Steam gestartetes Spiel wurde unter Windows nicht als Spiel erkannt (keine Spielzeit,
     kein Spiele-Limit). Ursache zuerst in der VM nachstellen und beheben (Kandidaten: Index nur beim
@@ -807,7 +808,8 @@ hierher verschoben 2026-11-17.)
     Agenten unter `/run/kidctl/dns`. Whitelist: `local-zone "." always_nxdomain` + freigegebene
     Domains `transparent` (inkl. Subdomains; CNAME-Ziele löst Unbound mit auf). Blacklist:
     Listen/eigene Sperren `always_nxdomain`, eigene Freigaben als Ausnahmen. Rangfolge ohne
-    Doppelte: DoH-Anbieter > SafeSearch > Freigaben > Sperren/Listen.
+    Doppelte: DoH-Anbieter > SafeSearch > Freigaben > Sperren/Listen; SafeSearch entfällt für Namen, die
+    (auch über die Hauptdomain) gesperrt und nicht freigegeben sind (2026-11-22).
   - nftables-Tabelle `inet kidctl_dns`: Port 53 (TCP/UDP) der Kinder-UIDs → Resolver des Kindes,
     Port 853 (TCP/UDP) gesperrt. Admins/nicht zugeordnete User unberührt.
   - `nss-resolve` aus `/etc/nsswitch.conf` entfernt (`kidctl-nsswitch.sh`, Dry-Run/.bak, beim
@@ -3486,3 +3488,43 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Gaming Services, GameInput, Kontaktadressen auf kidctl.de). v0.45.0 war bereits veröffentlicht; Ergänzungen der
   News 0.45 zurückgenommen (Patch ohne Sicherheitsbezug, keine eigene News). Geprüft: Server-Suite gegen PostgreSQL,
   Agent-Tests, Doku-Parität, Hugo-Build.
+- 2026-11-22: Version 0.45.1 (Server): Programmliste und Rechnungsaktionen nachgebessert (Rückmeldung Adrian zu
+  Bildern aus dem echten Betrieb).
+  - Programmliste: Jede App ist eine Kachel, „Spiel“ und „Entfernen“ stehen unter dem Namen statt daneben. Vorher
+    quetschten sie den Namen und lange Pfade eigener Programme auf wenige Buchstaben je Zeile, und angehakte Spiele
+    machten ihre Kachel schmaler als die übrigen.
+  - Als Spiel markierte Apps (auch eigene Programme) stehen in der Gruppe „Spiele“ (`programs.grouped_catalog`).
+  - Knöpfe neben Feldern mit Label darüber (`.row.bottom`, `form.row.inline`) sitzen mittig zum Feld statt an
+    dessen Unterkante (Rechnung: „Als bezahlt markieren“, „Stornieren“, „Erneut senden“).
+  - `dev/design-review.py` legt zusätzlich eigene Programme mit langen Windows-Pfaden an; `dev/design-review.py` und
+    `dev/screenshots.py` nehmen den Container aus `KIDCTL_PG_CONTAINER` (wie die Tests).
+  - Doku `webui*.md`: Kästchen „Spiel“ unter der App, markierte Apps in „Spiele“.
+
+  Getestet:
+  - Server-Tests 361 grün, neu `test_games_listed_under_games` (markierte und eigene Apps unter „Spiele“, nicht mehr
+    installierte bleiben dort, eigene ohne Markierung unter „Eigene Programme“).
+  - `dev/design-review.py --only child-programs` (DE, hell/dunkel, mobil/Desktop): Kacheln mit langen Pfaden lesbar,
+    keine Konsolenfehler, kein waagerechtes Scrollen.
+  - Rechnungsaktionen mit der echten `style.css` in Chromium nachgebaut: Datumsfeld und alle drei Knöpfe auf
+    derselben Mittellinie (gemessen).
+  - Wegen fehlender Kernel-Module (`tun`) nach Kernel-Update lief PostgreSQL in einem temporären Container
+    `kidctl-pg-tmp` im Host-Netz (`KIDCTL_PG_CONTAINER=kidctl-pg-tmp`).
+- 2026-11-22: Version 0.45.2 (Tray Windows): Fenster und Dialoge der Tray-App zeigen in Titel- und Taskleiste das
+  KidCTL-Symbol statt des generischen Windows-Programmsymbols. `winstyle.apply` setzt einmal `app.setWindowIcon`
+  (alle Fenster erben es); Quelle ist `kidctl.ico` der Installation (`{app}\kidctl.ico`), sonst das gezeichnete Logo
+  (wie im Toast). Linux unverändert (Symbol über die Desktop-Datei). Getestet: neuer Test (Rückfall-Logo, ICO der
+  Installation, Dialog erbt das Symbol), Tray-Tests grün; in der Windows-11-VM (Code per `winsync.sh`) als Kind
+  angemeldet: Chatfenster und „Verlängerung anfordern“ zeigen das Symbol in Titelleiste und Taskleiste, hell und
+  dunkel; `dev/winshots.py` (DE, hell/dunkel) ohne Auffälligkeiten.
+- 2026-11-22: Fehler (Webfilter, Linux und Windows): Eine eigene Sperre bzw. Sperrliste griff nicht für Namen,
+  die SafeSearch per CNAME umschreibt (z. B. `youtube.com`/`www.youtube.com` gesperrt, YouTube trotzdem
+  erreichbar). SafeSearch-Zonen nur noch für nicht gesperrte bzw. freigegebene Namen; Sperrzonen in fester
+  Reihenfolge. Getestet: Agent-Unittests (neu: Sperre schlägt SafeSearch, Freigabe hebt sie auf), 305 grün;
+  Nachstellung in der VM steht noch aus.
+- 2026-11-22: Version 0.45.2 (Agent, Server, Tray): fasst drei bisher getrennte Branches zusammen – Design-Korrekturen
+  (Programmliste als Kacheln, Spiele unter „Spiele“, Rechnungsknöpfe; zuvor als „0.45.1“ geführt, nicht
+  veröffentlicht), KidCTL-Symbol in der Windows-Tray-App und die korrigierte Rangfolge der Webfilter-Zonen
+  (Sicherheitsfix). Security-News DE/EN, Advisory-Entwurf. Getestet: siehe Einträge oben; zusammen Server-, Agent- und
+  Tray-Tests, `ruff check`, Doku-Parität, Hugo. VM-Prüfung des Webfilter-Fixes noch offen.
+- 2026-11-22: Projektseite: Der Pages-Build beim Release wartet bis zu 2 min, bis der neue Release in der GitHub-Liste
+  steht (bei 0.45.1 und 0.45.2 fehlte er sonst auf der Releases-Seite). Getestet: YAML geprüft, manueller Neubau.

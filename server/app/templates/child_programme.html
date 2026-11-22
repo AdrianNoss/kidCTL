@@ -43,12 +43,14 @@
               <input type="checkbox" name="app" value="{{ app.key }}"{% if app.allowed %} checked{% endif %}>
               <span>{{ app.name }}<small>{{ app.key[4:] if app.key.startswith("exe:") else app.key }}</small></span>
             </label>
-            <label class="game-flag" title="{{ _('Zählt als Spiel (Spiele-Limit, Spielzeit)') }}">
-              <input type="checkbox" name="game" value="{{ app.key }}"{% if app.game %} checked{% endif %}> {{ _("Spiel") }}
-            </label>
-            <button type="submit" class="ghost small" formaction="/children/{{ child.id }}/programs/custom/{{ app.custom_id }}/delete"
-                    formnovalidate title="{{ _('Eintrag entfernen') }}" aria-label="{{ _('{name} entfernen').format(name=app.name) }}"
-                    data-confirm="{{ _('Eigenes Programm „{name}“ entfernen? Die Freigabe wird entzogen.').format(name=app.name) }}">{{ _("Entfernen") }}</button>
+            <div class="app-item-extra">
+              <label class="game-flag" title="{{ _('Zählt als Spiel (Spiele-Limit, Spielzeit)') }}">
+                <input type="checkbox" name="game" value="{{ app.key }}"{% if app.game %} checked{% endif %}> {{ _("Spiel") }}
+              </label>
+              <button type="submit" class="ghost small" formaction="/children/{{ child.id }}/programs/custom/{{ app.custom_id }}/delete"
+                      formnovalidate title="{{ _('Eintrag entfernen') }}" aria-label="{{ _('{name} entfernen').format(name=app.name) }}"
+                      data-confirm="{{ _('Eigenes Programm „{name}“ entfernen? Die Freigabe wird entzogen.').format(name=app.name) }}">{{ _("Entfernen") }}</button>
+            </div>
           </div>
           {% else %}
           <div class="app-item game-row" data-name="{{ app.name | lower }}">
@@ -56,9 +58,11 @@
               <input type="checkbox" name="app" value="{{ app.key }}"{% if app.allowed %} checked{% endif %}>
               <span>{{ app.name }}{% if app.missing %}<small>{{ _("nicht mehr installiert") }}</small>{% elif app.note %}<small>{{ app.note }}</small>{% elif app.devices > 1 %}<small>{{ _("{n} Geräte").format(n=app.devices) }}</small>{% endif %}</span>
             </label>
-            <label class="game-flag" title="{{ _('Kategorie „Spiele“ – zählt immer als Spiel') if app.game_auto else _('Zählt als Spiel (Spiele-Limit, Spielzeit)') }}">
-              <input type="checkbox" name="game" value="{{ app.key }}"{% if app.game %} checked{% endif %}{% if app.game_auto %} disabled{% endif %}> {{ _("Spiel") }}
-            </label>
+            <div class="app-item-extra">
+              <label class="game-flag" title="{{ _('Kategorie „Spiele“ – zählt immer als Spiel') if app.game_auto else _('Zählt als Spiel (Spiele-Limit, Spielzeit)') }}">
+                <input type="checkbox" name="game" value="{{ app.key }}"{% if app.game %} checked{% endif %}{% if app.game_auto %} disabled{% endif %}> {{ _("Spiel") }}
+              </label>
+            </div>
           </div>
           {% endif %}
           {% endfor %}

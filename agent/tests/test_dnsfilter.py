@@ -36,10 +36,26 @@ def test_blacklist_precedence():
                       lists=[p.BlocklistRef(id="l", sha256="x")], safesearch=True)
     z = zones(web, {"l": ["ads.example.com", "www.bing.com", "tiktok.com", "ausnahme.de"]})
     assert z["dns.google"] == "always_nxdomain"   # DoH gewinnt immer
-    assert z["www.bing.com"] == "redirect"        # SafeSearch vor Sperrliste
+    assert z["www.bing.com"] == "always_nxdomain" # Sperrliste vor SafeSearch (sonst Hintertür per CNAME)
+    assert z["www.google.com"] == "redirect"
     assert z["ausnahme.de"] == "transparent"      # Ausnahme vor eigener Sperre/Liste
     assert z["tiktok.com"] == "always_nxdomain" and z["ads.example.com"] == "always_nxdomain"
     assert "local-zone: \".\"" not in unbound_conf(5301, web, "/x.zones")
+
+
+def test_blacklist_deny_beats_safesearch():
+    # Eigene Sperre einer Hauptdomain darf nicht von der spezifischeren SafeSearch-Zone überstimmt werden
+    for deny in (["youtube.com"], ["www.youtube.com", "m.youtube.com"]):
+        web = p.WebFilter(mode="blacklist", deny=deny, safesearch=True)
+        z = zones(web)
+        lines = build_zones(web, {})
+        assert z.get("www.youtube.com", "always_nxdomain") == "always_nxdomain"
+        assert z.get("m.youtube.com", "always_nxdomain") == "always_nxdomain"
+        assert not any("www.youtube.com. CNAME" in x for x in lines)
+        assert z["www.google.com"] == "redirect"   # SafeSearch für den Rest bleibt
+    # Freigabe hebt die Sperre auf -> SafeSearch greift wieder
+    web = p.WebFilter(mode="blacklist", allow=["www.youtube.com"], deny=["youtube.com"], safesearch=True)
+    assert zones(web)["www.youtube.com"] == "redirect"
 
 
 def test_safesearch_off_and_deny_ignored_in_whitelist():

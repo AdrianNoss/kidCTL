@@ -402,28 +402,50 @@ def tray_icon(level: str | None, light_taskbar: bool, size: int = 64):
     return QIcon(pix)
 
 
+def logo_pixmap(size: int = 96):
+    """KidCTL-Logo: weißes Symbol auf Akzent-Blau mit runden Ecken (wie ``kidctl.ico``)."""
+    from .qt import QColor, QPainter, QPixmap, QRectF, Qt
+    pix = QPixmap(size, size)
+    pix.fill(Qt.GlobalColor.transparent)
+    p = QPainter(pix)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    p.setPen(Qt.PenStyle.NoPen)
+    p.setBrush(QColor(KIDCTL_BLUE))
+    p.drawRoundedRect(QRectF(0, 0, size, size), size * 0.22, size * 0.22)
+    p.end()
+    icon = tray_icon(None, False, size)   # weißes Symbol ohne Statuspunkt
+    p = QPainter(pix)
+    icon.paint(p, int(size * 0.12), int(size * 0.12), int(size * 0.76), int(size * 0.76))
+    p.end()
+    return pix
+
+
 def logo_png(path: str, size: int = 96) -> str | None:
-    """App-Logo für Toasts als PNG (Toasts nehmen kein ICO): KidCTL-Symbol in Akzent-Blau auf Weiß."""
+    """App-Logo für Toasts als PNG (Toasts nehmen kein ICO)."""
     try:
-        from .qt import QColor, QPainter, QPixmap, QRectF, Qt
-        pix = QPixmap(size, size)
-        pix.fill(Qt.GlobalColor.transparent)
-        p = QPainter(pix)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(QColor(KIDCTL_BLUE))
-        p.drawRoundedRect(QRectF(0, 0, size, size), size * 0.22, size * 0.22)
-        p.end()
-        icon = tray_icon(None, False, size)   # weißes Symbol ohne Statuspunkt
-        p = QPainter(pix)
-        icon.paint(p, int(size * 0.12), int(size * 0.12), int(size * 0.76), int(size * 0.76))
-        p.end()
+        pix = logo_pixmap(size)
         import os
         os.makedirs(os.path.dirname(path), exist_ok=True)
         return path if pix.save(path, "PNG") else None
     except Exception:   # Toast dann eben ohne Logo
         log.debug("Toast-Logo nicht erzeugt", exc_info=True)
         return None
+
+
+def app_icon():
+    """Programmsymbol für Titel- und Taskleiste: ``kidctl.ico`` der Installation (``{app}\\kidctl.ico`` neben
+    ``{app}\\python``), sonst das gezeichnete Logo – ohne Symbol zeigt Windows das generische Programmsymbol."""
+    from pathlib import Path
+    from .qt import QIcon
+    ico = Path(sys.executable).resolve().parent.parent / "kidctl.ico"
+    if ico.is_file():
+        icon = QIcon(str(ico))
+        if not icon.isNull():
+            return icon
+    icon = QIcon()
+    for size in (16, 24, 32, 48, 64, 256):
+        icon.addPixmap(logo_pixmap(size))
+    return icon
 
 
 def _install_window_hook(app) -> None:
@@ -450,6 +472,7 @@ def apply(app, platform: str | None = None) -> bool:
         font = QFont(FONT_FALLBACK)
     font.setPointSize(10)
     app.setFont(font)
+    app.setWindowIcon(app_icon())   # alle Fenster und Dialoge erben es
     STYLE.refresh(app)
     _install_window_hook(app)
     try:   # Windows-Schema/Akzent live umschalten (Qt ≥ 6.5)

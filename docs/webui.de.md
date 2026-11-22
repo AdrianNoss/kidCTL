@@ -7,8 +7,9 @@ Je Kind (Seite des Kindes):
 - **Spiele-Limit** („davon Spiele“ in der Wochenvorlage): höchstens so viele Minuten Spiele am Tag
   (Steam, Heroic und Programme der Gruppe „Spiele“, nicht die Launcher; siehe [Spiele](games.de.md)). Vorwarnung 5 und 1 Minute
   vorher, danach werden Spiele geschlossen; der restliche Rechner bleibt nutzbar. Leer = kein Limit.
-  Weitere Apps zählen als Spiel, wenn in der Programmliste das Kästchen „Spiel“ neben der App angehakt ist
-  (z. B. Roblox oder der Minecraft-Launcher; Apps der Gruppe „Spiele“ sind immer Spiele).
+  Weitere Apps zählen als Spiel, wenn in der Programmliste das Kästchen „Spiel“ unter der App angehakt ist
+  (z. B. Roblox oder der Minecraft-Launcher; Apps der Gruppe „Spiele“ sind immer Spiele). Nach dem Speichern stehen
+  so markierte Apps – auch eigene Programme – in der Gruppe „Spiele“.
 
   ![Wochenvorlage mit Zeitfenstern und „davon Spiele“](img/de/game-limit.webp)
 
