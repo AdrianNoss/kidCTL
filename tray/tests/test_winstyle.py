@@ -110,6 +110,25 @@ def test_toast_with_logo(tmp_path, win_style):
     assert "<image" not in toast_xml("T", "B", None, "", False)
 
 
+def test_app_icon_for_title_bar(tmp_path, win_style, monkeypatch):
+    """Windows: Programmsymbol für alle Fenster (sonst generisches Windows-Symbol in der Titelleiste)."""
+    import shutil
+    from pathlib import Path
+    monkeypatch.setattr(ws.sys, "executable", str(tmp_path / "python" / "pythonw.exe"))
+    fallback = ws.app_icon()                                          # ohne kidctl.ico: gezeichnetes Logo
+    assert not fallback.isNull() and 256 in [s.width() for s in fallback.availableSizes()]
+    assert fallback.pixmap(32, 32).toImage().pixelColor(2, 16).name() == ws.KIDCTL_BLUE
+    ico = Path(__file__).resolve().parents[2] / "packaging" / "windows" / "kidctl.ico"
+    shutil.copy(ico, tmp_path / "kidctl.ico")                         # Installation: {app}\\kidctl.ico
+    assert not ws.app_icon().isNull() and ws.app_icon().cacheKey() != fallback.cacheKey()
+    try:
+        assert ws.apply(win_style) is True and not win_style.windowIcon().isNull()
+        from kidctl_tray import ui
+        assert not ui.RequestDialog(None).windowIcon().isNull()       # Dialoge erben das Symbol
+    finally:
+        win_style.setWindowIcon(qt.QIcon())
+
+
 def test_window_hook_ignores_non_widgets(win_style):
     """Der Show-Hook sieht auch QWindow-Objekte (ohne isWindow) – darf nicht abstürzen."""
     from kidctl_tray import ui

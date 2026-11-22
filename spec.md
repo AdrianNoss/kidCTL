@@ -3401,3 +3401,10 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   je Programm/Kategorie, „zählt nicht“-Programme, Zeitkonto; 0.48 Aufgaben → Zeit verdienen, Weich-Modus, Alarmkanäle
   ntfy/Webhook/Matrix, Cinnamon/COSMIC. Plan in `dev/planung/PLAN-2026-11.md`, Roadmap der Website ergänzt. Keine
   Umsetzung; geprüft: Doku-Parität und Hugo-Build.
+- 2026-11-22: Version 0.45.2 (Tray Windows): Fenster und Dialoge der Tray-App zeigen in Titel- und Taskleiste das
+  KidCTL-Symbol statt des generischen Windows-Programmsymbols. `winstyle.apply` setzt einmal `app.setWindowIcon`
+  (alle Fenster erben es); Quelle ist `kidctl.ico` der Installation (`{app}\kidctl.ico`), sonst das gezeichnete Logo
+  (wie im Toast). Linux unverändert (Symbol über die Desktop-Datei). Getestet: neuer Test (Rückfall-Logo, ICO der
+  Installation, Dialog erbt das Symbol), Tray-Tests grün; in der Windows-11-VM (Code per `winsync.sh`) als Kind
+  angemeldet: Chatfenster und „Verlängerung anfordern“ zeigen das Symbol in Titelleiste und Taskleiste, hell und
+  dunkel; `dev/winshots.py` (DE, hell/dunkel) ohne Auffälligkeiten.
