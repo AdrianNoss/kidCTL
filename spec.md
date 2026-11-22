@@ -3521,3 +3521,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   erreichbar). SafeSearch-Zonen nur noch für nicht gesperrte bzw. freigegebene Namen; Sperrzonen in fester
   Reihenfolge. Getestet: Agent-Unittests (neu: Sperre schlägt SafeSearch, Freigabe hebt sie auf), 305 grün;
   Nachstellung in der VM steht noch aus.
+- 2026-11-22: Version 0.45.2 (Agent, Server, Tray): fasst drei bisher getrennte Branches zusammen – Design-Korrekturen
+  (Programmliste als Kacheln, Spiele unter „Spiele“, Rechnungsknöpfe; zuvor als „0.45.1“ geführt, nicht
+  veröffentlicht), KidCTL-Symbol in der Windows-Tray-App und die korrigierte Rangfolge der Webfilter-Zonen
+  (Sicherheitsfix). Security-News DE/EN, Advisory-Entwurf. Getestet: siehe Einträge oben; zusammen Server-, Agent- und
+  Tray-Tests, `ruff check`, Doku-Parität, Hugo. VM-Prüfung des Webfilter-Fixes noch offen.
