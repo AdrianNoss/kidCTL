@@ -326,6 +326,8 @@ Abweichungen stehen hier und unter „Restlücken“.
     - EA: Uninstall-Eintrag mit `__Installer\installerdata.xml`.
     - Battle.net: `product.db` (Protobuf).
     - Ubisoft Connect und Wargaming: Spiele zu groß für die VM, deshalb kein Format; nur Rückfall (Restlücke).
+      Ubisoft nachgezogen (2026-11-22, Daten vom Rechner eines Nutzers): Registry
+      `Ubisoft\Launcher\Installs\<id>` (`InstallDir`) -> `game:ubisoft:<id>`, Name = Ordnername.
 
     Steamworks-Redistributables zählen nicht als Spiel. Vom Rückfall ausgenommen sind Programme im Ordner eines
     laufenden Launchers (z. B. `EALocalHostSvc.exe`). Kurze 8.3-Pfade (`PROGRA~1`) werden vor der Zuordnung in die
@@ -3422,7 +3424,11 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-22: Fehler (Windows): Spielzeit eines über Ubisoft Connect gestarteten Spiels („Starlink“) lief unter
   „Ubisoft Connect“. Ursache, Teil 1: Startmenü-Einträge der Launcher (`Battle.net Launcher.exe`, `EALauncher.exe`,
   `UbisoftConnect.exe`) galten nicht als Launcher (`win/agent.is_launcher`), zählten also als Spiel – und alles im
-  Programmordner (bei Ubisoft auch der Spieleordner, falls darunter installiert) lief unter diesem Eintrag. Behoben;
-  Unittest. Teil 2 offen: Programme im Ordner eines laufenden Launchers sind vom Abstammungs-Rückfall ausgenommen –
-  Spiele unterhalb des Ubisoft-Ordners brauchen das echte Format (Installationspfad, Registry `Ubisoft\Launcher\
-  Installs`), in der VM ist kein Ubisoft-Spiel installiert; Daten bei Adrian angefragt.
+  Programmordner (bei Ubisoft auch der Spieleordner, falls darunter installiert) lief unter diesem Eintrag. Behoben.
+  Teil 2: Ubisoft installiert Spiele unter `…\Ubisoft Game Launcher\games`, und Programme im Ordner eines laufenden
+  Launchers sind vom Abstammungs-Rückfall ausgenommen; Starlink wird zudem von `UbisoftGameLauncher.exe` gestartet,
+  nicht von `upc.exe`. Jetzt erkennt der Agent Ubisoft-Spiele aus der Registry (`Ubisoft\Launcher\Installs`,
+  `game:ubisoft:<id>`) und gibt ihre Ordner mit Ubisoft Connect frei. Format aus Registry-Auszug und Prozessliste von
+  Adrians Rechner (Testdaten anonymisiert in `win_launchers/registry.json`). EA, GOG, Battle.net erkennen Spiele
+  bereits aus Registry/Datei, auch unterhalb des Launcher-Ordners (Index vor Katalog). Agent-Unittests 296 grün; nicht
+  live geprüft. Für 0.45.1.

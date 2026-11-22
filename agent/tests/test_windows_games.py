@@ -432,3 +432,21 @@ def test_launcher_entries_are_no_games():
                 r"C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\UbisoftConnect.exe", BNET_EXE):
         assert is_launcher("exe:" + exe), exe
     assert not is_launcher(r"exe:C:\Program Files (x86)\Hearthstone\Hearthstone.exe")
+
+
+def test_ubisoft_game_under_launcher_folder(real_index):
+    """Starlink (echte Daten): liegt unter dem Ubisoft-Ordner, gestartet von UbisoftGameLauncher.exe – Spielzeit läuft
+    unter dem Spiel, nicht unter „Ubisoft Connect“; mit Ubisoft Connect freigegeben."""
+    from kidctl_agent.win.watcher import WinProgramWatcher
+    ubi = r"C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher"
+    star = ubi + r"\games\Starlink - Battle for Atlas\Starlink.exe"
+    assert real_index.game_of(star) == ("game:ubisoft:5277", "Starlink - Battle for Atlas")
+    assert real_index.game_of(ubi + r"\upc.exe") is None
+    cat = catalog.Catalog(apps=[p.AppEntry(key="exe:" + ubi + r"\UbisoftConnect.exe", name="Ubisoft Connect",
+                                           categories=["Game"])])
+    assert WinAppIndex(cat, real_index).key_for(proc(star))[0] == "game:ubisoft:5277"
+    w = WinProgramWatcher.__new__(WinProgramWatcher)
+    w.games = real_index
+    keys = {"exe:" + ubi + r"\UbisoftConnect.exe"}
+    a = WinAllowed(keys, sid=KID, launcher_dirs=w.launcher_dirs(keys))
+    assert classify(proc(star), a, lambda path: KID, ancestors=lambda: [ubi + r"\UbisoftGameLauncher.exe"]) is None

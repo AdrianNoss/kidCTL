@@ -103,7 +103,7 @@ steht im README.
   trotzdem.
 - **Spiele ohne Launcher:** Ein Spiel, das ohne Launcher und ohne bekanntes Manifest direkt über seine `.exe`
   gestartet wird, zählt nur als Spiel, wenn es in der Programmliste als „zählt als Spiel“ markiert ist.
-- **Ubisoft Connect und Wargaming:** Deren Spiele erkennt KidCTL nur, solange der Launcher sie startet. Der Name
+- **Wargaming:** Dessen Spiele erkennt KidCTL nur, solange der Launcher sie startet. Der Name
   stammt aus der `.exe`, und jede `.exe` zählt als eigenes Spiel.
 - **Tray-App:** Ein Kind könnte die Anzeige der Tray-App anderer Benutzer verfälschen. Die Durchsetzung durch den
   KidCTL-Dienst ist davon nicht betroffen.

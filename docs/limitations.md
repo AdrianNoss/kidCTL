@@ -103,7 +103,7 @@ version is in the README.
   happens.
 - **Games without a launcher:** a game that is started directly via its `.exe`, without a launcher and without a
   known manifest, only counts as a game if "Counts as a game" is switched on for it in the program list.
-- **Ubisoft Connect and Wargaming:** KidCTL only detects their games while the launcher starts them. The name
+- **Wargaming:** KidCTL only detects its games while the launcher starts them. The name
   comes from the `.exe`, and each `.exe` counts as a separate game.
 - **Tray app:** a child could falsify the display of other users' tray apps. Enforcement by the
   KidCTL service is not affected.

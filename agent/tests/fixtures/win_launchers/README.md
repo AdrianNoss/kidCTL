@@ -10,6 +10,8 @@ Grundlage für die Parser in `kidctl_agent/win/games.py` – neue Formate nur au
 | `battlenet_product.db` | `C:\ProgramData\Battle.net\Agent\product.db` (Hearthstone, Protobuf) |
 | `ea_installerdata.xml` | `C:\Program Files\EA Games\SimCity 2000 SE\__Installer` |
 | `gog_goggame.info` | Spielordner von Bio Menace (GOG) |
-| `registry.json` | Auszug HKLM: `GOG.com\Games`, Uninstall-Einträge |
+| `registry.json` | Auszug HKLM: `GOG.com\Games`, Uninstall-Einträge; `Ubisoft\Launcher\Installs` vom Rechner eines Nutzers (Starlink, 2026-11-22) |
 
-Ubisoft Connect und Wargaming: Launcher installiert, aber kein Spiel (zu groß) – noch kein Format.
+Ubisoft Connect: Startmenü-Ziel und Ordner aus der VM, Spiel (Registry, Prozesskette `UbisoftGameLauncher.exe` ->
+`games\<Spiel>\Starlink.exe`) vom Rechner eines Nutzers. Wargaming: Launcher installiert, aber kein Spiel – noch kein
+Format.

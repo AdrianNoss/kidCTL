@@ -9,7 +9,9 @@ r"""Spiele unter Windows erkennen – über den Installationsordner (Umgebungsva
 - EA app: Uninstall-Eintrag, dessen ``InstallLocation`` ``__Installer\installerdata.xml`` enthält -> ``game:ea:<Schlüssel>``
 - Battle.net: ``ProgramData\Battle.net\Agent\product.db`` (Protobuf: je Produkt UID, Code, Pfad) ->
   ``game:battlenet:<uid>``; Name = Ordnername (die Datei enthält keinen Anzeigenamen)
-- Ubisoft Connect, Wargaming: noch kein Format aus echter Installation – nur der Rückfall unten.
+- Ubisoft Connect: Registry ``HKLM\SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs\<id>`` (``InstallDir``) ->
+  ``game:ubisoft:<id>``; Name = Ordnername. Spiele liegen standardmäßig unter dem Launcher-Ordner (``…\games``).
+- Wargaming: noch kein Format aus echter Installation – nur der Rückfall unten.
 
 Namen und IDs stammen aus Dateien, die Launcher anlegen – nur Anzeige, keine Freigaben.
 
@@ -38,6 +40,7 @@ PROGRAM_DATA = os.environ.get("ProgramData", r"C:\ProgramData")
 EPIC_MANIFESTS = ntpath.join(PROGRAM_DATA, r"Epic\EpicGamesLauncher\Data\Manifests")
 BNET_DB = ntpath.join(PROGRAM_DATA, r"Battle.net\Agent\product.db")
 EA_INSTALL_DATA = ntpath.join(PROGRAM_DATA, r"EA Desktop\InstallData")
+UBI_KEYS = (r"SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs",)
 GOG_KEYS = (r"SOFTWARE\WOW6432Node\GOG.com\Games", r"SOFTWARE\GOG.com\Games")
 UNINSTALL_KEYS = (r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
                   r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall")
@@ -210,6 +213,8 @@ def scan(steam: str | None = None, epic_dir: str = EPIC_MANIFESTS, listdir=os.li
     _add(idx, "eadesktop.exe", ea_games(registry, UNINSTALL_KEYS, isfile))
     idx.watch_reg += list(UNINSTALL_KEYS)
     idx.watch.append(EA_INSTALL_DATA)
+    _add(idx, "upc.exe", ubisoft_games(registry, UBI_KEYS))
+    idx.watch_reg += list(UBI_KEYS)
     _add(idx, "battle.net.exe", battlenet_games((read_bytes or _read_bytes)(bnet_db)))
     idx.watch.append(bnet_db)
     return idx
@@ -232,6 +237,18 @@ def gog_games(registry, keys=GOG_KEYS) -> list[tuple[str, str, str]]:
         folder = _abs_dir(str(values.get("path", "")))
         if name.isdigit() and folder:
             out.append((folder, f"game:gog:{name}", str(values.get("gameName") or name)[:255]))
+    return out
+
+
+def ubisoft_games(registry, keys=UBI_KEYS) -> list[tuple[str, str, str]]:
+    """Ubisoft Connect: je Spiel ein Registry-Schlüssel (Name = Spiel-ID) mit ``InstallDir`` (mit ``/``)."""
+    out = []
+    for name, values in registry(keys):
+        raw = str(values.get("InstallDir", ""))
+        folder = _abs_dir(raw)
+        if name.isdigit() and folder:
+            label = ntpath.basename(raw.replace("/", "\\").rstrip("\\"))
+            out.append((folder, f"game:ubisoft:{name}", label[:255]))
     return out
 
 
