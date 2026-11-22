@@ -58,6 +58,12 @@ class ChatStore:
     def max_id(self, child_id: int) -> int:
         return max(self.by_child.get(child_id, {}) or [0])
 
+    def sync_after(self, child_id: int) -> int:
+        """``after_id`` für ``chat_sync``: ab der ältesten offenen Anfrage, damit offline gefallene
+        Entscheidungen (Status-Änderung ohne neue ID) nachkommen; sonst ab der höchsten bekannten Nachricht."""
+        pending = [mid for mid, m in self.by_child.get(child_id, {}).items() if m.status == "pending"]
+        return min(pending) - 1 if pending else self.max_id(child_id)
+
     def has_history(self, child_id: int) -> bool:
         return bool(self.by_child.get(child_id))
 

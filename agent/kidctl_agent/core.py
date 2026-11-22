@@ -10,13 +10,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 from kidctl_common import i18n
 from kidctl_common import protocol as p
 from kidctl_common import tray as t
-from kidctl_common.i18n import _
+from kidctl_common.i18n import _, ngettext
 
 from . import store
 from .accounting import Usage
@@ -24,6 +24,8 @@ from .chat import NEW, ChatStore, Outbox, new_client_msg_id
 from .connection import Connection
 from .enforcer import Enforcer
 from .rules import Decision, day_limits, evaluate, game_limit
+
+BACKLOG_SETTLE = 2.0   # s Ruhe nach der letzten nachgeholten Nachricht, bevor die Sammelmeldung kommt
 
 log = logging.getLogger("kidctl.agent")
 
@@ -85,6 +87,10 @@ class AgentCore:
         self._started = self.clock()
         self.game_keys: set[str] = set()   # Katalog-Apps der Kategorie „Game“ (ohne Launcher)
         self._synced = self.conn is None  # ohne Server: sofort gecachte Policy durchsetzen
+        # Chat-Abgleich je Kind: (Zeitpunkt der Anfrage, erster Abgleich?) – Nachrichten von davor sind Verlauf
+        self._chat_sync: dict[int, tuple[datetime, bool]] = {}
+        self._backlog: dict[int, list[p.ChatMessage]] = {}   # nachgeholte Eltern-Nachrichten je Kind
+        self._backlog_tasks: dict[int, asyncio.Task] = {}
 
     # ---------- Plattform ----------
 
@@ -262,7 +268,8 @@ class AgentCore:
             return
         for child_id in sorted(set(self.policy.users.values())):
             users = self.users_of(child_id)
-            await self.conn.send(p.ChatSync(username=users[0], after_id=self.chat.max_id(child_id)))
+            self._chat_sync[child_id] = (datetime.now(UTC), not self.chat.has_history(child_id))
+            await self.conn.send(p.ChatSync(username=users[0], after_id=self.chat.sync_after(child_id)))
 
     async def on_message(self, msg) -> None:
         if isinstance(msg, p.Policy):
@@ -291,7 +298,6 @@ class AgentCore:
     # ---------- Chat ----------
 
     async def on_chat_message(self, msg: p.ChatMessage) -> None:
-        had_history = self.chat.has_history(msg.child_id)
         prev = self.chat.previous(msg)
         change = self.chat.upsert(msg)
         if change is None:
@@ -299,18 +305,53 @@ class AgentCore:
         self.chat.save()
         for user in self.users_of(msg.child_id):
             await self.tray.send_to_user(user, t.TrayChatMessage(message=msg))
-        if had_history:  # beim allerersten Abgleich keine Flut alter Benachrichtigungen
-            await self._notify_chat(msg, prev, change)
+        if change == NEW and self._is_backlog(msg):
+            # Verlauf aus dem Abgleich: beim ersten Abgleich still, sonst eine Sammelmeldung statt einer Flut
+            first = self._chat_sync[msg.child_id][1]
+            if not first and not msg.from_child:
+                self._queue_backlog(msg)
+            return
+        await self._notify_chat(msg, prev, change)
+
+    def _is_backlog(self, msg: p.ChatMessage) -> bool:
+        """Nachricht entstand vor der letzten Verlaufsanfrage für ihr Kind (kommt also aus dem Abgleich)."""
+        sync = self._chat_sync.get(msg.child_id)
+        if sync is None:
+            return False
+        created = msg.created_at if msg.created_at.tzinfo else msg.created_at.replace(tzinfo=UTC)
+        return created <= sync[0]
+
+    def _queue_backlog(self, msg: p.ChatMessage) -> None:
+        self._backlog.setdefault(msg.child_id, []).append(msg)
+        if task := self._backlog_tasks.get(msg.child_id):
+            task.cancel()
+        self._backlog_tasks[msg.child_id] = asyncio.get_running_loop().create_task(
+            self._flush_backlog(msg.child_id))
+
+    async def _flush_backlog(self, child_id: int) -> None:
+        await asyncio.sleep(BACKLOG_SETTLE)
+        self._backlog_tasks.pop(child_id, None)
+        msgs = self._backlog.pop(child_id, [])
+        if len(msgs) == 1:
+            await self._notify_chat(msgs[0], None, NEW)
+        elif msgs:
+            await self._notify_users(child_id, lambda: (
+                ngettext("{n} neue Nachricht", "{n} neue Nachrichten", len(msgs)).format(n=len(msgs)),
+                _("Von {name}. Öffne den Chat, um sie zu lesen.").format(name=msgs[-1].sender_name)))
 
     async def _notify_chat(self, msg: p.ChatMessage, prev: p.ChatMessage | None, change: str) -> None:
         decided = prev is not None and prev.status == "pending" and msg.status in ("approved", "rejected")
         if not ((change == NEW and not msg.from_child) or (decided and msg.kind in ("extension_request", "access_request"))):
             return
-        users = set(self.users_of(msg.child_id))
+        await self._notify_users(msg.child_id, lambda: _chat_texts(msg, change))
+
+    async def _notify_users(self, child_id: int, texts) -> None:
+        """Benachrichtigung an die angemeldeten User des Kindes; ``texts()`` liefert (Titel, Text)."""
+        users = set(self.users_of(child_id))
         for s in self._sessions:
             if s.is_user_session and s.user in users:
                 with i18n.use(self.lang_of(s.user)):   # Sprache der Sitzung dieses Kindes
-                    title, body = _chat_texts(msg, change)
+                    title, body = texts()
                 await self.desktop.notify(s.user, s.uid, title, body)
                 users.discard(s.user)  # je User nur einmal
 
