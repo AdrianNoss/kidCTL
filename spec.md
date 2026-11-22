@@ -1588,7 +1588,7 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
 
 ### Inhalt `SECURITY.md`
 - **Meldeweg:** bevorzugt GitHub Private Vulnerability Reporting (Security → „Report a vulnerability“);
-  alternativ `security@nossco.de` (später `security@<Produkt-Domain>`). Kein PGP. Ausdrücklich: Sicherheitslücken
+  alternativ `security@kidctl.de`. Kein PGP. Ausdrücklich: Sicherheitslücken
   nie als öffentliches Issue, Pull Request oder in Foren melden.
 - **Unterstützte Versionen:** nur die jeweils neueste Version (vor 1.0); Fixes erscheinen als neue Patch-Version,
   keine Backports. Server und Agenten auf demselben Stand halten.
@@ -1623,7 +1623,7 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
 - **Projektseite:** `website/static/.well-known/security.txt`; `Expires` setzt der Pages-Build auf heute + 1 Jahr.
   Wirksam seit der eigenen Domain (`https://kidctl.de/.well-known/security.txt`).
 - **kidCTL-Server:** Route `/.well-known/security.txt` (ohne Login), `Expires` dynamisch (+ 1 Jahr),
-  `Contact: mailto:security@nossco.de` und GitHub-Meldeweg, `Policy:` auf `SECURITY.md`, `Preferred-Languages:
+  `Contact: mailto:security@kidctl.de` und GitHub-Meldeweg, `Policy:` auf `SECURITY.md`, `Preferred-Languages:
   en, de`. Optionale Umgebungsvariable `SECURITY_CONTACT`: zusätzlicher Kontakt des Betreibers (zuerst gelistet).
 
 ### GitHub-Funktionen
@@ -3401,3 +3401,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   je Programm/Kategorie, „zählt nicht“-Programme, Zeitkonto; 0.48 Aufgaben → Zeit verdienen, Weich-Modus, Alarmkanäle
   ntfy/Webhook/Matrix, Cinnamon/COSMIC. Plan in `dev/planung/PLAN-2026-11.md`, Roadmap der Website ergänzt. Keine
   Umsetzung; geprüft: Doku-Parität und Hugo-Build.
+- 2026-11-22: Kontaktadressen auf die Projekt-Domain umgestellt (ohne neue Version): Sicherheitsmeldungen
+  `security@kidctl.de` (SECURITY*, README*, `security.txt` der Website und Server-Route, `.env.example`), Impressum
+  `info@kidctl.de`, Maintainer der Debian-Pakete `KidCTL <info@kidctl.de>` statt `kidctl@localhost`. Geprüft:
+  Doku-Parität, Hugo-Build (keine alte Adresse in der Ausgabe); Server-Tests nicht gelaufen (kein psycopg lokal).

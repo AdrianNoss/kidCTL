@@ -9,7 +9,7 @@ meldest.
 
 - **Bevorzugt:** GitHub Private Vulnerability Reporting – im Repository unter **Security → „Report a
   vulnerability“** ([direkt melden](https://github.com/AdrianNoss/kidCTL/security/advisories/new)).
-- **Alternativ:** E-Mail an **security@nossco.de**. Kein PGP.
+- **Alternativ:** E-Mail an **security@kidctl.de**. Kein PGP.
 
 > [!CAUTION]
 > Sicherheitslücken **nie** als öffentliches Issue, Pull Request oder in Foren melden.

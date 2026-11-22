@@ -13,7 +13,7 @@ Address to follow
 
 ## Contact
 
-Email: <info@nossco.de>
+Email: <info@kidctl.de>
 
 ## Responsible for content (§ 18 (2) MStV)
 

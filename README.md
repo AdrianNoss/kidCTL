@@ -198,7 +198,7 @@ by humans has not taken place yet. More: [How kidCTL is built](https://kidctl.de
 
 ## Security
 
-Please report security vulnerabilities **confidentially** (GitHub "Report a vulnerability" or security@nossco.de),
+Please report security vulnerabilities **confidentially** (GitHub "Report a vulnerability" or security@kidctl.de),
 never as a public issue: [security policy](SECURITY.md).
 
 ## Code signing
