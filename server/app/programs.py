@@ -93,11 +93,13 @@ def group_for(categories: str) -> str:
 
 
 def grouped_catalog(entries: list[CatalogEntry]) -> list[tuple[str, str, list[CatalogEntry]]]:
-    """(ID, Anzeige, Einträge) in fester Reihenfolge, leere Gruppen weggelassen."""
+    """(ID, Anzeige, Einträge) in fester Reihenfolge, leere Gruppen weggelassen. Als Spiel markierte Programme
+    (auch eigene) stehen unter „Spiele“, solange sie installiert sind."""
     order = ["custom"] + [gid for gid, _l, _c in GROUPS] + ["other", "missing"]
     by_group: dict[str, list[CatalogEntry]] = {}
     for e in entries:
-        by_group.setdefault("custom" if e.custom_id else "missing" if e.missing else e.group, []).append(e)
+        gid = "missing" if e.missing else "game" if e.game else "custom" if e.custom_id else e.group
+        by_group.setdefault(gid, []).append(e)
     for group in by_group.values():
         names = Counter(e.name for e in group)
         for e in group:

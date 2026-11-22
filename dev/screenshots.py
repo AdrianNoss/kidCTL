@@ -36,7 +36,7 @@ sys.path.insert(0, str(REPO / "dev"))
 import demo_seed  # noqa: E402
 
 PORT = 8010
-PG = "kidctl-pg"
+PG = os.environ.get("KIDCTL_PG_CONTAINER", "kidctl-pg")   # wie tests/podman_pg.sh
 DB_NAME = "kidctl_shots"
 DATABASE_URL = f"postgresql+psycopg://kidctl:kidctl-dev@127.0.0.1:55432/{DB_NAME}"
 BASE = f"http://127.0.0.1:{PORT}"

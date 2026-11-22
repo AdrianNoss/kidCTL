@@ -105,6 +105,24 @@ def test_catalog_grouped_by_category(client, parent):
         assert "0 von 2 erlaubt" in page and "Programm suchen" in page
 
 
+def test_games_listed_under_games():
+    """Als Spiel markierte Programme (auch eigene) stehen unter „Spiele“; nicht mehr installierte bleiben dort."""
+    from app.programs import CatalogEntry, grouped_catalog
+    E = CatalogEntry
+    groups = grouped_catalog([
+        E("exe:/usr/bin/firefox", "Firefox", 1, True, group="internet"),
+        E("exe:/usr/bin/hearthstone", "Hearthstone", 1, True, group="other", game=True),
+        E("exe:/usr/bin/supertux2", "SuperTux", 1, True, group="game", game=True, game_auto=True),
+        E("exe:C:\\WoT\\wot.exe", "World of Tanks", 1, True, custom_id=3, game=True),
+        E("exe:/usr/bin/git", "Git", 1, True, custom_id=4),
+        E("exe:/usr/bin/alt", "alt", 0, True, missing=True, game=True)])
+    assert [(g, [a.name for a in a_]) for g, _l, a_ in groups] == [
+        ("custom", ["Git"]),
+        ("game", ["Hearthstone", "SuperTux", "World of Tanks"]),
+        ("internet", ["Firefox"]),
+        ("missing", ["alt"])]
+
+
 def test_group_for_mapping():
     from app.programs import group_for
     assert group_for("Education;Science") == "education"

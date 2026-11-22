@@ -35,7 +35,7 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "dev"))
 import demo_seed  # noqa: E402
 
-PG = "kidctl-pg"
+PG = os.environ.get("KIDCTL_PG_CONTAINER", "kidctl-pg")   # wie tests/podman_pg.sh
 DB_NAME = "kidctl_review"
 DATABASE_URL = f"postgresql+psycopg://kidctl:kidctl-dev@127.0.0.1:55432/{DB_NAME}"
 SIZES = {"mobile": (390, 844), "desktop": (1280, 800)}
@@ -154,8 +154,14 @@ async def admin_login(base: str, secret: str, lang: str) -> httpx.AsyncClient:
 
 
 async def extra_data(web, op: httpx.AsyncClient) -> dict:
-    """Ticket (Eltern) und Rechnungsentwurf (Verwaltung), damit die Detailseiten etwas zeigen."""
+    """Ticket (Eltern), eigene Programme mit langen Pfaden und Rechnungsentwurf (Verwaltung), damit die Detailseiten
+    auch schwierige Inhalte zeigen."""
     ids: dict = {}
+    for path, name in ((r"C:\Program Files\WindowsApps\Microsoft.GamingServices_39.118.30001.0_x64__8wekyb3d8bbwe"
+                        r"\GamingServicesUI\gamingservicesui.exe", ""),
+                       (r"C:\ProgramData\Battle.net\Agent\Agent.9886\Agent.exe", "Agent.exe"),
+                       ("/usr/bin/git", "Git")):
+        await web.post(f"/children/{web.ids['Lena']}/programs/custom", {"path": path, "name": name})
     r = await web.c.post("/support", data={"csrf_token": await web.csrf("/support"),
                                            "subject": "Gerät lässt sich nicht koppeln", "category": "tech",
                                            "body": "Der Kopplungscode wird nicht angenommen."})

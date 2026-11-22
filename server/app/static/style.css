@@ -457,9 +457,18 @@ body.no-nav .save-bar { bottom:0; }
 .app-options .option { padding:.5rem .75rem; }
 .app-item:not(:has(input[name="app"]:checked)) .game-flag, .game-flag:has(input:disabled) { display:none; }
 .app-toolbar { display:flex; align-items:center; gap:.625rem; flex-wrap:wrap; margin:.625rem 0 .75rem; }
-.custom-item, .game-row { display:flex; align-items:stretch; gap:.25rem; }
-.custom-item .option, .game-row .option { flex:1; min-width:0; }
-.custom-item .option small { overflow-wrap:anywhere; }
+/* Eine Kachel je Programm: Name oben, „Spiel“/„Entfernen“ darunter (vorher daneben – schmale Kacheln quetschten den
+   Namen auf wenige Buchstaben je Zeile). Die Kachel selbst trägt Rahmen und Auswahlfarbe. */
+.app-item { display:flex; flex-direction:column; min-width:0; border:1px solid var(--outline-variant); border-radius:var(--shape-md); }
+.app-item:has(input[name="app"]:checked) { border-color:transparent; background:var(--secondary-container); color:var(--on-secondary-container); }
+.app-item .option, .app-item .option:has(input:checked) { border:0; background:transparent; color:inherit; flex:1; }
+.app-item .option small { overflow-wrap:anywhere; }
+.app-item-extra { display:flex; align-items:center; justify-content:space-between; gap:.25rem .5rem; flex-wrap:wrap;
+                  padding:0 .25rem .25rem 2.625rem; }   /* bündig mit dem Namen rechts vom Kästchen */
+.app-item-extra:not(:has(.game-flag:not(:has(input:disabled)), button)),
+.app-item:not(:has(input[name="app"]:checked)) .app-item-extra:not(:has(button)) { display:none; }
+.app-item-extra .game-flag { padding:.25rem 0; min-height:32px; }
+.app-item-extra button { margin-left:auto; }
 .game-flag { display:flex; align-items:center; gap:.375rem; padding:0 .5rem; font-size:.8125rem; color:var(--on-surface-variant);
              white-space:nowrap; cursor:pointer; margin:0; }
 .game-flag:has(input:checked) { color:var(--on-surface); }
@@ -661,3 +670,5 @@ form > label.option, .mode-on > label.option { margin-bottom:1rem; }
 .p-80{--p:80%} .p-81{--p:81%} .p-82{--p:82%} .p-83{--p:83%} .p-84{--p:84%} .p-85{--p:85%} .p-86{--p:86%} .p-87{--p:87%} .p-88{--p:88%} .p-89{--p:89%}
 .p-90{--p:90%} .p-91{--p:91%} .p-92{--p:92%} .p-93{--p:93%} .p-94{--p:94%} .p-95{--p:95%} .p-96{--p:96%} .p-97{--p:97%} .p-98{--p:98%} .p-99{--p:99%}
 .p-100{--p:100%}
+/* Knöpfe (40 px) neben Feldern (48 px) mit Label darüber: mittig zum Feld statt bündig mit der Unterkante */
+.row.bottom > :is(button, .btn), .row.bottom > form > :is(button, .btn), form.row.inline > :is(button, .btn) { margin-bottom:4px; }

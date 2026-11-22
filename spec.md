@@ -300,7 +300,8 @@ Abweichungen stehen hier und unter „Restlücken“.
   - Tray: letzte Minute Spielzeit als Fenster im Vordergrund mit „Mehr Spielzeit anfragen“ (`TrayState.gaming`).
   - **Neu, für alle Plattformen:** Schalter „zählt als Spiel“ je Kind und App in der Programmliste (Tabelle
     `child_game_app`, `ChildPolicy.game_apps`); Apps der Kategorie „Spiele“ sind fest markiert. Der Agent (Linux
-    und Windows) prüft Spiele je Kind (`AgentCore.is_game`).
+    und Windows) prüft Spiele je Kind (`AgentCore.is_game`). Markierte Apps (auch eigene Programme) zeigt die
+    Programmliste in der Gruppe „Spiele“ (ab 0.45.1; nicht mehr installierte bleiben unter „Nicht mehr installiert“).
 - **Spielerkennung erweitert (entschieden 2026-11-19 per /grill-me):**
   - **Auslöser:** Ein über Steam gestartetes Spiel wurde unter Windows nicht als Spiel erkannt (keine Spielzeit,
     kein Spiele-Limit). Ursache zuerst in der VM nachstellen und beheben (Kandidaten: Index nur beim
@@ -3486,3 +3487,24 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Gaming Services, GameInput, Kontaktadressen auf kidctl.de). v0.45.0 war bereits veröffentlicht; Ergänzungen der
   News 0.45 zurückgenommen (Patch ohne Sicherheitsbezug, keine eigene News). Geprüft: Server-Suite gegen PostgreSQL,
   Agent-Tests, Doku-Parität, Hugo-Build.
+- 2026-11-22: Version 0.45.1 (Server): Programmliste und Rechnungsaktionen nachgebessert (Rückmeldung Adrian zu
+  Bildern aus dem echten Betrieb).
+  - Programmliste: Jede App ist eine Kachel, „Spiel“ und „Entfernen“ stehen unter dem Namen statt daneben. Vorher
+    quetschten sie den Namen und lange Pfade eigener Programme auf wenige Buchstaben je Zeile, und angehakte Spiele
+    machten ihre Kachel schmaler als die übrigen.
+  - Als Spiel markierte Apps (auch eigene Programme) stehen in der Gruppe „Spiele“ (`programs.grouped_catalog`).
+  - Knöpfe neben Feldern mit Label darüber (`.row.bottom`, `form.row.inline`) sitzen mittig zum Feld statt an
+    dessen Unterkante (Rechnung: „Als bezahlt markieren“, „Stornieren“, „Erneut senden“).
+  - `dev/design-review.py` legt zusätzlich eigene Programme mit langen Windows-Pfaden an; `dev/design-review.py` und
+    `dev/screenshots.py` nehmen den Container aus `KIDCTL_PG_CONTAINER` (wie die Tests).
+  - Doku `webui*.md`: Kästchen „Spiel“ unter der App, markierte Apps in „Spiele“.
+
+  Getestet:
+  - Server-Tests 361 grün, neu `test_games_listed_under_games` (markierte und eigene Apps unter „Spiele“, nicht mehr
+    installierte bleiben dort, eigene ohne Markierung unter „Eigene Programme“).
+  - `dev/design-review.py --only child-programs` (DE, hell/dunkel, mobil/Desktop): Kacheln mit langen Pfaden lesbar,
+    keine Konsolenfehler, kein waagerechtes Scrollen.
+  - Rechnungsaktionen mit der echten `style.css` in Chromium nachgebaut: Datumsfeld und alle drei Knöpfe auf
+    derselben Mittellinie (gemessen).
+  - Wegen fehlender Kernel-Module (`tun`) nach Kernel-Update lief PostgreSQL in einem temporären Container
+    `kidctl-pg-tmp` im Host-Netz (`KIDCTL_PG_CONTAINER=kidctl-pg-tmp`).
