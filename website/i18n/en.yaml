@@ -1,6 +1,7 @@
 claim: "Parental control that stays at home"
 meta_description: "KidCTL is self-hosted, open-source parental control for Windows and Linux: screen time, game time, app and web filter – all data on your own server."
 skip: "Skip to content"
+menu_label: "Menu"
 nav_label: "Main navigation"
 nav_features: "Features"
 nav_install: "Install"

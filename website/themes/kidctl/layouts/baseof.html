@@ -38,6 +38,8 @@
   <script src="{{ $js.RelPermalink }}" integrity="{{ $js.Data.Integrity }}" defer></script>
   {{- $sjs := resources.Get "js/search.js" | minify | fingerprint }}
   <script src="{{ $sjs.RelPermalink }}" integrity="{{ $sjs.Data.Integrity }}" defer></script>
+  {{- $mjs := resources.Get "js/menu.js" | minify | fingerprint }}
+  <script src="{{ $mjs.RelPermalink }}" integrity="{{ $mjs.Data.Integrity }}" defer></script>
   {{- if eq .Section "docs" }}{{ $djs := resources.Get "js/docs.js" | minify | fingerprint }}
   <script src="{{ $djs.RelPermalink }}" integrity="{{ $djs.Data.Integrity }}" defer></script>{{ end }}
 </body>

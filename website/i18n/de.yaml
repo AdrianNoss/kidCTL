@@ -1,6 +1,7 @@
 claim: "Kindersicherung, die zu Hause bleibt"
 meta_description: "KidCTL ist eine selbst gehostete Open-Source-Kindersicherung für Windows und Linux: Bildschirmzeit, Spielzeit, Programm- und Website-Filter – alle Daten auf dem eigenen Server."
 skip: "Zum Inhalt"
+menu_label: "Menü"
 nav_label: "Hauptnavigation"
 nav_features: "Funktionen"
 nav_install: "Installieren"

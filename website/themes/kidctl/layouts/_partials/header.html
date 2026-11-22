@@ -2,7 +2,7 @@
 <header class="topbar">
   <div class="wrap">
     <a class="brand" href="{{ $home }}"><span class="mark" aria-hidden="true"></span>KidCTL</a>
-    <nav class="topnav" aria-label="{{ T "nav_label" }}">
+    <nav class="topnav desk" aria-label="{{ T "nav_label" }}">
       <a href="{{ $home }}#features">{{ T "nav_features" }}</a>
       {{- with site.GetPage "/docs" }}<a href="{{ .RelPermalink }}"{{ if eq $.Section "docs" }} class="active"{{ end }}>{{ T "nav_docs" }}</a>{{ end }}
       <a href="{{ $home }}#roadmap">{{ T "nav_roadmap" }}</a>
@@ -14,5 +14,17 @@
     {{- with site.GetPage "/search" }}
     <a class="icon-btn search-open" href="{{ .RelPermalink }}" data-search-open title="{{ T "search_label" }} (Strg+K, /)" aria-label="{{ T "search_label" }}">{{ partial "icon.html" "search" }}</a>
     {{- end }}
+    <details class="menu">
+      <summary class="icon-btn" aria-label="{{ T "menu_label" }}"><span class="ico-open">{{ partial "icon.html" "menu" }}</span><span class="ico-close"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></span></summary>
+      <nav class="menu-panel" aria-label="{{ T "nav_label" }}">
+        <a href="{{ $home }}#features">{{ T "nav_features" }}</a>
+        {{- with site.GetPage "/docs" }}<a href="{{ .RelPermalink }}"{{ if eq $.Section "docs" }} class="active" aria-current="true"{{ end }}>{{ T "nav_docs" }}</a>{{ end }}
+        <a href="{{ $home }}#roadmap">{{ T "nav_roadmap" }}</a>
+        {{- with site.GetPage "/news" }}<a href="{{ .RelPermalink }}"{{ if eq $.Section "news" }} class="active" aria-current="true"{{ end }}>{{ T "nav_news" }}</a>{{ end }}
+        {{- with site.GetPage "/releases" }}<a href="{{ .RelPermalink }}"{{ if eq $.Section "releases" }} class="active" aria-current="true"{{ end }}>{{ T "nav_releases" }}</a>{{ end }}
+        <a href="{{ site.Params.github }}">GitHub</a>
+        {{ partial "langswitch.html" . }}
+      </nav>
+    </details>
   </div>
 </header>

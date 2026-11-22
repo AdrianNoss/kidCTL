@@ -3585,3 +3585,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   „Verstanden“, CSRF, Whitelabel, Versionsabfrage mit Fehlerfällen, Version = Agent) und gesamte Server-Suite gegen
   PostgreSQL; Migration gegen Alt-Schema-Datenbank (0024 → head, `alembic check`, Downgrade); Tray-Tests inkl.
   Info-Dialog, Dialog offscreen in Linux- und Windows-Optik angesehen; Hugo-Build mit Beispiel-Releases.
+- 2026-11-22: Projekthomepage mobil: Burger-Menü oben (unter 840 px) mit Funktionen, Anleitungen, Roadmap, News, Releases, GitHub
+  und Sprachwahl; `<details>` ohne JS bedienbar, `menu.js` schließt es bei Link/Esc/Klick daneben. Doppelte Linkliste in der
+  Fußzeile auf Mobil ausgeblendet (Impressum/Datenschutz/RSS bleiben). Desktop unverändert. Getestet: `hugo --minify
+  --panicOnWarning` fehlerfrei; Browser-Pane bei 375 px (Doku, News; hell/dunkel) und Desktop-Breite.
