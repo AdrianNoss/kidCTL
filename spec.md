@@ -3424,14 +3424,14 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   je Programm/Kategorie, „zählt nicht“-Programme, Zeitkonto; 0.48 Aufgaben → Zeit verdienen, Weich-Modus, Alarmkanäle
   ntfy/Webhook/Matrix, Cinnamon/COSMIC. Plan in `dev/planung/PLAN-2026-11.md`, Roadmap der Website ergänzt. Keine
   Umsetzung; geprüft: Doku-Parität und Hugo-Build.
-- 2026-11-22: Geräte entfernen (fließt in 0.45.0 ein, kein Versionssprung; News 0.45 ergänzt) (`POST /devices/{id}/delete`, Knopf „Gerät entfernen“ in der Gerätedetailansicht).
+- 2026-11-22: Geräte entfernen (in 0.45.1) (`POST /devices/{id}/delete`, Knopf „Gerät entfernen“ in der Gerätedetailansicht).
   Migration 0024: `usage_record.device_id`/`app_usage.device_id` nullable mit `ON DELETE SET NULL`, damit die
   Statistik je Kind bleibt; „Nutzung auf anderen Geräten“ zählt Zeilen ohne Gerät mit. Doku zur Deinstallation
   (DE/EN) nennt nun „Gerät entfernen“. Geprüft: Tests (Löschen inkl. CSRF, fremde Familie → 404, verbundenes Gerät
   wird mit `CLOSE_REVOKED` getrennt, altes Token abgewiesen, Statistik bleibt; Kind löschen mit zugeordnetem Gerät
   → Policy-Push ohne Zuordnung), komplette Suite gegen PostgreSQL, `alembic check`, Down-/Upgrade, Upgrade einer
   0023-Datenbank mit Daten, Browser-Smoke-Test im Dev-Server.
-- 2026-11-22: Agent (Linux/Windows, in 0.45.0): Bei neuer Zuordnung eines Geräts bzw. Users zu einem Kind kam
+- 2026-11-22: Agent (Linux/Windows, in 0.45.1): Bei neuer Zuordnung eines Geräts bzw. Users zu einem Kind kam
   der ganze Chatverlauf als Benachrichtigungsflut (nur die erste Nachricht des Abgleichs war still, weil „hat Verlauf“
   je Nachricht geprüft wurde). Jetzt merkt sich der Agent je Kind Zeitpunkt und Art der letzten `chat_sync`-Anfrage;
   ältere Nachrichten sind Verlauf (erster Abgleich still, sonst eine Sammelmeldung nach 2 s Ruhe). Die erste
@@ -3440,7 +3440,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   offenen Anfrage nach (`ChatStore.sync_after`), die Entscheidung kommt mit normaler Benachrichtigung. Getestet: Agent-Unittests
   (`test_chat_notify.py`: erster Abgleich still, danach live; erste Live-Nachricht ohne Verlauf; Offline-Sammelmeldung;
   einzelne nachgeholte Nachricht; offline gefallene Entscheidung), Agent-Testsuite grün; e2e-Tests mangels `httpx` lokal nicht gelaufen, nicht in der
-  VM geprüft. News 0.45 (DE/EN) ergänzt.
+  VM geprüft. (News-Ergänzung mit 0.45.1 zurückgenommen.)
 - 2026-11-22: Fehler behoben (Windows): Hearthstone über Battle.net erzeugte drei Sperrdialoge trotz freigegebenem
   Battle.net (`Hearthstone Beta Launcher.exe`, `ProgramData\Battle.net\Agent\Agent.exe`, `…\Agent.9886\Agent.exe`).
   Ursache: Der Katalog-Schlüssel ist das Startmenü-Ziel `Battle.net Launcher.exe`, Spieleordner und Abstammungsregel
@@ -3481,3 +3481,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   `security@kidctl.de` (SECURITY*, README*, `security.txt` der Website und Server-Route, `.env.example`), Impressum
   `info@kidctl.de`, Maintainer der Debian-Pakete `KidCTL <info@kidctl.de>` statt `kidctl@localhost`. Geprüft:
   Doku-Parität, Hugo-Build (keine alte Adresse in der Ausgabe); Server-Tests nicht gelaufen (kein psycopg lokal).
+- 2026-11-22: Version 0.45.1 – Sammel-Patch der Fixes vom 2026-11-22 (Geräte entfernen, keine Chat-Benachrichtigungsflut
+  und nachgeholte Offline-Entscheidungen, Windows-Spiele/Launcher-Freigaben inkl. Ubisoft-Spielerkennung, Minecraft,
+  Gaming Services, GameInput, Kontaktadressen auf kidctl.de). v0.45.0 war bereits veröffentlicht; Ergänzungen der
+  News 0.45 zurückgenommen (Patch ohne Sicherheitsbezug, keine eigene News). Geprüft: Server-Suite gegen PostgreSQL,
+  Agent-Tests, Doku-Parität, Hugo-Build.
