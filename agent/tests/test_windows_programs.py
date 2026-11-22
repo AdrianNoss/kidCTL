@@ -414,3 +414,8 @@ def test_minecraft_java_runtime():
                                                        categories=["Game"])]), games.GameIndex())
     assert idx.key_for(proc(java)) == ("game:minecraft:java", "Minecraft: Java Edition")
     assert is_launcher("appx:" + pfn)
+
+
+def test_gameinput_is_base():
+    """Echter Fall (2026-11-22): Ohne GameInputRawInputProxy.exe hat Minecraft Bedrock keine Steuerung."""
+    assert classify(proc(r"C:\Program Files\Microsoft GameInput\x64\GameInputRawInputProxy.exe"), allowed()) is None

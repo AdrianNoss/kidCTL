@@ -286,8 +286,9 @@ Abweichungen stehen hier und unter „Restlücken“.
   - Epic Games: Manifeste `ProgramData\Epic\EpicGamesLauncher\Data\Manifests\*.item` (`InstallLocation`,
     `AppName`, `DisplayName`) -> `game:epic:<AppName>`.
   - Store-/Xbox-Spiele: Katalog (Kategorie „Spiele“ bei `MicrosoftGame.config`). Launcher (Steam, Xbox-App, Game Bar
-    …) zählen nicht als Spiel; die Game Bar (startet mit jedem Spiel) und die Gaming Services (`Microsoft.GamingServices`,
-    von Store-Spielen wie Minecraft gebraucht) gehören zur Basis. Programme unter `WindowsApps` ohne App-Identität
+    …) zählen nicht als Spiel; die Game Bar (startet mit jedem Spiel), die Gaming Services (`Microsoft.GamingServices`,
+    von Store-Spielen wie Minecraft gebraucht) und Microsoft GameInput (`Program Files\Microsoft GameInput`, Eingabe in
+    Spielen wie Minecraft Bedrock) gehören zur Basis. Programme unter `WindowsApps` ohne App-Identität
     werden ihrem Paket zugeordnet (Ordnername -> Package Family Name) und wie Store-Apps geprüft.
   - **Launcher-Regel** (`win/games.LAUNCHERS`: Steam, Epic, Battle.net, EA App, Ubisoft Connect, GOG Galaxy, Riot):
     Ist der Launcher freigegeben, sind von ihm gestartete Prozesse erlaubt; bei Steam und Epic zusätzlich ihre
@@ -3447,3 +3448,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   zählt als Spiel `game:minecraft:java` „Minecraft: Java Edition“; der Launcher selbst zählt nicht mehr als Spiel.
   Bewusst eng (nur dieses Paket, nur Java) – Restlücke in `docs/limitations*.md`. Pfad vom echten Rechner; Unittest
   (Agent 298 grün); nicht live geprüft. Für 0.45.1.
+- 2026-11-22: Fehler (Windows): Minecraft Bedrock hatte keine Steuerung, bis `C:\Program Files\Microsoft GameInput\x64\
+  GameInputRawInputProxy.exe` einzeln freigegeben war. Microsoft GameInput gehört jetzt zur Basis (Ordner unter
+  `Program Files`, für Kinder nicht beschreibbar). Unittest mit dem echten Pfad; nicht live geprüft. Für 0.45.1.

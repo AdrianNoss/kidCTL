@@ -31,6 +31,7 @@ BASE_DIRS = (
     PROGRAM_FILES + r"\common files\microsoft shared",
     PROGRAM_FILES_X86 + r"\common files\microsoft shared",
     PROGRAM_FILES + r"\windows defender",
+    PROGRAM_FILES + r"\microsoft gameinput",          # Eingabe für Spiele (Minecraft Bedrock: Steuerung)
     norm(os.environ.get("ProgramData", r"C:\ProgramData")) + r"\microsoft\windows defender\platform",
 )
 # Von der Aufgabenplanung bzw. einem Dienst gestartet (z. B. automatische Datenträgerbereinigung)
