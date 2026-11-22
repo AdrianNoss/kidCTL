@@ -3,7 +3,7 @@
 Bestehende Eltern starten bei 0.45.2 (Version beim Einführen), sehen also ab dem nächsten Update den Hinweis.
 
 Revision: 0026
-Vorgänger: 0024 (beim Zusammenführen mit 0025_update_knopf auf '0025' umstellen)
+Vorgänger: 0025 (update_knopf)
 Erstellt: 2026-11-22
 """
 

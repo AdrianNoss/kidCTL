@@ -1683,13 +1683,13 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
 - Workflow `.github/workflows/audit.yml`: wöchentlich (und von Hand) `pip-audit` gegen die Pakete aus
   `packaging/windows/vendor.lock` (Dependabot kennt das Format nicht); Fund → Workflow schlägt fehl.
 
-## Geplante Funktionen (entschieden 2026-11-21, Planungssitzung; noch nicht umgesetzt)
+## Geplante Funktionen (entschieden 2026-11-21, Planungssitzung; noch nicht umgesetzt; Zielversionen am 2026-11-22 um eins verschoben, weil 0.46 Update-Knopf und Info-Seite bringt)
 
 Priorisiert mit Adrian anhand einer Funktionsrecherche (verbreitete Kindersicherungen, Wünsche von Eltern und
 Self-Hostern). Plan mit Etappen: `dev/planung/PLAN-2026-11.md`. Fachliche Details je Funktion vor der Umsetzung per
 /grill-me klären und hier ergänzen.
 
-**Etappe 1 – Alltag (Ziel 0.46):**
+**Etappe 1 – Alltag (Ziel 0.47):**
 - **Freigabe anfragen:** Das Kind fragt aus der Tray-App (und aus der Sperr-Benachrichtigung) eine gesperrte Website
   oder ein gesperrtes Programm an, mit Begründung. Die Anfrage erscheint wie eine Verlängerungsanfrage im Chat
   (Genehmigen / Ablehnen, wahlweise nur heute oder dauerhaft). Übertragen wird nur die angefragte Domain bzw. App.
@@ -1701,7 +1701,7 @@ Self-Hostern). Plan mit Etappen: `dev/planung/PLAN-2026-11.md`. Fachliche Detail
   engste Näherung).
 - Parallel: **Lutris und Bottles** als Spielequellen (Roadmap `wine-launchers`).
 
-**Etappe 2 – Zeit-Logik (Ziel 0.47):**
+**Etappe 2 – Zeit-Logik (Ziel 0.48):**
 - **Limit je Programm/Kategorie:** Verallgemeinerung des Spiele-Limits (eigenes Tageskontingent für ein Programm
   oder eine Kategorie, z. B. Browser).
 - **„Zählt nicht“-Programme:** Programme (z. B. Lern-Apps, Office) laufen im Zeitfenster, ohne das Kontingent zu
@@ -1709,7 +1709,7 @@ Self-Hostern). Plan mit Etappen: `dev/planung/PLAN-2026-11.md`. Fachliche Detail
 - **Zeitkonto:** nicht genutzte Minuten teilweise auf Folgetage übertragen, mit Deckel je Tag und Verfall; offline
   mit gecachter Policy.
 
-**Etappe 3 – Belohnung, Benachrichtigung, Desktops (Ziel 0.48):**
+**Etappe 3 – Belohnung, Benachrichtigung, Desktops (Ziel 0.49):**
 - **Aufgaben → Zeit verdienen:** Eltern legen Aufgaben mit Minutenwert an, das Kind meldet „erledigt“ in der
   Tray-App, Eltern bestätigen → Gutschrift (bestehende Tagesausnahme).
 - **Weich-Modus:** je Kind wählbar – bei Zeitende nur warnen und Eltern informieren statt sperren (für Ältere).
@@ -3589,3 +3589,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   und Sprachwahl; `<details>` ohne JS bedienbar, `menu.js` schließt es bei Link/Esc/Klick daneben. Doppelte Linkliste in der
   Fußzeile auf Mobil ausgeblendet (Impressum/Datenschutz/RSS bleiben). Desktop unverändert. Getestet: `hugo --minify
   --panicOnWarning` fehlerfrei; Browser-Pane bei 375 px (Doku, News; hell/dunkel) und Desktop-Breite.
+- 2026-11-22: Version 0.46.0 – Update per Knopf je Gerät, Info-Seite mit Versionsanzeige und „Was ist neu“ (WebUI,
+  Tray), Burger-Menü der Projektseite; News 0.46 (DE/EN), Roadmap ergänzt. Zielversionen der geplanten Etappen um eins
+  verschoben (0.47–0.49). Beim Zusammenführen Migration 0026 auf 0025 umgehängt. Geprüft: Server-Suite gegen
+  PostgreSQL, Agent- und Tray-Tests, ein Migrationskopf (0026), Doku-Parität, Hugo-Build.

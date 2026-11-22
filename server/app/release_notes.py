@@ -6,6 +6,22 @@ die Version des laufenden Servers."""
 
 RELEASES: list[dict] = [
     {
+        "version": "0.46.0",
+        "date": "2026-11-22",
+        "de": [
+            "Update per Knopf: Auf der Geräteseite lässt sich kidCTL auf dem Kinderrechner direkt aktualisieren "
+            "(einmalig muss jeder Rechner noch von Hand auf 0.46 gebracht werden).",
+            "Unter Einstellungen → Info stehen Version und Links; auch die Tray-App hat einen Punkt „Info“.",
+            "Nach jedem Update zeigt die Übersicht einmalig, was neu ist.",
+        ],
+        "en": [
+            "Update button: kidCTL on a child computer can be updated right from the device page "
+            "(each computer has to be brought to 0.46 by hand once).",
+            "Settings → About shows the version and links; the tray app has an “About” entry as well.",
+            "After each update, the overview shows once what is new.",
+        ],
+    },
+    {
         "version": "0.45.2",
         "date": "2026-11-22",
         "de": [

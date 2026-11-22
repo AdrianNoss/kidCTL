@@ -194,3 +194,17 @@
   text:
     de: "Versionsanzeige mit Links in WebUI und Tray-App; nach einem Update sehen Eltern, was neu ist."
     en: "Version info with links in the web interface and tray app; after an update, parents see what's new."
+- id: update-button
+  status: done
+  version: "0.46"
+  title: { de: "Update per Knopf", en: "Update with one click" }
+  text:
+    de: "Eltern aktualisieren kidCTL auf den Kinderrechnern direkt aus der Weboberfläche."
+    en: "Parents update kidCTL on the children's computers right from the web interface."
+- id: about
+  status: done
+  version: "0.46"
+  title: { de: "Info und Neuigkeiten", en: "About and what's new" }
+  text:
+    de: "Laufende Version in Weboberfläche und Kinder-App, Kurzfassung der Änderungen nach jedem Update."
+    en: "Running version in the web interface and the child app, a short summary of changes after each update."
