@@ -71,3 +71,23 @@ def test_offline_single_message_notifies_normally(monkeypatch):
         await asyncio.sleep(0.05)
         assert desk.sent == [(ME, "Nachricht von Mama", "Nachricht 2")]
     asyncio.run(scenario())
+
+
+def test_offline_decision_is_fetched_and_notified(monkeypatch):
+    monkeypatch.setattr(core, "BACKLOG_SETTLE", 0.01)
+    kw = dict(from_child=True, kind="extension_request")
+
+    async def scenario():
+        a, desk = await _agent()
+        a.chat.upsert(old(1))
+        a.chat.upsert(old(2, status="pending", **kw))
+        a.chat.upsert(old(3))
+        await a.sync_chat()
+        assert a.conn.sent[-1].after_id == 1                 # ab der offenen Anfrage, nicht ab 3
+        await a.on_chat_message(old(2, status="approved", approved_minutes=15, **kw))  # offline entschieden
+        await a.on_chat_message(old(3))                      # unverändert: nichts
+        await asyncio.sleep(0.05)
+        assert desk.sent == [(ME, "Verlängerung genehmigt", "+15 Minuten")]
+        await a.sync_chat()
+        assert a.conn.sent[-1].after_id == 3                 # nichts mehr offen
+    asyncio.run(scenario())

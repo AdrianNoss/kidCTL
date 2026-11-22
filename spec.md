@@ -837,7 +837,8 @@ hierher verschoben 2026-11-17.)
   `SO_PEERCRED`; nicht zugeordnete User/Admins erhalten nur „nicht eingeschränkt“. Agent hält
   Chat-Verlauf (200 Nachrichten je Kind) und Ausgangs-Warteschlange persistent (offline-fähig,
   Versand nach Wiederverbindung, Entfernen erst nach `ack`), holt Verlauf nach jeder Policy per
-  `chat_sync` nach. Desktop-Benachrichtigung bei neuer Eltern-Nachricht und bei Entscheidung über
+  `chat_sync` nach (ab der ältesten noch offenen Anfrage, sonst ab der höchsten bekannten
+  Nachricht – so kommen auch offline gefallene Entscheidungen an). Desktop-Benachrichtigung bei neuer Eltern-Nachricht und bei Entscheidung über
   eine Anfrage. Nachrichten, die vor der Verlaufsanfrage entstanden sind, gelten als Verlauf: beim ersten
   Abgleich eines Kindes auf dem Gerät (neue Zuordnung, Zuordnung gewechselt, Neuinstallation, leerer Cache)
   landen sie still im Chat; bei späteren Abgleichen (z. B. nach Offline-Phase) gibt es für nachgeholte
@@ -3409,7 +3410,9 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   der ganze Chatverlauf als Benachrichtigungsflut (nur die erste Nachricht des Abgleichs war still, weil „hat Verlauf“
   je Nachricht geprüft wurde). Jetzt merkt sich der Agent je Kind Zeitpunkt und Art der letzten `chat_sync`-Anfrage;
   ältere Nachrichten sind Verlauf (erster Abgleich still, sonst eine Sammelmeldung nach 2 s Ruhe). Die erste
-  Live-Nachricht an ein Kind ohne Verlauf benachrichtigt jetzt ebenfalls. Getestet: Agent-Unittests
+  Live-Nachricht an ein Kind ohne Verlauf benachrichtigt jetzt ebenfalls. Außerdem kamen Entscheidungen, die fielen,
+  während der Rechner offline war, nie an (`chat_sync` holte nur höhere IDs); jetzt fragt der Agent ab der ältesten
+  offenen Anfrage nach (`ChatStore.sync_after`), die Entscheidung kommt mit normaler Benachrichtigung. Getestet: Agent-Unittests
   (`test_chat_notify.py`: erster Abgleich still, danach live; erste Live-Nachricht ohne Verlauf; Offline-Sammelmeldung;
-  einzelne nachgeholte Nachricht), Agent-Testsuite grün; e2e-Tests mangels `httpx` lokal nicht gelaufen, nicht in der
+  einzelne nachgeholte Nachricht; offline gefallene Entscheidung), Agent-Testsuite grün; e2e-Tests mangels `httpx` lokal nicht gelaufen, nicht in der
   VM geprüft.

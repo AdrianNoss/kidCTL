@@ -269,7 +269,7 @@ class AgentCore:
         for child_id in sorted(set(self.policy.users.values())):
             users = self.users_of(child_id)
             self._chat_sync[child_id] = (datetime.now(UTC), not self.chat.has_history(child_id))
-            await self.conn.send(p.ChatSync(username=users[0], after_id=self.chat.max_id(child_id)))
+            await self.conn.send(p.ChatSync(username=users[0], after_id=self.chat.sync_after(child_id)))
 
     async def on_message(self, msg) -> None:
         if isinstance(msg, p.Policy):
