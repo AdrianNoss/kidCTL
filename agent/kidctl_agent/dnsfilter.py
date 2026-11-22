@@ -95,6 +95,11 @@ def build_zones(web: p.WebFilter, lists: dict[str, list[str]]) -> list[str]:
     zones: dict[str, str] = {}  # Name -> Typ
     data: list[str] = []
     allow = {d for d in web.allow if valid_domain(d)}
+    blocked: set[str] = set()
+    if web.mode == "blacklist":
+        blocked = {d for d in web.deny if valid_domain(d)}
+        for ref in web.lists:
+            blocked.update(d for d in lists.get(ref.id, ()) if valid_domain(d))
     for d in DOH_DOMAINS:
         zones[d] = "always_nxdomain"
     if web.safesearch:
@@ -102,18 +107,15 @@ def build_zones(web: p.WebFilter, lists: dict[str, list[str]]) -> list[str]:
             for name in names:
                 if name in zones or (web.mode == "whitelist" and not covered(name, allow)):
                     continue
+                # Gesperrtes (auch über die Hauptdomain) nicht per spezifischerer CNAME-Zone wieder öffnen
+                if covered(name, blocked) and not covered(name, allow):
+                    continue
                 zones[name] = "redirect"
                 data.append(f'local-data: "{name}. CNAME {target}."')
     for d in sorted(allow):
         zones.setdefault(d, "transparent")
-    if web.mode == "blacklist":
-        for d in web.deny:
-            if valid_domain(d):
-                zones.setdefault(d, "always_nxdomain")
-        for ref in web.lists:
-            for d in lists.get(ref.id, ()):
-                if valid_domain(d):
-                    zones.setdefault(d, "always_nxdomain")
+    for d in sorted(blocked):   # feste Reihenfolge -> gleicher Hash, kein unnötiger Neustart
+        zones.setdefault(d, "always_nxdomain")
     lines = [f'local-zone: "{name}." {typ}' for name, typ in zones.items()]
     return lines + data
 

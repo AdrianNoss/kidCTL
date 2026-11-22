@@ -808,7 +808,8 @@ hierher verschoben 2026-11-17.)
     Agenten unter `/run/kidctl/dns`. Whitelist: `local-zone "." always_nxdomain` + freigegebene
     Domains `transparent` (inkl. Subdomains; CNAME-Ziele löst Unbound mit auf). Blacklist:
     Listen/eigene Sperren `always_nxdomain`, eigene Freigaben als Ausnahmen. Rangfolge ohne
-    Doppelte: DoH-Anbieter > SafeSearch > Freigaben > Sperren/Listen.
+    Doppelte: DoH-Anbieter > SafeSearch > Freigaben > Sperren/Listen; SafeSearch entfällt für Namen, die
+    (auch über die Hauptdomain) gesperrt und nicht freigegeben sind (2026-11-22).
   - nftables-Tabelle `inet kidctl_dns`: Port 53 (TCP/UDP) der Kinder-UIDs → Resolver des Kindes,
     Port 853 (TCP/UDP) gesperrt. Admins/nicht zugeordnete User unberührt.
   - `nss-resolve` aus `/etc/nsswitch.conf` entfernt (`kidctl-nsswitch.sh`, Dry-Run/.bak, beim
@@ -3515,3 +3516,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Installation, Dialog erbt das Symbol), Tray-Tests grün; in der Windows-11-VM (Code per `winsync.sh`) als Kind
   angemeldet: Chatfenster und „Verlängerung anfordern“ zeigen das Symbol in Titelleiste und Taskleiste, hell und
   dunkel; `dev/winshots.py` (DE, hell/dunkel) ohne Auffälligkeiten.
+- 2026-11-22: Fehler (Webfilter, Linux und Windows): Eine eigene Sperre bzw. Sperrliste griff nicht für Namen,
+  die SafeSearch per CNAME umschreibt (z. B. `youtube.com`/`www.youtube.com` gesperrt, YouTube trotzdem
+  erreichbar). SafeSearch-Zonen nur noch für nicht gesperrte bzw. freigegebene Namen; Sperrzonen in fester
+  Reihenfolge. Getestet: Agent-Unittests (neu: Sperre schlägt SafeSearch, Freigabe hebt sie auf), 305 grün;
+  Nachstellung in der VM steht noch aus.
