@@ -72,6 +72,25 @@ pre code { background:none; padding:0; font-size:inherit; }
 .topnav a.active { background:var(--secondary-container); color:var(--on-secondary-container); }
 .topnav a.lang { display:inline-flex; align-items:center; gap:.375rem; }
 @media (min-width: 840px) { .topnav a { display:inline-flex; } }
+@media (max-width: 839px) { .topnav.desk { display:none; } }
+
+/* Burger-Menü (nur schmal): <details>, ohne JS bedienbar; menu.js schließt es bei Link/Esc/Außenklick */
+.menu { display:none; }
+.menu summary { list-style:none; cursor:pointer; }
+.menu summary::-webkit-details-marker { display:none; }
+.menu summary:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+.menu .ico-close, .menu[open] .ico-open { display:none; }
+.menu[open] .ico-close { display:block; }
+.menu-panel { position:absolute; left:0; right:0; top:100%; display:flex; flex-direction:column; padding:.5rem 1rem 1rem;
+              background:var(--surface); border-bottom:1px solid var(--outline-variant); box-shadow:0 8px 16px rgb(0 0 0 / .12);
+              max-height:calc(100vh - 64px); overflow-y:auto; }
+.menu-panel a { display:flex; align-items:center; gap:.5rem; min-height:48px; padding:.5rem 1rem; border-radius:var(--shape-md);
+                color:var(--on-surface); text-decoration:none; font-weight:500; }
+.menu-panel a:hover { background:color-mix(in srgb, var(--on-surface) 8%, transparent); }
+.menu-panel a.active { background:var(--secondary-container); color:var(--on-secondary-container); }
+.menu-panel a:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
+.menu-panel a.lang { border-top:1px solid var(--outline-variant); border-radius:0 0 var(--shape-md) var(--shape-md); margin-top:.5rem; padding-top:.5rem; }
+@media (max-width: 839px) { .menu { display:block; } .topbar .wrap { position:relative; } .site-foot .dup { display:none; } }
 
 /* ---------- Buttons ---------- */
 .btn { --bg:var(--primary); --fg:var(--on-primary); --bd:var(--primary);
@@ -306,7 +325,7 @@ dialog.lightbox button { position:fixed; top:.75rem; right:.75rem; width:48px; h
 .icon-btn { display:inline-grid; place-items:center; width:44px; height:44px; border-radius:var(--shape-full); color:var(--on-surface-variant); }
 .icon-btn:hover { background:color-mix(in srgb, var(--on-surface) 8%, transparent); color:var(--on-surface); }
 .topbar .search-open { margin-left:.25rem; }
-@media (max-width: 839px) { .topbar .search-open { margin-left:auto; } .topnav { margin-left:0; } }
+@media (max-width: 839px) { .topbar .search-open { margin-left:auto; } }
 dialog.search-dialog { width:min(40rem, calc(100vw - 2rem)); max-height:min(40rem, calc(100vh - 4rem)); margin:3rem auto auto; padding:1rem;
                        border:0; border-radius:var(--shape-xl); background:var(--surface-container-high); color:var(--on-surface); }
 dialog.search-dialog::backdrop { background:rgb(0 0 0 / .45); }

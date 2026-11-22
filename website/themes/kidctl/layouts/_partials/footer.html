@@ -9,10 +9,10 @@
       {{- with site.GetPage "/legal/imprint" }}<a href="{{ .RelPermalink }}">{{ .Title }}</a>{{ end }}
       {{- with site.GetPage "/legal/privacy" }}<a href="{{ .RelPermalink }}">{{ .Title }}</a>{{ end }}
       {{- with site.GetPage "/news" }}{{ with .OutputFormats.Get "rss" }}<a href="{{ .RelPermalink }}">RSS</a>{{ end }}{{ end }}
-      {{- with site.GetPage "/docs" }}<a href="{{ .RelPermalink }}">{{ T "nav_docs" }}</a>{{ end }}
-      {{- with site.GetPage "/releases" }}<a href="{{ .RelPermalink }}">{{ T "nav_releases" }}</a>{{ end }}
-      <a href="{{ site.Params.github }}">GitHub</a>
-      {{ partial "langswitch.html" . }}
+      {{- with site.GetPage "/docs" }}<a class="dup" href="{{ .RelPermalink }}">{{ T "nav_docs" }}</a>{{ end }}
+      {{- with site.GetPage "/releases" }}<a class="dup" href="{{ .RelPermalink }}">{{ T "nav_releases" }}</a>{{ end }}
+      <a class="dup" href="{{ site.Params.github }}">GitHub</a>
+      <span class="dup">{{ partial "langswitch.html" . }}</span>
     </nav>
   </div>
 </footer>

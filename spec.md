@@ -3528,3 +3528,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Tray-Tests, `ruff check`, Doku-Parität, Hugo. VM-Prüfung des Webfilter-Fixes noch offen.
 - 2026-11-22: Projektseite: Der Pages-Build beim Release wartet bis zu 2 min, bis der neue Release in der GitHub-Liste
   steht (bei 0.45.1 und 0.45.2 fehlte er sonst auf der Releases-Seite). Getestet: YAML geprüft, manueller Neubau.
+- 2026-11-22: Projekthomepage mobil: Burger-Menü oben (unter 840 px) mit Funktionen, Anleitungen, Roadmap, News, Releases, GitHub
+  und Sprachwahl; `<details>` ohne JS bedienbar, `menu.js` schließt es bei Link/Esc/Klick daneben. Doppelte Linkliste in der
+  Fußzeile auf Mobil ausgeblendet (Impressum/Datenschutz/RSS bleiben). Desktop unverändert. Getestet: `hugo --minify
+  --panicOnWarning` fehlerfrei; Browser-Pane bei 375 px (Doku, News; hell/dunkel) und Desktop-Breite.
