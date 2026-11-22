@@ -3405,7 +3405,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   je Programm/Kategorie, „zählt nicht“-Programme, Zeitkonto; 0.48 Aufgaben → Zeit verdienen, Weich-Modus, Alarmkanäle
   ntfy/Webhook/Matrix, Cinnamon/COSMIC. Plan in `dev/planung/PLAN-2026-11.md`, Roadmap der Website ergänzt. Keine
   Umsetzung; geprüft: Doku-Parität und Hugo-Build.
-- 2026-11-22: Geräte entfernen (`POST /devices/{id}/delete`, Knopf „Gerät entfernen“ in der Gerätedetailansicht).
+- 2026-11-22: Geräte entfernen (fließt in 0.45.0 ein, kein Versionssprung; News 0.45 ergänzt) (`POST /devices/{id}/delete`, Knopf „Gerät entfernen“ in der Gerätedetailansicht).
   Migration 0024: `usage_record.device_id`/`app_usage.device_id` nullable mit `ON DELETE SET NULL`, damit die
   Statistik je Kind bleibt; „Nutzung auf anderen Geräten“ zählt Zeilen ohne Gerät mit. Doku zur Deinstallation
   (DE/EN) nennt nun „Gerät entfernen“. Geprüft: Tests (Löschen inkl. CSRF, fremde Familie → 404, verbundenes Gerät
