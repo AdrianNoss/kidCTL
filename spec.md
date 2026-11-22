@@ -3417,5 +3417,5 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   (`EALauncher.exe`) und Ubisoft Connect (`UbisoftConnect.exe`); Steam, Epic, GOG, Wargaming zeigen direkt auf den
   Launcher. Startmenü-Ziele, Agent-Ordner und Rechte in der Windows-VM (Snapshot „launchers“) nachgesehen;
   Agent-Unittests mit den echten Pfaden (294 grün, e2e-Tests mangels Server-Umgebung nicht gelaufen). Nicht live
-  geprüft: Start von Hearthstone über Battle.net (Spiel in der VM nicht vollständig installiert). Teil von 0.45.1
-  (mit Adrian abgestimmt; zusammen mit dem Chat-Fix aus `claude/wonderful-curran-d3c0fc`).
+  geprüft: Start von Hearthstone über Battle.net (Spiel in der VM nicht vollständig installiert). Teil von 0.45.0
+  (noch nicht veröffentlicht; mit Adrian abgestimmt), News 0.45 ergänzt.
