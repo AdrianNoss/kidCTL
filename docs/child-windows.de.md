@@ -2,7 +2,7 @@
 
 Unter Windows 10/11 gibt es in diesem Stand **Bildschirmzeit, Abmeldung, Login-Sperre, „Jetzt sperren“,
 Tray-App mit Chat und Verlängerungen, die Programmkontrolle, der Website-Filter und das Spiele-Limit** (Steam,
-Epic Games, EA app, GOG Galaxy, Battle.net, Store-Spiele sowie Spiele, die ein Launcher wie Ubisoft Connect oder
+Epic Games, EA app, GOG Galaxy, Battle.net, Ubisoft Connect, Store-Spiele sowie Spiele, die ein Launcher wie
 Wargaming startet; weitere Apps lassen sich im WebUI als „Spiel“ markieren).
 
 1. **Kinderkonten** als „Standardbenutzer“ anlegen (Einstellungen → Konten → Andere Benutzer), lokale Konten oder

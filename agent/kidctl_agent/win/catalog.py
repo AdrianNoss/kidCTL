@@ -43,9 +43,11 @@ KEYWORDS = [   # (Muster im Namen bzw. Pfad, Kategorien)
 # Mitgelieferte Store-Apps: Als SYSTEM löst Windows deren Ressourcen-Namen nicht auf (nur für Benutzer, bei denen
 # das Paket registriert ist) – daher feste Namen (deutsch, englisch); sonst wird der Paketname lesbar gemacht.
 # Pakete des Systems, die zur Grundausstattung gehören (immer erlaubt, nicht im Katalog): Shell-Teile (Suche, Widgets,
-# „Klick und los“, Geräteübergreifendes), die Game Bar (startet bei jedem Spiel automatisch mit) und die Einstellungen
+# „Klick und los“, Geräteübergreifendes), die Game Bar (startet bei jedem Spiel automatisch mit), die Gaming Services
+# (Store-Spiele) und die Einstellungen
 # (Hintergrund, Taskleiste, Infobereich; was das System ändert, verlangt ohnehin Administratorrechte)
-BASE_PFN_PREFIXES = ("microsoftwindows.client.", "microsoft.xboxgamingoverlay_", "windows.immersivecontrolpanel_")
+BASE_PFN_PREFIXES = ("microsoftwindows.client.", "microsoft.xboxgamingoverlay_", "windows.immersivecontrolpanel_",
+                     "microsoft.gamingservices_")   # Gaming Services: von Store-Spielen wie Minecraft benötigt
 KNOWN_APPS = {
     "Microsoft.WindowsCalculator": ("Rechner", "Calculator"),
     "Microsoft.WindowsNotepad": ("Editor", "Notepad"),

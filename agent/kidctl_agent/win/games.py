@@ -9,7 +9,9 @@ r"""Spiele unter Windows erkennen – über den Installationsordner (Umgebungsva
 - EA app: Uninstall-Eintrag, dessen ``InstallLocation`` ``__Installer\installerdata.xml`` enthält -> ``game:ea:<Schlüssel>``
 - Battle.net: ``ProgramData\Battle.net\Agent\product.db`` (Protobuf: je Produkt UID, Code, Pfad) ->
   ``game:battlenet:<uid>``; Name = Ordnername (die Datei enthält keinen Anzeigenamen)
-- Ubisoft Connect, Wargaming: noch kein Format aus echter Installation – nur der Rückfall unten.
+- Ubisoft Connect: Registry ``HKLM\SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs\<id>`` (``InstallDir``) ->
+  ``game:ubisoft:<id>``; Name = Ordnername. Spiele liegen standardmäßig unter dem Launcher-Ordner (``…\games``).
+- Wargaming: noch kein Format aus echter Installation – nur der Rückfall unten.
 
 Namen und IDs stammen aus Dateien, die Launcher anlegen – nur Anzeige, keine Freigaben.
 
@@ -38,6 +40,7 @@ PROGRAM_DATA = os.environ.get("ProgramData", r"C:\ProgramData")
 EPIC_MANIFESTS = ntpath.join(PROGRAM_DATA, r"Epic\EpicGamesLauncher\Data\Manifests")
 BNET_DB = ntpath.join(PROGRAM_DATA, r"Battle.net\Agent\product.db")
 EA_INSTALL_DATA = ntpath.join(PROGRAM_DATA, r"EA Desktop\InstallData")
+UBI_KEYS = (r"SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs",)
 GOG_KEYS = (r"SOFTWARE\WOW6432Node\GOG.com\Games", r"SOFTWARE\GOG.com\Games")
 UNINSTALL_KEYS = (r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
                   r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall")
@@ -48,13 +51,35 @@ MAX_FILE = 1024 * 1024
 # Launcher: Ist er freigegeben, sind von ihm gestartete Prozesse erlaubt (wie Steam/Heroic unter Linux)
 LAUNCHERS = {"steam.exe", "epicgameslauncher.exe", "battle.net.exe", "eadesktop.exe", "upc.exe",
              "galaxyclient.exe", "riotclientservices.exe", "wgc.exe"}
+# Startmenü-Ziele, die den Launcher nur starten (echte Installationen, VM-Snapshot „launchers“): Freigegeben wird
+# der Eintrag, er steht für den Launcher daneben
+LAUNCHER_ENTRIES = {"battle.net launcher.exe": "battle.net.exe", "ealauncher.exe": "eadesktop.exe",
+                    "ubisoftconnect.exe": "upc.exe"}
+# Minecraft Launcher (Store-App, echter Fall 2026-11-22): startet Minecraft: Java Edition mit einer Java-Laufzeit, die er
+# in die Paketdaten des Kindes lädt (``…\AppData\Local\Packages\<PFN>\LocalCache\…\bin\javaw.exe``, ohne
+# App-Identität). Diese Java-Prozesse gehören zum Paket und zählen als Spiel.
+MINECRAFT_PFN = "microsoft.4297127d64ec6_8wekyb3d8bbwe"
+MINECRAFT_JAVA = ("game:minecraft:java", "Minecraft: Java Edition")
+_PKG_CACHE = re.compile(r"^[a-z]:\\users\\[^\\]+\\appdata\\local\\packages\\([^\\]+)\\localcache\\")
+_JAVA = {"java.exe", "javaw.exe"}
+
+
+def package_runtime(exe: str) -> str:
+    """Package Family Name (klein), wenn ``exe`` (normiert) die Java-Laufzeit des Minecraft Launchers ist, sonst ``""``.
+    Bewusst eng (nur dieses Paket, nur ``java[w].exe``): der Ordner ist für das Kind beschreibbar."""
+    m = _PKG_CACHE.match(exe)
+    return m.group(1) if m and m.group(1) == MINECRAFT_PFN and ntpath.basename(exe) in _JAVA else ""
+
+
+# Hilfsprozesse außerhalb des Programmordners: Battle.net-Agent in ``Agent`` bzw. versionierten Ordnern ``Agent.NNNN``
+LAUNCHER_DATA_DIRS = {"battle.net.exe": (norm(ntpath.join(PROGRAM_DATA, "Battle.net")),)}
 # Hilfsprozesse der Launcher: zählen nicht als Spiel und vererben die Abstammung nicht
 LAUNCHER_HELPERS = {
     "steamwebhelper.exe", "steamservice.exe", "steamerrorreporter.exe", "steamerrorreporter64.exe",
     "gameoverlayui.exe", "gameoverlayui64.exe", "steamsysinfo.exe", "steam_monitor.exe",
     "epicwebhelper.exe", "unrealcefsubprocess.exe", "epiconlineservicesuserhelper.exe",
     "epiconlineserviceshost.exe", "crashreportclient.exe",
-    "agent.exe", "battle.net helper.exe", "blizzarderror.exe", "blizzard update agent.exe",
+    "agent.exe", "agenthelper.exe", "battle.net helper.exe", "blizzarderror.exe", "blizzard update agent.exe",
     "eabackgroundservice.exe", "eaconnect_microsoft.exe", "qtwebengineprocess.exe", "eacefsubprocess.exe",
     "eacrashreporter.exe", "link2ea.exe", "ealocalhostsvc.exe",
     "upcwebhelper.exe", "uplaywebcore.exe", "ubisoftconnectwebcore.exe", "uplayservice.exe", "upc_crashreporter.exe",
@@ -204,6 +229,8 @@ def scan(steam: str | None = None, epic_dir: str = EPIC_MANIFESTS, listdir=os.li
     _add(idx, "eadesktop.exe", ea_games(registry, UNINSTALL_KEYS, isfile))
     idx.watch_reg += list(UNINSTALL_KEYS)
     idx.watch.append(EA_INSTALL_DATA)
+    _add(idx, "upc.exe", ubisoft_games(registry, UBI_KEYS))
+    idx.watch_reg += list(UBI_KEYS)
     _add(idx, "battle.net.exe", battlenet_games((read_bytes or _read_bytes)(bnet_db)))
     idx.watch.append(bnet_db)
     return idx
@@ -226,6 +253,18 @@ def gog_games(registry, keys=GOG_KEYS) -> list[tuple[str, str, str]]:
         folder = _abs_dir(str(values.get("path", "")))
         if name.isdigit() and folder:
             out.append((folder, f"game:gog:{name}", str(values.get("gameName") or name)[:255]))
+    return out
+
+
+def ubisoft_games(registry, keys=UBI_KEYS) -> list[tuple[str, str, str]]:
+    """Ubisoft Connect: je Spiel ein Registry-Schlüssel (Name = Spiel-ID) mit ``InstallDir`` (mit ``/``)."""
+    out = []
+    for name, values in registry(keys):
+        raw = str(values.get("InstallDir", ""))
+        folder = _abs_dir(raw)
+        if name.isdigit() and folder:
+            label = ntpath.basename(raw.replace("/", "\\").rstrip("\\"))
+            out.append((folder, f"game:ubisoft:{name}", label[:255]))
     return out
 
 

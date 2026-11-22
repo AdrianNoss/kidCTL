@@ -286,7 +286,10 @@ Abweichungen stehen hier und unter „Restlücken“.
   - Epic Games: Manifeste `ProgramData\Epic\EpicGamesLauncher\Data\Manifests\*.item` (`InstallLocation`,
     `AppName`, `DisplayName`) -> `game:epic:<AppName>`.
   - Store-/Xbox-Spiele: Katalog (Kategorie „Spiele“ bei `MicrosoftGame.config`). Launcher (Steam, Xbox-App, Game Bar
-    …) zählen nicht als Spiel; die Game Bar (startet mit jedem Spiel) gehört zur Basis.
+    …) zählen nicht als Spiel; die Game Bar (startet mit jedem Spiel), die Gaming Services (`Microsoft.GamingServices`,
+    von Store-Spielen wie Minecraft gebraucht) und Microsoft GameInput (`Program Files\Microsoft GameInput`, Eingabe in
+    Spielen wie Minecraft Bedrock) gehören zur Basis. Programme unter `WindowsApps` ohne App-Identität
+    werden ihrem Paket zugeordnet (Ordnername -> Package Family Name) und wie Store-Apps geprüft.
   - **Launcher-Regel** (`win/games.LAUNCHERS`: Steam, Epic, Battle.net, EA App, Ubisoft Connect, GOG Galaxy, Riot):
     Ist der Launcher freigegeben, sind von ihm gestartete Prozesse erlaubt; bei Steam und Epic zusätzlich ihre
     Spieleordner – auch wenn die Dateien dem Kind gehören (Steam lädt unter dem Konto des Kindes).
@@ -326,11 +329,22 @@ Abweichungen stehen hier und unter „Restlücken“.
     - EA: Uninstall-Eintrag mit `__Installer\installerdata.xml`.
     - Battle.net: `product.db` (Protobuf).
     - Ubisoft Connect und Wargaming: Spiele zu groß für die VM, deshalb kein Format; nur Rückfall (Restlücke).
+      Ubisoft nachgezogen (2026-11-22, Daten vom Rechner eines Nutzers): Registry
+      `Ubisoft\Launcher\Installs\<id>` (`InstallDir`) -> `game:ubisoft:<id>`, Name = Ordnername.
 
     Steamworks-Redistributables zählen nicht als Spiel. Vom Rückfall ausgenommen sind Programme im Ordner eines
     laufenden Launchers (z. B. `EALocalHostSvc.exe`). Kurze 8.3-Pfade (`PROGRA~1`) werden vor der Zuordnung in die
     lange Form aufgelöst. Freigegebene Launcher GOG, EA und Battle.net geben auch ihre Spieleordner frei, wie bisher
     Epic.
+  - **Startmenü-Einträge der Launcher (Fehler 2026-11-22):** Freigegeben wird der Startmenü-Eintrag, und der zeigt
+    bei drei Launchern auf einen Starter neben dem eigentlichen Launcher (echte Installationen, VM-Snapshot
+    „launchers“): `Battle.net Launcher.exe` -> `Battle.net.exe`, `EALauncher.exe` -> `EADesktop.exe`,
+    `UbisoftConnect.exe` -> `upc.exe` (`win/games.LAUNCHER_ENTRIES`). Ein freigegebener Eintrag gibt den Launcher
+    samt Spieleordnern frei; ein Launcher aus `LAUNCHERS` im Programmordner einer Freigabe zählt für die
+    Abstammungsregel. Battle.net gibt zusätzlich `ProgramData\Battle.net` frei (Agent in versionierten Ordnern
+    `Agent\Agent.NNNN`, `win/games.LAUNCHER_DATA_DIRS`) – keine Einzelfreigaben je `.exe`, auch nicht nach Updates.
+    Starter der Spiele (z. B. `Hearthstone Beta Launcher.exe`) liegen im Spieleordner und zählen zum Spiel.
+    Restlücke: `docs/limitations*.md` („Ordner freigegebener Launcher“).
 - **Oberfläche im Windows-11-Stil (entschieden 2026-11-19 per /grill-me):**
   - **Nur unter Windows** (10 und 11 gleich); Linux behält den nativen Look (Breeze/Adwaita). Logik, Texte und
     Übersetzungen bleiben gemeinsam; das Windows-Design ist eine eigene Stilschicht (`tray/kidctl_tray/winstyle.py`
@@ -3427,3 +3441,39 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   (`test_chat_notify.py`: erster Abgleich still, danach live; erste Live-Nachricht ohne Verlauf; Offline-Sammelmeldung;
   einzelne nachgeholte Nachricht; offline gefallene Entscheidung), Agent-Testsuite grün; e2e-Tests mangels `httpx` lokal nicht gelaufen, nicht in der
   VM geprüft. News 0.45 (DE/EN) ergänzt.
+- 2026-11-22: Fehler behoben (Windows): Hearthstone über Battle.net erzeugte drei Sperrdialoge trotz freigegebenem
+  Battle.net (`Hearthstone Beta Launcher.exe`, `ProgramData\Battle.net\Agent\Agent.exe`, `…\Agent.9886\Agent.exe`).
+  Ursache: Der Katalog-Schlüssel ist das Startmenü-Ziel `Battle.net Launcher.exe`, Spieleordner und Abstammungsregel
+  erwarteten `Battle.net.exe`; der Agent liegt außerhalb des Programmordners. Gleiches Muster bei EA app
+  (`EALauncher.exe`) und Ubisoft Connect (`UbisoftConnect.exe`); Steam, Epic, GOG, Wargaming zeigen direkt auf den
+  Launcher. Startmenü-Ziele, Agent-Ordner und Rechte in der Windows-VM (Snapshot „launchers“) nachgesehen;
+  Agent-Unittests mit den echten Pfaden (294 grün, e2e-Tests mangels Server-Umgebung nicht gelaufen). Nicht live
+  geprüft: Start von Hearthstone über Battle.net (Spiel in der VM nicht vollständig installiert). Für 0.45.1
+  (0.45.0 ist ohne diesen Fix erschienen; Versionssprung gesammelt).
+- 2026-11-22: Fehler (Windows): Spielzeit eines über Ubisoft Connect gestarteten Spiels („Starlink“) lief unter
+  „Ubisoft Connect“. Ursache, Teil 1: Startmenü-Einträge der Launcher (`Battle.net Launcher.exe`, `EALauncher.exe`,
+  `UbisoftConnect.exe`) galten nicht als Launcher (`win/agent.is_launcher`), zählten also als Spiel – und alles im
+  Programmordner (bei Ubisoft auch der Spieleordner, falls darunter installiert) lief unter diesem Eintrag. Behoben.
+  Teil 2: Ubisoft installiert Spiele unter `…\Ubisoft Game Launcher\games`, und Programme im Ordner eines laufenden
+  Launchers sind vom Abstammungs-Rückfall ausgenommen; Starlink wird zudem von `UbisoftGameLauncher.exe` gestartet,
+  nicht von `upc.exe`. Jetzt erkennt der Agent Ubisoft-Spiele aus der Registry (`Ubisoft\Launcher\Installs`,
+  `game:ubisoft:<id>`) und gibt ihre Ordner mit Ubisoft Connect frei. Format aus Registry-Auszug und Prozessliste von
+  Adrians Rechner (Testdaten anonymisiert in `win_launchers/registry.json`). EA, GOG, Battle.net erkennen Spiele
+  bereits aus Registry/Datei, auch unterhalb des Launcher-Ordners (Index vor Katalog). Agent-Unittests 296 grün; nicht
+  live geprüft. Für 0.45.1.
+- 2026-11-22: Fehler (Windows): Für Minecraft musste `gamingservicesui.exe` aus
+  `WindowsApps\Microsoft.GamingServices_<Version>_x64__8wekyb3d8bbwe` einzeln freigegeben werden (Freigabe hing an der
+  Versionsnummer). Ursache: Der Prozess läuft ohne App-Identität, wurde also als normale `.exe` außerhalb jeder
+  Freigabe gesperrt. Jetzt: Programme unter `WindowsApps` ohne Identität zählen zu ihrem Paket; Gaming Services sind
+  Basis wie die Game Bar. Ältere Einzelfreigaben gelten weiter. Unittest mit dem echten Pfad (Agent 297 grün); nicht
+  live geprüft. Für 0.45.1.
+- 2026-11-22: Fehler (Windows): Minecraft: Java Edition erschien nur als „Minecraft Launcher“, und die Java-Laufzeit
+  (`AppData\Local\Packages\Microsoft.4297127D64EC6_8wekyb3d8bbwe\LocalCache\…\bin\javaw.exe`, vom Launcher ins
+  Profil geladen, ohne App-Identität, Pfad mit Laufzeit-Version) musste einzeln freigegeben werden. Jetzt gehört
+  `java[w].exe` aus den Paketdaten des Minecraft Launchers zum Paket (Freigabe bzw. Anfrage gilt dem Launcher) und
+  zählt als Spiel `game:minecraft:java` „Minecraft: Java Edition“; der Launcher selbst zählt nicht mehr als Spiel.
+  Bewusst eng (nur dieses Paket, nur Java) – Restlücke in `docs/limitations*.md`. Pfad vom echten Rechner; Unittest
+  (Agent 298 grün); nicht live geprüft. Für 0.45.1.
+- 2026-11-22: Fehler (Windows): Minecraft Bedrock hatte keine Steuerung, bis `C:\Program Files\Microsoft GameInput\x64\
+  GameInputRawInputProxy.exe` einzeln freigegeben war. Microsoft GameInput gehört jetzt zur Basis (Ordner unter
+  `Program Files`, für Kinder nicht beschreibbar). Unittest mit dem echten Pfad; nicht live geprüft. Für 0.45.1.

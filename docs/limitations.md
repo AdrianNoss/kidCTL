@@ -94,13 +94,19 @@ version is in the README.
   access" – the parents allow them in the web interface or briefly switch to "Off" for installing.
 - **Other writable folders** (e.g. under `C:\ProgramData`) have no execution ban: programs in them that
   belong to the child are blocked, libraries (DLLs) from them are not.
+- **Folders of released launchers:** if a launcher is released, programs in its game folders and (Battle.net) in
+  `C:\ProgramData\Battle.net` run too – even if they belong to the child. These folders are writable for all users;
+  a child could put its own programs there and start them.
+- **Minecraft Launcher:** if it is released, programs named `java.exe`/`javaw.exe` in its package data in the child's
+  profile (`AppData\Local\Packages\Microsoft.4297127D64EC6_…\LocalCache`) run – even if they belong to the child.
+  The folder is writable for the child.
 - **Store apps:** the built-in Microsoft apps show names from a fixed list; other Store apps the
   name from the app package.
 - **Full-screen games:** warning windows don't appear over games in exclusive full screen; sign-out still
   happens.
 - **Games without a launcher:** a game that is started directly via its `.exe`, without a launcher and without a
   known manifest, only counts as a game if "Counts as a game" is switched on for it in the program list.
-- **Ubisoft Connect and Wargaming:** KidCTL only detects their games while the launcher starts them. The name
+- **Wargaming:** KidCTL only detects its games while the launcher starts them. The name
   comes from the `.exe`, and each `.exe` counts as a separate game.
 - **Tray app:** a child could falsify the display of other users' tray apps. Enforcement by the
   KidCTL service is not affected.

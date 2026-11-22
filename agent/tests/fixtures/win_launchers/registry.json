@@ -49,5 +49,11 @@
    "Publisher": "ClockStone",
    "InstallLocation": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Bridge Constructor Portal"
   }
+ },
+ "SOFTWARE\\WOW6432Node\\Ubisoft\\Launcher\\Installs": {
+  "5277": {
+   "Language": "de-DE",
+   "InstallDir": "C:/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/games/Starlink - Battle for Atlas/"
+  }
  }
 }

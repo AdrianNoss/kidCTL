@@ -38,14 +38,16 @@ from .programs import WINDIR, _under
 
 log = logging.getLogger("kidctl.agent")
 
-LAUNCHER_PFNS = ("microsoft.gamingapp_", "microsoft.xboxgamingoverlay_", "microsoft.xboxapp_")
+LAUNCHER_PFNS = ("microsoft.gamingapp_", "microsoft.xboxgamingoverlay_", "microsoft.xboxapp_",
+                 "microsoft.4297127d64ec6_")   # Minecraft Launcher (das Spiel ist die Java-Laufzeit, siehe games)
 
 
 def is_launcher(key: str) -> bool:
-    from .games import LAUNCHERS
+    """Launcher zählen nicht als Spiel – auch ihr Startmenü-Eintrag nicht (``Battle.net Launcher.exe`` …)."""
+    from .games import LAUNCHER_ENTRIES, LAUNCHERS
     low = key.lower()
     return (low.startswith("appx:") and low[5:].startswith(LAUNCHER_PFNS)) or \
-        (low.startswith("exe:") and low.rsplit("\\", 1)[-1] in LAUNCHERS)
+        (low.startswith("exe:") and low.rsplit("\\", 1)[-1] in LAUNCHERS | LAUNCHER_ENTRIES.keys())
 
 
 BLOCKED_LOGIN_GRACE = 10   # Sekunden: Sitzung trotz Login-Sperre -> Hinweis, dann Abmeldung

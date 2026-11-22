@@ -2,7 +2,7 @@
 
 On Windows 10/11 the current version provides **screen time, sign-out, sign-in lock, "Lock now",
 the tray app with chat and extensions, app control, the web filter and the game limit** (Steam,
-Epic Games, EA app, GOG Galaxy, Battle.net, Store games and games started by a launcher such as Ubisoft Connect or
+Epic Games, EA app, GOG Galaxy, Battle.net, Ubisoft Connect, Store games and games started by a launcher such as
 Wargaming; further apps can be marked as "Game" in the web interface).
 
 1. Create **child accounts** as "Standard user" (Settings → Accounts → Other users), local accounts or
