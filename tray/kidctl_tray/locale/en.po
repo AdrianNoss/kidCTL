@@ -236,3 +236,24 @@ msgstr "Not recorded: website contents, which allowed websites you visit, what y
 
 msgid "Das KidCTL-Symbol in der Taskleiste zeigt dir jederzeit deine Restzeit. Dort kannst du deinen Eltern auch schreiben und mehr Zeit anfragen."
 msgstr "The KidCTL icon in the taskbar always shows your remaining time. There you can also write to your parents and ask for more time."
+
+msgid "Info"
+msgstr "About"
+
+msgid "Schließen"
+msgstr "Close"
+
+msgid "Projektseite"
+msgstr "Project website"
+
+msgid "Quellcode"
+msgstr "Source code"
+
+msgid "Lizenz: AGPL-3.0"
+msgstr "License: AGPL-3.0"
+
+msgid "Version {version}"
+msgstr "Version {version}"
+
+msgid "KidCTL ist freie Software zur Begleitung der Bildschirmzeit."
+msgstr "KidCTL is free software for keeping an eye on screen time."

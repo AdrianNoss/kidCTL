@@ -135,6 +135,18 @@ def _owner_with_password(request: Request, db: Session, sess, password: str) -> 
     return error
 
 
+# ---------- Hinweis „Neu in Version …“ ----------
+
+@router.post("/info/seen")
+def info_seen(sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    """Hinweis auf der Übersicht bestätigen: bis zur nächsten Server-Version ausblenden."""
+    from .. import about
+    parent = db.get(Parent, sess.parent_id)
+    parent.seen_version = about.VERSION
+    db.commit()
+    return RedirectResponse("/", status_code=303)
+
+
 # ---------- Rechnungen der Familie ----------
 
 @router.get("/settings/invoices/{invoice_id}.pdf")

@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import alarms, backup, billing, tickets, i18n, policy, report, versions, webfilter, retention
+from . import about, alarms, backup, billing, tickets, i18n, policy, report, versions, webfilter, retention
 from .config import settings
 from .db import init_db
 from .tenant import platform_session
@@ -32,7 +32,7 @@ async def lifespan(_app: FastAPI):
     tasks = [asyncio.create_task(alarms.run_forever()), asyncio.create_task(_refresh_lists_forever()),
              asyncio.create_task(_prune_log_forever()), asyncio.create_task(report.run_forever()),
              asyncio.create_task(backup.run_forever()), asyncio.create_task(billing.run_forever()),
-             asyncio.create_task(tickets.run_forever())]
+             asyncio.create_task(tickets.run_forever()), asyncio.create_task(about.run_forever())]
     yield
     for t in tasks:
         t.cancel()

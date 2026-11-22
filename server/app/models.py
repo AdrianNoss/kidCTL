@@ -20,6 +20,11 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+def _server_version() -> str:
+    from .release_notes import RELEASES
+    return RELEASES[0]["version"]
+
+
 class Family(Base):
     """Mandant: eine Familie (Haushalt). Im Einzelbetrieb gibt es genau eine."""
     __tablename__ = "family"
@@ -101,6 +106,8 @@ class Parent(Base):
     report_sent: Mapped[str] = mapped_column(String(16), default="")      # zuletzt gesendeter Zeitraum (Schlüssel)
     language: Mapped[str] = mapped_column(String(8), default="")           # "" = automatisch (Browser) | de | en
     detected_language: Mapped[str] = mapped_column(String(8), default="")  # zuletzt erkannt (für Mails/Push)
+    # Hinweis „Neu in Version …“: zuletzt bestätigte Server-Version; neue Konten starten bei der laufenden
+    seen_version: Mapped[str] = mapped_column(String(32), default=lambda: _server_version())
 
 
 class ParentToken(Base):

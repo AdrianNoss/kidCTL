@@ -80,6 +80,7 @@ ADMIN = {
     "admin-codes": "/admin/codes",
     "admin-log": "/admin/log",
     "admin-more": "/admin/more",
+    "admin-info": "/admin/info",
     "admin-branding": "/admin/branding",
     "admin-mail-preview": "/admin/mail-preview",
     "admin-newsletters": "/admin/newsletter",
@@ -188,6 +189,8 @@ async def shoot(lang: str, label: str, port: int, only: set[str], keep: bool) ->
                                              KIDCTL_BOOTSTRAP_PASSWORD=demo_seed.PASSWORD)).group(1)
     op_secret = re.search(r"Secret: (\w+)", cli(env, "create-operator", KIDCTL_OPERATOR_USER=OPERATOR,
                                                 KIDCTL_OPERATOR_PASSWORD=OP_PASSWORD)).group(1)
+    # Hinweis „Neu in Version …“ auf der Übersicht sichtbar machen (Stand vor dem letzten Update)
+    psql("psql", "-U", "kidctl", "-d", DB_NAME, "-c", "UPDATE parent SET seen_version = '0.0.0'")
     proc = start_server(env, base, port, data)
     agents, problems = [], 0
     try:

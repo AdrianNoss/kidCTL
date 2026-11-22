@@ -131,6 +131,25 @@ class RequestDialog(QDialog):
             self.accept()
 
 
+class AboutDialog(QDialog):
+    """Menüpunkt „Info“: installierte Version und Links (Projektseite, Quellcode, Lizenz)."""
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(_("Info"))
+        self.body = QLabel(texts.about_html())
+        self.body.setWordWrap(True)
+        self.body.setOpenExternalLinks(True)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.button(QDialogButtonBox.StandardButton.Close).setText(_("Schließen"))
+        buttons.rejected.connect(self.reject)
+        lay = QVBoxLayout(self)
+        winstyle.window(self, lay)
+        for w in (winstyle.title("KidCTL"), self.body, buttons):
+            if w is not None:
+                lay.addWidget(w)
+
+
 class AccessDialog(QDialog):
     """Freigabe für ein gesperrtes Programm bzw. eine Website anfragen; Grund optional."""
 

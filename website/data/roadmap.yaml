@@ -188,3 +188,9 @@
   text:
     de: "Alarme und Anfragen zusätzlich über eigene Kanäle – nur Hinweis und Link, kein Inhalt."
     en: "Alerts and requests also through your own channels – only a notice and a link, no content."
+- id: about
+  status: in_progress
+  title: { de: "Info und Neuigkeiten", en: "About and what's new" }
+  text:
+    de: "Versionsanzeige mit Links in WebUI und Tray-App; nach einem Update sehen Eltern, was neu ist."
+    en: "Version info with links in the web interface and tray app; after an update, parents see what's new."

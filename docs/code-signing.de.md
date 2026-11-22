@@ -37,7 +37,8 @@ KidCTL überträgt keine Informationen an vernetzte Systeme außer an den KidCTL
 Person angibt (den eigenen, selbst betriebenen Server der Eltern). Der Agent auf dem Kinderrechner sendet
 Nutzungszeiten, gesperrte Aktionen, die Liste installierter Programme, lokale Benutzernamen und Chat-Nachrichten an
 diesen Server und holt von dort Regeln und Updates. Es gibt keine Telemetrie und keine Verbindung zu den
-KidCTL-Entwicklern oder anderen Dritten. Die Sperrlisten des Website-Filters lädt der Server von den Anbietern, die
+KidCTL-Entwicklern oder anderen Dritten. Einzige Ausnahme: Der Server fragt einmal täglich ohne Kennungen
+`https://kidctl.de/version.json` nach der neuesten Version (abschaltbar mit `UPDATE_CHECK=0`). Die Sperrlisten des Website-Filters lädt der Server von den Anbietern, die
 die Eltern ausgewählt haben.
 
 Weil KidCTL eine Kindersicherung ist, wird es von einem Elternteil oder Administrator auf dem Rechner eines Kindes

@@ -155,3 +155,9 @@ def login_passkey(request: Request, credential: str = Form(""), db: Session = De
 def more(request: Request, sess: OperatorSession = Depends(opr.require_operator)):
     """Handy: übrige Bereiche, Profil und Abmelden (untere Leiste hat nur Platz für drei Einträge)."""
     return _render(request, "admin_more.html", sess)
+
+
+@router.get("/info")
+def info(request: Request, sess: OperatorSession = Depends(opr.require_operator)):
+    """Version, Release-Datum, Links; Hinweis auf eine neuere Version (beide Rollen)."""
+    return _render(request, "admin_info.html", sess)

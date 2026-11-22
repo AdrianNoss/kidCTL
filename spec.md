@@ -1720,6 +1720,25 @@ Self-Hostern). Plan mit Etappen: `dev/planung/PLAN-2026-11.md`. Fachliche Detail
 **Ideen ohne Termin (nicht auf der Roadmap):** Lernmodus auf Knopfdruck, lokale API für Home Assistant, eigene
 Wochenstatistik für das Kind in der Tray-App, Clients für macOS/Android (bewusst nicht jetzt).
 
+## Info und Neuigkeiten (entschieden 2026-11-22 per /grill-me, umgesetzt 2026-11-22)
+
+- **Server-Version:** `server/app/release_notes.py`, oberster Eintrag = laufende Version (Version, Datum, 2–4
+  Stichpunkte DE/EN für Eltern). Bei jedem Release mitpflegen; ein Test prüft die Gleichheit mit
+  `agent/kidctl_agent/__init__.py`.
+- **Info-Abschnitt:** Eltern unter Einstellungen (`/settings#info`), Betreiber unter `/admin/info` (beide Rollen;
+  Navigation, am Handy unter „Mehr“). Gleicher Baustein `_info.html`: Version, Release-Datum, Protokollversion,
+  Stichpunkte der laufenden Version, Lizenz AGPL-3.0, security@kidctl.de, Links Projektseite, Release Notes, Doku,
+  Quellcode (`SOURCE_URL`). Whitelabel: zusätzlich „<Name> basiert auf KidCTL“.
+- **Neuere Version:** Der Server ruft einmal täglich `https://kidctl.de/version.json` ab (ohne Kennungen, Ergebnis nur
+  im Speicher); abschaltbar mit `UPDATE_CHECK=0`. Die Projektseite erzeugt die Datei beim Build aus den
+  GitHub-Releases (neuester Release ohne Draft/Prerelease). Hinweis nur im Info-Abschnitt.
+- **Hinweis nach Update:** Je Elternteil `parent.seen_version` (neue Konten: laufende Version; Migration: 0.45.2).
+  Ist der Server neuer, zeigt die Übersicht einmalig eine Karte „Neu in Version …“ mit den Stichpunkten aller
+  Versionen seitdem, Link auf die Release Notes und „Verstanden“ (`POST /info/seen`, CSRF, ohne JavaScript).
+- **Tray (Linux und Windows):** Menüpunkt „Info“ öffnet einen kleinen Dialog mit der installierten Version (aus dem
+  Agent-Paket, Agent und Tray kommen aus demselben Paket) und Links zu Projektseite, Quellcode und Lizenz; kein
+  Sicherheitskontakt. Texte gemeinsam, Windows-Optik über `winstyle`.
+
 ## Bewusst nicht umgesetzt / Restlücken
 
 Einzige Quelle für die Restlücken ist die öffentliche Doku **`docs/limitations.de.md`** (Englisch:
@@ -3558,3 +3577,11 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Keine Version/News (kommt mit der Info-Seite in 0.46.0). Getestet: Server-pytest (neu `test_selfupdate.py`,
   Fremdfamilie in `test_tenant.py`, i18n), Agent-Tests (315, gemockter Paketmanager, Windows `run(force=True)`),
   `ruff`, Doku-Parität, Hugo. **Offen:** VM-Smoke-Test Arch/Debian/Windows, Screenshots, `alembic check`.
+- 2026-11-22: Info und Neuigkeiten: Info-Abschnitt in den Einstellungen und unter `/admin/info` (Version,
+  Release-Datum, Protokollversion, Links, Whitelabel „basiert auf KidCTL“), tägliche Versionsabfrage bei
+  `kidctl.de/version.json` (`UPDATE_CHECK`), einmaliger Hinweis „Neu in Version …“ auf der Übersicht
+  (`parent.seen_version`, Migration 0026), Tray-Menüpunkt „Info“ (Linux/Windows), `version.json` auf der
+  Projektseite. Getestet: `server/tests/test_info.py` (Login-Pflicht, beide Admin-Rollen, Banner DE/EN bis
+  „Verstanden“, CSRF, Whitelabel, Versionsabfrage mit Fehlerfällen, Version = Agent) und gesamte Server-Suite gegen
+  PostgreSQL; Migration gegen Alt-Schema-Datenbank (0024 → head, `alembic check`, Downgrade); Tray-Tests inkl.
+  Info-Dialog, Dialog offscreen in Linux- und Windows-Optik angesehen; Hugo-Build mit Beispiel-Releases.

@@ -18,7 +18,7 @@ from .qt import QAction, QApplication, QLocalServer, QLocalSocket, QMenu, QMessa
 from . import texts, winstyle
 from .texts import _
 from .client import AgentClient
-from .ui import AccessDialog, BlockedWindow, ChatWindow, RequestDialog, render_icon
+from .ui import AboutDialog, AccessDialog, BlockedWindow, ChatWindow, RequestDialog, render_icon
 
 ICON_CHECK_MS = 30_000   # Sichtbarkeit des Tray-Symbols prüfen (Erweiterung ein-/ausgeschaltet)
 INSTANCE_SOCKET = "kidctl-tray.sock"
@@ -51,6 +51,8 @@ class TrayApp:
         self.menu.addAction(_("Chat öffnen"), self.show_chat)
         self.menu.addAction(_("Verlängerung anfordern …"), lambda: self.request_extension())
         self.menu.addAction(_("Gesperrt – Freigabe anfragen …"), self.show_blocked)
+        self.menu.addSeparator()
+        self.menu.addAction(_("Info"), self.show_about)
         self.tray.setContextMenu(self.menu)
         self.tray.activated.connect(self._activated)
         self._message_action: str | None = None   # Knopf der zuletzt gezeigten einfachen Meldung
@@ -117,6 +119,13 @@ class TrayApp:
         self.window.show()
         self.window.raise_()
         self.window.activateWindow()
+
+    def show_about(self) -> None:
+        if getattr(self, "about", None) is None:
+            self.about = AboutDialog()
+        self.about.show()
+        self.about.raise_()
+        self.about.activateWindow()
 
     def request_extension(self, target: str = "screen") -> None:
         dlg = RequestDialog(self.state, self.window if self.window.isVisible() else None, target)

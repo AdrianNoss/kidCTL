@@ -1,0 +1,10 @@
+{{- /* Neueste veröffentlichte Version aus data/releases.json (Pages-Workflow, GitHub-API) – fragt der Server täglich ab. */ -}}
+{{- $latest := dict }}
+{{- range hugo.Data.releases | default slice }}
+  {{- if and (not .draft) (not .prerelease) (not $latest) }}{{ $latest = . }}{{ end }}
+{{- end }}
+{{- with $latest -}}
+{{ dict "version" (strings.TrimPrefix "v" .tag_name) "published" .published_at "url" "https://kidctl.de/releases/" | jsonify }}
+{{- else -}}
+{}
+{{- end }}

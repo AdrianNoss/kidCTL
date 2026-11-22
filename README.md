@@ -60,6 +60,8 @@ child's computer the language of the desktop session is used.
   tickets and an administration area for the operator (roles, log, search).
 - **Your own branding:** name, logo and app icon for the web interface, app and emails, with "powered by KidCTL".
   All emails share one layout (light/dark, with a plain-text version), with provider details and imprint in the footer.
+- **About and what's new:** version info with links in the web UI and tray app; after a server update, parents see
+  once what's new; notice when a newer version is out.
 - **Newsletter:** news to all families that opted in – in German and English, formatted with Markdown, with a
   preview and an unsubscribe link.
 - **Security**:
@@ -210,7 +212,8 @@ of the installer and links the build run. Process and responsibilities: [Code si
 ## Privacy
 
 KidCTL only talks to the KidCTL server you run yourself – no telemetry, no connection to the
-developers or third parties. See the [privacy statement](docs/code-signing.md#privacy).
+developers or third parties. The only exception is the server's daily version check at kidctl.de, without
+identifiers and optional (`UPDATE_CHECK=0`). See the [privacy statement](docs/code-signing.md#privacy).
 
 ## License
 
