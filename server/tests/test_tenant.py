@@ -70,7 +70,7 @@ def test_foreign_actions_change_nothing(client, parent, other):
              (f"/children/{c}/exceptions/{other['exception']}/delete", {}),
              (f"/children/{c}/chat", {"body": "hallo"}),
              (f"/devices/{d}/mapping", {}), (f"/devices/{d}/alert", {"hours": "5"}), (f"/devices/{d}/revoke", {}),
-             (f"/devices/{d}/delete", {}),
+             (f"/devices/{d}/update", {}), (f"/devices/{d}/delete", {}),
              (f"/parents/{other['parent']}/delete", {}), (f"/parents/{other['parent']}/totp-reset", {})]
     for path, data in posts:
         r = client.post(path, data={"csrf_token": tok, **data})
@@ -80,6 +80,7 @@ def test_foreign_actions_change_nothing(client, parent, other):
         dev = db.get(Device, d)
         assert child is not None and not child.locked and child.web_mode == "off" and child.program_mode == "off"
         assert dev.revoked_at is None and dev.alert_after_hours == 48 and dev.users[0].child_id == c
+        assert dev.update_requested_at is None and dev.update_state == ""
         assert db.get(Parent, other["parent"]) is not None and db.get(DayException, other["exception"]) is not None
         assert db.scalar(select(Message.body).where(Message.from_child.is_(False))) is None
 

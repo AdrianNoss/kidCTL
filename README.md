@@ -67,7 +67,7 @@ child's computer the language of the desktop session is used.
   - Names, chat, activity log, statistics and email addresses are stored encrypted on the server (one key
     per family).
   - Signed package repository for updates (pacman and APT); the Windows agent updates itself
-    (Ed25519-signed).
+    (Ed25519-signed). Parents start the update per device with a button in the web interface.
 
 ## Architecture
 

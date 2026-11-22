@@ -42,7 +42,8 @@ Je Kind (Seite des Kindes):
 
   ![Chat mit Freigabe- und Spielzeit-Anfrage](img/de/access-request.webp)
 
-Je Gerät: Alarm, wenn das Gerät länger als X Stunden offline ist (Standard 48 h).
+Je Gerät: Alarm, wenn das Gerät länger als X Stunden offline ist (Standard 48 h). Gibt es eine neuere kidCTL-Version,
+stößt du das Update auf der Geräteseite per Knopf **Update** an ([Updates](updates.de.md#update-per-knopf)).
 
 ## Anmelden und Passkeys
 

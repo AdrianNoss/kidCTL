@@ -1205,6 +1205,30 @@ compliance), web.dev (Related Origin Requests), py_webauthn (PyPI/GitHub duo-lab
     `[kidctl]` mit `SigLevel = Required DatabaseRequired` (Sicherung `pacman.conf.kidctl.bak`).
 - Protokollversion im WebSocket-Handshake; Server unterstützt mindestens eine ältere Version.
   Zu alter Agent → Hinweis im WebUI, Durchsetzung läuft mit letzter Policy weiter.
+- **Update per Knopf** (entschieden 2026-11-22 per /grill-me):
+  - Geräteseite: Ist eine neuere Version in der Quelle des Geräts (`versions.update_for`), meldet der Agent die
+    Fähigkeit `self_update` (`hello.features`) und ist er verbunden → Knopf „Update“ (POST
+    `/devices/{id}/update`, CSRF, Familie). Offline: Knopf aus, Hinweis. Ältere Agenten: bisheriger Text
+    (pacman/apt bzw. Installer). Geräteliste: Pill „Update: alt → neu“ bzw. „Update läuft“.
+  - Protokoll (abwärtskompatibel, Version 1 bleibt): `update_now` (Server → Agent, **ohne Felder** – nie Paket,
+    Quelle, URL oder Befehl), `update_status` (Agent → Server: `running` | `failed` | `current`, Meldung ≤ 300
+    Zeichen). Erfolg = neue Version im nächsten `hello` (Paket startet den Agenten neu) → Stand `done`.
+  - Entprellen: Server löst frühestens nach 10 min erneut aus, solange „läuft“ (nach Fehler/„aktuell“ sofort);
+    Agent höchstens einmal je 60 s, nie parallel. „läuft“ > 15 min ohne neue Version → „Zeitüberschreitung“
+    (erneut auslösbar). Status nur nach Auslösen übernommen; Meldung verschlüsselt (`device.update_detail`).
+  - Agent Arch: eigene pacman-Konfiguration (`/run/kidctl/update/pacman.conf`) nur mit dem `[kidctl]`-Abschnitt –
+    `Server` aus `/etc/pacman.conf` (nur http(s)), `SigLevel = Required DatabaseRequired` fest; `-Sy --needed`
+    für `kidctl` und die installierten `kidctl-plasma`/`kidctl-gnome`. Andere Sync-Datenbanken bleiben unberührt
+    (kein Teil-Upgrade-Zustand, kein Systemupdate).
+  - Agent Debian/Ubuntu: `apt-get update` nur für `kidctl.sources` (muss `Signed-By` haben), dann
+    `apt-get install --only-upgrade` (confold) für die installierten kidCTL-Pakete.
+  - Linux: Paketmanager als transiente Unit `kidctl-update` (`systemd-run --wait`, max. 30 min) – das Paket startet
+    den Agenten per `try-restart` neu, im Agenten-Dienst würde pacman/apt dabei mitten in der Transaktion beendet;
+    dort gelten auch `ProtectSystem` usw. nicht. Fehlertext aus dem Journal der Unit.
+  - Windows: vorhandener Selbst-Updater sofort (`Updater.run(force=True)`, Sperre `RETRY` übergangen), weiter mit
+    Ed25519-Manifest und SHA-256.
+  - Läuft sofort, auch während einer Kinder-Sitzung (Agent/Tray starten neu, gecachte Policy gilt weiter). Keine
+    Mail/Push. Release zusammen mit der Info-Seite (0.46.0).
 
 ## Multi-Tenant / SaaS (entschieden 2026-11-15 per /grill-me, noch nicht umgesetzt)
 
@@ -3528,3 +3552,9 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Tray-Tests, `ruff check`, Doku-Parität, Hugo. VM-Prüfung des Webfilter-Fixes noch offen.
 - 2026-11-22: Projektseite: Der Pages-Build beim Release wartet bis zu 2 min, bis der neue Release in der GitHub-Liste
   steht (bei 0.45.1 und 0.45.2 fehlte er sonst auf der Releases-Seite). Getestet: YAML geprüft, manueller Neubau.
+- 2026-11-22: Update per Knopf (Abschnitt „Verteilung & Updates“): `hello.features`, `update_now`/`update_status`,
+  Route `/devices/{id}/update`, Migration 0025, Agent Linux (pacman nur `[kidctl]` bzw. apt nur `kidctl.sources`, als
+  transiente Unit `kidctl-update`) und Windows (Selbst-Updater sofort). Doku `updates`/`webui` DE/EN, README, Website.
+  Keine Version/News (kommt mit der Info-Seite in 0.46.0). Getestet: Server-pytest (neu `test_selfupdate.py`,
+  Fremdfamilie in `test_tenant.py`, i18n), Agent-Tests (315, gemockter Paketmanager, Windows `run(force=True)`),
+  `ruff`, Doku-Parität, Hugo. **Offen:** VM-Smoke-Test Arch/Debian/Windows, Screenshots, `alembic check`.

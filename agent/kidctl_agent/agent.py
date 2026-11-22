@@ -27,6 +27,7 @@ from .loginlock import LoginLock, is_admin
 from .procs import ProcEvents, pids_of, read_environ, read_proc
 from .programs import LAUNCHERS, STEAM_KEY, STEAM_SYSTEM
 from .rules import Decision
+from .selfupdate import SelfUpdater
 from .trayserver import TrayServer
 from .watcher import ProgramWatcher
 
@@ -50,6 +51,7 @@ def local_users() -> list[p.LocalUser]:
 
 class Agent(AgentCore):
     admin_text = "Admin (wheel/sudo)"
+    FEATURES = (p.FEATURE_SELF_UPDATE,)
 
     def __init__(self, logind, desktop, device: dict | None = None, tray_path: str | None = None) -> None:
         super().__init__(logind, desktop, device)
@@ -71,6 +73,10 @@ class Agent(AgentCore):
         self.dns = DnsFilter()
         self.procevents = ProcEvents(self.programs.on_exec, self.programs.on_fork)
         self.loginlock = LoginLock()
+        self.self_updater = SelfUpdater()
+
+    async def _self_update(self) -> tuple[str, str]:
+        return await asyncio.to_thread(self.self_updater)
 
     # ---------- Plattform ----------
 

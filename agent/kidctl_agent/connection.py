@@ -119,10 +119,10 @@ class Connection:
                     continue
                 await self.handler.on_message(msg)
 
-    @staticmethod
-    def _hello() -> str:
+    def _hello(self) -> str:
         return p.Hello(protocol_version=p.PROTOCOL_VERSION, agent_version=__version__, hostname=socket.gethostname(),
-                       platform="windows" if sys.platform == "win32" else "linux").model_dump_json()
+                       platform="windows" if sys.platform == "win32" else "linux",
+                       features=list(getattr(self.handler, "FEATURES", ()))).model_dump_json()
 
     async def _probe(self, url: str) -> bool:
         """Meldet sich das Gerät mit seinem Token beim neuen Server erfolgreich an (``welcome``)?"""

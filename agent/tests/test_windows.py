@@ -287,6 +287,13 @@ def test_updater_downloads_and_verifies(tmp_path, monkeypatch):
     files["https://kids.example/repo/windows/KidCTL-Setup-9.0.0.exe"] = b"manipuliert"
     store.save(upd.STATE_FILE, {})
     assert u.check() is None and len(launched) == 1
+    # Knopf in der WebUI: Sperre übergehen, Fehler melden
+    assert u.run(force=True)[0] == "failed" and len(launched) == 1
+    files["https://kids.example/repo/windows/KidCTL-Setup-9.0.0.exe"] = b"setup-bytes"
+    assert u.run(force=True) == ("running", "9.0.0") and len(launched) == 2
+    files["https://kids.example/repo/windows/latest.json"], files["https://kids.example/repo/windows/latest.json.sig"] \
+        = _manifest(version="0.0.1", data=b"setup-bytes")
+    assert u.run(force=True) == ("current", "")
 
 
 def test_updater_requires_https():

@@ -3534,3 +3534,33 @@ msgstr "e.g. iPhone or laptop"
 
 msgid "zuletzt benutzt {date}"
 msgstr "last used {date}"
+
+msgid "Update verfügbar: {new}."
+msgstr "Update available: {new}."
+
+msgid "Update"
+msgstr "Update"
+
+msgid "Gerät offline – das Update ist möglich, sobald es verbunden ist."
+msgstr "Device offline – the update is possible once it is connected."
+
+msgid "Update läuft"
+msgstr "Update running"
+
+msgid "angestoßen {when} – Seite später neu laden"
+msgstr "started {when} – reload the page later"
+
+msgid "Update ohne Rückmeldung (angestoßen {when}). Auf dem Rechner prüfen: journalctl -u kidctl-update bzw. Installer-Protokoll."
+msgstr "No response to the update (started {when}). Check on the computer: journalctl -u kidctl-update or the installer log."
+
+msgid "Update fehlgeschlagen: {detail}"
+msgstr "Update failed: {detail}"
+
+msgid "Kein neueres Paket in der Quelle des Rechners gefunden ({when})."
+msgstr "No newer package found in the computer's package source ({when})."
+
+msgid "Aktualisiert von {old} auf {new} (angestoßen {when})."
+msgstr "Updated from {old} to {new} (started {when})."
+
+msgid "Im Gerät per Knopf „Update“ aktualisieren"
+msgstr "Update via the “Update” button on the device page"
