@@ -50,11 +50,19 @@ jobs:
       - name: Releases holen
         env:
           GH_TOKEN: ${{ github.token }}
+          NEW_TAG: ${{ github.event.release.tag_name }}
         run: |
-          gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
-            --jq '[.[] | {tag_name, name, draft, prerelease, published_at, html_url, body,
-                   assets: [.assets[] | {name, size, browser_download_url}]}]' \
-            | jq -s 'add // []' > website/data/releases.json
+          # Beim Release-Ereignis kennt die Liste den neuen Release oft erst einige Sekunden später: bis zu 2 min warten.
+          for i in $(seq 1 12); do
+            gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
+              --jq '[.[] | {tag_name, name, draft, prerelease, published_at, html_url, body,
+                     assets: [.assets[] | {name, size, browser_download_url}]}]' \
+              | jq -s 'add // []' > website/data/releases.json
+            if [ -z "$NEW_TAG" ] || jq -e --arg t "$NEW_TAG" 'any(.[]; .tag_name == $t)' website/data/releases.json >/dev/null; then
+              break
+            fi
+            echo "Release $NEW_TAG noch nicht in der Liste – warte ($i/12)"; sleep 10
+          done
           jq length website/data/releases.json
 
       - name: Prüfergebnisse holen (Scorecard, Observatory)

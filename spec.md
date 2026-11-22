@@ -3526,3 +3526,5 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   veröffentlicht), KidCTL-Symbol in der Windows-Tray-App und die korrigierte Rangfolge der Webfilter-Zonen
   (Sicherheitsfix). Security-News DE/EN, Advisory-Entwurf. Getestet: siehe Einträge oben; zusammen Server-, Agent- und
   Tray-Tests, `ruff check`, Doku-Parität, Hugo. VM-Prüfung des Webfilter-Fixes noch offen.
+- 2026-11-22: Projektseite: Der Pages-Build beim Release wartet bis zu 2 min, bis der neue Release in der GitHub-Liste
+  steht (bei 0.45.1 und 0.45.2 fehlte er sonst auf der Releases-Seite). Getestet: YAML geprüft, manueller Neubau.
