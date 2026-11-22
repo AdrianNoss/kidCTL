@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from kidctl_common import protocol as p
 
-from .. import access, chat, integrity, nowplaying, policy, programs, stats, webfilter
+from .. import access, chat, integrity, nowplaying, policy, programs, selfupdate, stats, webfilter
 from ..config import settings
 from ..db import get_platform_db
 from ..tenant import family_session, platform_session, set_family
@@ -130,6 +130,7 @@ async def agent_ws(ws: WebSocket):
         dev.platform = hello.platform
         dev.protocol_version = hello.protocol_version
         dev.protocol_unsupported = not supported
+        selfupdate.on_hello(dev, hello)
         dev.last_seen_at = utcnow()
         db.commit()
 
@@ -219,6 +220,8 @@ def _process(family_id: int, device_id: int, msg, last_seen: datetime) -> _Outco
             nowplaying.update(dev.id, msg.playing, db)
         elif isinstance(msg, p.IntegrityReport):
             integrity.alarm(dev, integrity.apply_report(dev, msg))
+        elif isinstance(msg, p.UpdateStatus):
+            selfupdate.on_status(dev, msg)
         db.commit()
 
         if isinstance(msg, p.Ping):

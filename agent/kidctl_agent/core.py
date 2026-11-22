@@ -37,6 +37,7 @@ REPORT_EVERY = 60.0   # Sekunden
 STARTUP_SYNC = 10.0   # Sekunden
 DEFAULT_TZ = "Europe/Berlin"
 OUTBOX_MAX_PER_USER = 20  # ungesendete Nachrichten/Anfragen je Benutzer (Tray-App)
+UPDATE_DEBOUNCE = 60.0    # s zwischen zwei Updates auf Knopfdruck (Doppelklick, wiederholtes Senden)
 
 
 def _chat_texts(msg: p.ChatMessage, change: str) -> tuple[str, str]:
@@ -91,6 +92,8 @@ class AgentCore:
         self._chat_sync: dict[int, tuple[datetime, bool]] = {}
         self._backlog: dict[int, list[p.ChatMessage]] = {}   # nachgeholte Eltern-Nachrichten je Kind
         self._backlog_tasks: dict[int, asyncio.Task] = {}
+        self._update_task: asyncio.Task | None = None
+        self._update_at: float | None = None
 
     # ---------- Plattform ----------
 
@@ -291,6 +294,41 @@ class AgentCore:
             self.usage.others_games[(msg.child_id, msg.day.isoformat())] = msg.others_game_seconds
         elif isinstance(msg, p.Ping):
             await self.conn.send(p.Pong())
+        elif isinstance(msg, p.UpdateNow):
+            self.request_update()
+
+    # ---------- Update auf Knopfdruck ----------
+    # Der Server löst nur aus; was installiert wird, bestimmt die Plattform (``_self_update``).
+
+    FEATURES: tuple[str, ...] = ()   # an den Server gemeldete Fähigkeiten (hello)
+
+    def request_update(self) -> None:
+        if p.FEATURE_SELF_UPDATE not in self.FEATURES:
+            return
+        if self._update_task is not None and not self._update_task.done():
+            log.info("Update läuft bereits")
+            return
+        now = self.clock()
+        if self._update_at is not None and now - self._update_at < UPDATE_DEBOUNCE:
+            log.info("Update gerade erst angestoßen – ignoriert")
+            return
+        self._update_at = now
+        self._update_task = asyncio.create_task(self._run_update())
+
+    async def _run_update(self) -> None:
+        await self.conn.send(p.UpdateStatus(state="running"))
+        try:
+            state, detail = await self._self_update()
+        except Exception as e:   # nie den Agenten stören
+            log.exception("Update fehlgeschlagen")
+            state, detail = "failed", str(e)
+        log.info("Update auf Knopfdruck: %s %s", state, detail)
+        if state != "running":
+            await self.conn.send(p.UpdateStatus(state=state, detail=detail[:300]))
+
+    async def _self_update(self) -> tuple[str, str]:
+        """Plattform: Update ausführen; Rückgabe (``running``|``failed``|``current``, Meldung)."""
+        return "failed", "nicht unterstützt"
 
     async def _policy_applied(self) -> None:
         """Neue Policy übernommen, vor dem Speichern (Linux: Programme, Mounts, Website-Filter)."""

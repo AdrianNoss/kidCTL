@@ -76,6 +76,7 @@ def tray_command() -> tuple[str, str] | None:
 
 class WinAgent(AgentCore):
     admin_text = "Administrator"
+    FEATURES = (p.FEATURE_SELF_UPDATE,)
 
     def __init__(self, sessions: WinSessions | None, desktop: WinDesktop | None, device: dict | None = None,
                  accounts: Accounts | None = None) -> None:
@@ -111,6 +112,11 @@ class WinAgent(AgentCore):
 
     def clock(self) -> float:
         return boottime()
+
+    async def _self_update(self) -> tuple[str, str]:
+        """Vorhandenen Selbst-Updater sofort ausführen (signiertes Manifest, SHA-256); der Installer startet den
+        Dienst neu – ``running`` bleibt stehen, bis der Agent sich mit der neuen Version meldet."""
+        return await asyncio.to_thread(self.updater.run, True)
 
     def is_admin_user(self, user: str) -> bool:
         return self.accounts.is_admin_wire(user)

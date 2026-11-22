@@ -12,7 +12,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from kidctl_common.protocol import CLOSE_REVOKED, MAX_BODY, SUPPORTED_VERSIONS
+from kidctl_common.protocol import CLOSE_REVOKED, MAX_BODY, SUPPORTED_VERSIONS, UpdateNow
 
 from ..config import settings
 from ..db import get_db
@@ -21,7 +21,9 @@ from ..models import (
     ParentSession,
     WeekdayRule, utcnow,
 )
-from .. import access, accounts, blocklog, chat, i18n, nowplaying, passkeys, policy, programs, report, stats, webfilter
+from .. import (
+    access, accounts, blocklog, chat, i18n, nowplaying, passkeys, policy, programs, report, selfupdate, stats, webfilter,
+)
 from .. import lock as lk
 from .. import schedule as sch
 from ..i18n import N_, _
@@ -471,9 +473,25 @@ def device_pair(request: Request, name: str = Form(...),
 def device_detail(device_id: int, request: Request, db: Session = Depends(get_db)):
     device = _get_or_404(db, Device, device_id)
     children = _by_name(db.scalars(select(Child)))
+    online = manager.is_online(device.id)
     return render(request, "device.html", device=device, children=children,
-                  online=manager.is_online(device.id), supported=sorted(SUPPORTED_VERSIONS),
-                  policy_current=policy.policy_current(db, device))
+                  online=online, supported=sorted(SUPPORTED_VERSIONS),
+                  policy_current=policy.policy_current(db, device),
+                  self_update=selfupdate.supported(device), update_state=selfupdate.state(device),
+                  can_update=selfupdate.can_request(device, online))
+
+
+@router.post("/devices/{device_id}/update", dependencies=[Depends(csrf_protect)])
+async def device_update(device_id: int, db: Session = Depends(get_db)):
+    """kidCTL auf dem Gerät aktualisieren: nur auslösen – Paket und Quelle bestimmt der Agent."""
+    device = _get_or_404(db, Device, device_id)
+    if selfupdate.can_request(device, manager.is_online(device_id)):
+        selfupdate.mark_requested(device)
+        db.commit()
+        if not await manager.send(device_id, UpdateNow().model_dump()):
+            device.update_state, device.update_requested_at = "", None   # gerade getrennt: nicht als „läuft“ zeigen
+            db.commit()
+    return _redirect(f"/devices/{device_id}")
 
 
 @router.post("/devices/{device_id}/mapping", dependencies=[Depends(csrf_protect)])

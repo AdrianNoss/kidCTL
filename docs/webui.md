@@ -42,7 +42,8 @@ Per child (the child's page):
 
   ![Chat with an access request and a game time request](img/en/access-request.webp)
 
-Per device: alert when the device has been offline for more than X hours (default 48 h).
+Per device: alert when the device has been offline for more than X hours (default 48 h). If a newer kidCTL version is
+available, start the update with the **Update** button on the device page ([Updates](updates.md#update-via-button)).
 
 ## Signing in and passkeys
 

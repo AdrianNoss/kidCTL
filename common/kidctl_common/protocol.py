@@ -61,6 +61,8 @@ class Hello(BaseModel):
     hostname: str = Field(max_length=255)
     # Ergänzt 2026-11-04 (abwärtskompatibel: ältere Agenten senden es nicht, ältere Server ignorieren es)
     platform: Literal["linux", "windows"] = "linux"
+    # Ergänzt 2026-11-22 (abwärtskompatibel): Fähigkeiten des Agenten, z. B. ``FEATURE_SELF_UPDATE``
+    features: list[Annotated[str, Field(max_length=32)]] = Field(default=[], max_length=32)
 
 
 class Welcome(BaseModel):
@@ -301,6 +303,26 @@ class Relocate(BaseModel):
     server_url: str = Field(max_length=255, pattern=r"^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?(/[A-Za-z0-9._~/-]*)?$")
 
 
+# ---------- Update auf Knopfdruck ----------
+# Der Server löst nur aus; Paket, Quelle und Befehl legt ausschließlich der Agent fest (eigenes Paket aus der fest
+# eingerichteten, signierten Quelle). Ältere Agenten ignorieren ``update_now`` und melden die Fähigkeit nicht.
+
+FEATURE_SELF_UPDATE = "self_update"
+
+
+class UpdateNow(BaseModel):
+    """Server -> Agent: kidCTL jetzt aktualisieren (bewusst ohne weitere Felder)."""
+    type: Literal["update_now"] = "update_now"
+
+
+class UpdateStatus(BaseModel):
+    """Agent -> Server: Stand des angestoßenen Updates. Erfolg zeigt sich an der neuen Version im nächsten ``hello``
+    (Paket-Update startet den Agenten neu); ``current`` = kein neueres Paket in der Quelle."""
+    type: Literal["update_status"] = "update_status"
+    state: Literal["running", "failed", "current"]
+    detail: str = Field(default="", max_length=300)
+
+
 class PolicyAck(BaseModel):
     """Agent -> Server: Policy ``version`` übernommen und gecacht."""
     type: Literal["policy_ack"] = "policy_ack"
@@ -427,10 +449,11 @@ class IntegrityReport(BaseModel):
 
 AgentMessage = Annotated[
     Union[Hello, Ping, Pong, ReportUsers, ChatSend, ExtensionRequest, AccessRequest, ChatSync, PolicyAck,
-          UsageReport, ReportApps, BlockedReport, IntegrityReport, AppUsageReport],
+          UsageReport, ReportApps, BlockedReport, IntegrityReport, AppUsageReport,
+          UpdateStatus],
     Field(discriminator="type")]
 ServerMessage = Annotated[
-    Union[Welcome, Error, Ping, Pong, Ack, ChatMessage, Policy, UsageUpdate, Relocate],
+    Union[Welcome, Error, Ping, Pong, Ack, ChatMessage, Policy, UsageUpdate, Relocate, UpdateNow],
     Field(discriminator="type")]
 
 agent_message_adapter: TypeAdapter[AgentMessage] = TypeAdapter(AgentMessage)

@@ -14,3 +14,27 @@ protocol version. The web interface marks agents that are too old.
 If the repository has a newer agent version than a computer, the overview, device list and
 device page show "Update: old → new". If the package has been published for a day and the computer still
 hasn't been updated, a push notification is sent once.
+
+## Update via button
+
+From agent 0.46.0 the device page shows an **Update** button when an update is available. It starts the update on
+the child's computer without you having to sign in there. The button only appears if the computer is connected and
+its agent supports the update via button. Older agents have to be updated once as described above.
+
+| System | What the agent runs |
+|---|---|
+| Arch | Refreshes only the kidCTL repository and updates `kidctl` and the installed `kidctl-plasma`/`kidctl-gnome` (no system update). The source comes from the `[kidctl]` entry in `/etc/pacman.conf`, signatures are mandatory. |
+| Debian/Ubuntu | `apt-get update` only for `/etc/apt/sources.list.d/kidctl.sources` (with `Signed-By`), then `apt-get install --only-upgrade` for the kidCTL packages. |
+| Windows | Runs the automatic update check right away (signed manifest, installer checksum). |
+
+The server only sends the trigger. The agent itself decides on package, source and command. On Linux the package
+manager runs as a separate systemd unit `kidctl-update`, because the update restarts the agent. You can find error
+messages with `journalctl -u kidctl-update`.
+
+The device page shows the status: **Update running**, **failed** (with message), **no newer package found** or,
+after the agent has restarted, **Updated from old to new**. If no new version arrives within 15 minutes, it shows
+"No response to the update" and you can try again.
+
+> [!NOTE]
+> The update runs right away, even if a child is signed in. Agent and tray app restart; the rules keep applying with
+> the last known policy.

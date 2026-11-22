@@ -95,19 +95,27 @@ class Updater:
 
     def check(self) -> str | None:
         """Prüft und startet ggf. das Update (blockierend, im Thread aufrufen). Rückgabe: gestartete Version."""
+        state, detail = self.run(force=False)
+        return detail if state == "running" else None
+
+    def run(self, force: bool) -> tuple[str, str]:
+        """Prüfen und ggf. Installer starten. ``force`` (Knopf in der WebUI): Sperre ``RETRY`` übergehen.
+        Rückgabe: (``running``, Version) | (``current``, "") | (``failed``, Meldung) | (``skipped``, "")."""
         self._next = self.clock() + CHECK_EVERY
+        if not (self.key and self.base):
+            return "failed", "Kein Update-Schlüssel oder keine https-Serveradresse"
         url = f"{self.base}/{MANIFEST}"
         try:
             manifest = parse_manifest(self._get(url, MAX_MANIFEST), self._get(url + ".sig", 1024), self.key)
         except Exception as e:   # Netzwerk, Signatur, Inhalt
             log.warning("Update-Prüfung fehlgeschlagen: %s", e)
-            return None
+            return "failed", f"Update-Prüfung fehlgeschlagen: {e}"
         version = manifest["version"]
         if version_key(version) <= version_key(__version__):
-            return None
+            return "current", ""
         state = store.load(STATE_FILE) or {}
-        if state.get("version") == version and time.time() - state.get("at", 0) < RETRY:
-            return None   # gerade erst versucht
+        if not force and state.get("version") == version and time.time() - state.get("at", 0) < RETRY:
+            return "skipped", ""   # gerade erst versucht
         store.save(STATE_FILE, {"version": version, "at": time.time()})
         try:
             data = self._get(f"{self.base}/repo/windows/{manifest['file']}", MAX_INSTALLER)
@@ -118,10 +126,10 @@ class Updater:
             path.write_bytes(data)
         except Exception as e:
             log.error("Update %s nicht geladen: %s", version, e)
-            return None
+            return "failed", f"Update {version} nicht geladen: {e}"
         log.warning("Update %s -> %s wird installiert", __version__, version)
         self.launch(path)
-        return version
+        return "running", version
 
     def launch(self, installer: Path) -> None:
         if sys.platform != "win32":

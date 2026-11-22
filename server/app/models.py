@@ -564,6 +564,12 @@ class Device(FamilyScoped, Base):
     integrity_json: Mapped[str] = mapped_column(Sealed("device.integrity_json"), default="")  # letzte IntegrityReport.checks
     integrity_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     update_alerted: Mapped[str] = mapped_column(String(32), default="")  # Version, zu der schon gewarnt wurde
+    features: Mapped[str] = mapped_column(String(255), default="", server_default="")   # aus hello, kommagetrennt
+    # Update auf Knopfdruck: Zeitpunkt, Ausgangsversion, Stand (running|failed|current|done) und Meldung des Agenten
+    update_requested_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    update_from: Mapped[str] = mapped_column(String(64), default="", server_default="")
+    update_state: Mapped[str] = mapped_column(String(16), default="", server_default="")
+    update_detail: Mapped[str | None] = mapped_column(Sealed("device.update_detail"), nullable=True)
 
     @property
     def integrity_checks(self) -> list[dict]:

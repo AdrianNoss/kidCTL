@@ -67,7 +67,7 @@ gilt die Sprache der Desktop-Sitzung.
   - Namen, Chat, Protokoll, Statistik und E-Mail-Adressen liegen auf dem Server verschlüsselt (eigener Schlüssel
     je Familie).
   - Signiertes Paket-Repository für Updates (Pacman und APT); der Windows-Agent aktualisiert sich selbst
-    (Ed25519-signiert).
+    (Ed25519-signiert). Eltern stoßen das Update je Gerät per Knopf in der WebUI an.
 
 ## Architektur
 
