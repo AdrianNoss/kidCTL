@@ -422,3 +422,13 @@ def test_ea_and_ubisoft_entries_release_their_launcher(real_index):
     ubi_dir = r"C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher"
     a = WinAllowed({"exe:" + ubi_dir + r"\UbisoftConnect.exe"}, sid=KID)
     assert classify(proc(r"C:\Games\Anno\anno.exe"), a, ancestors=lambda: [ubi_dir + r"\upc.exe"]) is None
+
+
+def test_launcher_entries_are_no_games():
+    """Startmenü-Einträge der Launcher (echte Ziele, VM-Snapshot „launchers“) zählen nicht als Spiel – sonst lief die
+    Spielzeit eines Ubisoft-Spiels unter „Ubisoft Connect“ und jeder offene Launcher zählte als Spiel."""
+    from kidctl_agent.win.agent import is_launcher
+    for exe in (BNET_ENTRY, r"C:\Program Files\Electronic Arts\EA Desktop\EA Desktop\EALauncher.exe",
+                r"C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\UbisoftConnect.exe", BNET_EXE):
+        assert is_launcher("exe:" + exe), exe
+    assert not is_launcher(r"exe:C:\Program Files (x86)\Hearthstone\Hearthstone.exe")

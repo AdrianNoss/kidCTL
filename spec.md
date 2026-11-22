@@ -3417,5 +3417,12 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   (`EALauncher.exe`) und Ubisoft Connect (`UbisoftConnect.exe`); Steam, Epic, GOG, Wargaming zeigen direkt auf den
   Launcher. Startmenü-Ziele, Agent-Ordner und Rechte in der Windows-VM (Snapshot „launchers“) nachgesehen;
   Agent-Unittests mit den echten Pfaden (294 grün, e2e-Tests mangels Server-Umgebung nicht gelaufen). Nicht live
-  geprüft: Start von Hearthstone über Battle.net (Spiel in der VM nicht vollständig installiert). Teil von 0.45.0
-  (noch nicht veröffentlicht; mit Adrian abgestimmt), News 0.45 ergänzt.
+  geprüft: Start von Hearthstone über Battle.net (Spiel in der VM nicht vollständig installiert). Für 0.45.1
+  (0.45.0 ist ohne diesen Fix erschienen; Versionssprung gesammelt).
+- 2026-11-22: Fehler (Windows): Spielzeit eines über Ubisoft Connect gestarteten Spiels („Starlink“) lief unter
+  „Ubisoft Connect“. Ursache, Teil 1: Startmenü-Einträge der Launcher (`Battle.net Launcher.exe`, `EALauncher.exe`,
+  `UbisoftConnect.exe`) galten nicht als Launcher (`win/agent.is_launcher`), zählten also als Spiel – und alles im
+  Programmordner (bei Ubisoft auch der Spieleordner, falls darunter installiert) lief unter diesem Eintrag. Behoben;
+  Unittest. Teil 2 offen: Programme im Ordner eines laufenden Launchers sind vom Abstammungs-Rückfall ausgenommen –
+  Spiele unterhalb des Ubisoft-Ordners brauchen das echte Format (Installationspfad, Registry `Ubisoft\Launcher\
+  Installs`), in der VM ist kein Ubisoft-Spiel installiert; Daten bei Adrian angefragt.
