@@ -157,3 +157,11 @@ msgstr "You can't use the computer in Safe Mode. You will be signed out – plea
 
 msgid "Zu viele Nachrichten warten noch auf den Versand. Bitte später erneut versuchen."
 msgstr "Too many messages are still waiting to be sent. Please try again later."
+
+msgid "{n} neue Nachricht"
+msgid_plural "{n} neue Nachrichten"
+msgstr[0] "{n} new message"
+msgstr[1] "{n} new messages"
+
+msgid "Von {name}. Öffne den Chat, um sie zu lesen."
+msgstr "From {name}. Open the chat to read them."

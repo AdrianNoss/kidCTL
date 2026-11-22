@@ -156,7 +156,8 @@ def test_chat_messages_pushed_and_notified():
         await c.send(t.TrayHello())
         await c.recv(), await c.recv()
         # Erster Abgleich (leerer Cache): an Tray, aber keine Benachrichtigungsflut
-        await a.on_message(chat_msg(1))
+        await a.sync_chat()
+        await a.on_message(chat_msg(1).model_copy(update={"created_at": datetime(2020, 1, 1, tzinfo=timezone.utc)}))
         assert (await c.recv(skip_state=True)).message.id == 1 and desk.sent == []
         # Neue Eltern-Nachricht -> Benachrichtigung
         await a.on_message(chat_msg(2))
