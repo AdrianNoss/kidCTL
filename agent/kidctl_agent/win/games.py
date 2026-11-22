@@ -48,13 +48,19 @@ MAX_FILE = 1024 * 1024
 # Launcher: Ist er freigegeben, sind von ihm gestartete Prozesse erlaubt (wie Steam/Heroic unter Linux)
 LAUNCHERS = {"steam.exe", "epicgameslauncher.exe", "battle.net.exe", "eadesktop.exe", "upc.exe",
              "galaxyclient.exe", "riotclientservices.exe", "wgc.exe"}
+# Startmenü-Ziele, die den Launcher nur starten (echte Installationen, VM-Snapshot „launchers“): Freigegeben wird
+# der Eintrag, er steht für den Launcher daneben
+LAUNCHER_ENTRIES = {"battle.net launcher.exe": "battle.net.exe", "ealauncher.exe": "eadesktop.exe",
+                    "ubisoftconnect.exe": "upc.exe"}
+# Hilfsprozesse außerhalb des Programmordners: Battle.net-Agent in ``Agent`` bzw. versionierten Ordnern ``Agent.NNNN``
+LAUNCHER_DATA_DIRS = {"battle.net.exe": (norm(ntpath.join(PROGRAM_DATA, "Battle.net")),)}
 # Hilfsprozesse der Launcher: zählen nicht als Spiel und vererben die Abstammung nicht
 LAUNCHER_HELPERS = {
     "steamwebhelper.exe", "steamservice.exe", "steamerrorreporter.exe", "steamerrorreporter64.exe",
     "gameoverlayui.exe", "gameoverlayui64.exe", "steamsysinfo.exe", "steam_monitor.exe",
     "epicwebhelper.exe", "unrealcefsubprocess.exe", "epiconlineservicesuserhelper.exe",
     "epiconlineserviceshost.exe", "crashreportclient.exe",
-    "agent.exe", "battle.net helper.exe", "blizzarderror.exe", "blizzard update agent.exe",
+    "agent.exe", "agenthelper.exe", "battle.net helper.exe", "blizzarderror.exe", "blizzard update agent.exe",
     "eabackgroundservice.exe", "eaconnect_microsoft.exe", "qtwebengineprocess.exe", "eacefsubprocess.exe",
     "eacrashreporter.exe", "link2ea.exe", "ealocalhostsvc.exe",
     "upcwebhelper.exe", "uplaywebcore.exe", "ubisoftconnectwebcore.exe", "uplayservice.exe", "upc_crashreporter.exe",

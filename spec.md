@@ -331,6 +331,15 @@ Abweichungen stehen hier und unter „Restlücken“.
     laufenden Launchers (z. B. `EALocalHostSvc.exe`). Kurze 8.3-Pfade (`PROGRA~1`) werden vor der Zuordnung in die
     lange Form aufgelöst. Freigegebene Launcher GOG, EA und Battle.net geben auch ihre Spieleordner frei, wie bisher
     Epic.
+  - **Startmenü-Einträge der Launcher (Fehler 2026-11-22):** Freigegeben wird der Startmenü-Eintrag, und der zeigt
+    bei drei Launchern auf einen Starter neben dem eigentlichen Launcher (echte Installationen, VM-Snapshot
+    „launchers“): `Battle.net Launcher.exe` -> `Battle.net.exe`, `EALauncher.exe` -> `EADesktop.exe`,
+    `UbisoftConnect.exe` -> `upc.exe` (`win/games.LAUNCHER_ENTRIES`). Ein freigegebener Eintrag gibt den Launcher
+    samt Spieleordnern frei; ein Launcher aus `LAUNCHERS` im Programmordner einer Freigabe zählt für die
+    Abstammungsregel. Battle.net gibt zusätzlich `ProgramData\Battle.net` frei (Agent in versionierten Ordnern
+    `Agent\Agent.NNNN`, `win/games.LAUNCHER_DATA_DIRS`) – keine Einzelfreigaben je `.exe`, auch nicht nach Updates.
+    Starter der Spiele (z. B. `Hearthstone Beta Launcher.exe`) liegen im Spieleordner und zählen zum Spiel.
+    Restlücke: `docs/limitations*.md` („Ordner freigegebener Launcher“).
 - **Oberfläche im Windows-11-Stil (entschieden 2026-11-19 per /grill-me):**
   - **Nur unter Windows** (10 und 11 gleich); Linux behält den nativen Look (Breeze/Adwaita). Logik, Texte und
     Übersetzungen bleiben gemeinsam; das Windows-Design ist eine eigene Stilschicht (`tray/kidctl_tray/winstyle.py`
@@ -3401,3 +3410,12 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   je Programm/Kategorie, „zählt nicht“-Programme, Zeitkonto; 0.48 Aufgaben → Zeit verdienen, Weich-Modus, Alarmkanäle
   ntfy/Webhook/Matrix, Cinnamon/COSMIC. Plan in `dev/planung/PLAN-2026-11.md`, Roadmap der Website ergänzt. Keine
   Umsetzung; geprüft: Doku-Parität und Hugo-Build.
+- 2026-11-22: Fehler behoben (Windows): Hearthstone über Battle.net erzeugte drei Sperrdialoge trotz freigegebenem
+  Battle.net (`Hearthstone Beta Launcher.exe`, `ProgramData\Battle.net\Agent\Agent.exe`, `…\Agent.9886\Agent.exe`).
+  Ursache: Der Katalog-Schlüssel ist das Startmenü-Ziel `Battle.net Launcher.exe`, Spieleordner und Abstammungsregel
+  erwarteten `Battle.net.exe`; der Agent liegt außerhalb des Programmordners. Gleiches Muster bei EA app
+  (`EALauncher.exe`) und Ubisoft Connect (`UbisoftConnect.exe`); Steam, Epic, GOG, Wargaming zeigen direkt auf den
+  Launcher. Startmenü-Ziele, Agent-Ordner und Rechte in der Windows-VM (Snapshot „launchers“) nachgesehen;
+  Agent-Unittests mit den echten Pfaden (294 grün, e2e-Tests mangels Server-Umgebung nicht gelaufen). Nicht live
+  geprüft: Start von Hearthstone über Battle.net (Spiel in der VM nicht vollständig installiert). Keine neue Version
+  (offen, mit Adrian klären).

@@ -94,6 +94,9 @@ version is in the README.
   access" – the parents allow them in the web interface or briefly switch to "Off" for installing.
 - **Other writable folders** (e.g. under `C:\ProgramData`) have no execution ban: programs in them that
   belong to the child are blocked, libraries (DLLs) from them are not.
+- **Folders of released launchers:** if a launcher is released, programs in its game folders and (Battle.net) in
+  `C:\ProgramData\Battle.net` run too – even if they belong to the child. These folders are writable for all users;
+  a child could put its own programs there and start them.
 - **Store apps:** the built-in Microsoft apps show names from a fixed list; other Store apps the
   name from the app package.
 - **Full-screen games:** warning windows don't appear over games in exclusive full screen; sign-out still

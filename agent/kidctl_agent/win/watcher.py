@@ -188,16 +188,19 @@ class WinProgramWatcher:
         return self._targets
 
     def launcher_dirs(self, keys: set[str]) -> tuple[str, ...]:
-        """Spieleordner der freigegebenen Launcher (Steam: Bibliotheken; Epic, GOG, EA, Battle.net:
-        Installationsordner der Spiele)."""
+        """Spieleordner der freigegebenen Launcher, auch über ihren Startmenü-Eintrag (Steam: Bibliotheken; Epic, GOG,
+        EA, Battle.net: Installationsordner der Spiele; Battle.net zusätzlich der Agent-Ordner)."""
         released = {key_norm(k) for k in keys}
         dirs: list[str] = []
         if self.games.steam_exe and key_norm("exe:" + self.games.steam_exe) in released:
             dirs += self.games.steam_dirs
-        exes = {ntpath.basename(k).lower() for k in released if k.startswith("exe:")}
+        exes = {games_mod.LAUNCHER_ENTRIES.get(b, b) for k in released if k.startswith("exe:")
+                for b in (ntpath.basename(k).lower(),)}
         for launcher, folders in sorted(self.games.launcher_dirs.items()):
             if launcher in exes:
                 dirs += folders
+        for launcher in sorted(exes & games_mod.LAUNCHER_DATA_DIRS.keys()):
+            dirs += games_mod.LAUNCHER_DATA_DIRS[launcher]
         return tuple(dirs)
 
     def users(self) -> set[str]:

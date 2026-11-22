@@ -368,7 +368,7 @@ def test_launcher_dirs_for_released_launchers(real_index, tmp_path):
     w = WinProgramWatcher.__new__(WinProgramWatcher)
     w.games = real_index
     dirs = w.launcher_dirs({r"exe:C:\Program Files (x86)\Battle.net\Battle.net.exe"})
-    assert dirs == (r"c:\program files (x86)\hearthstone",)
+    assert dirs == (r"c:\program files (x86)\hearthstone", r"c:\programdata\battle.net")
     assert w.launcher_dirs({"exe:C:\\x\\other.exe"}) == ()
 
 
@@ -379,3 +379,46 @@ def test_short_paths_resolve_to_game(real_index, monkeypatch):
     monkeypatch.setattr(games, "long_path", lambda p: long if p == short else p)
     assert real_index.game_of(short) == ("game:ea:{59d2c751-f7be-4e9f-9c8c-1f16013802c7}", "SimCity 2000 Special Edition")
     assert games.exe_game_key(short) == "game:exe:" + long.lower()
+
+
+# Echte Pfade (VM-Snapshot „launchers“ und Rechner eines Nutzers, 2026-11-22): Startmenü-Eintrag von Battle.net ist
+# „Battle.net Launcher.exe“, der Agent liegt unter ProgramData in versionierten Ordnern, Spiele bringen eigene Starter
+BNET_ENTRY = r"C:\Program Files (x86)\Battle.net\Battle.net Launcher.exe"
+BNET_EXE = r"C:\Program Files (x86)\Battle.net\Battle.net.exe"
+HS_LAUNCHER = r"C:\Program Files (x86)\Hearthstone\Hearthstone Beta Launcher.exe"
+
+
+def test_battlenet_entry_releases_games_and_agent(real_index):
+    """Hearthstone über Battle.net: freigegeben ist der Startmenü-Eintrag, nicht Battle.net.exe – Spielordner,
+    Agent (auch nach Updates in neue Agent.NNNN-Ordner) und Spiele ohne Manifest sind trotzdem erlaubt."""
+    from kidctl_agent.win.watcher import WinProgramWatcher
+    w = WinProgramWatcher.__new__(WinProgramWatcher)
+    w.games = real_index
+    keys = {"exe:" + BNET_ENTRY}
+    a = WinAllowed(keys, sid=KID, launcher_dirs=w.launcher_dirs(keys))
+    owner = lambda path: KID   # noqa: E731 – Battle.net-Agent aktualisiert sich unter dem Konto des Kindes
+    for exe, anc in ((BNET_EXE, [BNET_ENTRY]),
+                     (HS_LAUNCHER, [BNET_EXE]),
+                     (r"C:\Program Files (x86)\Hearthstone\Hearthstone.exe", [HS_LAUNCHER]),
+                     (r"C:\ProgramData\Battle.net\Agent\Agent.exe", []),
+                     (r"C:\ProgramData\Battle.net\Agent\Agent.9886\Agent.exe", []),
+                     (r"C:\ProgramData\Battle.net\Agent\Agent.9901\Agent.exe", []),
+                     (r"C:\Program Files (x86)\Overwatch\Overwatch.exe", [BNET_EXE])):
+        assert classify(proc(exe), a, owner, ancestors=lambda anc=anc: anc) is None, exe
+    assert real_index.game_of(HS_LAUNCHER) == ("game:battlenet:hs_beta", "Hearthstone")   # zählt als Spiel
+    # ohne Freigabe weiterhin gesperrt
+    none = WinAllowed({r"exe:C:\X\other.exe"}, sid=KID, launcher_dirs=w.launcher_dirs({r"exe:C:\X\other.exe"}))
+    assert classify(proc(r"C:\ProgramData\Battle.net\Agent\Agent.exe"), none) is not None
+    assert classify(proc(HS_LAUNCHER), none, ancestors=lambda: [BNET_EXE]) is not None
+
+
+def test_ea_and_ubisoft_entries_release_their_launcher(real_index):
+    """EA app (Eintrag EALauncher.exe -> EADesktop.exe) und Ubisoft Connect (UbisoftConnect.exe -> upc.exe)."""
+    from kidctl_agent.win.watcher import WinProgramWatcher
+    w = WinProgramWatcher.__new__(WinProgramWatcher)
+    w.games = real_index
+    ea = {r"exe:C:\Program Files\Electronic Arts\EA Desktop\EA Desktop\EALauncher.exe"}
+    assert w.launcher_dirs(ea) == (r"c:\program files\ea games\simcity 2000 se",)
+    ubi_dir = r"C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher"
+    a = WinAllowed({"exe:" + ubi_dir + r"\UbisoftConnect.exe"}, sid=KID)
+    assert classify(proc(r"C:\Games\Anno\anno.exe"), a, ancestors=lambda: [ubi_dir + r"\upc.exe"]) is None

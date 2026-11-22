@@ -94,6 +94,9 @@ steht im README.
   anfragen“ – die Eltern geben sie im WebUI frei bzw. stellen zum Installieren kurz auf „Aus“.
 - **Andere beschreibbare Ordner** (z. B. unter `C:\ProgramData`) haben kein Ausführverbot: Programme darin, die
   dem Kind gehören, sind gesperrt, Bibliotheken (DLLs) daraus nicht.
+- **Ordner freigegebener Launcher:** Ist ein Launcher freigegeben, laufen auch Programme in seinen Spieleordnern und
+  (Battle.net) in `C:\ProgramData\Battle.net` – auch wenn sie dem Kind gehören. Diese Ordner sind für alle Benutzer
+  beschreibbar; ein Kind könnte dort eigene Programme ablegen und starten.
 - **Store-Apps:** Die mitgelieferten Microsoft-Apps zeigen Namen aus einer festen Liste; andere Store-Apps den
   Namen aus dem App-Paket.
 - **Vollbildspiele:** Vorwarn-Fenster erscheinen nicht über Spielen im exklusiven Vollbild; die Abmeldung erfolgt

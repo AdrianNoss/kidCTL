@@ -141,7 +141,9 @@ def classify(proc, allowed: WinAllowed, owner=lambda path: "", parent_exe=lambda
     # er startet (Spiele, Installer der Spiele); wie Steam/Heroic unter Linux
     if any(_under(exe, d) for d in allowed.launcher_dirs):
         return None
-    if allowed.keys and any(ntpath.basename(a).lower() in LAUNCHERS and "exe:" + norm(a) in allowed.keys
+    # Launcher im Ordner einer Freigabe zählt mit (Startmenü-Eintrag „Battle.net Launcher.exe“ -> Battle.net.exe)
+    if allowed.keys and any(ntpath.basename(a).lower() in LAUNCHERS
+                            and ("exe:" + norm(a) in allowed.keys or any(_under(norm(a), d) for d in allowed.dirs))
                             for a in ancestors()):
         return None
     try:
