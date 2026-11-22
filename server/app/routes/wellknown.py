@@ -13,7 +13,7 @@ from ..config import settings
 
 router = APIRouter()
 
-PROJECT_CONTACTS = ("mailto:security@nossco.de", "https://github.com/AdrianNoss/kidCTL/security/advisories/new")
+PROJECT_CONTACTS = ("mailto:security@kidctl.de", "https://github.com/AdrianNoss/kidCTL/security/advisories/new")
 POLICY = "https://kidctl.de/docs/security/"
 
 

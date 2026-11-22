@@ -9,7 +9,7 @@ them confidentially.
 
 - **Preferred:** GitHub private vulnerability reporting – in the repository under **Security → "Report a
   vulnerability"** ([report directly](https://github.com/AdrianNoss/kidCTL/security/advisories/new)).
-- **Alternatively:** email **security@nossco.de**. No PGP.
+- **Alternatively:** email **security@kidctl.de**. No PGP.
 
 > [!CAUTION]
 > **Never** report security vulnerabilities as a public issue, pull request or in forums.

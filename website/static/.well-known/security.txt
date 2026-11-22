@@ -1,4 +1,4 @@
-Contact: mailto:security@nossco.de
+Contact: mailto:security@kidctl.de
 Contact: https://github.com/AdrianNoss/kidCTL/security/advisories/new
 Expires: 2027-11-17T00:00:00Z
 Policy: https://kidctl.de/docs/security/

@@ -30,7 +30,7 @@ HERE = ROOT / "packaging" / "debian"
 ARCH = ROOT / "packaging" / "arch"
 CACHE = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "kidctl-vendor"
 VENDOR_PY = "py3.12"
-MAINTAINER = "KidCTL <kidctl@localhost>"
+MAINTAINER = "KidCTL <info@kidctl.de>"
 HOMEPAGE = "https://github.com/AdrianNoss/kidCTL"
 EXCLUDE = re.compile(r"(__pycache__|\.pyc$|/tests?/)")
 

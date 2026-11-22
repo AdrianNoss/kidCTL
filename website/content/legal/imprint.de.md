@@ -11,7 +11,7 @@ Anschrift folgt
 
 ## Kontakt
 
-E-Mail: <info@nossco.de>
+E-Mail: <info@kidctl.de>
 
 ## Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV
 

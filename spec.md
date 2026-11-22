@@ -1611,7 +1611,7 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
 
 ### Inhalt `SECURITY.md`
 - **Meldeweg:** bevorzugt GitHub Private Vulnerability Reporting (Security → „Report a vulnerability“);
-  alternativ `security@nossco.de` (später `security@<Produkt-Domain>`). Kein PGP. Ausdrücklich: Sicherheitslücken
+  alternativ `security@kidctl.de`. Kein PGP. Ausdrücklich: Sicherheitslücken
   nie als öffentliches Issue, Pull Request oder in Foren melden.
 - **Unterstützte Versionen:** nur die jeweils neueste Version (vor 1.0); Fixes erscheinen als neue Patch-Version,
   keine Backports. Server und Agenten auf demselben Stand halten.
@@ -1646,7 +1646,7 @@ Ziel: vertraulicher, klarer Meldeweg für Sicherheitslücken statt öffentlicher
 - **Projektseite:** `website/static/.well-known/security.txt`; `Expires` setzt der Pages-Build auf heute + 1 Jahr.
   Wirksam seit der eigenen Domain (`https://kidctl.de/.well-known/security.txt`).
 - **kidCTL-Server:** Route `/.well-known/security.txt` (ohne Login), `Expires` dynamisch (+ 1 Jahr),
-  `Contact: mailto:security@nossco.de` und GitHub-Meldeweg, `Policy:` auf `SECURITY.md`, `Preferred-Languages:
+  `Contact: mailto:security@kidctl.de` und GitHub-Meldeweg, `Policy:` auf `SECURITY.md`, `Preferred-Languages:
   en, de`. Optionale Umgebungsvariable `SECURITY_CONTACT`: zusätzlicher Kontakt des Betreibers (zuerst gelistet).
 
 ### GitHub-Funktionen
@@ -3477,3 +3477,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-22: Fehler (Windows): Minecraft Bedrock hatte keine Steuerung, bis `C:\Program Files\Microsoft GameInput\x64\
   GameInputRawInputProxy.exe` einzeln freigegeben war. Microsoft GameInput gehört jetzt zur Basis (Ordner unter
   `Program Files`, für Kinder nicht beschreibbar). Unittest mit dem echten Pfad; nicht live geprüft. Für 0.45.1.
+- 2026-11-22: Kontaktadressen auf die Projekt-Domain umgestellt (ohne neue Version): Sicherheitsmeldungen
+  `security@kidctl.de` (SECURITY*, README*, `security.txt` der Website und Server-Route, `.env.example`), Impressum
+  `info@kidctl.de`, Maintainer der Debian-Pakete `KidCTL <info@kidctl.de>` statt `kidctl@localhost`. Geprüft:
+  Doku-Parität, Hugo-Build (keine alte Adresse in der Ausgabe); Server-Tests nicht gelaufen (kein psycopg lokal).

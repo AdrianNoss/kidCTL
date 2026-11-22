@@ -198,7 +198,7 @@ Sicherheits-Audit durch Menschen gibt es noch nicht. Mehr: [So entsteht kidCTL](
 
 ## Sicherheit
 
-Sicherheitslücken bitte **vertraulich** melden (GitHub „Report a vulnerability“ oder security@nossco.de), nie als
+Sicherheitslücken bitte **vertraulich** melden (GitHub „Report a vulnerability“ oder security@kidctl.de), nie als
 öffentliches Issue: [Sicherheitsrichtlinie](SECURITY.de.md).
 
 ## Code-Signatur
