@@ -97,6 +97,9 @@ steht im README.
 - **Ordner freigegebener Launcher:** Ist ein Launcher freigegeben, laufen auch Programme in seinen Spieleordnern und
   (Battle.net) in `C:\ProgramData\Battle.net` – auch wenn sie dem Kind gehören. Diese Ordner sind für alle Benutzer
   beschreibbar; ein Kind könnte dort eigene Programme ablegen und starten.
+- **Minecraft Launcher:** Ist er freigegeben, laufen Programme namens `java.exe`/`javaw.exe` in seinen Paketdaten im
+  Profil des Kindes (`AppData\Local\Packages\Microsoft.4297127D64EC6_…\LocalCache`) – auch wenn sie dem Kind gehören.
+  Der Ordner ist für das Kind beschreibbar.
 - **Store-Apps:** Die mitgelieferten Microsoft-Apps zeigen Namen aus einer festen Liste; andere Store-Apps den
   Namen aus dem App-Paket.
 - **Vollbildspiele:** Vorwarn-Fenster erscheinen nicht über Spielen im exklusiven Vollbild; die Abmeldung erfolgt

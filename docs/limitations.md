@@ -97,6 +97,9 @@ version is in the README.
 - **Folders of released launchers:** if a launcher is released, programs in its game folders and (Battle.net) in
   `C:\ProgramData\Battle.net` run too – even if they belong to the child. These folders are writable for all users;
   a child could put its own programs there and start them.
+- **Minecraft Launcher:** if it is released, programs named `java.exe`/`javaw.exe` in its package data in the child's
+  profile (`AppData\Local\Packages\Microsoft.4297127D64EC6_…\LocalCache`) run – even if they belong to the child.
+  The folder is writable for the child.
 - **Store apps:** the built-in Microsoft apps show names from a fixed list; other Store apps the
   name from the app package.
 - **Full-screen games:** warning windows don't appear over games in exclusive full screen; sign-out still

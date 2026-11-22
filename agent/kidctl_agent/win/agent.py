@@ -38,7 +38,8 @@ from .programs import WINDIR, _under
 
 log = logging.getLogger("kidctl.agent")
 
-LAUNCHER_PFNS = ("microsoft.gamingapp_", "microsoft.xboxgamingoverlay_", "microsoft.xboxapp_")
+LAUNCHER_PFNS = ("microsoft.gamingapp_", "microsoft.xboxgamingoverlay_", "microsoft.xboxapp_",
+                 "microsoft.4297127d64ec6_")   # Minecraft Launcher (das Spiel ist die Java-Laufzeit, siehe games)
 
 
 def is_launcher(key: str) -> bool:

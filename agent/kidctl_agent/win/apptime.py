@@ -8,7 +8,7 @@ Pfad, sonst sein Programm- bzw. App-Ordner außerhalb von ``%WINDIR%``). Alles a
 from __future__ import annotations
 
 from .catalog import Catalog, norm
-from .games import GameIndex
+from .games import MINECRAFT_JAVA, GameIndex, package_runtime
 from .programs import WINDIR, _under, app_root, key_norm
 
 
@@ -32,6 +32,8 @@ class WinAppIndex:
         """(Schlüssel, Name) bzw. ``None``; Name nur bei erkannten Spielen (sonst aus dem Katalog)."""
         if game := self.games.game_of(proc.exe):
             return game
+        if not proc.pfn and package_runtime(norm(proc.exe)):
+            return MINECRAFT_JAVA
         if proc.pfn:
             key = self.pfns.get(proc.pfn.lower())
             return (key, "") if key else None

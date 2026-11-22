@@ -21,7 +21,7 @@ import re
 from dataclasses import dataclass, field
 
 from .catalog import BASE_PFN_PREFIXES, norm
-from .games import LAUNCHERS
+from .games import LAUNCHERS, package_runtime
 
 WINDIR = norm(os.environ.get("WINDIR", r"C:\Windows"))
 PROGRAM_FILES = norm(os.environ.get("ProgramFiles", r"C:\Program Files"))
@@ -124,7 +124,7 @@ def classify(proc, allowed: WinAllowed, owner=lambda path: "", parent_exe=lambda
         return None
     if not proc.pfn and "exe:" + exe in allowed.keys:
         return None   # früher einzeln freigegeben (vor der Paket-Zuordnung)
-    if pkg := proc.pfn or package_of(exe):
+    if pkg := proc.pfn or package_of(exe) or package_runtime(exe):
         pfn = pkg.lower()
         key = "appx:" + pkg
         if "appx:" + pfn in allowed.keys or pfn.startswith(BASE_PFN_PREFIXES):

@@ -3440,3 +3440,10 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Freigabe gesperrt. Jetzt: Programme unter `WindowsApps` ohne Identität zählen zu ihrem Paket; Gaming Services sind
   Basis wie die Game Bar. Ältere Einzelfreigaben gelten weiter. Unittest mit dem echten Pfad (Agent 297 grün); nicht
   live geprüft. Für 0.45.1.
+- 2026-11-22: Fehler (Windows): Minecraft: Java Edition erschien nur als „Minecraft Launcher“, und die Java-Laufzeit
+  (`AppData\Local\Packages\Microsoft.4297127D64EC6_8wekyb3d8bbwe\LocalCache\…\bin\javaw.exe`, vom Launcher ins
+  Profil geladen, ohne App-Identität, Pfad mit Laufzeit-Version) musste einzeln freigegeben werden. Jetzt gehört
+  `java[w].exe` aus den Paketdaten des Minecraft Launchers zum Paket (Freigabe bzw. Anfrage gilt dem Launcher) und
+  zählt als Spiel `game:minecraft:java` „Minecraft: Java Edition“; der Launcher selbst zählt nicht mehr als Spiel.
+  Bewusst eng (nur dieses Paket, nur Java) – Restlücke in `docs/limitations*.md`. Pfad vom echten Rechner; Unittest
+  (Agent 298 grün); nicht live geprüft. Für 0.45.1.

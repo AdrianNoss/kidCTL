@@ -55,6 +55,22 @@ LAUNCHERS = {"steam.exe", "epicgameslauncher.exe", "battle.net.exe", "eadesktop.
 # der Eintrag, er steht für den Launcher daneben
 LAUNCHER_ENTRIES = {"battle.net launcher.exe": "battle.net.exe", "ealauncher.exe": "eadesktop.exe",
                     "ubisoftconnect.exe": "upc.exe"}
+# Minecraft Launcher (Store-App, echter Fall 2026-11-22): startet Minecraft: Java Edition mit einer Java-Laufzeit, die er
+# in die Paketdaten des Kindes lädt (``…\AppData\Local\Packages\<PFN>\LocalCache\…\bin\javaw.exe``, ohne
+# App-Identität). Diese Java-Prozesse gehören zum Paket und zählen als Spiel.
+MINECRAFT_PFN = "microsoft.4297127d64ec6_8wekyb3d8bbwe"
+MINECRAFT_JAVA = ("game:minecraft:java", "Minecraft: Java Edition")
+_PKG_CACHE = re.compile(r"^[a-z]:\\users\\[^\\]+\\appdata\\local\\packages\\([^\\]+)\\localcache\\")
+_JAVA = {"java.exe", "javaw.exe"}
+
+
+def package_runtime(exe: str) -> str:
+    """Package Family Name (klein), wenn ``exe`` (normiert) die Java-Laufzeit des Minecraft Launchers ist, sonst ``""``.
+    Bewusst eng (nur dieses Paket, nur ``java[w].exe``): der Ordner ist für das Kind beschreibbar."""
+    m = _PKG_CACHE.match(exe)
+    return m.group(1) if m and m.group(1) == MINECRAFT_PFN and ntpath.basename(exe) in _JAVA else ""
+
+
 # Hilfsprozesse außerhalb des Programmordners: Battle.net-Agent in ``Agent`` bzw. versionierten Ordnern ``Agent.NNNN``
 LAUNCHER_DATA_DIRS = {"battle.net.exe": (norm(ntpath.join(PROGRAM_DATA, "Battle.net")),)}
 # Hilfsprozesse der Launcher: zählen nicht als Spiel und vererben die Abstammung nicht

@@ -391,3 +391,26 @@ def test_windowsapps_without_identity():
     assert v.key == "appx:microsoft.windowscalculator_8wekyb3d8bbwe"
     assert classify(proc(calc), allowed("appx:Microsoft.WindowsCalculator_8wekyb3d8bbwe")) is None
     assert classify(proc(r"C:\Program Files\Other\x.exe"), allowed()).key.startswith("exe:")
+
+
+def test_minecraft_java_runtime():
+    """Echter Fall (2026-11-22): Minecraft Launcher (Store) startet javaw.exe aus seinen Paketdaten im Profil – gehört zum
+    Paket (Freigabe des Launchers genügt, auch nach Java-Updates) und zählt als Spiel „Minecraft: Java Edition“."""
+    from kidctl_agent.win.agent import is_launcher
+    from kidctl_agent.win.apptime import WinAppIndex
+    pfn = "Microsoft.4297127D64EC6_8wekyb3d8bbwe"
+    java = (r"C:\Users\kind\AppData\Local\Packages\Microsoft.4297127D64EC6_8wekyb3d8bbwe\LocalCache\Local\runtime"
+            r"\java-runtime-epsilon\windows-x64\java-runtime-epsilon\bin\javaw.exe")
+    owner = lambda path: KID   # noqa: E731 – vom Launcher unter dem Konto des Kindes geladen
+    assert classify(proc(java), allowed("appx:" + pfn), owner) is None
+    assert classify(proc(java.replace("epsilon", "delta")), allowed("appx:" + pfn), owner) is None
+    v = classify(proc(java), allowed(catalog_pfns={pfn}), owner)
+    assert v.key == "appx:" + pfn.lower()                                         # Anfrage gilt dem Launcher
+    other = java.replace("javaw.exe", "evil.exe")                                 # nur Java, sonst eigene Datei
+    assert classify(proc(other), allowed("appx:" + pfn), owner).code == "own_program"
+    calc = java.replace("Microsoft.4297127D64EC6", "Microsoft.WindowsCalculator")  # nur dieses Paket
+    assert classify(proc(calc), allowed("appx:Microsoft.WindowsCalculator_8wekyb3d8bbwe"), owner).code == "own_program"
+    idx = WinAppIndex(catalog.Catalog(apps=[p.AppEntry(key="appx:" + pfn, name="Minecraft Launcher",
+                                                       categories=["Game"])]), games.GameIndex())
+    assert idx.key_for(proc(java)) == ("game:minecraft:java", "Minecraft: Java Edition")
+    assert is_launcher("appx:" + pfn)
