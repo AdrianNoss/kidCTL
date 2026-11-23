@@ -3,7 +3,15 @@
 Je Kind (Seite des Kindes):
 
 - **Bildschirmzeit**: Wochenvorlage mit Tageskontingent und erlaubtem Zeitfenster (Werktage und
-  Wochenende oder jeder Tag einzeln).
+  Wochenende oder jeder Tag einzeln). Liegt „bis“ vor „Erlaubt von“ (z. B. 16:00 bis 01:00), reicht das Fenster über
+  Mitternacht (Ende spätestens 06:00); die Zeit nach Mitternacht zählt schon zum Kontingent des neuen Tages.
+- **Sperrzeiten**: je Tag bis zu drei Zeiten (z. B. Schule 08:00–13:00, Abendessen 18:00–19:00), in denen der Rechner
+  trotz Restzeit gesperrt ist – mit Vorwarnung wie am Ende der Zeit. Optional mit Namen, den das Kind in der Tray-App
+  sieht. Gutschriften heben Sperrzeiten nicht auf.
+
+  > [!NOTE]
+  > Sperrzeiten und Fenster über Mitternacht brauchen KidCTL ab Version 0.47 auf dem Rechner des Kindes. Ältere
+  > Versionen setzen nur das Zeitfenster bis höchstens 23:59 Uhr durch; die Seite „Zeiten“ nennt solche Rechner.
 - **Spiele-Limit** („davon Spiele“ in der Wochenvorlage): höchstens so viele Minuten Spiele am Tag
   (Steam, Heroic und Programme der Gruppe „Spiele“, nicht die Launcher; siehe [Spiele](games.de.md)). Vorwarnung 5 und 1 Minute
   vorher, danach werden Spiele geschlossen; der restliche Rechner bleibt nutzbar. Leer = kein Limit.

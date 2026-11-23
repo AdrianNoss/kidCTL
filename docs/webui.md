@@ -3,7 +3,15 @@
 Per child (the child's page):
 
 - **Screen time**: weekly schedule with daily allowance and allowed hours (weekdays and
-  weekend, or each day separately).
+  weekend, or each day separately). If "until" is earlier than "Allowed from" (e.g. 16:00 to 01:00), the allowed hours
+  run past midnight (ending at 06:00 at the latest); time after midnight already counts towards the next day's allowance.
+- **Blocked times**: up to three times per day (e.g. school 08:00–13:00, dinner 18:00–19:00) during which the computer
+  is locked even if time is left – with a warning, just like at the end of the time. Optionally named; the child sees
+  the name in the tray app. Extra time does not lift blocked times.
+
+  > [!NOTE]
+  > Blocked times and hours past midnight need KidCTL 0.47 or later on the child's computer. Older versions only
+  > enforce the allowed hours up to 23:59; the "Times" page lists such computers.
 - **Game limit** ("of which games" in the weekly schedule): at most this many minutes of games per day
   (Steam, Heroic and apps in the "Games" group, not the launchers; see [Games](games.md)). Warnings 5 and 1 minute
   before, then games are closed; the rest of the computer stays usable. Empty = no limit.

@@ -20,6 +20,7 @@ REASON = {
     "window_not_open": N_("Die erlaubte Zeit hat noch nicht begonnen"),
     "window_closed": N_("Die erlaubte Zeit ist für heute vorbei"),
     "locked": N_("Von deinen Eltern gesperrt"),
+    "blocked": N_("Jetzt ist Sperrzeit"),
 }
 
 
@@ -50,9 +51,16 @@ def level(state: t.TrayState) -> str:
 
 
 def status_line(state: t.TrayState) -> str:
+    if not state.allowed and state.reason == "blocked" and state.block:
+        if state.block.name:
+            return _("Sperrzeit „{name}“ bis {end} Uhr").format(name=state.block.name, end=f"{state.block.end:%H:%M}")
+        return _("Sperrzeit bis {end} Uhr").format(end=f"{state.block.end:%H:%M}")
     if not state.allowed:
         reason = REASON.get(state.reason or "")
         return _(reason) if reason else _("Keine Bildschirmzeit")
+    if state.until:
+        return _("Noch {time} (bis {end} Uhr)").format(time=fmt_duration(state.remaining_seconds),
+                                                      end=f"{state.until:%H:%M}")
     if state.window_end:
         return _("Noch {time} (heute bis {end} Uhr)").format(time=fmt_duration(state.remaining_seconds),
                                                             end=f"{state.window_end:%H:%M}")
@@ -66,6 +74,9 @@ def detail_lines(state: t.TrayState) -> list[str]:
     if state.window_start and state.window_end:
         lines.append(_("Erlaubt: {start}–{end} Uhr").format(start=f"{state.window_start:%H:%M}",
                                                             end=f"{state.window_end:%H:%M}"))
+    if state.blocks:
+        lines.append(_("Sperrzeiten: {list} Uhr").format(list=", ".join(
+            f"{b.name + ' ' if b.name else ''}{b.start:%H:%M}–{b.end:%H:%M}" for b in state.blocks)))
     if state.game_limit_minutes is not None:
         left = max(0, state.game_limit_minutes * 60 - state.game_used_seconds)
         lines.append(_("Spielzeit: noch {left} von {total}").format(

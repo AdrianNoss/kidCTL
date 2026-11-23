@@ -18,7 +18,7 @@ from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field, TypeAdapter
 
-from .protocol import MAX_BODY, AccessKind, ChatMessage
+from .protocol import MAX_BODY, AccessKind, Block, ChatMessage
 
 TRAY_PROTOCOL_VERSION = 1
 SOCKET_PATH = "/run/kidctl/tray.sock"
@@ -77,7 +77,7 @@ class TrayState(BaseModel):
     child_name: str = ""
     allowed: bool = True
     remaining_seconds: int = 0
-    reason: str | None = None        # quota | window_not_open | window_closed | locked
+    reason: str | None = None        # quota | window_not_open | window_closed | locked | blocked
     used_seconds: int = 0
     allowed_minutes: int = 0         # Kontingent heute inkl. Gutschrift
     window_start: time | None = None
@@ -91,6 +91,10 @@ class TrayState(BaseModel):
     logout_in_seconds: int | None = None
     gaming: bool = False   # gerade läuft ein Spiel (Windows: letzte Minute Spielzeit als Fenster)
     paused: bool = False   # Ruhemodus (Abo der Familie abgelaufen): keine Einschränkungen, Tray zeigt „pausiert“
+    # Sperrzeiten (ergänzt 2026-11-23): laufende Sperrzeit, alle Sperrzeiten heute, Ende des erlaubten Abschnitts
+    block: Block | None = None
+    blocks: list[Block] = []
+    until: time | None = None
 
 
 class TrayChat(BaseModel):

@@ -1345,8 +1345,8 @@ msgstr "{day}: {used} of {allowed}"
 msgid "{label} (Spiele)"
 msgstr "{label} (games)"
 
-msgid "{label}: Fensterbeginn muss vor dem Fensterende liegen."
-msgstr "{label}: the start of allowed hours must be before the end."
+msgid "{label}: Fensterbeginn muss vor dem Fensterende liegen (über Mitternacht: Ende spätestens 06:00 Uhr)."
+msgstr "{label}: the start of allowed hours must be before the end (past midnight: end no later than 06:00)."
 
 msgid "{label}: Minuten müssen zwischen 0 und {max} liegen."
 msgstr "{label}: minutes must be between 0 and {max}."
@@ -3606,3 +3606,36 @@ msgstr "Version {version} is available."
 
 msgid "Die Prüfung auf neue Versionen ist abgeschaltet (UPDATE_CHECK=0)."
 msgstr "Checking for new versions is turned off (UPDATE_CHECK=0)."
+
+msgid "Liegt „bis“ vor „Erlaubt von“ (z. B. 16:00 bis 01:00), reicht die Zeitspanne über Mitternacht – höchstens bis 06:00 Uhr. Die Zeit nach Mitternacht zählt schon zum Kontingent des neuen Tages."
+msgstr "If “until” is earlier than “Allowed from” (e.g. 16:00 to 01:00), the allowed hours run past midnight – until 06:00 at the latest. Time after midnight already counts towards the next day’s allowance."
+
+msgid "Name, z. B. Schule"
+msgstr "Name, e.g. School"
+
+msgid "Sperrzeit {n}"
+msgstr "Blocked time {n}"
+
+msgid "Sperrzeiten"
+msgstr "Blocked times"
+
+msgid "Sperrzeiten (z. B. Schule, Abendessen) sperren den Rechner innerhalb der erlaubten Zeitspanne – mit Vorwarnung wie am Ende der Zeit. Gutschriften heben Sperrzeiten nicht auf. Leere Felder = keine Sperrzeit."
+msgstr "Blocked times (e.g. school, dinner) lock the computer within the allowed hours – with a warning, just like at the end of the time. Extra time does not lift blocked times. Empty fields = no blocked time."
+
+msgid "von"
+msgstr "from"
+
+msgid "{devices} kennt Sperrzeiten und Zeiten über Mitternacht noch nicht und setzt nur den Rahmen bis höchstens 23:59 Uhr durch – bitte KidCTL dort aktualisieren."
+msgstr "{devices} does not support blocked times and hours past midnight yet and only enforces the allowed hours up to 23:59 – please update KidCTL there."
+
+msgid "{label}: Beginn muss vor dem Ende liegen (nicht über Mitternacht)."
+msgstr "{label}: the start must be before the end (not past midnight)."
+
+msgid "{label}: Beginn und Ende angeben."
+msgstr "{label}: please enter start and end."
+
+msgid "{label}: Name höchstens 40 Zeichen."
+msgstr "{label}: name may have at most 40 characters."
+
+msgid "{label}: Sperrzeit {n}"
+msgstr "{label}: blocked time {n}"

@@ -165,3 +165,6 @@ msgstr[1] "{n} new messages"
 
 msgid "Von {name}. Öffne den Chat, um sie zu lesen."
 msgstr "From {name}. Open the chat to read them."
+
+msgid "Jetzt ist Sperrzeit."
+msgstr "This is a blocked time."

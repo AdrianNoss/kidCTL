@@ -37,3 +37,14 @@ def test_request_texts():
     assert texts.request_status(m) == "⏳ Wartet auf Antwort"
     done = m.model_copy(update={"status": "approved", "approved_minutes": 20})
     assert texts.request_status(done) == "✔ Genehmigt: +20 min"
+
+
+def test_block_texts():
+    from kidctl_common.protocol import Block
+    school, dinner = Block(start=time(8), end=time(13), name="Schule"), Block(start=time(18), end=time(19))
+    blocked = st(allowed=False, reason="blocked", block=school, blocks=[school, dinner])
+    assert texts.status_line(blocked) == "Sperrzeit „Schule“ bis 13:00 Uhr"
+    assert texts.status_line(st(allowed=False, reason="blocked", block=dinner)) == "Sperrzeit bis 19:00 Uhr"
+    assert texts.status_line(st(allowed=False, reason="blocked")) == "Jetzt ist Sperrzeit"
+    assert "Sperrzeiten: Schule 08:00–13:00, 18:00–19:00 Uhr" in texts.detail_lines(blocked)
+    assert texts.status_line(st(until=time(18))) == "Noch 45 min (bis 18:00 Uhr)"

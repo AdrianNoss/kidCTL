@@ -257,3 +257,18 @@ msgstr "Version {version}"
 
 msgid "KidCTL ist freie Software zur Begleitung der Bildschirmzeit."
 msgstr "KidCTL is free software for keeping an eye on screen time."
+
+msgid "Jetzt ist Sperrzeit"
+msgstr "This is a blocked time"
+
+msgid "Sperrzeit „{name}“ bis {end} Uhr"
+msgstr "Blocked time “{name}” until {end}"
+
+msgid "Sperrzeit bis {end} Uhr"
+msgstr "Blocked time until {end}"
+
+msgid "Noch {time} (bis {end} Uhr)"
+msgstr "{time} left (until {end})"
+
+msgid "Sperrzeiten: {list} Uhr"
+msgstr "Blocked times: {list}"

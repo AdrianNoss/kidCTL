@@ -534,8 +534,20 @@ class WeekdayRule(FamilyScoped, Base):
     window_start: Mapped[time] = mapped_column(Time, default=time(8, 0))
     window_end: Mapped[time] = mapped_column(Time, default=time(20, 0))
     game_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)  # Spiele-Limit; None = keins
+    # Sperrzeiten (bis zu 3, JSON-Liste von {start, end, name}; verschlüsselt, None = keine). Fensterende < Beginn
+    # bedeutet „über Mitternacht“ (siehe spec.md „Sperrzeiten und Fenster über Mitternacht“).
+    blocks: Mapped[str | None] = mapped_column(Sealed("weekday_rule.blocks"), nullable=True)
 
     child: Mapped[Child] = relationship(back_populates="rules")
+
+    @property
+    def block_list(self) -> list:
+        from kidctl_common.protocol import Block
+        return [Block.model_validate(b) for b in json.loads(self.blocks)] if self.blocks else []
+
+    @block_list.setter
+    def block_list(self, value: list) -> None:
+        self.blocks = json.dumps([b.model_dump(mode="json") for b in value]) if value else None
 
 
 class DayException(FamilyScoped, Base):

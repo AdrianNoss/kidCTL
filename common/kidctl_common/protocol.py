@@ -22,9 +22,10 @@ UserName = Annotated[str, StringConstraints(pattern=USERNAME_PATTERN)]
 # Kind-IDs bestimmen den Resolver-Port (5300 + ID) -> nach oben begrenzt
 ChildId = Annotated[int, Field(ge=1, le=60000)]
 
-PROTOCOL_VERSION = 1
-# Bei Version 2 hier {1, 2} eintragen – mindestens eine ältere Version bleibt unterstützt.
-SUPPORTED_VERSIONS = frozenset({1})
+# Version 2 (2026-11-23): Sperrzeiten (``DayRule.blocks``) und Zeitfenster über Mitternacht (Ende < Beginn).
+# Geräte mit Version 1 erhalten eine abgespeckte Policy (``downgrade_policy``).
+PROTOCOL_VERSION = 2
+SUPPORTED_VERSIONS = frozenset({1, 2})
 
 WS_PATH = "/api/v1/ws"
 ENROLL_PATH = "/api/v1/enroll"
@@ -204,14 +205,26 @@ class ChatMessage(BaseModel):
 # Zählung + ``others_seconds``.
 
 
+MAX_BLOCKS = 3
+
+
+class Block(BaseModel):
+    """Sperrzeit innerhalb eines Tages (Beginn < Ende, nicht über Mitternacht), z. B. Schule. Protokoll 2."""
+    start: time
+    end: time
+    name: str = Field(default="", max_length=40)
+
+
 class DayRule(BaseModel):
     weekday: int = Field(ge=0, le=6)  # 0 = Montag
     quota_minutes: int = Field(ge=0)
     window_start: time
+    # Ende < Beginn (ab Protokoll 2): Fenster endet am Folgetag (über Mitternacht)
     window_end: time
     # Spiele-Limit (ergänzt 2026-10-20): höchstens so viele Minuten Spiele am Tag, innerhalb der
     # Bildschirmzeit; None = kein eigenes Limit
     game_minutes: int | None = Field(default=None, ge=0)
+    blocks: list[Block] = Field(default=[], max_length=MAX_BLOCKS)   # Sperrzeiten (Protokoll 2)
 
 
 class DayOverride(BaseModel):

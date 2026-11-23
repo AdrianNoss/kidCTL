@@ -92,3 +92,18 @@ def test_grace_from_policy():
     d = evaluate(child(locked=True, lock_grace_seconds=300), NOW, 0)
     assert d.reason == LOCKED and d.grace_seconds == 300
     assert evaluate(child(), NOW, 10 ** 6).grace_seconds is None   # Zeitende: Standard-Countdown
+
+
+def test_blocked_time_offers_no_extension_request():
+    from kidctl_agent.rules import BLOCKED
+    lg, nt, clk = FakeLogind(), FakeNotifier(), Clock()
+    actions = []
+    nt.notify_orig = nt.notify
+
+    async def notify(user, uid, title, body, critical=False, on_action=None):
+        actions.append(on_action)
+        await nt.notify_orig(user, uid, title, body, critical)
+    nt.notify = notify
+    e = Enforcer(lg, nt, clk, on_request=lambda u: None)
+    asyncio.run(e.step(DAY, [sess("1")], {"max": Decision(False, 0, BLOCKED)}))
+    assert "Sperrzeit" in nt.sent[0][2] and actions[0] is None   # Gutschrift hebt Sperrzeit nicht auf

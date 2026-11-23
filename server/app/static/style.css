@@ -437,6 +437,9 @@ body.no-nav .save-bar { bottom:0; }
 .schedule-table td[data-label]::before { content:attr(data-label); display:block; color:var(--on-surface-variant); font-size:.8125rem; margin-bottom:.25rem; }
 .schedule-table input[type=time] { width:100%; }
 .schedule-table input.short { width:100%; max-width:7rem; }
+.blocks-table td:not(.rule-day) { grid-column:1 / -1; }
+.block-slot { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.25rem .5rem; }
+.block-slot input[type=text] { grid-column:1 / -1; width:100%; }
 
 /* ---------- Programmliste ---------- */
 .app-tools { display:flex; align-items:center; gap:.5rem 1rem; flex-wrap:wrap; margin-bottom:.75rem; }

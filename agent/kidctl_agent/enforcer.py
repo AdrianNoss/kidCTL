@@ -14,7 +14,7 @@ from .sessions import SessionInfo
 from kidctl_common import i18n
 from kidctl_common.i18n import _, ngettext
 
-from .rules import LOCKED, REASON_TEXT, Decision
+from .rules import BLOCKED, LOCKED, REASON_TEXT, Decision
 
 log = logging.getLogger("kidctl.enforcer")
 
@@ -77,7 +77,7 @@ class Enforcer:
                     await self.desktop.notify(
                         user, uid, _("Gesperrt") if locked else _("Bildschirmzeit zu Ende"),
                         f"{_(REASON_TEXT[d.reason]) if d.reason in REASON_TEXT else ''} {when}", critical=True,
-                        on_action=None if locked else self.on_request)  # Verlängerung hebt keine Sperre auf
+                        on_action=None if locked or d.reason == BLOCKED else self.on_request)  # Verlängerung hebt keine Sperre/Sperrzeit auf
                     if grace <= 0:
                         del self.deadline[user]
                         await self._end(user, uid, user_sessions, d.reason, now)

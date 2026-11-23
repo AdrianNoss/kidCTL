@@ -129,6 +129,7 @@ def _child_page(request: Request, db: Session, child: Child, tab: str = "heute",
     elif tab == "zeiten":
         ctx.update(rules=sch.rules_by_day(child), groups=sch.GROUPS, weekday_names=i18n.weekday_names(),
                    differs=sch.group_differs(child), max_quota=sch.MAX_QUOTA, fmt_minutes=sch.fmt_minutes,
+                   max_blocks=sch.MAX_BLOCKS, old_devices=policy.old_protocol_devices(db, child),
                    exceptions=db.scalars(select(DayException).where(
                        DayException.child_id == child.id, DayException.day >= today).order_by(DayException.day)).all())
     elif tab == "internet":

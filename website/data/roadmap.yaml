@@ -141,7 +141,7 @@
     de: "Eigene Regeln für Ferien, Feiertage gelten wie ein Wochenendtag."
     en: "Separate rules for school holidays; public holidays count like a weekend day."
 - id: time-windows
-  status: planned
+  status: in_progress
   title: { de: "Mehrere Zeitfenster am Tag", en: "Several time windows per day" }
   text:
     de: "Zum Beispiel während der Schulzeit sperren; Fenster auch über Mitternacht."

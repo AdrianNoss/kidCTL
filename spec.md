@@ -485,9 +485,32 @@ Abweichungen stehen hier und unter „Restlücken“.
   - An: zwei Zeilen (Mo–Fr, Sa–So), Speichern schreibt die Werte auf alle Tage der Gruppe.
   - Umschalten ändert nur die Darstellung, nicht die gespeicherten Regeln; weichen Tage einer
     Gruppe voneinander ab, zeigt das WebUI einen Hinweis (angezeigt: Werte von Mo bzw. Sa).
-- Zeitfenster innerhalb eines Kalendertags (Beginn < Ende), kein Fenster über Mitternacht.
-- Nutzung endet, wenn Kontingent aufgebraucht **oder** Zeitfenster geschlossen ist.
+- Zeitfenster (Rahmen) innerhalb eines Kalendertags (Beginn < Ende) oder über Mitternacht (siehe „Sperrzeiten und
+  Fenster über Mitternacht“).
+- Nutzung endet, wenn Kontingent aufgebraucht **oder** Zeitfenster geschlossen ist **oder** eine Sperrzeit beginnt.
 - Tageswechsel um 00:00 Europe/Berlin.
+
+### Sperrzeiten und Fenster über Mitternacht (entschieden 2026-11-23 per /grill-me)
+- Modell „Rahmen + Sperrzeiten“: Das bisherige Zeitfenster je Wochentag bleibt der Rahmen; dazu je Tag bis zu
+  **3 Sperrzeiten** (z. B. Schule 08:00–13:00, Abendessen 18:00–19:00) mit optionalem Namen (≤ 40 Zeichen,
+  verschlüsselt gespeichert). Sperrzeit: Beginn < Ende, nicht über Mitternacht; außerhalb des Rahmens ohne Wirkung.
+- Gilt je Vorlage: Wochenvorlage und (mit Ferien/Feiertagen) Ferienvorlage haben eigene Sperrzeiten; Feiertage nutzen
+  die Regel des eingestellten Wochentags samt Sperrzeiten.
+- **Fenster über Mitternacht:** Ende < Beginn bedeutet „Ende am Folgetag“, spätestens 06:00. Nach 0 Uhr gilt der
+  Rahmen des Vortags weiter (Sperrzeiten des Vortags wirken nach 0 Uhr nicht mehr); gezählt wird aber schon aufs
+  Kontingent des neuen Tages (Tageswechsel für Zählung und Statistik bleibt 00:00). Erlaubt ist, was im Rahmen des
+  Vortags (Teil nach 0 Uhr) **oder** im Rahmen des Tages außerhalb seiner Sperrzeiten liegt.
+- Sperrzeit wirkt wie Fensterende: Vorwarnungen, 60-s-Countdown, Abmeldung, Login-Sperre per PAM. Die Restzeit ist
+  das Minimum aus Kontingent und Zeit bis zur nächsten Sperrzeit bzw. zum Rahmenende. Tray zeigt während einer
+  Sperrzeit „Sperrzeit „Schule“ bis 13:00 Uhr“ (Grund `blocked`).
+- Gutschriften heben Sperrzeiten nicht auf (Aufheben nur über „Jetzt sperren/Freigeben“ oder die Vorlage). Ein
+  Fensterende per Gutschrift darf ebenfalls über Mitternacht liegen (bis 06:00) und muss nach dem regulären Ende
+  liegen.
+- Protokoll 2 (`DayRule.blocks`, Ende < Beginn erlaubt); der Server akzeptiert weiter Protokoll 1. Geräte mit
+  Protokoll 1 erhalten eine abgespeckte Policy: ohne Sperrzeiten, Ende über Mitternacht auf 23:59 gekappt (auch bei
+  Tagesausnahmen). Die Kind-Seite im WebUI weist darauf hin, solange ein Gerät des Kindes Protokoll 1 spricht und
+  Sperrzeiten oder Fenster über Mitternacht eingestellt sind.
+- Offline wie bisher mit gecachter Policy; Fenster nach Systemuhr (Zeitzone der Policy), Dauer über monotone Uhr.
 
 ### Spiele-Limit (entschieden 2026-10-20)
 - Je Wochentag optional „davon Spiele“: höchstens so viele Minuten Spiele am Tag, innerhalb der
@@ -1699,9 +1722,8 @@ Self-Hostern). Plan mit Etappen: `dev/planung/PLAN-2026-11.md`. Fachliche Detail
 - **Ferien und Feiertage:** Ferienzeiträume je Kind/Familie mit eigener Wochenvorlage; gesetzliche Feiertage je
   Bundesland/Land gelten wie ein wählbarer Wochentag (z. B. „wie Sonntag“). Feiertagsdaten lokal im Server, kein
   externer Abruf.
-- **Mehrere Zeitfenster je Tag:** mehrere erlaubte Fenster pro Wochentag (z. B. Schulzeit sperren), Fenster über
-  Mitternacht. Neue Protokollversion; Server liefert älteren Agenten weiterhin das bisherige Format (ein Fenster =
-  engste Näherung).
+- **Mehrere Zeitfenster je Tag:** umgesetzt als Rahmen + bis zu 3 Sperrzeiten je Tag und Fenster über Mitternacht,
+  siehe „Bildschirmzeit → Sperrzeiten und Fenster über Mitternacht“ (entschieden 2026-11-23).
 - Parallel: **Lutris und Bottles** als Spielequellen (Roadmap `wine-launchers`).
 
 **Etappe 2 – Zeit-Logik (Ziel 0.48):**
@@ -3608,3 +3630,15 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-23: Version 0.46.1 – noexec nur im Modus „Sperren“ (Linux), Dependabot-Updates (u. a. fastapi 0.165, SQLAlchemy
   2.1.9, reportlab 5.1, pyotp 2.12). Patch ohne Sicherheitsbezug, keine News. Geprüft: Server-Suite gegen PostgreSQL
   (inkl. Rechnungs-PDFs mit reportlab 5), Agent- und Tray-Tests, Doku-Parität, Hugo-Build.
+- 2026-11-23: Sperrzeiten und Zeitfenster über Mitternacht (Roadmap `time-windows`, Etappe 1; /grill-me mit Adrian,
+  siehe „Bildschirmzeit → Sperrzeiten und Fenster über Mitternacht“). Je Tag bis zu 3 Sperrzeiten mit Namen
+  (`weekday_rule.blocks`, verschlüsselt, Migration `0027_sperrzeiten`), Ende < Beginn = über Mitternacht (bis 06:00, auch
+  für Gutschriften). Protokoll 2 (`DayRule.blocks`), Server bedient Protokoll 1 weiter mit abgespeckter Policy (ohne
+  Sperrzeiten, Ende auf 23:59 gekappt) und Hinweis auf der Seite „Zeiten“. Agent (Linux und Windows, gemeinsamer Kern
+  `rules.py`): erlaubte Abschnitte inkl. Rest des Vortagsrahmens, Grund `blocked` ohne „Verlängerung anfordern“;
+  Tray zeigt „Sperrzeit „Schule“ bis 13:00 Uhr“, die Sperrzeiten des Tages und das Ende des laufenden Abschnitts.
+  Geprüft: pytest Server (Formular, Validierung, Policy v1/v2, Gutschrift über Mitternacht, Hinweis), Agent-Unittests
+  (Sperrzeiten, Mitternacht, Zeitumstellung März/Oktober, Offline mit gecachter Policy, Benachrichtigung), Tray-Texte,
+  Migration 0026 → head → 0026 → head gegen PostgreSQL mit `alembic check`, Doku-Parität, Hugo-Build, Screenshots und
+  Design-Review der Seite „Zeiten“ (mobil/Desktop, ohne Funde). Offen: VM-Test Linux und Windows (Warnung, Abmeldung,
+  Login-Sperre in einer Sperrzeit, Fenster über Mitternacht, Tray-Anzeige).

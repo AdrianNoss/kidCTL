@@ -39,13 +39,13 @@ def _setup(client, parent) -> tuple[int, str]:
 
 
 @contextmanager
-def device(client, tok, name, users=("max",), map_to=None):
+def device(client, tok, name, users=("max",), map_to=None, proto=1):
     """Koppelt + verbindet ein Gerät, meldet User, ordnet sie optional einem Kind zu."""
     r = client.post("/devices/pair", data={"name": name, "csrf_token": tok})
     code = r.text.split("sudo kidctl enroll http://testserver ")[1][:8]
     enr = client.post(p.ENROLL_PATH, json={"code": code, "hostname": name}).json()
     with client.websocket_connect(p.WS_PATH, headers={"Authorization": f"Bearer {enr['token']}"}) as ws:
-        ws.send_text(p.Hello(protocol_version=1, agent_version="t", hostname=name).model_dump_json())
+        ws.send_text(p.Hello(protocol_version=proto, agent_version="t", hostname=name).model_dump_json())
         assert isinstance(recv(ws), p.Welcome)
         first = _policy(ws)
         assert first.users == {}  # noch nichts zugeordnet -> niemand eingeschränkt

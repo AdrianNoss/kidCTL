@@ -6,7 +6,7 @@ import hashlib
 import logging
 import re
 from dataclasses import dataclass
-from datetime import date, timedelta, timezone
+from datetime import date, time, timedelta, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -33,8 +33,10 @@ USAGE_DAYS_BACK = 7
 # ---------- Policy ----------
 
 def build_policy(db: Session, device_id: int) -> p.Policy:
-    from .models import Device, Family
-    family = db.get(Family, db.scalar(select(Device.family_id).where(Device.id == device_id)))
+    from .models import Family
+    family_id, proto = db.execute(select(Device.family_id, Device.protocol_version)
+                                  .where(Device.id == device_id)).one_or_none() or (None, None)
+    family = db.get(Family, family_id) if family_id is not None else None
     if family is not None and family.paused_at is not None:
         return paused_policy(db, device_id)
     mapped = db.execute(select(DeviceUser.username, DeviceUser.child_id).where(
@@ -51,7 +53,7 @@ def build_policy(db: Session, device_id: int) -> p.Policy:
             id=child.id, name=child.name,
             rules=[p.DayRule(weekday=r.weekday, quota_minutes=r.quota_minutes,
                              window_start=r.window_start, window_end=r.window_end,
-                             game_minutes=r.game_minutes) for r in child.rules],
+                             game_minutes=r.game_minutes, blocks=r.block_list) for r in child.rules],
             exceptions=[p.DayOverride(day=e.day, extra_minutes=e.extra_minutes,
                                       window_end_override=e.window_end_override,
                                       extra_game_minutes=e.extra_game_minutes or 0) for e in excs],
@@ -65,8 +67,43 @@ def build_policy(db: Session, device_id: int) -> p.Policy:
             temp_grants=access.temp_grants(db, child.id),
         ))
     body = p.Policy(version="", timezone=settings.timezone, users=users, children=children)
+    if proto is not None and proto < 2:
+        body = downgrade_v1(body)
     digest = hashlib.sha256(body.model_dump_json(exclude={"version"}).encode()).hexdigest()[:16]
     return body.model_copy(update={"version": digest})
+
+
+V1_LATEST_END = time(23, 59)
+
+
+def downgrade_v1(pol: p.Policy) -> p.Policy:
+    """Policy für Agenten mit Protokoll 1: ohne Sperrzeiten, Fensterende über Mitternacht auf 23:59 gekappt (ein v1-
+    Agent würde ein Ende vor dem Beginn als „ganzer Tag gesperrt“ lesen)."""
+    children = []
+    for c in pol.children:
+        starts = {r.weekday: r.window_start for r in c.rules}
+        rules = [r.model_copy(update={"blocks": [],
+                                      "window_end": V1_LATEST_END if r.window_end < r.window_start else r.window_end})
+                 for r in c.rules]
+        excs = [e.model_copy(update={"window_end_override": V1_LATEST_END})
+                if e.window_end_override is not None and e.window_end_override < starts.get(e.day.weekday(), time(0))
+                else e for e in c.exceptions]
+        children.append(c.model_copy(update={"rules": rules, "exceptions": excs}))
+    return pol.model_copy(update={"children": children})
+
+
+def needs_v2(child: Child) -> bool:
+    """Nutzt das Kind Sperrzeiten oder ein Fenster über Mitternacht (kann ein Agent mit Protokoll 1 nicht)?"""
+    return any(r.blocks or r.window_end < r.window_start for r in child.rules)
+
+
+def old_protocol_devices(db: Session, child: Child) -> list[str]:
+    """Namen der Geräte des Kindes mit Protokoll 1 – nur, wenn das Kind Funktionen ab Protokoll 2 nutzt."""
+    if not needs_v2(child):
+        return []
+    ids = device_ids_for_child(db, child.id)
+    return sorted(d.name for d in db.scalars(select(Device).where(Device.id.in_(ids)))
+                  if 0 < (d.protocol_version or 0) < 2)
 
 
 def paused_policy(db: Session, device_id: int) -> p.Policy:
