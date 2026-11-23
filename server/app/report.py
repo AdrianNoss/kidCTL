@@ -20,7 +20,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import i18n, mail, policy, stats
+from . import i18n, mail, policy, stats, vacations
 from . import schedule as sch
 from .i18n import N_, _
 from .config import settings
@@ -155,8 +155,9 @@ def _utc_bounds(p: Period) -> tuple[datetime, datetime]:
 
 def child_report(db: Session, child: Child, p: Period) -> ChildReport:
     days = []
+    cal = vacations.Calendar.load(db)
     for i in range(p.days):
-        st = policy.day_status(db, child, p.start + timedelta(days=i))
+        st = policy.day_status(db, child, p.start + timedelta(days=i), cal)
         days.append(Day(p.start + timedelta(days=i), st.used_seconds // 60, st.allowed_minutes))
     prev = p.previous()
     prev_total = sum(policy.day_status(db, child, prev.start + timedelta(days=i)).used_seconds // 60

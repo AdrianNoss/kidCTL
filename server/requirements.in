@@ -29,5 +29,7 @@ cbor2==6.3.0
 pyOpenSSL==26.4.0
 pyasn1==0.6.5
 pyasn1-modules==0.4.2
+# Gesetzliche Feiertage DE/AT/CH, lokal berechnet (Ferien & Feiertage)
+holidays==0.109
 # Zeitzonen-Daten für zoneinfo (das schlanke Debian-Image bringt tzdata nicht zuverlässig mit)
 tzdata==2026.6

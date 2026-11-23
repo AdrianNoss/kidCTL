@@ -13,6 +13,13 @@ Je Kind (Seite des Kindes):
 
   ![Wochenvorlage mit Zeitfenstern und „davon Spiele“](img/de/game-limit.webp)
 
+- **Ferien und Feiertage**: Ferienzeiträume tragt ihr einmal für die Familie unter *Einstellungen → Ferien &
+  Feiertage* ein; an diesen Tagen gilt für jedes Kind seine **Ferienvorlage** (Kind → *Zeiten*, gleiche Felder wie
+  die Wochenvorlage; solange sie nicht gespeichert ist, gilt auch in den Ferien die Wochenvorlage). Dort wählt ihr
+  auch die **gesetzlichen Feiertage** (Deutschland, Österreich, Schweiz mit Bundesland bzw. Kanton oder nur
+  landesweite): Ein Feiertag gilt wie ein wählbarer Wochentag (Standard Sonntag), in den Ferien aus der
+  Ferienvorlage. Die Feiertage berechnet der Server selbst, ohne Abruf aus dem Internet. Der Tab *Zeiten* zeigt die
+  Ferien- und Feiertage der nächsten 14 Tage. Neue Agenten braucht es dafür nicht.
 - **Zeit gutschreiben**: zusätzliche Minuten, ein längeres Zeitfenster oder zusätzliche Spielzeit für
   ein bestimmtes Datum. Verlängerungs- und Spielzeit-Anfragen aus der Tray-App lassen sich auch direkt
   im Chat genehmigen.

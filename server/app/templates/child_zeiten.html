@@ -11,7 +11,7 @@
 {% endmacro %}
 {% block content %}
 {% include "_child_head.html" %}
-{% if request.query_params.get("saved") %}<p class="success">{{ _("Zeiten gespeichert.") }}</p>{% endif %}
+{% if request.query_params.get("saved") == "1" %}<p class="success">{{ _("Zeiten gespeichert.") }}</p>{% endif %}
 
 <section class="card">
   <div class="card-head">
@@ -44,6 +44,40 @@
     </details>
     <button type="submit">{{ _("Zeiten speichern") }}</button>
   </form>
+</section>
+
+<section class="card" id="ferien">
+  <h2>{{ _("Ferienvorlage") }}</h2>
+  {% if request.query_params.get("saved") == "vacation" %}<p class="success">{{ _("Ferienvorlage gespeichert.") }}</p>{% endif %}
+  {% if vacation_error %}<p class="error">{{ vacation_error }}</p>{% endif %}
+  <p>{{ _("Gilt an Tagen in einem Ferienzeitraum der Familie. Ferien und gesetzliche Feiertage stellst du unter Einstellungen → Ferien & Feiertage ein.") }}
+    {% if not vacation_saved %}{{ _("Noch nicht gespeichert: In den Ferien gilt bis dahin die Wochenvorlage (unten vorbelegt).") }}{% endif %}</p>
+  {% if child.weekdays_same and vacation_differs %}
+  <p class="warn">{% set ns = namespace(groups=[]) %}{% for g in vacation_differs %}{% set ns.groups = ns.groups + [_(g)] %}{% endfor %}{{ _("Unterschiedliche Tageswerte in: {groups}. Angezeigt sind die Werte von Montag bzw. Samstag; beim Speichern gelten sie für alle Tage der Gruppe.").format(groups=ns.groups | join(", ")) }}</p>
+  {% endif %}
+  <form method="post" action="/children/{{ child.id }}/vacation-schedule">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <div class="scroll">
+    <table class="schedule-table">
+      <tr><th></th><th>{{ _("Zeit pro Tag") }}</th><th>{{ _("Erlaubt von") }}</th><th>{{ _("bis") }}</th><th>{{ _("davon Spiele") }}</th></tr>
+      {% if child.weekdays_same %}
+        {% for key, (label, days) in groups.items() %}{{ rule_row(key, _(label), vacation_rules[days[0]]) }}{% endfor %}
+      {% else %}
+        {% for d in range(7) %}{{ rule_row(d, weekday_names[d], vacation_rules[d]) }}{% endfor %}
+      {% endif %}
+    </table>
+    </div>
+    <button type="submit">{{ _("Ferienvorlage speichern") }}</button>
+  </form>
+  <h3>{{ _("Die nächsten 14 Tage") }}</h3>
+  {% if special_days %}
+  <table class="responsive">
+    {% for first, last, vacation, holiday in special_days %}
+    <tr><td>{{ fmt_date(first, with_weekday=True) }}{% if last != first %} – {{ fmt_date(last, with_weekday=True) }}{% endif %}{% if first == today %} ({{ _("heute") }}){% endif %}</td>
+      <td>{% if vacation %}{{ _("Ferien: {name}").format(name=vacation) }}{% elif vacation is not none %}{{ _("Ferien") }}{% endif %}{% if vacation is not none and holiday %} · {% endif %}{% if holiday %}{{ _("Feiertag: {name}").format(name=holiday) }} – {{ _("wie {weekday}").format(weekday=weekday_names[holiday_region.as_weekday]) }}{% endif %}</td></tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="muted">{{ _("Keine Ferien oder Feiertage in den nächsten 14 Tagen.") }}</p>{% endif %}
 </section>
 
 <section class="card">

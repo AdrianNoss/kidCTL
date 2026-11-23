@@ -16,6 +16,7 @@ from kidctl_common import protocol as p
 from . import access
 from . import lock as lk
 from . import schedule as sch
+from . import vacations as vac
 from .chat import device_ids_for_child
 from .programs import game_keys, policy_programs
 from .webfilter import web_policy
@@ -42,16 +43,19 @@ def build_policy(db: Session, device_id: int) -> p.Policy:
         .order_by(DeviceUser.username)).all()
     # Ungültige Namen (z. B. von älteren Agenten gemeldet) nie verteilen – das Protokoll lehnt sie ab
     users = {u: c for u, c in mapped if re.fullmatch(p.USERNAME_PATTERN, u)}
-    since = sch.today_local() - timedelta(days=1)  # Puffer für Uhr-/Zeitzonenränder
+    today = sch.today_local()
+    since = today - timedelta(days=1)  # Puffer für Uhr-/Zeitzonenränder
+    cal = vac.Calendar.load(db)
     children = []
     for child in db.scalars(select(Child).where(Child.id.in_(set(users.values()))).order_by(Child.id)):
         excs = db.scalars(select(DayException).where(
             DayException.child_id == child.id, DayException.day >= since).order_by(DayException.day))
         children.append(p.ChildPolicy(
             id=child.id, name=child.name,
-            rules=[p.DayRule(weekday=r.weekday, quota_minutes=r.quota_minutes,
+            # Geltende Regeln von heute … heute+6 (Ferien/Feiertage eingerechnet) – siehe app.vacations
+            rules=[p.DayRule(weekday=wd, quota_minutes=r.quota_minutes,
                              window_start=r.window_start, window_end=r.window_end,
-                             game_minutes=r.game_minutes) for r in child.rules],
+                             game_minutes=r.game_minutes) for wd, r in cal.week_rules(child, today)],
             exceptions=[p.DayOverride(day=e.day, extra_minutes=e.extra_minutes,
                                       window_end_override=e.window_end_override,
                                       extra_game_minutes=e.extra_game_minutes or 0) for e in excs],
@@ -180,9 +184,9 @@ class DayStatus:
         return max(0, self.used_seconds // 60 - self.allowed_minutes)
 
 
-def day_status(db: Session, child: Child, day: date | None = None) -> DayStatus:
+def day_status(db: Session, child: Child, day: date | None = None, cal: vac.Calendar | None = None) -> DayStatus:
     day = day or sch.today_local()
-    rule = sch.rules_by_day(child).get(day.weekday())
+    rule = (cal or vac.Calendar.load(db)).rule_for(child, day)
     exc = db.scalar(select(DayException).where(DayException.child_id == child.id, DayException.day == day))
     used = db.scalar(select(func.coalesce(func.sum(UsageRecord.seconds), 0)).where(
         UsageRecord.child_id == child.id, UsageRecord.day == day)) or 0

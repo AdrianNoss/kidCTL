@@ -136,7 +136,7 @@
     de: "Das Kind fragt eine gesperrte Website oder ein Programm an, Eltern geben sie mit einem Klick frei."
     en: "The child asks for a blocked website or app, parents allow it with one tap."
 - id: holidays
-  status: planned
+  status: in_progress
   title: { de: "Ferien und Feiertage", en: "School holidays and public holidays" }
   text:
     de: "Eigene Regeln für Ferien, Feiertage gelten wie ein Wochenendtag."

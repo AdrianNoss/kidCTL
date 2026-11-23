@@ -524,7 +524,8 @@ Abweichungen stehen hier und unter „Restlücken“.
 - Server sendet nach dem Handshake und nach jeder relevanten Änderung (Wochenvorlage,
   Gutschrift, Genehmigung, Ausnahme entfernt, Zuordnung, Kind gelöscht) die vollständige Policy
   des Geräts: Zeitzone, Zuordnung User → Kind (nur zugeordnete User), Wochenregeln und
-  Tagesausnahmen ab gestern.
+  Tagesausnahmen ab gestern. Die Wochenregeln sind seit 2026-11-23 die geltenden Regeln der nächsten 7 Tage
+  (Ferien/Feiertage eingerechnet, siehe „Ferien und Feiertage“).
 - `version` = Hash des Inhalts; Agent bestätigt per `policy_ack`, WebUI zeigt je Gerät
   „aktuell / veraltet / noch nicht übertragen“.
 
@@ -581,6 +582,30 @@ Abweichungen stehen hier und unter „Restlücken“.
     ein neues Fensterende ersetzt das bisherige und muss nach dem regulären Ende liegen.
   - Ausnahmen sind im WebUI einzeln entfernbar.
 - Technisch immer eine **Tagesausnahme**, gültig nur für das jeweilige Datum.
+
+### Ferien und Feiertage (entschieden 2026-11-23 per /grill-me)
+- **Ferienzeiträume je Familie** (Seite „Einstellungen“, Karte „Ferien & Feiertage“, alle Eltern): Name (optional),
+  erster und letzter Tag (einschließlich), höchstens 366 Tage lang. Überschneidungen sind erlaubt. Angezeigt werden
+  laufende und künftige Zeiträume; vergangene bleiben gespeichert, bis sie entfernt werden. Kein Schulferien-Import,
+  nur manuelle Eingabe.
+- **Ferienvorlage je Kind** (Tab „Zeiten“, zweite Karte): gleiche Felder wie die Wochenvorlage (Kontingent,
+  Zeitfenster, Spiele-Limit; gleiche Darstellung Werktage/Wochenende bzw. jeder Tag). Solange sie nicht gespeichert
+  ist, gilt in den Ferien die Wochenvorlage (Formular damit vorbelegt).
+- **Gesetzliche Feiertage je Familie**: Land Deutschland, Österreich oder Schweiz plus Bundesland/Kanton (oder nur
+  landesweite Feiertage); Standard „keine Feiertage“. Berechnung lokal mit der Bibliothek `holidays` (PyPI, MIT,
+  gepinnt), kein Abruf zur Laufzeit. Ein Feiertag gilt **wie ein wählbarer Wochentag** (Standard Sonntag), und zwar
+  aus der an dem Datum geltenden Vorlage (in den Ferien also aus der Ferienvorlage).
+- Geltende Regel eines Datums: Vorlage = Ferienvorlage, wenn das Datum in einem Ferienzeitraum liegt, sonst
+  Wochenvorlage; Wochentag = „gilt wie“-Tag, wenn Feiertag, sonst der echte Wochentag. Gutschriften (Tagesausnahmen)
+  kommen wie bisher dazu; die Prüfung „Fensterende nach dem regulären Ende“ nutzt die geltende Regel.
+- **Übertragung ohne Protokolländerung:** Die Policy enthält als `rules` die geltenden Regeln der Tage heute …
+  heute+6 (jeder Wochentag genau einmal, sortiert nach Wochentag). Ohne Ferien/Feiertage im Fenster bleibt die
+  Policy unverändert. Ein Hintergrundjob prüft kurz nach 00:00 Uhr Heimatzeit (Wartezeit in UTC gerechnet, damit die
+  Zeitumstellung stimmt) alle verbundenen Geräte und sendet die Policy, wenn sich ihre Version geändert hat; neu verbundene Geräte bekommen sie
+  ohnehin beim Handshake. Restlücke: Gerät länger als 6 Tage offline → die gecachte Woche wiederholt sich
+  (`docs/limitations*.md`).
+- Anzeige: Tab „Heute“ nennt Ferien bzw. Feiertag des Tages; Tab „Zeiten“ listet die Sondertage der nächsten 14 Tage.
+- Export/Import der Familie enthält Ferienzeiträume, Feiertagseinstellung und Ferienvorlagen.
 
 ## Programm-Whitelist
 
@@ -1707,9 +1732,9 @@ Self-Hostern). Plan mit Etappen: `dev/planung/PLAN-2026-11.md`. Fachliche Detail
 **Etappe 1 – Alltag (Ziel 0.47):**
 - ~~**Freigabe anfragen**~~ – bereits seit 0.24.0 umgesetzt (siehe „Freigabe-Anfragen“ unter Chat/Anfragen,
   Changelog 2026-10-20); bei der Planung übersehen, am 2026-11-23 mit Adrian als erledigt abgeschlossen.
-- **Ferien und Feiertage:** Ferienzeiträume je Kind/Familie mit eigener Wochenvorlage; gesetzliche Feiertage je
+- **Ferien und Feiertage:** Ferienzeiträume je Familie mit eigener Ferienvorlage je Kind; gesetzliche Feiertage je
   Bundesland/Land gelten wie ein wählbarer Wochentag (z. B. „wie Sonntag“). Feiertagsdaten lokal im Server, kein
-  externer Abruf.
+  externer Abruf. Details: „Bildschirmzeit → Ferien und Feiertage“ (in Arbeit seit 2026-11-23).
 - **Mehrere Zeitfenster je Tag:** mehrere erlaubte Fenster pro Wochentag (z. B. Schulzeit sperren), Fenster über
   Mitternacht. Neue Protokollversion; Server liefert älteren Agenten weiterhin das bisherige Format (ein Fenster =
   engste Näherung).
@@ -3642,3 +3667,15 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   seine Wine-Prozesse → „Test-Spiel: Wüste“, Bottles-Programm → „Wüsten-Rennen“, Bottles-Hilfsprozesse ohne Spiel.
   Nicht in der VM geprüft: kompletter Agent mit Server (Übersicht/Statistik, Spiele-Limit), Plasma-Sitzung statt
   Xvfb, Lutris mit Proton/umu, Bottles nativ (nicht Flatpak), Programmkontrolle „Sperren“.
+- 2026-11-23: Ferien und Feiertage (Etappe 1, K2; per /grill-me entschieden, Abschnitt „Bildschirmzeit → Ferien und
+  Feiertage“): Ferienzeiträume je Familie und Feiertagsregion DE/AT/CH (Einstellungen → „Ferien & Feiertage“),
+  Ferienvorlage je Kind (Tab „Zeiten“, mit Sondertagen der nächsten 14 Tage), Feiertage lokal per `holidays` (0.109,
+  gepinnt) und „gilt wie“-Wochentag. Ohne Protokolländerung: Policy enthält die geltenden Regeln von heute … heute+6,
+  Job nach Mitternacht sendet geänderte Policies an verbundene Geräte. Migration 0027 (`vacation`, `vacation_rule`,
+  `holiday_region`), Export/Import enthält die neuen Tabellen. Restlücke >6 Tage offline in `docs/limitations*.md`.
+  Getestet: `server/tests/test_vacations.py` (Feiertage je Region, geltende Regel inkl. Feiertag in Ferien,
+  rollierendes 7-Tage-Fenster, Zeitzone/Mitternacht und Sommerzeit, Policy unverändert ohne Ferien, Tageswechsel-Job
+  sendet nur geänderte Policies, Gutschrift gegen Ferienregel, WebUI mit CSRF, fremde Familie, Löschen mit Kind,
+  Export/Import) und gesamte Server-Suite gegen PostgreSQL; Migration gegen Alt-Schema-Datenbank (0026 mit Daten →
+  head, `alembic check`, Downgrade/Upgrade); Doku-Parität, Hugo-Build, Screenshots „Zeiten“, Design-Review (Zeiten,
+  Heute, Einstellungen; keine Konsolen-/Layoutfunde).

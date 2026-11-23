@@ -16,6 +16,59 @@
   {% if SAAS %}<p class="muted"><small>{{ _("Der Name hilft dem Betreiber, eure Familie bei Fragen zuzuordnen.") }}</small></p>{% endif %}
 </section>
 
+<section class="card" id="ferien">
+  <div class="card-head"><h2>{{ _("Ferien & Feiertage") }}</h2></div>
+  {% if saved in ("vacation", "holidays") %}<p class="success">{{ _("Gespeichert.") }}</p>{% endif %}
+  <p>{{ _("In den Ferien gilt für jedes Kind seine Ferienvorlage (Kind → Zeiten). Gesetzliche Feiertage gelten wie der gewählte Wochentag.") }}</p>
+  <h3>{{ _("Ferienzeiträume") }}</h3>
+  {% if vacations %}
+  <table class="responsive">
+    {% for v in vacations %}
+    <tr><td>{{ v.name or _("Ferien") }}{% if v.first_day <= vacation_today <= v.last_day %} <span class="pill ok">{{ _("läuft") }}</span>{% endif %}</td>
+      <td data-label="{{ _('Zeitraum') }}">{{ fmt_date(v.first_day) }} – {{ fmt_date(v.last_day) }}</td>
+      <td class="right">
+        <form method="post" action="/settings/vacations/{{ v.id }}/delete" class="inline">
+          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+          <button type="submit" class="danger small">{{ _("Entfernen") }}</button>
+        </form>
+      </td></tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="muted">{{ _("Keine Ferien eingetragen.") }}</p>{% endif %}
+  {% if vacation_error %}<p class="error">{{ vacation_error }}</p>{% endif %}
+  {% set vf = vacation_form or {} %}
+  <form method="post" action="/settings/vacations" class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>{{ _("Name") }} <input name="name" maxlength="64" value="{{ vf.name or '' }}" placeholder="{{ _('z. B. Sommerferien') }}"></label>
+    <label>{{ _("Erster Tag") }} <input type="date" name="first_day" value="{{ vf.first_day or '' }}" required></label>
+    <label>{{ _("Letzter Tag") }} <input type="date" name="last_day" value="{{ vf.last_day or '' }}" required></label>
+    <button type="submit" class="secondary">{{ _("Ferien hinzufügen") }}</button>
+  </form>
+  <h3>{{ _("Gesetzliche Feiertage") }}</h3>
+  {% if holiday_error %}<p class="error">{{ holiday_error }}</p>{% endif %}
+  {% set current = (holiday_region.country ~ ":" ~ holiday_region.subdiv) if holiday_region else "" %}
+  <form method="post" action="/settings/holidays" class="row">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>{{ _("Region") }}
+      <select name="region">
+        <option value=""{{ " selected" if not current }}>{{ _("Keine Feiertage") }}</option>
+        {% for code, label in holiday_countries.items() %}
+        <optgroup label="{{ _(label) }}">
+          <option value="{{ code }}:"{{ " selected" if current == code ~ ":" }}>{{ _("{country} – nur landesweite").format(country=_(label)) }}</option>
+          {% for sub, sub_name in holiday_subdivs[code] %}
+          <option value="{{ code }}:{{ sub }}"{{ " selected" if current == code ~ ":" ~ sub }}>{{ sub_name }}</option>
+          {% endfor %}
+        </optgroup>
+        {% endfor %}
+      </select></label>
+    <label>{{ _("Feiertag gilt wie") }}
+      <select name="as_weekday">
+        {% for d in range(7) %}<option value="{{ d }}"{{ " selected" if (holiday_region.as_weekday if holiday_region else 6) == d }}>{{ weekday_names[d] }}</option>{% endfor %}
+      </select></label>
+    <button type="submit" class="secondary">{{ _("Speichern") }}</button>
+  </form>
+</section>
+
 {% if SAAS and family %}
 <section class="card" id="newsletter">
   <div class="card-head"><h2>{{ _("Neuigkeiten per E-Mail") }}</h2>
