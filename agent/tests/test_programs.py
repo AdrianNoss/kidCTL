@@ -200,6 +200,12 @@ def test_watcher_audit_only_logs_once():
     assert [(e.name, e.audit) for e in w.pending] == [("Konsole", True)]
 
 
+def test_noexec_home_only_when_enforcing():
+    """„Nur protokollieren“ sperrt nichts – auch nicht über ein noexec-Home."""
+    users = {m: make_watcher(FakeAgent(m), {})[0].users() for m in ("off", "audit", "enforce")}
+    assert users["off"] == users["audit"] == set() and len(users["enforce"]) == 1
+
+
 def test_watcher_off_and_unmapped():
     a = FakeAgent("off")
     w, killed, _ = make_watcher(a, {2: proc("/usr/bin/konsole", pid=2, uid=a.uid)})

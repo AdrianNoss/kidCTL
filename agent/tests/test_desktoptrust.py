@@ -91,3 +91,23 @@ def test_system_shell_script_counts_as_allowed(tmp_path, monkeypatch):
     monkeypatch.setattr(dt, "SYSTEM_SCRIPT_DIRS", ("/usr/",))
     script.write_text("#!/bin/sh\n")
     assert not dt._system_shell_script(str(script))             # nicht aus Systemverzeichnis
+
+
+from kidctl_agent import agent as _agent_mod  # noqa: E402
+
+REAL_TRUST_DESKTOPS = _agent_mod.Agent.trust_desktops  # conftest ersetzt die Methode je Test
+
+
+def test_agent_trusts_desktops_only_when_enforcing(monkeypatch):
+    """Ohne noexec-Home (Modus „Nur protokollieren“) bleiben die Verknüpfungen beim Kind."""
+    calls = []
+    monkeypatch.setattr(_agent_mod, "safe_home", lambda u: "/home/" + u)
+    monkeypatch.setattr(_agent_mod.desktoptrust, "trust_desktop", lambda home, uid, check: calls.append(home))
+
+    class W:
+        def targets(self):
+            return {1001: ("audit-kind", "audit", None), 1002: ("sperr-kind", "enforce", None)}
+    a = _agent_mod.Agent.__new__(_agent_mod.Agent)
+    a.programs = W()
+    REAL_TRUST_DESKTOPS(a)
+    assert calls == ["/home/sperr-kind"]

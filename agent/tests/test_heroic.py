@@ -276,10 +276,13 @@ def test_locked_libraries_follow_permissions(tmp_path, monkeypatch):
 
     class W:
         def targets(self):
-            return {1001: ("kind", "enforce", heroic_allowed(*perms["keys"]))}
+            return {1001: ("kind", perms.get("mode", "enforce"), heroic_allowed(*perms["keys"]))}
     a.programs = W()
     steam, heroic = str(kidmounts.STEAM_ROOT / "kind"), str(kidmounts.HEROIC_ROOT / "kind")
     assert a.locked_libraries() == {steam, heroic}
+    perms["mode"] = "audit"     # „Nur protokollieren“ sperrt nichts
+    assert a.locked_libraries() == set()
+    del perms["mode"]
     perms["keys"] = {f"exe:{HEROIC}"}
     assert a.locked_libraries() == {steam}
     perms["keys"] = {f"exe:{HEROIC}", "exe:/usr/bin/steam"}

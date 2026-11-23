@@ -587,24 +587,27 @@ Abweichungen stehen hier und unter „Restlücken“.
 - Agent abonniert Prozess-Events über Netlink (`PROC_EVENTS`), löst `/proc/<pid>/exe` auf und
   beendet nicht erlaubte Prozesse von Kinder-UIDs.
 - `/home` und `/tmp` mit `noexec` gemountet. Umsetzung (entschieden 2026-10-14):
-  - **Kinder-Homes** (zugeordnete Nicht-Admins mit Programmkontrolle ≠ Aus) je per Bind-Mount
+  - **Kinder-Homes** (zugeordnete Nicht-Admins im Modus „Sperren“; entschieden 2026-11-08, vorher
+    „≠ Aus“ – „Nur protokollieren“ darf nichts sperren) je per Bind-Mount
     auf sich selbst mit `noexec,nosuid,nodev` – Admin-/Eltern-Homes bleiben ausführbar
     (Grundregel). Der Agent legt die Mounts als transiente systemd-Units an (`systemd-mount`,
     Beschreibung „kidctl: noexec-Home“), beim Start vor den Logins und bei Policy-Änderungen;
-    Programmkontrolle aus → Mount wird aufgehoben. Nur für Homes genau unter `/home/<name>`,
+    Modus nicht mehr „Sperren“ → Mount wird aufgehoben. Nur für Homes genau unter `/home/<name>`,
     kein Symlink, Eigentümer = Kind.
   - **Systemweit** `/tmp`, `/var/tmp` (Bind-Mount auf sich selbst) und `/dev/shm` mit `noexec`
     (`kidctl-noexec.service`, vom Agenten per `Wants=` mitgestartet, `ExecStop` nimmt es zurück).
+    Gilt unabhängig vom Modus und für alle User (entschieden 2026-11-08): Programme, die aus diesen
+    Ordnern starten, scheitern auch bei „Nur protokollieren“ und „Aus“ (bekannte Grenze).
   - Desktop-Verknüpfungen (entschieden 2026-10-18): KDE startet `.desktop`-Dateien außerhalb der
     Anwendungsordner nur, wenn sie ausführbar sind oder root gehören; bei noexec-Home ist keine
     ausführbar (Qt `isExecutable` = false, getestet). Der Agent übernimmt daher alle 10 s für Kinder
-    mit Programmkontrolle Verknüpfungen in `~/Desktop` und `XDG_DESKTOP_DIR` für root (0644), deren
+    im Modus „Sperren“ Verknüpfungen in `~/Desktop` und `XDG_DESKTOP_DIR` für root (0644), deren
     Programm das Kind starten darf (Freigabe, Basisliste, Flatpak-ID, Shell-Skript aus /usr wie
     `xdg-open`). Nur reguläre Dateien des Kindes ohne harte Links, Öffnen ohne Symlink-Verfolgung,
     `fchown` auf dem Deskriptor. Danach kann das Kind sie löschen, aber nicht ändern (Steam kann eine
     vertraute Verknüpfung nicht überschreiben – löschen und neu anlegen). Kein Zurücksetzen bei
     Entzug der Freigabe (der Start wird ohnehin vom Agenten geprüft).
-  - Aufheben (Programmkontrolle aus / Zuordnung entfernt) nie während der Besitzer angemeldet ist
+  - Aufheben („Sperren“ beendet / Zuordnung entfernt) nie während der Besitzer angemeldet ist
     (`/run/user/<uid>` existiert) – sonst bricht die laufende Plasma-Sitzung ab; der Agent holt es nach
     der Abmeldung nach.
 - Whitelist besteht aus:
@@ -726,7 +729,7 @@ Abweichungen stehen hier und unter „Restlücken“.
     `nile` (Amazon) ist eine PyInstaller-Einzeldatei, die sich nach `/tmp` entpackt – scheitert an
     `noexec`-`/tmp` (bekannte Grenze, nicht gelöst).
   - Lutris: Regel vorbereitet, ohne eigene Ordner und ungetestet.
-- **Spieleordner ohne Freigabe `noexec`** (entschieden 2026-10-18): Für Kinder mit Programmkontrolle
+- **Spieleordner ohne Freigabe `noexec`** (entschieden 2026-10-18; seit 2026-11-08 nur im Modus „Sperren“): Für Kinder im Modus „Sperren“
   hängt der Agent `/srv/steam/<user>` bzw. `/srv/heroic/<user>` per `systemd-mount` `noexec,nosuid,nodev`
   ein (Beschreibung „kidctl: noexec-Spieleordner“), solange Steam bzw. Heroic nicht freigegeben ist.
   Grund: Diese Ordner gehören dem Kind und sind sonst die einzigen ausführbaren, beschreibbaren Orte –
@@ -3593,3 +3596,12 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Tray), Burger-Menü der Projektseite; News 0.46 (DE/EN), Roadmap ergänzt. Zielversionen der geplanten Etappen um eins
   verschoben (0.47–0.49). Beim Zusammenführen Migration 0026 auf 0025 umgehängt. Geprüft: Server-Suite gegen
   PostgreSQL, Agent- und Tray-Tests, ein Migrationskopf (0026), Doku-Parität, Hugo-Build.
+- 2026-11-23: Linux-Programmkontrolle (Gegenstück zum Windows-Fix aus 0.32.6): `noexec` auf Kinder-Home und Spieleordnern gilt nur noch im Modus „Sperren“ (Entscheidung
+  des Nutzers, vorher „≠ Aus“): Bei „Nur protokollieren“ konnte das Kind Programme aus dem Home nicht starten, obwohl der Modus
+  nichts sperren soll. Desktop-Verknüpfungen werden ebenfalls nur noch bei „Sperren“ an root übergeben. `/tmp`, `/var/tmp`, `/dev/shm`
+  bleiben unabhängig vom Modus `noexec` (bekannte Grenze, siehe Programm-Whitelist). Beim Wechsel zu „Nur protokollieren“ während
+  einer laufenden Sitzung wird das Home erst nach der Abmeldung ausgehängt (wie bisher). Getestet: Agent-Tests grün (3 Fälle neu
+  bzw. erweitert, nach Rebase auf 0.46.0 erneut). Am 2026-11-08 auf Stand 0.32.5: neue Arch-VM mit gebautem Paket, als `kind` ohne angemeldete Sitzung, Wechsel Protokollieren → Sperren → Protokollieren:
+  bei „Nur protokollieren“ kein Mount, Programm aus Home und Spieleordner (`/srv/steam/kind`, Steam als leerer Ordner `/usr/lib/steam`
+  simuliert) startet und steht als „nur protokolliert“ im WebUI; bei „Sperren“ beide `noexec`, Start „Permission denied“; zurück: sofort
+  ausgehängt, Start wieder möglich; `/tmp` in allen Modi `noexec`. Nicht getestet: echte Plasma-Sitzung, echtes Steam.

@@ -18,7 +18,9 @@ Per child (the child's page):
   in the chat.
 - **Apps**:
   - **Off**
-  - **Monitor only**: recommended to start with, to see what is being used.
+  - **Monitor only**: recommended to start with, to see what is being used. Blocks nothing,
+    apps in the home folder start too. Exception on Linux: nothing starts from `/tmp`, `/var/tmp`
+    and `/dev/shm` on the whole computer, regardless of the mode.
   - **Block**: only allowed apps. The catalogue fills with what the computer
     reports. Steam can only be allowed as a whole.
 

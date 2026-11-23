@@ -178,11 +178,11 @@ class Agent(AgentCore):
                                   self.programs.pkg_dirs)
 
     def trust_desktops(self) -> None:
-        """Für Kinder mit Programmkontrolle (noexec-Home): Desktop-Verknüpfungen erlaubter Programme
+        """Für Kinder im Modus „Sperren“ (noexec-Home): Desktop-Verknüpfungen erlaubter Programme
         root übergeben, damit KDE sie startet (siehe desktoptrust)."""
-        for uid, (user, _mode, allowed) in self.programs.targets().items():
+        for uid, (user, mode, allowed) in self.programs.targets().items():
             home = safe_home(user)
-            if home is None:
+            if mode != "enforce" or home is None:
                 continue
             try:
                 desktoptrust.trust_desktop(home, uid, lambda t, a=allowed: desktoptrust.target_allowed(t, a))
@@ -228,10 +228,12 @@ class Agent(AgentCore):
             log.exception("Mounts nicht angleichbar")
 
     def locked_libraries(self) -> set[str]:
-        """Spieleordner von Kindern mit Programmkontrolle, deren Launcher nicht freigegeben ist
+        """Spieleordner von Kindern im Modus „Sperren“, deren Launcher nicht freigegeben ist
         (werden noexec eingehängt, siehe kidmounts)."""
         out = set()
-        for user, _mode, allowed in self.programs.targets().values():
+        for user, mode, allowed in self.programs.targets().values():
+            if mode != "enforce":
+                continue
             for lib in kidmounts.libraries():
                 enabled = (allowed.steam_enabled if lib.key == "steam"
                            else lib.exe in allowed.exes or os.path.realpath(lib.exe) in allowed.exes)
