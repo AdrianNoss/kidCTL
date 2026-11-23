@@ -152,11 +152,16 @@ class ChatSync(BaseModel):
     after_id: int = Field(default=0, ge=0)
 
 
+ACK_RATE_LIMITED = "rate_limited"
+
+
 class Ack(BaseModel):
     """Server -> Agent: Bestätigung für ``chat_send``/``extension_request``/``access_request``.
 
     ``ok=False`` mit ``error`` = endgültig abgelehnt (z. B. User keinem Kind zugeordnet);
-    der Agent verwirft die Nachricht dann ebenfalls.
+    der Agent verwirft die Nachricht dann ebenfalls. Bei ``error=ACK_RATE_LIMITED`` (zu viele Nachrichten
+    des Kindes in kurzer Zeit) zeigt der Agent dem Kind einen Hinweis in der Tray-App (ergänzt 2026-11-23;
+    ältere Agenten verwerfen still). Unbekannte Fehlercodes behandelt der Agent wie bisher.
     """
     type: Literal["ack"] = "ack"
     client_msg_id: str

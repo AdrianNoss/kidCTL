@@ -147,7 +147,7 @@ def receive_from_agent(db: Session, device_id: int,
     if child is None:
         return p.Ack(client_msg_id=msg.client_msg_id, ok=False, error="user_not_mapped"), None
     if rate_limited(db, child.id):
-        return p.Ack(client_msg_id=msg.client_msg_id, ok=False, error="rate_limited"), None
+        return p.Ack(client_msg_id=msg.client_msg_id, ok=False, error=p.ACK_RATE_LIMITED), None
 
     m = Message(child_id=child.id, from_child=True, device_id=device_id,
                 client_msg_id=msg.client_msg_id)

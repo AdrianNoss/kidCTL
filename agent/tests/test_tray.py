@@ -148,6 +148,29 @@ def test_send_queues_offline_and_flushes_on_connect():
     asyncio.run(scenario())
 
 
+def test_rate_limited_ack_shows_hint_in_tray():
+    """Server verwirft eine Nachricht wegen des Rate-Limits -> Hinweis an die Tray-App des Absenders."""
+    async def scenario():
+        a, _ = make_agent(connected=True)
+        c = await connect(a)
+        await c.send(t.TrayHello())
+        await c.recv(), await c.recv()
+        await c.send(t.TrayChatSend(body="Hallo"))
+        assert isinstance(await c.recv(skip_state=True), t.TrayQueued)
+        sent = next(m for m in a.conn.sent if isinstance(m, p.ChatSend))
+        await a.on_message(p.Ack(client_msg_id=sent.client_msg_id, ok=False, error=p.ACK_RATE_LIMITED))
+        err = await c.recv(skip_state=True)
+        assert isinstance(err, t.TrayError) and "Zu viele Nachrichten" in err.message
+        assert a.outbox.items == {}
+        # andere Ablehnungen und unbekannte IDs: kein Hinweis
+        await a.on_message(p.Ack(client_msg_id="unbekannt1", ok=False, error=p.ACK_RATE_LIMITED))
+        await a.on_message(p.Ack(client_msg_id="x" * 8, ok=False, error="user_not_mapped"))
+        await c.send(t.TrayGetBlocked())
+        assert isinstance(await c.recv(skip_state=True), t.TrayBlocked)
+        await a.tray.stop()
+    asyncio.run(scenario())
+
+
 def test_chat_messages_pushed_and_notified():
     async def scenario():
         a, desk = make_agent(connected=True)

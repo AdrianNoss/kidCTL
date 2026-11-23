@@ -284,9 +284,14 @@ class AgentCore:
             await self.conn.send(p.PolicyAck(version=msg.version))
             await self.sync_chat()
         elif isinstance(msg, p.Ack):
-            self.outbox.remove(msg.client_msg_id)
+            item = self.outbox.remove(msg.client_msg_id)
             if not msg.ok:
                 log.warning("Server verwirft Nachricht %s: %s", msg.client_msg_id, msg.error)
+                if msg.error == p.ACK_RATE_LIMITED and item is not None:
+                    with i18n.use(self.lang_of(item.username)):
+                        text = _("Zu viele Nachrichten in kurzer Zeit – deine letzte Nachricht wurde nicht "
+                                 "zugestellt. Bitte kurz warten und dann erneut senden.")
+                    await self.tray.send_to_user(item.username, t.TrayError(message=text))
         elif isinstance(msg, p.ChatMessage):
             await self.on_chat_message(msg)
         elif isinstance(msg, p.UsageUpdate):

@@ -56,6 +56,8 @@ def msg(mid, **kw):
 
 
 def test_tray_flow(qapp, tmp_path, monkeypatch):
+    shown = []
+    monkeypatch.setattr(app_mod.TrayApp, "info", lambda self, text: shown.append(text))
     agent = FakeAgent(str(tmp_path / "tray.sock"))
     tray = app_mod.TrayApp(qapp, str(tmp_path / "tray.sock"))
     assert spin(lambda: agent.lines)               # hello
@@ -76,6 +78,9 @@ def test_tray_flow(qapp, tmp_path, monkeypatch):
     tray.window._send()
     assert spin(lambda: len(agent.lines) == 2)
     assert agent.lines[1] == {"type": "chat_send", "body": "Darf ich länger?"}
+    # Server verwirft wegen Rate-Limit -> Agent meldet es, Tray zeigt den Hinweis
+    agent.push(t.TrayError(message="Zu viele Nachrichten in kurzer Zeit"))
+    assert spin(lambda: shown) and shown == ["Zu viele Nachrichten in kurzer Zeit"]
 
     # Agent fordert Anfrage-Dialog an (Klick in Benachrichtigung) -> Dialog -> extension_request
     def fake_exec(self):

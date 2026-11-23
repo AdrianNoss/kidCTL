@@ -3608,3 +3608,10 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-23: Version 0.46.1 – noexec nur im Modus „Sperren“ (Linux), Dependabot-Updates (u. a. fastapi 0.165, SQLAlchemy
   2.1.9, reportlab 5.1, pyotp 2.12). Patch ohne Sicherheitsbezug, keine News. Geprüft: Server-Suite gegen PostgreSQL
   (inkl. Rechnungs-PDFs mit reportlab 5), Agent- und Tray-Tests, Doku-Parität, Hugo-Build.
+- 2026-11-23: Chat-Rate-Limit sichtbar: Verwirft der Server eine Nachricht/Anfrage des Kindes wegen des Rate-Limits
+  (`Ack(ok=False, error=ACK_RATE_LIMITED)`, Konstante neu in `common/protocol.py`, Feld unverändert – ältere Agenten
+  verwerfen weiter still), schickt der Agent der Tray-App des Absenders ein `TrayError` in dessen Sprache („Zu viele
+  Nachrichten in kurzer Zeit – deine letzte Nachricht wurde nicht zugestellt …“); die Tray-App (Linux und Windows,
+  gemeinsamer Code) zeigt es als Hinweis. Andere Ablehnungen bleiben still. Getestet: `test_tray.py` (Hinweis nur bei
+  `rate_limited` und bekannter Nachricht, vorher rot), Tray-`test_ui.py` (Hinweis aus dem Socket wird angezeigt),
+  nach Rebase auf 0.46.1 mit Bibliotheken aus `.github/requirements/tests.txt`: alle Agent-Tests (318, E2E mit eigener Datenbank), Tray-Tests (29, System-Python mit PySide6), Server-Suite gegen PostgreSQL (378).

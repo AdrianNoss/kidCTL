@@ -91,9 +91,11 @@ class Outbox:
         self.items[item.client_msg_id] = item
         self.save()
 
-    def remove(self, client_msg_id: str) -> None:
-        if self.items.pop(client_msg_id, None) is not None:
+    def remove(self, client_msg_id: str) -> p.ChatSend | p.ExtensionRequest | p.AccessRequest | None:
+        item = self.items.pop(client_msg_id, None)
+        if item is not None:
             self.save()
+        return item
 
     def pending_for(self, usernames: list[str]) -> int:
         return sum(1 for i in self.items.values() if i.username in usernames)
