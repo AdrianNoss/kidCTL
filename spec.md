@@ -3605,3 +3605,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   bei „Nur protokollieren“ kein Mount, Programm aus Home und Spieleordner (`/srv/steam/kind`, Steam als leerer Ordner `/usr/lib/steam`
   simuliert) startet und steht als „nur protokolliert“ im WebUI; bei „Sperren“ beide `noexec`, Start „Permission denied“; zurück: sofort
   ausgehängt, Start wieder möglich; `/tmp` in allen Modi `noexec`. Nicht getestet: echte Plasma-Sitzung, echtes Steam.
+- 2026-11-23: Version 0.46.1 – noexec nur im Modus „Sperren“ (Linux), Dependabot-Updates (u. a. fastapi 0.165, SQLAlchemy
+  2.1.9, reportlab 5.1, pyotp 2.12). Patch ohne Sicherheitsbezug, keine News. Geprüft: Server-Suite gegen PostgreSQL
+  (inkl. Rechnungs-PDFs mit reportlab 5), Agent- und Tray-Tests, Doku-Parität, Hugo-Build.

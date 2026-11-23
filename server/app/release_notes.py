@@ -6,6 +6,20 @@ die Version des laufenden Servers."""
 
 RELEASES: list[dict] = [
     {
+        "version": "0.46.1",
+        "date": "2026-11-23",
+        "de": [
+            "Linux: Im Modus „Nur protokollieren“ starten Programme aus dem Home- und Spieleordner wieder; "
+            "gesperrt wird nur noch im Modus „Sperren“.",
+            "Aktualisierte Server-Bibliotheken.",
+        ],
+        "en": [
+            "Linux: in “Monitor only” mode, programs from the home and game folders start again; "
+            "blocking only happens in “Block” mode.",
+            "Updated server libraries.",
+        ],
+    },
+    {
         "version": "0.46.0",
         "date": "2026-11-22",
         "de": [
