@@ -23,7 +23,7 @@ from .accounting import Usage
 from .chat import NEW, ChatStore, Outbox, new_client_msg_id
 from .connection import Connection
 from .enforcer import Enforcer
-from .rules import Decision, day_limits, evaluate, game_limit
+from .rules import Decision, blocks_on, day_limits, evaluate, game_limit
 
 BACKLOG_SETTLE = 2.0   # s Ruhe nach der letzten nachgeholten Nachricht, bevor die Sammelmeldung kommt
 
@@ -430,7 +430,8 @@ class AgentCore:
             online=self.online, pending_outbox=self.outbox.pending_for(same),
             game_limit_minutes=None if (gl := game_limit(child, now.date())) is None else gl // 60,
             game_used_seconds=self.usage.used_game_seconds(child_id, same, now.date()),
-            logout_in_seconds=self.logout_in(user), gaming=user in getattr(self, "gaming", set()))
+            logout_in_seconds=self.logout_in(user), gaming=user in getattr(self, "gaming", set()),
+            block=d.block, blocks=blocks_on(child, now.date()), until=d.until)
 
     def logout_in(self, user: str) -> int | None:
         """Sekunden bis zur Abmeldung (laufender Countdown), sonst ``None``."""

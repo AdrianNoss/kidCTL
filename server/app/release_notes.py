@@ -6,6 +6,24 @@ die Version des laufenden Servers."""
 
 RELEASES: list[dict] = [
     {
+        "version": "0.47.0",
+        "date": "2026-11-23",
+        "de": [
+            "Ferien und Feiertage: Ferienzeiträume und eine eigene Ferienvorlage je Kind; gesetzliche Feiertage "
+            "(Deutschland, Österreich, Schweiz) gelten wie ein gewählter Wochentag.",
+            "Sperrzeiten (z. B. Schule, Abendessen) und erlaubte Zeiten über Mitternacht unter Kind → Zeiten.",
+            "Linux: Spiele aus Lutris und Bottles erscheinen mit ihrem Namen.",
+            "Schreibt das Kind zu viele Nachrichten in kurzer Zeit, sagt ihm die Tray-App jetzt Bescheid.",
+        ],
+        "en": [
+            "School holidays and public holidays: holiday periods and a separate holiday schedule per child; public "
+            "holidays (Germany, Austria, Switzerland) count as a weekday of your choice.",
+            "Blocked times (e.g. school, dinner) and allowed hours past midnight under child → Times.",
+            "Linux: games from Lutris and Bottles show up with their names.",
+            "If the child sends too many messages in a short time, the tray app now tells them.",
+        ],
+    },
+    {
         "version": "0.46.1",
         "date": "2026-11-23",
         "de": [

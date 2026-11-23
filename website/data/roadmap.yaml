@@ -111,7 +111,8 @@
     de: "Regelmäßige automatische Prüfungen (OpenSSF Scorecard, Webserver-Scans) mit öffentlich einsehbaren Ergebnissen."
     en: "Regular automated checks (OpenSSF Scorecard, web server scans) with publicly visible results."
 - id: wine-launchers
-  status: in_progress
+  status: done
+  version: "0.47"
   title: { de: "Lutris und Bottles unter Linux", en: "Lutris and Bottles on Linux" }
   text:
     de: "Spiele aus Lutris und Bottles (Wine) als Spiele erkennen."
@@ -136,13 +137,15 @@
     de: "Das Kind fragt eine gesperrte Website oder ein Programm an, Eltern geben sie mit einem Klick frei."
     en: "The child asks for a blocked website or app, parents allow it with one tap."
 - id: holidays
-  status: in_progress
+  status: done
+  version: "0.47"
   title: { de: "Ferien und Feiertage", en: "School holidays and public holidays" }
   text:
     de: "Eigene Regeln für Ferien, Feiertage gelten wie ein Wochenendtag."
     en: "Separate rules for school holidays; public holidays count like a weekend day."
 - id: time-windows
-  status: planned
+  status: done
+  version: "0.47"
   title: { de: "Mehrere Zeitfenster am Tag", en: "Several time windows per day" }
   text:
     de: "Zum Beispiel während der Schulzeit sperren; Fenster auch über Mitternacht."

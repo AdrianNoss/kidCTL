@@ -27,7 +27,8 @@ gilt die Sprache der Desktop-Sitzung.
 ## Funktionen
 
 - **Bildschirmzeit**:
-  - Tageskontingent und Zeitfenster je Wochentag, Zählung über alle Rechner eines Kindes.
+  - Tageskontingent und Zeitfenster je Wochentag (auch über Mitternacht), Zählung über alle Rechner eines Kindes.
+  - Bis zu drei Sperrzeiten am Tag, z. B. Schule oder Abendessen.
   - Warnungen vor Ablauf, danach Abmeldung und Login-Sperre (SDDM, GDM und TTY; Windows: Konto des Kindes
     wird deaktiviert).
   - Ferien und gesetzliche Feiertage (Deutschland, Österreich, Schweiz): eigene Ferienvorlage je Kind, Feiertage

@@ -135,6 +135,7 @@ def _child_page(request: Request, db: Session, child: Child, tab: str = "heute",
                    vacation_differs=sch.group_differs(child, vacation=True),
                    vacation_saved=bool(child.vacation_rules), special_days=cal.special_days(today),
                    holiday_region=cal.region,
+                   max_blocks=sch.MAX_BLOCKS, old_devices=policy.old_protocol_devices(db, child),
                    exceptions=db.scalars(select(DayException).where(
                        DayException.child_id == child.id, DayException.day >= today).order_by(DayException.day)).all())
     elif tab == "internet":

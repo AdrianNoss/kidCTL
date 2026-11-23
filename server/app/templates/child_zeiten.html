@@ -9,9 +9,22 @@
   <td data-label="{{ _('davon Spiele') }}"><span class="unit"><input type="number" name="games_{{ key }}" min="0" max="{{ max_quota }}" step="5" value="{{ rule.game_minutes if rule.game_minutes is not none else '' }}" class="short" placeholder="–"> {{ _("min") }}</span></td>
 </tr>
 {% endmacro %}
+{% macro block_row(key, label, rule) %}{% set blocks = rule.block_list %}
+<tr>
+  <td class="rule-day">{{ label }}</td>
+  {% for i in range(max_blocks) %}{% set b = blocks[i] if i < blocks | length else none %}
+  <td data-label="{{ _('Sperrzeit {n}').format(n=i + 1) }}"><span class="block-slot">
+    <input type="time" name="block_{{ key }}_{{ i }}_start" value="{{ b.start.strftime('%H:%M') if b else '' }}" aria-label="{{ _('Sperrzeit {n}').format(n=i + 1) }} – {{ _('von') }}">
+    <input type="time" name="block_{{ key }}_{{ i }}_end" value="{{ b.end.strftime('%H:%M') if b else '' }}" aria-label="{{ _('Sperrzeit {n}').format(n=i + 1) }} – {{ _('bis') }}">
+    <input type="text" name="block_{{ key }}_{{ i }}_name" value="{{ b.name if b else '' }}" maxlength="40" placeholder="{{ _('Name, z. B. Schule') }}" aria-label="{{ _('Sperrzeit {n}').format(n=i + 1) }} – {{ _('Name') }}">
+  </span></td>
+  {% endfor %}
+</tr>
+{% endmacro %}
 {% block content %}
 {% include "_child_head.html" %}
 {% if request.query_params.get("saved") == "1" %}<p class="success">{{ _("Zeiten gespeichert.") }}</p>{% endif %}
+{% if old_devices %}<p class="warn">{{ _("{devices} kennt Sperrzeiten und Zeiten über Mitternacht noch nicht und setzt nur den Rahmen bis höchstens 23:59 Uhr durch – bitte KidCTL dort aktualisieren.").format(devices=old_devices | join(", ")) }}</p>{% endif %}
 
 <section class="card">
   <div class="card-head">
@@ -38,8 +51,21 @@
       {% endif %}
     </table>
     </div>
+    <h3>{{ _("Sperrzeiten") }}</h3>
+    <div class="scroll">
+    <table class="schedule-table blocks-table">
+      <tr><th></th>{% for i in range(max_blocks) %}<th>{{ _("Sperrzeit {n}").format(n=i + 1) }}</th>{% endfor %}</tr>
+      {% if child.weekdays_same %}
+        {% for key, (label, days) in groups.items() %}{{ block_row(key, _(label), rules[days[0]]) }}{% endfor %}
+      {% else %}
+        {% for d in range(7) %}{{ block_row(d, weekday_names[d], rules[d]) }}{% endfor %}
+      {% endif %}
+    </table>
+    </div>
     <details class="help"><summary>{{ _("Wie wirken diese Werte?") }}</summary>
       <p>{{ _("Die Nutzung endet, wenn die Zeit pro Tag aufgebraucht ist oder die erlaubte Zeitspanne vorbei ist. Der Tag wechselt um 00:00 Uhr.") }}</p>
+      <p>{{ _("Liegt „bis“ vor „Erlaubt von“ (z. B. 16:00 bis 01:00), reicht die Zeitspanne über Mitternacht – höchstens bis 06:00 Uhr. Die Zeit nach Mitternacht zählt schon zum Kontingent des neuen Tages.") }}</p>
+      <p>{{ _("Sperrzeiten (z. B. Schule, Abendessen) sperren den Rechner innerhalb der erlaubten Zeitspanne – mit Vorwarnung wie am Ende der Zeit. Gutschriften heben Sperrzeiten nicht auf. Leere Felder = keine Sperrzeit.") }}</p>
       <p>{{ _("„davon Spiele“: höchstens so viel Zeit mit Spielen (Steam, Heroic und Programme der Gruppe „Spiele“) – danach werden Spiele mit Vorwarnung geschlossen, der Rest des Rechners bleibt nutzbar. Leer = kein eigenes Limit.") }}</p>
     </details>
     <button type="submit">{{ _("Zeiten speichern") }}</button>
@@ -64,6 +90,17 @@
         {% for key, (label, days) in groups.items() %}{{ rule_row(key, _(label), vacation_rules[days[0]]) }}{% endfor %}
       {% else %}
         {% for d in range(7) %}{{ rule_row(d, weekday_names[d], vacation_rules[d]) }}{% endfor %}
+      {% endif %}
+    </table>
+    </div>
+    <h3>{{ _("Sperrzeiten") }}</h3>
+    <div class="scroll">
+    <table class="schedule-table blocks-table">
+      <tr><th></th>{% for i in range(max_blocks) %}<th>{{ _("Sperrzeit {n}").format(n=i + 1) }}</th>{% endfor %}</tr>
+      {% if child.weekdays_same %}
+        {% for key, (label, days) in groups.items() %}{{ block_row(key, _(label), vacation_rules[days[0]]) }}{% endfor %}
+      {% else %}
+        {% for d in range(7) %}{{ block_row(d, weekday_names[d], vacation_rules[d]) }}{% endfor %}
       {% endif %}
     </table>
     </div>

@@ -332,3 +332,22 @@ def test_outbox_limited_per_user():
         assert len(a.outbox.items) == core.OUTBOX_MAX_PER_USER
         await a.tray.stop()
     asyncio.run(scenario())
+
+
+def test_state_reports_block_and_until(monkeypatch):
+    from datetime import datetime as dt
+    from zoneinfo import ZoneInfo
+
+    from kidctl_agent import core as core_mod
+    a, _ = make_agent()
+    school = p.Block(start=time(8), end=time(13), name="Schule")
+    a.policy = a.policy.model_copy(update={"children": [a.policy.children[0].model_copy(update={"rules": [
+        r.model_copy(update={"window_start": time(7), "window_end": time(20), "blocks": [school]})
+        for r in a.policy.children[0].rules]})]})
+    now = [dt(2026, 10, 13, 9, 0, tzinfo=ZoneInfo("Europe/Berlin"))]
+    monkeypatch.setattr(core_mod.AgentCore, "now_local", lambda self: now[0])
+    st = a.tray_state(ME)
+    assert not st.allowed and st.reason == "blocked" and st.block == school and st.blocks == [school]
+    now[0] = now[0].replace(hour=7, minute=30)
+    st = a.tray_state(ME)
+    assert st.allowed and st.until == time(8)

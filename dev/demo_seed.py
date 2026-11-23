@@ -33,7 +33,7 @@ PARENT = {"de": "mama", "en": "mom"}
 
 T = {
     "de": {
-        "laptop": "Lenas Laptop", "pc": "Familien-PC",
+        "laptop": "Lenas Laptop", "pc": "Familien-PC", "school": "Schule", "dinner": "Abendessen",
         "lena_full": "Lena", "max_full": "Max",
         "ext_reason": "Ich bin gleich mit dem Referat fertig, brauche noch eine halbe Stunde.",
         "approve_reply": "Okay, aber danach ist Schluss für heute.",
@@ -44,6 +44,7 @@ T = {
         "chat_max": "Ist Scratch freigegeben? Wir sollen in Informatik ein Spiel bauen.",
     },
     "en": {
+        "school": "School", "dinner": "Dinner",
         "laptop": "Lena's laptop", "pc": "Family PC",
         "lena_full": "Lena", "max_full": "Max",
         "ext_reason": "I'm almost done with my presentation, I need another half hour.",
@@ -101,7 +102,7 @@ class Agent:
     async def connect(self) -> None:
         url = self.base.replace("http", "ws", 1) + "/api/v1/ws"
         self.ws = await websockets.connect(url, additional_headers={"Authorization": f"Bearer {self.token}"})
-        await self.send(type="hello", protocol_version=1, agent_version="0.32.7", hostname=self.hostname,
+        await self.send(type="hello", protocol_version=2, agent_version="0.32.7", hostname=self.hostname,
                         platform=self.platform)
         self.task = asyncio.create_task(self._reader())
 
@@ -197,7 +198,9 @@ async def seed(base: str, database_url: str, secret: str, lang: str = "de") -> t
         ids[name] = db.one("select max(id) from child")
     await web.post(f"/children/{ids['Lena']}/schedule", {
         "quota_wd": "120", "start_wd": "08:00", "end_wd": "20:30", "games_wd": "45",
-        "quota_we": "180", "start_we": "09:00", "end_we": "21:00", "games_we": "90"})
+        "quota_we": "180", "start_we": "09:00", "end_we": "21:00", "games_we": "90",
+        "block_wd_0_start": "08:00", "block_wd_0_end": "13:00", "block_wd_0_name": t["school"],
+        "block_wd_1_start": "18:30", "block_wd_1_end": "19:00", "block_wd_1_name": t["dinner"]})
     await web.post(f"/children/{ids['Max']}/schedule", {
         "quota_wd": "90", "start_wd": "08:00", "end_wd": "19:30", "games_wd": "30",
         "quota_we": "150", "start_we": "09:00", "end_we": "20:00", "games_we": "60"})

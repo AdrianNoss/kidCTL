@@ -27,7 +27,8 @@ child's computer the language of the desktop session is used.
 ## Features
 
 - **Screen time**:
-  - Daily allowance and allowed hours per weekday, counted across all of a child's computers.
+  - Daily allowance and allowed hours per weekday (also past midnight), counted across all of a child's computers.
+  - Up to three blocked times per day, e.g. school or dinner.
   - Warnings before the time runs out, then sign-out and sign-in lock (SDDM, GDM and TTY; Windows: the child's
     account is disabled).
   - School holidays and public holidays (Germany, Austria, Switzerland): a separate school holiday schedule per

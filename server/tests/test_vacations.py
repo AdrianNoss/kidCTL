@@ -308,3 +308,21 @@ def test_special_days_grouped():
         (date(2026, 4, 7), date(2026, 4, 10), "Ostern", None),
         (date(2026, 4, 13), date(2026, 4, 14), "", None),
     ]
+
+
+def test_vacation_template_blocks_in_policy(client, parent, today):
+    """Sperrzeiten gelten je Vorlage: Ferienvorlage mit eigener Sperrzeit, Wochenvorlage ohne (Zusammenführung K2+K3)."""
+    today(date(2026, 4, 1))
+    cid, tok = _setup(client, parent)
+    r = client.post(f"/children/{cid}/vacation-schedule", data={
+        "csrf_token": tok, "quota_wd": "300", "start_wd": "09:00", "end_wd": "21:00",
+        "quota_we": "360", "start_we": "09:00", "end_we": "22:00",
+        "block_wd_0_start": "12:00", "block_wd_0_end": "13:00", "block_wd_0_name": "Mittag"}, follow_redirects=False)
+    assert r.status_code == 303
+    client.post("/settings/vacations", data={"csrf_token": tok, "name": "Osterferien",
+                                             "first_day": "2026-04-06", "last_day": "2026-04-17"})
+    assert "Mittag" in client.get(f"/children/{cid}/zeiten").text
+    with device(client, tok, "pc", map_to=cid, proto=p.PROTOCOL_VERSION) as (ws, dev_id):
+        rules = {r.weekday: r for r in _policy(ws).children[0].rules}
+        assert [(b.start, b.end, b.name) for b in rules[1].blocks] == [(time(12), time(13), "Mittag")]  # Di 7.4. Ferien
+        assert rules[2].blocks == []                                                                     # Mi 1.4. normal

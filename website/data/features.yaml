@@ -11,11 +11,13 @@
   points:
     de:
       - "Vorwarnungen vor Ablauf, danach Abmeldung und Login-Sperre"
+      - "Sperrzeiten (z. B. Schule) und Zeitfenster über Mitternacht"
       - "Ausnahmen für einzelne Tage, „Jetzt sperren“ mit einem Tipp"
       - "Ferienvorlage für Schulferien, Feiertage gelten wie ein Wochenendtag"
       - "Funktioniert offline mit der zuletzt bekannten Regel"
     en:
       - "Warnings before time runs out, then sign-out and sign-in lock"
+      - "Blocked times (e.g. school) and allowed hours past midnight"
       - "Exceptions for single days, “lock now” with one tap"
       - "Holiday schedule for school holidays, public holidays count like a weekend day"
       - "Works offline with the last known rules"
