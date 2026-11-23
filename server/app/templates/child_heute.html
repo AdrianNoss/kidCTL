@@ -20,6 +20,7 @@
   </div>
   <dl class="today-facts">
     <div><dt>{{ _("Erlaubt") }}</dt><dd>{% if status.window_start %}{{ status.window_start.strftime("%H:%M") }}–{{ status.window_end.strftime("%H:%M") }}{% else %}–{% endif %}</dd></div>
+    {% if day_label %}<div><dt>{{ _("Heute") }}</dt><dd>{{ day_label }}</dd></div>{% endif %}
     <div><dt>{{ _("Online") }}</dt><dd>{% if online_devices %}{{ online_devices | join(", ") }}{% else %}{{ _("kein Rechner") }}{% endif %}</dd></div>
   </dl>
 </section>

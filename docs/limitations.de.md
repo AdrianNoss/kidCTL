@@ -26,6 +26,9 @@ steht im README.
 - **Familie gelöscht, Gerät entfernt:** Ein Agent, der in diesem Moment nicht verbunden ist, erfährt davon nichts und
   wendet weiter die zuletzt gespeicherten Regeln an, bis er deinstalliert wird. Verbundene Agenten heben beim Löschen
   der Familie alle Einschränkungen auf.
+- **Ferien und Feiertage offline:** Der Rechner kennt die Regeln der nächsten 7 Tage (Ferien und Feiertage
+  eingerechnet). Ist er länger als 6 Tage ohne Verbindung zum Server, wiederholt sich diese Woche – Ferienbeginn
+  oder -ende und Feiertage danach greifen erst, wenn er wieder verbunden ist.
 - **Kein Browserverlauf:** KidCTL speichert bewusst nicht, welche erlaubten Websites besucht wurden – nur, was
   gesperrt wurde.
 - **Server im gemeinsamen Docker-Netz:** Für Login-Sperren und `ADMIN_ALLOW_NETS` zählt die von Traefik gemeldete

@@ -13,6 +13,13 @@ Per child (the child's page):
 
   ![Weekly schedule with allowed hours and "of which games"](img/en/game-limit.webp)
 
+- **School holidays and public holidays**: enter school holiday periods once for the family under *Settings →
+  Holidays*; on those days each child's **school holiday schedule** applies (child → *Times*, same fields as the
+  weekly schedule; until it is saved, the weekly schedule also applies during school holidays). There you also pick
+  the **public holidays** (Germany, Austria, Switzerland with state or canton, or nationwide only): a public holiday
+  counts as a selectable weekday (default Sunday), taken from the school holiday schedule during school holidays.
+  The server calculates public holidays itself, without fetching anything from the internet. The *Times* tab shows
+  the school holidays and public holidays of the next 14 days. No new agent is needed for this.
 - **Add time**: extra minutes, longer allowed hours or extra game time for
   a specific date. Extension and game time requests from the tray app can also be approved directly
   in the chat.

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from kidctl_common import protocol as p
 
-from . import policy
+from . import policy, vacations
 from . import schedule as sch
 from .models import AppUsage, Child, Device, DeviceApp, DeviceUser, UsageRecord
 
@@ -72,9 +72,10 @@ def daily(db: Session, child: Child, days: int = DAYS) -> list[DayBar]:
                            .where(UsageRecord.child_id == child.id, UsageRecord.day >= start)
                            .group_by(UsageRecord.day)).all())
     out = []
+    cal = vacations.Calendar.load(db)
     for i in range(days):
         d = start + timedelta(days=i)
-        out.append(DayBar(d, int(used.get(d, 0)) // 60, policy.day_status(db, child, d).allowed_minutes))
+        out.append(DayBar(d, int(used.get(d, 0)) // 60, policy.day_status(db, child, d, cal).allowed_minutes))
     return out
 
 

@@ -24,7 +24,7 @@ from sqlalchemy import Boolean, Date, DateTime, Integer, Time, func, select
 from sqlalchemy.orm import Session
 
 from .db import Base
-from .models import Child, Device, FamilyScoped, utcnow
+from .models import Child, Device, FamilyScoped, HolidayRegion, utcnow
 
 FORMAT = "kidctl-family-export"
 VERSION = 1
@@ -119,6 +119,10 @@ def import_zip(db: Session, data: bytes) -> dict[str, int]:
                 for fk in c.foreign_keys:
                     fks[c.name] = fk.column.table.name
             mapping = ids.setdefault(name, {})
+            if model is HolidayRegion and rows:  # höchstens eine je Familie: Einstellung der Zielfamilie ersetzen
+                for old in db.scalars(select(HolidayRegion)):
+                    db.delete(old)
+                db.flush()
             for row in rows:
                 values = {}
                 for key, column in cols.items():

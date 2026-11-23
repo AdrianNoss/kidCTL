@@ -10,7 +10,7 @@ from sqlalchemy import select
 from . import i18n
 from .i18n import N_, _
 from .config import settings
-from .models import Child, DayException, WeekdayRule
+from .models import Child, DayException, VacationRule, WeekdayRule
 
 WEEKDAY_NAMES = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
 # Gruppen für „Werktage/Wochenende gleich“: Schlüssel -> (Bezeichnung, Wochentage)
@@ -55,13 +55,15 @@ def parse_rule(form, prefix: str, label: str) -> tuple[int, time, time, int | No
     return quota, start, end, games
 
 
-def rules_by_day(child: Child) -> dict[int, WeekdayRule]:
-    return {r.weekday: r for r in child.rules}
+def rules_by_day(child: Child, vacation: bool = False) -> dict:
+    """Wochenvorlage bzw. Ferienvorlage je Wochentag (Ferienvorlage noch leer -> Wochenvorlage, z. B. zum Vorbelegen)."""
+    return {r.weekday: r for r in (child.vacation_rules if vacation and child.vacation_rules else child.rules)}
 
 
-def apply_schedule(child: Child, form) -> None:
-    """Übernimmt das Formular in die Wochenvorlage. Wirft ScheduleError, ohne etwas zu ändern."""
-    rules = rules_by_day(child)
+def apply_schedule(child: Child, form, vacation: bool = False) -> None:
+    """Übernimmt das Formular in die Wochen- bzw. Ferienvorlage. Wirft ScheduleError, ohne etwas zu ändern."""
+    target, model = (child.vacation_rules, VacationRule) if vacation else (child.rules, WeekdayRule)
+    rules = {r.weekday: r for r in target}
     new: dict[int, tuple[int, time, time, int | None]] = {}
     if child.weekdays_same:
         for key, (label, days) in GROUPS.items():
@@ -73,14 +75,14 @@ def apply_schedule(child: Child, form) -> None:
     for d, (quota, start, end, games) in new.items():
         rule = rules.get(d)
         if rule is None:
-            rule = WeekdayRule(weekday=d)
-            child.rules.append(rule)
+            rule = model(weekday=d)
+            target.append(rule)
         rule.quota_minutes, rule.window_start, rule.window_end, rule.game_minutes = quota, start, end, games
 
 
-def group_differs(child: Child) -> list[str]:
+def group_differs(child: Child, vacation: bool = False) -> list[str]:
     """Gruppen, deren Tage aktuell unterschiedliche Werte haben (Hinweis im Gruppenmodus)."""
-    rules = rules_by_day(child)
+    rules = rules_by_day(child, vacation)
     out = []
     for label, days in GROUPS.values():
         vals = {(rules[d].quota_minutes, rules[d].window_start, rules[d].window_end, rules[d].game_minutes)
@@ -115,7 +117,11 @@ def check_credit(child: Child, the_day: date, extra: int, override: time | None,
         raise ScheduleError(_("Gutschriften sind nur für heute oder künftige Tage möglich."))
     if not extra and override is None and not games:
         raise ScheduleError(_("Bitte Minuten, Spielzeit und/oder ein späteres Fensterende angeben."))
-    rule = rules_by_day(child).get(the_day.weekday())
+    from sqlalchemy.orm import object_session
+
+    from .vacations import Calendar
+    db = object_session(child)
+    rule = Calendar.load(db).rule_for(child, the_day) if db is not None else rules_by_day(child).get(the_day.weekday())
     if games and (rule is None or rule.game_minutes is None):
         raise ScheduleError(_("Für diesen Tag ist kein Spiele-Limit eingestellt – Spielzeit-Gutschrift nicht nötig."))
     if override is not None and rule is not None and override <= rule.window_end:

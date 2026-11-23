@@ -202,6 +202,15 @@ async def seed(base: str, database_url: str, secret: str, lang: str = "de") -> t
         "quota_wd": "90", "start_wd": "08:00", "end_wd": "19:30", "games_wd": "30",
         "quota_we": "150", "start_we": "09:00", "end_we": "20:00", "games_we": "60"})
 
+    # Ferien in 5 Tagen, Feiertage NRW, Ferienvorlage für Lena
+    await web.post("/settings/holidays", {"region": "DE:NW", "as_weekday": "6"})
+    await web.post("/settings/vacations", {"name": "Winterferien" if lang == "de" else "Winter break",
+                                           "first_day": (today + timedelta(days=5)).isoformat(),
+                                           "last_day": (today + timedelta(days=18)).isoformat()})
+    await web.post(f"/children/{ids['Lena']}/vacation-schedule", {
+        "quota_wd": "180", "start_wd": "09:00", "end_wd": "21:00", "games_wd": "90",
+        "quota_we": "180", "start_we": "09:00", "end_we": "21:30", "games_we": "90"})
+
     # Rechner koppeln, Agenten verbinden, Benutzer und Programme melden
     agents = {}
     for key, name, host, platform, users, apps in (

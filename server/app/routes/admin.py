@@ -22,7 +22,8 @@ from ..models import (
     WeekdayRule, utcnow,
 )
 from .. import (
-    access, accounts, blocklog, chat, i18n, nowplaying, passkeys, policy, programs, report, selfupdate, stats, webfilter,
+    access, accounts, blocklog, chat, i18n, nowplaying, passkeys, policy, programs, report, selfupdate, stats, vacations,
+    webfilter,
 )
 from .. import lock as lk
 from .. import schedule as sch
@@ -118,9 +119,10 @@ def _child_head(db: Session, child: Child) -> dict:
 def _child_page(request: Request, db: Session, child: Child, tab: str = "heute", status_code: int = 200, **ctx):
     today = sch.today_local()
     devices = db.scalars(select(Device).where(Device.id.in_(chat.device_ids_for_child(db, child.id)))).all()
+    cal = vacations.Calendar.load(db)
     if tab == "heute":
         ctx.setdefault("credit_day", today.isoformat())
-        ctx.update(status=policy.day_status(db, child), name_of=programs.name_lookup(db),
+        ctx.update(status=policy.day_status(db, child, cal=cal), day_label=vacations.day_label(cal, today), name_of=programs.name_lookup(db),
                    blocked=programs.blocked_log(db, child.id, limit=5), fmt_minutes=sch.fmt_minutes,
                    online_devices=[d.name for d in devices if manager.is_online(d.id)],
                    web_mode_label=webfilter.MODES[child.web_mode], program_mode_label=programs.MODES[child.program_mode],
@@ -129,6 +131,10 @@ def _child_page(request: Request, db: Session, child: Child, tab: str = "heute",
     elif tab == "zeiten":
         ctx.update(rules=sch.rules_by_day(child), groups=sch.GROUPS, weekday_names=i18n.weekday_names(),
                    differs=sch.group_differs(child), max_quota=sch.MAX_QUOTA, fmt_minutes=sch.fmt_minutes,
+                   vacation_rules=sch.rules_by_day(child, vacation=True),
+                   vacation_differs=sch.group_differs(child, vacation=True),
+                   vacation_saved=bool(child.vacation_rules), special_days=cal.special_days(today),
+                   holiday_region=cal.region,
                    exceptions=db.scalars(select(DayException).where(
                        DayException.child_id == child.id, DayException.day >= today).order_by(DayException.day)).all())
     elif tab == "internet":
@@ -184,6 +190,20 @@ async def child_schedule(child_id: int, request: Request, db: Session = Depends(
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
     return _redirect(f"/children/{child_id}/zeiten?saved=1")
+
+
+@router.post("/children/{child_id}/vacation-schedule", dependencies=[Depends(csrf_protect)])
+async def child_vacation_schedule(child_id: int, request: Request, db: Session = Depends(get_db)):
+    """Ferienvorlage des Kindes (gilt an Tagen in einem Ferienzeitraum der Familie)."""
+    child = _get_or_404(db, Child, child_id)
+    try:
+        sch.apply_schedule(child, await request.form(), vacation=True)
+    except sch.ScheduleError as e:
+        db.rollback()
+        return _child_page(request, db, child, "zeiten", status_code=400, vacation_error=str(e))
+    db.commit()
+    await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
+    return _redirect(f"/children/{child_id}/zeiten?saved=vacation#ferien")
 
 
 @router.post("/children/{child_id}/credit", dependencies=[Depends(csrf_protect)])

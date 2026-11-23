@@ -26,6 +26,10 @@ version is in the README.
 - **Family deleted, device removed:** An agent that is not connected at that moment doesn't learn about it and
   keeps applying the last saved rules until it is uninstalled. Connected agents lift all restrictions when the family
   is deleted.
+- **School holidays and public holidays offline:** The computer knows the rules for the next 7 days (school
+  holidays and public holidays included). If it has no connection to the server for more than 6 days, that week
+  repeats – the start or end of school holidays and public holidays after that only take effect once it is
+  connected again.
 - **No browsing history:** KidCTL deliberately doesn't store which allowed websites were visited – only what
   was blocked.
 - **Server in a shared Docker network:** login locks and `ADMIN_ALLOW_NETS` use the address reported by Traefik,

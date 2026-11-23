@@ -12,10 +12,12 @@
     de:
       - "Vorwarnungen vor Ablauf, danach Abmeldung und Login-Sperre"
       - "Ausnahmen für einzelne Tage, „Jetzt sperren“ mit einem Tipp"
+      - "Ferienvorlage für Schulferien, Feiertage gelten wie ein Wochenendtag"
       - "Funktioniert offline mit der zuletzt bekannten Regel"
     en:
       - "Warnings before time runs out, then sign-out and sign-in lock"
       - "Exceptions for single days, “lock now” with one tap"
+      - "Holiday schedule for school holidays, public holidays count like a weekend day"
       - "Works offline with the last known rules"
   shot_alt: { de: "Zeiten eines Kindes: Wochenvorlage mit Kontingent und Zeitfenstern", en: "A child's times: weekly schedule with allowance and allowed hours" }
 - id: requests

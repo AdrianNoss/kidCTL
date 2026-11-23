@@ -520,6 +520,9 @@ class Child(FamilyScoped, Base):
 
     rules: Mapped[list[WeekdayRule]] = relationship(
         back_populates="child", cascade="all, delete-orphan", order_by="WeekdayRule.weekday")
+    # Ferienvorlage (leer = in den Ferien gilt die Wochenvorlage)
+    vacation_rules: Mapped[list[VacationRule]] = relationship(
+        back_populates="child", cascade="all, delete-orphan", order_by="VacationRule.weekday")
 
 
 class WeekdayRule(FamilyScoped, Base):
@@ -536,6 +539,44 @@ class WeekdayRule(FamilyScoped, Base):
     game_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)  # Spiele-Limit; None = keins
 
     child: Mapped[Child] = relationship(back_populates="rules")
+
+
+class VacationRule(FamilyScoped, Base):
+    """Ferienvorlage: wie ``WeekdayRule``, gilt an Tagen in einem Ferienzeitraum der Familie."""
+    __tablename__ = "vacation_rule"
+    __table_args__ = (UniqueConstraint("child_id", "weekday"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    child_id: Mapped[int] = mapped_column(ForeignKey("child.id", ondelete="CASCADE"))
+    weekday: Mapped[int] = mapped_column(Integer)  # 0 = Montag … 6 = Sonntag
+    quota_minutes: Mapped[int] = mapped_column(Integer, default=60)
+    window_start: Mapped[time] = mapped_column(Time, default=time(8, 0))
+    window_end: Mapped[time] = mapped_column(Time, default=time(20, 0))
+    game_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    child: Mapped[Child] = relationship(back_populates="vacation_rules")
+
+
+class Vacation(FamilyScoped, Base):
+    """Ferienzeitraum der Familie (erster bis letzter Tag einschließlich)."""
+    __tablename__ = "vacation"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(Sealed("vacation.name"), default="")
+    first_day: Mapped[date] = mapped_column(Date)
+    last_day: Mapped[date] = mapped_column(Date)
+
+
+class HolidayRegion(FamilyScoped, Base):
+    """Gesetzliche Feiertage der Familie: Land (DE/AT/CH), Bundesland/Kanton (leer = nur landesweit) und der
+    Wochentag, wie der ein Feiertag gilt. Höchstens eine Zeile je Familie; keine Zeile = keine Feiertage."""
+    __tablename__ = "holiday_region"
+    __table_args__ = (UniqueConstraint("family_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    country: Mapped[str] = mapped_column(String(2))
+    subdiv: Mapped[str] = mapped_column(String(16), default="")
+    as_weekday: Mapped[int] = mapped_column(Integer, default=6)
 
 
 class DayException(FamilyScoped, Base):

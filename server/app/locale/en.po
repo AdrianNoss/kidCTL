@@ -3606,3 +3606,96 @@ msgstr "Version {version} is available."
 
 msgid "Die Prüfung auf neue Versionen ist abgeschaltet (UPDATE_CHECK=0)."
 msgstr "Checking for new versions is turned off (UPDATE_CHECK=0)."
+
+msgid "Der Ferienzeitraum liegt in der Vergangenheit."
+msgstr "This school holiday period is in the past."
+
+msgid "Der letzte Ferientag darf nicht vor dem ersten liegen."
+msgstr "The last day must not be before the first day."
+
+msgid "Die nächsten 14 Tage"
+msgstr "The next 14 days"
+
+msgid "Ein Ferienzeitraum darf höchstens {days} Tage lang sein."
+msgstr "A school holiday period can be at most {days} days long."
+
+msgid "Erster Tag"
+msgstr "First day"
+
+msgid "Letzter Tag"
+msgstr "Last day"
+
+msgid "Feiertag gilt wie"
+msgstr "Public holiday counts as"
+
+msgid "Feiertag: {name}"
+msgstr "Public holiday: {name}"
+
+msgid "Ferien"
+msgstr "School holidays"
+
+msgid "Ferien & Feiertage"
+msgstr "Holidays"
+
+msgid "Ferien hinzufügen"
+msgstr "Add school holidays"
+
+msgid "Ferien: {name}"
+msgstr "School holidays: {name}"
+
+msgid "Ferienvorlage"
+msgstr "School holiday schedule"
+
+msgid "Ferienvorlage gespeichert."
+msgstr "School holiday schedule saved."
+
+msgid "Ferienvorlage speichern"
+msgstr "Save school holiday schedule"
+
+msgid "Ferienzeiträume"
+msgstr "School holidays"
+
+msgid "Gesetzliche Feiertage"
+msgstr "Public holidays"
+
+msgid "Gilt an Tagen in einem Ferienzeitraum der Familie. Ferien und gesetzliche Feiertage stellst du unter Einstellungen → Ferien & Feiertage ein."
+msgstr "Applies on days within one of your family's school holiday periods. Set up school holidays and public holidays under Settings → Holidays."
+
+msgid "In den Ferien gilt für jedes Kind seine Ferienvorlage (Kind → Zeiten). Gesetzliche Feiertage gelten wie der gewählte Wochentag."
+msgstr "During school holidays, each child's school holiday schedule applies (child → Times). Public holidays count as the selected weekday."
+
+msgid "Keine Feiertage"
+msgstr "No public holidays"
+
+msgid "Keine Ferien eingetragen."
+msgstr "No school holidays entered."
+
+msgid "Keine Ferien oder Feiertage in den nächsten 14 Tagen."
+msgstr "No school holidays or public holidays in the next 14 days."
+
+msgid "Noch nicht gespeichert: In den Ferien gilt bis dahin die Wochenvorlage (unten vorbelegt)."
+msgstr "Not saved yet: until then, the weekly schedule applies during school holidays (pre-filled below)."
+
+msgid "Region"
+msgstr "Region"
+
+msgid "Schweiz"
+msgstr "Switzerland"
+
+msgid "Österreich"
+msgstr "Austria"
+
+msgid "Unbekanntes Land oder Bundesland."
+msgstr "Unknown country or state."
+
+msgid "Ungültiger Wochentag."
+msgstr "Invalid weekday."
+
+msgid "wie {weekday}"
+msgstr "as {weekday}"
+
+msgid "z. B. Sommerferien"
+msgstr "e.g. summer holidays"
+
+msgid "{country} – nur landesweite"
+msgstr "{country} – nationwide only"

@@ -16,7 +16,7 @@ from ..i18n import N_, _
 from ..config import settings
 from ..db import get_db
 from .. import accounts
-from ..models import ROLE_OWNER, Family, Membership, Parent, ParentSession, PushSubscription, utcnow
+from ..models import ROLE_OWNER, Family, HolidayRegion, Membership, Parent, ParentSession, PushSubscription, utcnow
 from ..push import send_to_parents_sync
 from ..security import csrf_protect, require_session
 from ..web import render
@@ -92,8 +92,19 @@ def _settings(request: Request, db: Session, sess: ParentSession, status_code: i
                   backup_done=request.query_params.get("backup"), imported=request.query_params.get("imported"),
                   saved=request.query_params.get("saved"),
                   is_owner=_is_owner(db, sess.parent_id), family_empty=family_export.is_empty(db),
-                  family=db.scalar(select(Family)),
+                  family=db.scalar(select(Family)), **_holiday_ctx(db),
                   **_support_ctx(db, sess), **ctx)
+
+
+def _holiday_ctx(db: Session) -> dict:
+    from .. import i18n, schedule as sch, vacations
+    from ..models import Vacation
+    region = db.scalar(select(HolidayRegion))
+    return {"vacations": db.scalars(select(Vacation).where(Vacation.last_day >= sch.today_local())
+                                    .order_by(Vacation.first_day, Vacation.id)).all(),
+            "holiday_region": region, "holiday_countries": vacations.COUNTRIES,
+            "holiday_subdivs": {c: vacations.subdivisions(c) for c in vacations.COUNTRIES},
+            "weekday_names": i18n.weekday_names(), "vacation_today": sch.today_local()}
 
 
 def _is_owner(db: Session, parent_id) -> bool:
@@ -173,6 +184,59 @@ def family_rename(name: str = Form(""), sess: ParentSession = Depends(csrf_prote
     db.scalar(select(Family)).name = name.strip()[:128]
     db.commit()
     return RedirectResponse("/settings?saved=family#family", status_code=303)
+
+
+# ---------- Ferien und Feiertage (alle Eltern) ----------
+
+async def _push_family(db: Session) -> None:
+    from .. import policy
+    from ..models import Device
+    await policy.push_policies(db, set(db.scalars(select(Device.id).where(Device.revoked_at.is_(None)))))
+
+
+@router.post("/settings/vacations")
+async def vacation_add(request: Request, name: str = Form(""), first_day: str = Form(""), last_day: str = Form(""),
+                       sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    from .. import vacations
+    from ..models import Vacation
+    try:
+        name, first, last = vacations.parse_vacation(name, first_day, last_day)
+    except vacations.VacationError as e:
+        return _settings(request, db, sess, status_code=400, vacation_error=str(e),
+                         vacation_form={"name": name, "first_day": first_day, "last_day": last_day})
+    db.add(Vacation(name=name, first_day=first, last_day=last))
+    db.commit()
+    await _push_family(db)
+    return RedirectResponse("/settings?saved=vacation#ferien", status_code=303)
+
+
+@router.post("/settings/vacations/{vacation_id}/delete")
+async def vacation_delete(vacation_id: int, sess: ParentSession = Depends(csrf_protect),
+                          db: Session = Depends(get_db)):
+    from ..models import Vacation
+    vac = db.get(Vacation, vacation_id)
+    if vac is None:
+        raise HTTPException(404)
+    db.delete(vac)
+    db.commit()
+    await _push_family(db)
+    return RedirectResponse("/settings?saved=vacation#ferien", status_code=303)
+
+
+@router.post("/settings/holidays")
+async def holidays_set(request: Request, region: str = Form(""), as_weekday: str = Form("6"),
+                       sess: ParentSession = Depends(csrf_protect), db: Session = Depends(get_db)):
+    """Feiertage: ``region`` = „“ (keine), „DE:“ (nur landesweit) oder „DE:BY“."""
+    from .. import vacations
+    country, _sep, subdiv = region.partition(":")
+    try:
+        vacations.set_region(db, country, subdiv, as_weekday)
+    except vacations.VacationError as e:
+        db.rollback()
+        return _settings(request, db, sess, status_code=400, holiday_error=str(e))
+    db.commit()
+    await _push_family(db)
+    return RedirectResponse("/settings?saved=holidays#ferien", status_code=303)
 
 
 # ---------- Newsletter (Opt-in je Familie) ----------
