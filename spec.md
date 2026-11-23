@@ -3720,5 +3720,15 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Ferienvorlage; noch nicht gespeicherte Ferienvorlage ist mit der Wochenvorlage samt Sperrzeiten vorbelegt). Policy
   liefert die Sperrzeiten der jeweils geltenden Regel (Woche, Ferien oder Feiertag). Minor-Version → News. Geprüft:
   Server-Suite gegen PostgreSQL inkl. neuem Test Ferienvorlage mit Sperrzeiten in der Policy (Protokoll 2), Agent-
-  und Tray-Tests, Doku-Parität, Hugo-Build, Screenshots. Offen: VM-Tests Linux/Windows (Sperrzeit, Mitternacht,
-  Ferientag, Lutris/Bottles in echter Plasma-Sitzung).
+  und Tray-Tests, Doku-Parität, Hugo-Build, Screenshots. VM-Tests am 2026-11-23 gegen den Entwicklungsserver
+  (Migration 0024 → 0028 beim Start): Arch-VM mit gebautem Paket 0.47.0 (`kidctl`, `-plasma`, `-gnome`), Prüfung
+  per `pamtest.py login kind kind` – Sperrzeit 22:30–23:30 im Fenster 08:00–01:00 → abgelehnt (Policy über
+  Protokoll 2 mit `blocks`), ohne Sperrzeit erlaubt; VM-Uhr Di 00:30 → erlaubt (Fenster vom Montag reicht über
+  Mitternacht), 01:05 → abgelehnt; Ferienzeitraum heute mit Ferienvorlage bis 22:00 → abgelehnt, Policy Mo/Di aus
+  der Ferienvorlage, Rest Wochenvorlage; Ferienvorlage bis 23:59 mit/ohne Sperrzeit 22:30–23:30 → abgelehnt/erlaubt;
+  `traytest.py flood` als `kind`: nach 30 Nachrichten Hinweis „Zu viele Nachrichten in kurzer Zeit …“ statt stillem
+  Verwerfen. Windows-11-VM (Code per `winsync.sh`, Agent 0.47.0): Sperrzeit → Konto `kind` deaktiviert, ohne
+  Sperrzeit wieder aktiviert; Uhr Di 00:30 → frei, 01:05 → gesperrt; Ferienvorlage bis 22:00 hält die Sperre, bis
+  23:59 hebt sie auf. Nicht geprüft: angemeldete Plasma-/Windows-Sitzung (Vorwarnung, Sperrbildschirm, Anzeige in
+  der Tray-App), Lutris/Bottles mit vollem Agent in grafischer Sitzung (Agent zählt Programme nur dort; als
+  `machinectl shell` keine Zählung).
