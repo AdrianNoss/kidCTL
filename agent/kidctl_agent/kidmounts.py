@@ -1,7 +1,7 @@
 """noexec für Kinder-Homes und Spiele-Bibliotheken außerhalb des Homes.
 
-- Home jedes zugeordneten Kindes wird per Bind-Mount auf sich selbst mit ``noexec,nosuid,nodev``
-  eingehängt. Über ``systemd-mount`` (transiente Unit in PID 1): Der Agent läuft in einem eigenen
+- Home jedes zugeordneten Kindes im Modus „Sperren“ wird per Bind-Mount auf sich selbst mit
+  ``noexec,nosuid,nodev`` eingehängt. Über ``systemd-mount`` (transiente Unit in PID 1): Der Agent läuft in einem eigenen
   Mount-Namespace (systemd-Härtung) – eigene mount()-Aufrufe wären systemweit nicht sichtbar.
   Transiente Units überleben keinen Neustart; der Agent legt sie beim Start vor den Logins neu an.
 - Steam: Bibliothek unter ``/srv/steam/<user>`` (ausführbar, gehört dem Kind);

@@ -292,8 +292,8 @@ class ProgramWatcher:
             pid = self.forks.get(parent.pid, parent.ppid)
 
     def users(self) -> set[str]:
-        """Kinder mit Programmkontrolle (für noexec-Home und Steam-Bibliothek)."""
-        return {user for user, _mode, _allowed in self.targets().values()}
+        """Kinder im Modus „Sperren“ (für noexec-Home) – „Nur protokollieren“ sperrt nichts."""
+        return {user for user, mode, _allowed in self.targets().values() if mode == "enforce"}
 
     def record_domain(self, user: str, domain: str, detail: str) -> bool:
         if detail not in NOT_REQUESTABLE:

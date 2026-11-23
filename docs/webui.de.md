@@ -18,7 +18,9 @@ Je Kind (Seite des Kindes):
   im Chat genehmigen.
 - **Programme**:
   - **Aus**
-  - **Nur protokollieren**: zum Einstieg empfohlen, um zu sehen, was genutzt wird.
+  - **Nur protokollieren**: zum Einstieg empfohlen, um zu sehen, was genutzt wird. Sperrt nichts,
+    auch Programme aus dem Home starten. Ausnahme unter Linux: Aus `/tmp`, `/var/tmp` und `/dev/shm`
+    startet auf dem ganzen Rechner nichts, unabhängig vom Modus.
   - **Sperren**: nur freigegebene Programme. Der Katalog füllt sich mit dem, was der Rechner
     meldet. Steam wird nur als Ganzes freigegeben.
 

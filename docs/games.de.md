@@ -3,7 +3,7 @@
 ## Steam
 
 Die Steam-Bibliothek eines Kindes liegt unter `/srv/steam/<child>`, `~/.local/share/Steam` ist nur
-ein Verweis dorthin. Grund: Bei aktiver Programmkontrolle ist das Home `noexec`, aus dem Home startet
+ein Verweis dorthin. Grund: Im Modus „Sperren“ ist das Home `noexec`, aus dem Home startet
 Steam dann nicht. Den Verweis legt der Agent für jedes zugeordnete Kind an. Einen schon vorhandenen
 Steam-Ordner im Home verschiebt er nach der Abmeldung des Kindes automatisch.
 
@@ -38,7 +38,7 @@ Vorhandene Ordner verschiebt der Agent nach der Abmeldung, soweit möglich (Eins
 Steam), sonst von Hand wie bei Steam (`/srv/heroic/<child>/Games` bzw. `tools` als Ziel). Die
 Cache-Ordner von `gogdl`/`legendary` werden einfach gelöscht und neu angelegt.
 
-Ist Steam bzw. Heroic für ein Kind mit Programmkontrolle **nicht** freigegeben, hängt der Agent dessen
+Ist Steam bzw. Heroic für ein Kind im Modus „Sperren“ **nicht** freigegeben, hängt der Agent dessen
 Spieleordner `noexec` ein. Sonst könnte das Kind dort eigene Bibliotheken ablegen und in erlaubte
 Programme laden. Nach der Freigabe wird das sofort aufgehoben. In Heroic den Standard-Installationsordner nicht ändern: Spiele außerhalb von
 `~/Games/Heroic` starten bei aktiver Programmkontrolle nicht. Amazon-Spiele (`nile`) funktionieren

@@ -3,7 +3,7 @@
 ## Steam
 
 A child's Steam library lives under `/srv/steam/<child>`; `~/.local/share/Steam` is only
-a link to it. Reason: with app control active, the home folder is `noexec`, and Steam doesn't start from the
+a link to it. Reason: in "Block" mode, the home folder is `noexec`, and Steam doesn't start from the
 home folder then. The agent creates the link for every assigned child. It moves an existing
 Steam folder in the home folder automatically after the child signs out.
 
@@ -38,7 +38,7 @@ The agent moves existing folders after sign-out where possible (same limits as w
 Steam), otherwise move them by hand as with Steam (`/srv/heroic/<child>/Games` or `tools` as target). The
 cache folders of `gogdl`/`legendary` are simply deleted and recreated.
 
-If Steam or Heroic is **not** allowed for a child with app control, the agent mounts its
+If Steam or Heroic is **not** allowed for a child in "Block" mode, the agent mounts its
 game folders `noexec`. Otherwise the child could put their own libraries there and load them into allowed
 programs. Once allowed, this is lifted immediately. Don't change the default installation folder in Heroic: games outside
 `~/Games/Heroic` don't start with app control active. Amazon games (`nile`) don't work
