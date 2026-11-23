@@ -129,7 +129,8 @@
     de: "Damit entfällt die SmartScreen-Rückfrage bei der Installation."
     en: "No more SmartScreen prompt when installing."
 - id: request-access
-  status: planned
+  status: done
+  version: "0.24"
   title: { de: "Freigabe anfragen", en: "Ask for access" }
   text:
     de: "Das Kind fragt eine gesperrte Website oder ein Programm an, Eltern geben sie mit einem Klick frei."
