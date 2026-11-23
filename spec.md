@@ -1693,9 +1693,8 @@ Self-Hostern). Plan mit Etappen: `dev/planung/PLAN-2026-11.md`. Fachliche Detail
 /grill-me klären und hier ergänzen.
 
 **Etappe 1 – Alltag (Ziel 0.47):**
-- **Freigabe anfragen:** Das Kind fragt aus der Tray-App (und aus der Sperr-Benachrichtigung) eine gesperrte Website
-  oder ein gesperrtes Programm an, mit Begründung. Die Anfrage erscheint wie eine Verlängerungsanfrage im Chat
-  (Genehmigen / Ablehnen, wahlweise nur heute oder dauerhaft). Übertragen wird nur die angefragte Domain bzw. App.
+- ~~**Freigabe anfragen**~~ – bereits seit 0.24.0 umgesetzt (siehe „Freigabe-Anfragen“ unter Chat/Anfragen,
+  Changelog 2026-10-20); bei der Planung übersehen, am 2026-11-23 mit Adrian als erledigt abgeschlossen.
 - **Ferien und Feiertage:** Ferienzeiträume je Kind/Familie mit eigener Wochenvorlage; gesetzliche Feiertage je
   Bundesland/Land gelten wie ein wählbarer Wochentag (z. B. „wie Sonntag“). Feiertagsdaten lokal im Server, kein
   externer Abruf.
@@ -3608,3 +3607,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-23: Version 0.46.1 – noexec nur im Modus „Sperren“ (Linux), Dependabot-Updates (u. a. fastapi 0.165, SQLAlchemy
   2.1.9, reportlab 5.1, pyotp 2.12). Patch ohne Sicherheitsbezug, keine News. Geprüft: Server-Suite gegen PostgreSQL
   (inkl. Rechnungs-PDFs mit reportlab 5), Agent- und Tray-Tests, Doku-Parität, Hugo-Build.
+- 2026-11-23: K1 „Freigabe anfragen“ (Etappe 1) als erledigt abgeschlossen, ohne Code: Die Funktion besteht seit
+  0.24.0 (Freigabe-Anfragen, 2026-10-20, vom Nutzer auf dem Kinderrechner getestet) und deckt den Planeintrag ab
+  (Tray-Liste und Sperr-Benachrichtigung Linux/Windows, Grund, Dauerhaft/Nur heute/Ablehnen, Push). Abschnitt
+  „Geplante Funktionen“, `dev/planung/PLAN-2026-11.md` und Roadmap (`request-access` → done, 0.24) angepasst.
+  Geprüft: Doku-Parität, Hugo-Build.
