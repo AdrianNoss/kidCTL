@@ -3729,6 +3729,10 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   `traytest.py flood` als `kind`: nach 30 Nachrichten Hinweis „Zu viele Nachrichten in kurzer Zeit …“ statt stillem
   Verwerfen. Windows-11-VM (Code per `winsync.sh`, Agent 0.47.0): Sperrzeit → Konto `kind` deaktiviert, ohne
   Sperrzeit wieder aktiviert; Uhr Di 00:30 → frei, 01:05 → gesperrt; Ferienvorlage bis 22:00 hält die Sperre, bis
-  23:59 hebt sie auf. Nicht geprüft: angemeldete Plasma-/Windows-Sitzung (Vorwarnung, Sperrbildschirm, Anzeige in
-  der Tray-App), Lutris/Bottles mit vollem Agent in grafischer Sitzung (Agent zählt Programme nur dort; als
-  `machinectl shell` keine Zählung).
+  23:59 hebt sie auf. Sitzungstest (angemeldet per QMP; Arch-VM ohne GL, sonst liefert `screendump` kein Bild):
+  Plasma als `kind`, Sperrzeit „Abendessen“ ab +2 min – Tray-App zeigt „Sperrzeiten: Abendessen …“ und „Noch 1 min“,
+  ab Beginn „Sperrzeit ‚Abendessen‘ bis …“; Benachrichtigung „Noch 1 Minute – danach wirst du abgemeldet“, Abmeldung
+  nach 60 s, neuer Login am SDDM mit Sperrhinweis abgelehnt. Lutris-Prozess (`wine64-preloader` mit `GAME_NAME`/
+  `LUTRIS_GAME_UUID`) in der Sitzung → WebUI „spielt gerade: VM-Test: Wüste“. Windows 11 als `kind` angemeldet:
+  Countdown-Dialog und Benachrichtigung vor Beginn, „Bildschirmzeit zu Ende – Abmeldung in 60 s“, Abmeldung,
+  Konto deaktiviert. Nicht geprüft: echtes Lutris/Bottles mit Wine-Spiel (nur nachgestellte Umgebung).
