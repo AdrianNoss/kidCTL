@@ -110,12 +110,6 @@
   text:
     de: "Regelmäßige automatische Prüfungen (OpenSSF Scorecard, Webserver-Scans) mit öffentlich einsehbaren Ergebnissen."
     en: "Regular automated checks (OpenSSF Scorecard, web server scans) with publicly visible results."
-- id: update-button
-  status: in_progress
-  title: { de: "Update per Knopf", en: "Update via button" }
-  text:
-    de: "Eltern stoßen das kidCTL-Update auf dem Kinderrechner aus der WebUI an – nur das eigene, signierte Paket."
-    en: "Parents start the kidCTL update on the child's computer from the web interface – only its own signed package."
 - id: wine-launchers
   status: planned
   title: { de: "Lutris und Bottles unter Linux", en: "Lutris and Bottles on Linux" }
@@ -188,12 +182,6 @@
   text:
     de: "Alarme und Anfragen zusätzlich über eigene Kanäle – nur Hinweis und Link, kein Inhalt."
     en: "Alerts and requests also through your own channels – only a notice and a link, no content."
-- id: about
-  status: in_progress
-  title: { de: "Info und Neuigkeiten", en: "About and what's new" }
-  text:
-    de: "Versionsanzeige mit Links in WebUI und Tray-App; nach einem Update sehen Eltern, was neu ist."
-    en: "Version info with links in the web interface and tray app; after an update, parents see what's new."
 - id: update-button
   status: done
   version: "0.46"
