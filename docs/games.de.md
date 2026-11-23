@@ -43,3 +43,17 @@ Spieleordner `noexec` ein. Sonst könnte das Kind dort eigene Bibliotheken ableg
 Programme laden. Nach der Freigabe wird das sofort aufgehoben. In Heroic den Standard-Installationsordner nicht ändern: Spiele außerhalb von
 `~/Games/Heroic` starten bei aktiver Programmkontrolle nicht. Amazon-Spiele (`nile`) funktionieren
 bei aktiver Programmkontrolle nicht.
+
+## Lutris und Bottles
+
+Windows-Spiele, die über Lutris oder Bottles (Wine) laufen, erkennt KidCTL als Spiele: Sie zählen zur Spielzeit
+und zum Spiele-Limit und erscheinen mit ihrem Namen unter „spielt gerade“ und in der Statistik.
+
+- **Lutris:** Name wie in Lutris angezeigt. Linux-Spiele aus Lutris werden nicht erkannt.
+- **Bottles:** Nur Programme aus der Programmliste einer Bottle, mit dem Namen aus der Liste. Programme, die nur per
+  „Ausführen…“ gestartet werden, und Wine-Hilfsprozesse zählen nicht.
+- Lutris und Bottles selbst zählen nicht als Spiel.
+
+Anders als Steam und Heroic haben Lutris und Bottles keine eigenen Spieleordner außerhalb des Homes. Bei aktiver
+Programmkontrolle im Modus „Sperren“ starten ihre Spiele deshalb in der Regel nicht (nicht eigens getestet); im
+Modus „Nur protokollieren“ und ohne Programmkontrolle funktioniert die Erkennung.

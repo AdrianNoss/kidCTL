@@ -43,3 +43,17 @@ game folders `noexec`. Otherwise the child could put their own libraries there a
 programs. Once allowed, this is lifted immediately. Don't change the default installation folder in Heroic: games outside
 `~/Games/Heroic` don't start with app control active. Amazon games (`nile`) don't work
 with app control active.
+
+## Lutris and Bottles
+
+KidCTL detects Windows games that run via Lutris or Bottles (Wine) as games: they count towards game time and the
+game limit and appear with their name under "playing now" and in the statistics.
+
+- **Lutris:** name as shown in Lutris. Linux games from Lutris are not detected.
+- **Bottles:** only programs from a bottle's program list, with the name from the list. Programs started only via
+  "Run executable…" and Wine helper processes don't count.
+- Lutris and Bottles themselves don't count as games.
+
+Unlike Steam and Heroic, Lutris and Bottles have no game folders of their own outside the home. With app control
+active in "Block" mode, their games therefore usually don't start (not specifically tested); in "Monitor only" mode and
+without app control, detection works.

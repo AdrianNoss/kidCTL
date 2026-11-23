@@ -63,9 +63,11 @@ version is in the README.
 
 - **Tooltip on GNOME:** the AppIndicator extension shows no tooltip on hover. The remaining time is shown at the
   top of the icon's menu; warnings and the countdown work as before.
-- **Lutris and Bottles:** games that run via Lutris or Bottles (Wine) are not detected as games by KidCTL – they
-  don't count towards game time or the game limit. As a workaround, use the "Counts as a game" switch in the program
-  list, if the game appears there.
+- **Lutris and Bottles:** KidCTL detects Windows games (Wine) started by Lutris and programs from a bottle's
+  program list (see [Games](games.md#lutris-and-bottles)). Not detected are Linux games from Lutris and programs
+  that run in Bottles only via "Run executable…" without an entry in the program list – they don't count towards
+  game time or the game limit. As a workaround, use the "Counts as a game" switch in the program list, if the game
+  appears there.
 ## Windows
 
 - **x64 only:** no Windows on ARM.

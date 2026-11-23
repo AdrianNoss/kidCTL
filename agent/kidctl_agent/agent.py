@@ -19,7 +19,7 @@ from .core import STARTUP_SYNC, AgentCore  # noqa: F401 – STARTUP_SYNC: Weiter
 from .dnsfilter import DnsFilter
 
 from .gamelimit import GameLimit
-from .games import GameNames, game_id
+from .games import GameNames, bottles_program, game_id
 from .gnomesearch import GnomeSearch
 from .kidmounts import STEAM_ROOT, KidMounts, safe_home
 from .lang import UserLanguages
@@ -37,10 +37,14 @@ DESKTOP_EVERY = 2     # Takte (= 10 s): Desktop-Verknüpfungen erlaubter Program
 APPS_EVERY = 6 * 3600.0  # installierte Anwendungen neu einlesen
 
 
+# Bottles/Lutris als Flatpak (Desktop-Kategorie „Game“): gezählt werden die gestarteten Programme (games.py)
+FLATPAK_LAUNCHERS = {"flatpak:com.usebottles.bottles", "flatpak:net.lutris.Lutris"}
+
+
 def _is_launcher(key: str) -> bool:
-    """Spiele-Launcher (Steam, Heroic, Lutris) zählen nicht als Spiel – nur die gestarteten Spiele."""
+    """Spiele-Launcher (Steam, Heroic, Lutris, Bottles) zählen nicht als Spiel – nur die gestarteten Spiele."""
     exe = key[4:] if key.startswith("exe:") else ""
-    return key == STEAM_KEY or exe.startswith(STEAM_SYSTEM) or exe in LAUNCHERS
+    return key == STEAM_KEY or exe.startswith(STEAM_SYSTEM) or exe in LAUNCHERS or key in FLATPAK_LAUNCHERS
 
 
 def local_users() -> list[p.LocalUser]:
@@ -353,7 +357,10 @@ class Agent(AgentCore):
         roots = tuple(f"{lib.root}/{user}/" for lib in kidmounts.libraries())
         candidate = (info.exe.startswith(roots) or info.mnt_foreign
                      or os.path.basename(info.exe).startswith(("wine", "pv-", "proton")))
-        found = game_id(read_environ(info.pid)) if candidate else None
+        env = read_environ(info.pid) if candidate else {}
+        found = game_id(env)
+        if found is None and (found := bottles_program(env, info.argv, info.uid)):
+            self.apptime.names[found[0]] = found[1]   # Name aus der bottle.yml (beim Erkennen gelesen)
         key = found[0] if found else None
         self._game_of[ident] = key
         return key

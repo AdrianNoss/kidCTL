@@ -111,7 +111,7 @@
     de: "Regelmäßige automatische Prüfungen (OpenSSF Scorecard, Webserver-Scans) mit öffentlich einsehbaren Ergebnissen."
     en: "Regular automated checks (OpenSSF Scorecard, web server scans) with publicly visible results."
 - id: wine-launchers
-  status: planned
+  status: in_progress
   title: { de: "Lutris und Bottles unter Linux", en: "Lutris and Bottles on Linux" }
   text:
     de: "Spiele aus Lutris und Bottles (Wine) als Spiele erkennen."

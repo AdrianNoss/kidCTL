@@ -62,9 +62,11 @@ steht im README.
   Filter bis zu 60 Sekunden offen sein, bis KidCTL ihn wiederherstellt.
 - **Tooltip unter GNOME:** Die AppIndicator-Erweiterung zeigt beim Darüberfahren keinen Tooltip. Die Restzeit
   steht oben im Menü des Symbols; Warnungen und Countdown kommen wie gewohnt.
-- **Lutris und Bottles:** Spiele, die über Lutris oder Bottles (Wine) laufen, erkennt KidCTL nicht als Spiele – sie
-  zählen nicht zur Spielzeit und nicht zum Spiele-Limit. Als Ausweg den Schalter „zählt als Spiel“ in der
-  Programmliste nutzen, soweit das Spiel dort erscheint.
+- **Lutris und Bottles:** KidCTL erkennt Windows-Spiele (Wine), die Lutris startet, und Programme aus der
+  Programmliste einer Bottle (siehe [Spiele](games.de.md#lutris-und-bottles)). Nicht erkannt werden Linux-Spiele aus
+  Lutris und Programme, die in Bottles nur per „Ausführen…“ ohne Eintrag in der Programmliste laufen – sie zählen
+  nicht zur Spielzeit und nicht zum Spiele-Limit. Als Ausweg den Schalter „zählt als Spiel“ in der Programmliste
+  nutzen, soweit das Spiel dort erscheint.
 
 ## Windows
 

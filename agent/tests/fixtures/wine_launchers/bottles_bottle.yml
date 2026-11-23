@@ -1,0 +1,158 @@
+Arch: win64
+CompatData: ''
+Creation_Date: '2026-11-23 17:54:07.830433'
+Custom_Path: false
+D7VK: d7vk-v2.4
+DLL_Overrides: {}
+DXVK: dxvk-3.1.1
+Environment: Gaming
+Environment_Variables: {}
+External_Programs:
+    06cf83f9-e633-4637-af6f-3db1147ed2a1:
+        arguments: ''
+        dxvk: true
+        dxvk_nvapi: false
+        executable: Rennen.exe
+        folder: "/home/kind/.var/app/com.usebottles.bottles/data/bottles/bottles/Testflasche/drive_c/Spiele/W\xFCsten
+            Rennen"
+        icon: ''
+        id: 06cf83f9-e633-4637-af6f-3db1147ed2a1
+        name: "W\xFCsten-Rennen"
+        path: "/home/kind/.var/app/com.usebottles.bottles/data/bottles/bottles/Testflasche/drive_c/Spiele/W\xFCsten
+            Rennen/Rennen.exe"
+        vkd3d: true
+    cbf630c0-1a15-40ce-b39d-e864069c4836:
+        arguments: ''
+        dxvk: true
+        dxvk_nvapi: false
+        executable: Editor.exe
+        folder: /home/kind/.var/app/com.usebottles.bottles/data/bottles/bottles/Testflasche/drive_c/Tools
+        icon: ''
+        id: cbf630c0-1a15-40ce-b39d-e864069c4836
+        name: Editor
+        path: /home/kind/.var/app/com.usebottles.bottles/data/bottles/bottles/Testflasche/drive_c/Tools/Editor.exe
+        vkd3d: true
+Inherited_Environment_Variables:
+- DBUS_SESSION_BUS_ADDRESS
+- DISPLAY
+- HOME
+- LANG
+- LC_ALL
+- LC_CTYPE
+- LC_MESSAGES
+- MANGOHUD_CONFIG
+- PATH
+- PULSE_SERVER
+- TERM
+- TZ
+- USER
+- WAYLAND_DISPLAY
+- XAUTHORITY
+- XDG_CONFIG_HOME
+- XDG_RUNTIME_DIR
+- XMODIFIERS
+- XCURSOR_SIZE
+Installed_Dependencies:
+- d3dx9
+- msls31
+- arial32
+- times32
+- courie32
+- d3dcompiler_43
+- d3dcompiler_47
+- mono
+- gecko
+Language: sys
+LatencyFleX: latencyflex-v0.1.1
+Limit_System_Environment: true
+NVAPI: dxvk-nvapi-v0.9.3
+Name: Testflasche
+Notes: ''
+Parameters:
+    adaptive_launch: false
+    custom_dpi: 96
+    d7vk: false
+    decorated: true
+    discrete_gpu: true
+    dpi_scaling: default
+    dxvk: true
+    dxvk_nvapi: false
+    eagle_tracing: false
+    fixme_logs: false
+    frame_rate_limit: 0
+    fsr: false
+    fsr_sharpening_strength: 8
+    fullscreen_capture: false
+    gamemode: false
+    gamescope: false
+    gamescope_borderless: false
+    gamescope_custom_options: ''
+    gamescope_fps: 0
+    gamescope_fps_no_focus: 0
+    gamescope_fullscreen: true
+    gamescope_game_height: 0
+    gamescope_game_width: 0
+    gamescope_scaling: false
+    gamescope_window_height: 0
+    gamescope_window_width: 0
+    hdr: false
+    hidraw_devices: []
+    latencyflex: false
+    lsfg_vk: false
+    lsfg_vk_flow_scale: 1.0
+    lsfg_vk_multiplier: 2
+    lsfg_vk_performance_mode: false
+    mangohud: false
+    mangohud_display_on_game_start: true
+    mouse_warp: true
+    obsvkc: false
+    pulseaudio_latency: false
+    renderer: gl
+    sandbox: false
+    sync: ntsync
+    take_focus: false
+    use_be_runtime: true
+    use_eac_runtime: true
+    use_runtime: false
+    use_steam_runtime: false
+    versioning_automatic: false
+    versioning_compression: false
+    versioning_exclusion_patterns: false
+    virtual_desktop: false
+    virtual_desktop_res: 1280x720
+    vkbasalt: false
+    vkd3d: true
+    vmtouch: false
+    vmtouch_cache_cwd: false
+    wayland: false
+    winebridge: false
+Path: Testflasche
+Registry_Rules: []
+Runner: soda-11.0-10
+RunnerPath: ''
+Sandbox:
+    share_input: false
+    share_net: false
+    share_sound: false
+    share_usb: false
+State: 0
+Uninstallers:
+    arial32: NO_UNINSTALLER
+    courie32: NO_UNINSTALLER
+    d3dcompiler_43: NO_UNINSTALLER
+    d3dcompiler_47: NO_UNINSTALLER
+    d3dx9: NO_UNINSTALLER
+    gecko: NO_UNINSTALLER
+    mono: NO_UNINSTALLER
+    msls31: NO_UNINSTALLER
+    times32: NO_UNINSTALLER
+Update_Date: '2026-11-23 17:55:23.505201'
+VKD3D: vkd3d-proton-3.1
+Versioning: false
+Versioning_Exclusion_Patterns: []
+Windows: win10
+Winebridge: false
+WorkingDir: ''
+data: {}
+run_in_terminal: false
+session_arguments: ''
