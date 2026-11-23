@@ -31,8 +31,8 @@ gilt die Sprache der Desktop-Sitzung.
   - Warnungen vor Ablauf, danach Abmeldung und Login-Sperre (SDDM, GDM und TTY; Windows: Konto des Kindes
     wird deaktiviert).
   - Funktioniert auch offline mit der zuletzt bekannten Regel.
-- **Spiele-Limit**: optional ein eigenes Tageskontingent für Spiele (Steam, Heroic und Apps der Gruppe
-  „Spiele“; unter Windows auch Epic, EA app, GOG Galaxy, Battle.net, Ubisoft Connect und Spiele, die ein Launcher wie
+- **Spiele-Limit**: optional ein eigenes Tageskontingent für Spiele (Steam, Heroic, Lutris, Bottles und Apps der
+  Gruppe „Spiele“; unter Windows auch Epic, EA app, GOG Galaxy, Battle.net, Ubisoft Connect und Spiele, die ein Launcher wie
   Wargaming startet); Spiele werden nach einer Vorwarnung geschlossen, der Rest des Rechners bleibt nutzbar.
 - **Anfragen und Chat**: Das Kind fragt in der Tray-App nach mehr Zeit, mehr Spielzeit oder der Freigabe einer
   gesperrten App bzw. Website oder schreibt eine Nachricht; die Eltern antworten per Push auf dem Handy –

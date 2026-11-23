@@ -320,7 +320,7 @@ Abweichungen stehen hier und unter „Restlücken“.
   - Launcher selbst zählen weiterhin nicht als Spiel.
   - **Restlücke** (`docs/limitations*.md`): Ein Spiel, das ohne Launcher und ohne bekanntes Manifest direkt über die
     `.exe` gestartet wird, zählt nur über den Schalter „zählt als Spiel“ in der Programmliste.
-  - **Nur Windows.** Linux: Lutris/Bottles (Wine) werden nicht als Launcher erkannt – Restlücke und Roadmap-Eintrag.
+  - **Nur Windows.** Linux: Lutris/Bottles (Wine) siehe „Spielzeit je Spiel“ (Roadmap `wine-launchers`, 2026-11-23).
   - **Umgesetzt (0.36.0):** Ursache des Steam-Fehlers: Der Index wurde nur alle 6 h mit dem Katalog gelesen, und
     Steam wurde nur über `HKLM` gefunden. Jetzt gibt es eine Prüfung alle 10 s (Änderungszeit der Manifest-Ordner bzw.
     Registry-Schlüssel), Steam auch über `HKEY_USERS\<SID>`, und ein unbekannter Prozess in einer Bibliothek löst ein
@@ -748,6 +748,18 @@ Abweichungen stehen hier und unter „Restlücken“.
   leer). Server: Spalte `app_usage.name`, „spielt gerade“ nur im Speicher (verfällt nach 150 s oder bei
   getrenntem Gerät), Anzeige in Übersicht, Kind- und Statistikseite. Namen/IDs stammen aus Dateien des
   Kindes: nur Anzeige, keine Freigaben.
+  - **Lutris und Bottles** (Roadmap `wine-launchers`, 2026-11-23; Formate aus echten Installationen in der Test-VM,
+    Testdaten `agent/tests/fixtures/wine_launchers`): Lutris setzt im Spielprozess `GAME_NAME` und
+    `LUTRIS_GAME_UUID` (je Start neu) → `game:lutris:<Name>`, nur wenn beide gesetzt (UUID-Format). Bottles setzt nur
+    `BOTTLE` und `WINEPREFIX`; das Programm ergibt sich aus argv[0] des Wine-Prozesses (`C:\…` → `drive_c/…`,
+    Groß-/Kleinschreibung egal, sonst gleicher Dateiname) und `External_Programs` in `<WINEPREFIX>/bottle.yml` →
+    `game:bottles:<Bottle>:<Programm-ID>`, Name aus der Liste. Wine-Hilfsprozesse und nicht eingetragene Programme
+    zählen nicht. `bottle.yml` ohne YAML-Paket gelesen (nur `name`/`path` je Programm, PyYAML-Ausgabe mit
+    `\xNN`-Escapes und umbrochenen Werten), nur reguläre Datei des Kindes (Besitzer = UID des Prozesses, kein
+    Symlink, ≤ 1 MiB). Kandidaten wie bisher (Wine-Binärname, Container). Bottles- und Lutris-Flatpak
+    (Desktop-Kategorie „Game“) zählen als Launcher, nicht als Spiel. Nicht erkannt: Linux-Spiele aus Lutris (kein
+    Kandidat), Bottles-Programme ohne Listeneintrag – Restlücke in `docs/limitations*.md`. Programmkontrolle
+    unverändert (keine eigenen Spieleordner; im Modus „Sperren“ starten die Spiele aus dem noexec-Home i. d. R. nicht).
   - **Spiel-Protokoll** (Reiter „Spiele“ der Protokollseite, 2026-10-19): Der Server schreibt aus den
     „spielt gerade“-Meldungen Sitzungen fort (`game_session`: Start, letzte Meldung; Lücke > 3 min =
     neue Sitzung; Dauer minutengenau, eine Meldung = 1 min). Anzeige nach Tagen mit Tagessumme,
@@ -3619,3 +3631,14 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   (Tray-Liste und Sperr-Benachrichtigung Linux/Windows, Grund, Dauerhaft/Nur heute/Ablehnen, Push). Abschnitt
   „Geplante Funktionen“, `dev/planung/PLAN-2026-11.md` und Roadmap (`request-access` → done, 0.24) angepasst.
   Geprüft: Doku-Parität, Hugo-Build.
+- 2026-11-23: Lutris und Bottles als Spielequellen unter Linux (Roadmap `wine-launchers` → in Arbeit; Abschnitt
+  „Spielzeit je Spiel“): `games.py` erkennt Lutris (`GAME_NAME` + `LUTRIS_GAME_UUID`) und Bottles (`BOTTLE`,
+  Programmliste der `bottle.yml`), Bottles-/Lutris-Flatpak als Launcher. Formate aus echten Installationen in der
+  Test-VM (Lutris 0.5.22 Arch-Paket mit Wine 11.22; Bottles 67.7 Flatpak mit soda-11.0-10), anonymisierte Testdaten
+  unter `agent/tests/fixtures/wine_launchers`. Doku Spiele/Restlücken/WebUI (DE/EN), README. Getestet: neue
+  Agent-Tests (`test_wine_launchers.py`: echte Umgebungen und `bottle.yml`, Umlaute/umbrochene Pfade, fremder
+  Besitzer, Symlink, Hilfsprozesse, Agent-Zählung „spielt gerade“/Programmzeit), komplette Agent-Suite (323 grün),
+  ruff, Doku-Parität. VM-Smoke: Erkennungsfunktionen aus dem Repo als root gegen laufende Prozesse – Lutris-Spiel und
+  seine Wine-Prozesse → „Test-Spiel: Wüste“, Bottles-Programm → „Wüsten-Rennen“, Bottles-Hilfsprozesse ohne Spiel.
+  Nicht in der VM geprüft: kompletter Agent mit Server (Übersicht/Statistik, Spiele-Limit), Plasma-Sitzung statt
+  Xvfb, Lutris mit Proton/umu, Bottles nativ (nicht Flatpak), Programmkontrolle „Sperren“.

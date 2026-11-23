@@ -5,7 +5,7 @@ Per child (the child's page):
 - **Screen time**: weekly schedule with daily allowance and allowed hours (weekdays and
   weekend, or each day separately).
 - **Game limit** ("of which games" in the weekly schedule): at most this many minutes of games per day
-  (Steam, Heroic and apps in the "Games" group, not the launchers; see [Games](games.md)). Warnings 5 and 1 minute
+  (Steam, Heroic, Lutris, Bottles and apps in the "Games" group, not the launchers; see [Games](games.md)). Warnings 5 and 1 minute
   before, then games are closed; the rest of the computer stays usable. Empty = no limit.
   Further apps count as games if the "Game" box below the app is ticked in the app list
   (e.g. Roblox or the Minecraft launcher; apps in the "Games" group are always games). After saving, apps marked

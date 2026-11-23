@@ -80,6 +80,8 @@ def test_warn_then_close():
 def test_launcher_is_not_a_game():
     assert _is_launcher("exe:/usr/bin/steam") and _is_launcher("exe:/usr/lib/steam/steam")
     assert _is_launcher("exe:/usr/bin/heroic") and not _is_launcher("exe:/usr/bin/supertuxkart")
+    # Bottles/Lutris als Flatpak (Desktop-Kategorie „Game“): Launcher, gezählt werden die gestarteten Programme
+    assert _is_launcher("flatpak:com.usebottles.bottles") and _is_launcher("flatpak:net.lutris.Lutris")
 
 
 def _with_limit(a, game=30, extra=0):
