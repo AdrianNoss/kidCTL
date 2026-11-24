@@ -22,7 +22,7 @@ Versionsnummer, News und Release Notes werden erst beim Übergang nach `main` ge
 
    ```bash
    git clone https://github.com/AdrianNoss/kidCTL.git /opt/kidCTL-dev
-   cd /opt/kidCTL-dev && git checkout dev
+   cd /opt/kidCTL-dev && git switch dev
    cp .env.example .env
    ```
 
