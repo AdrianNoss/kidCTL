@@ -24,6 +24,7 @@ Versionsnummer, News und Release Notes werden erst beim Übergang nach `main` ge
    git clone https://github.com/AdrianNoss/kidCTL.git /opt/kidCTL-dev
    cd /opt/kidCTL-dev && git switch dev
    cp .env.example .env
+   mkdir -p data && chown 10001:10001 data   # Server läuft als 10001 (nicht rekursiv: data/postgres)
    ```
 
 3. `.env` – **eigene** Schlüssel, nie die von Prod:
