@@ -24,6 +24,34 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from sqlalchemy import select
 
+
+def master_key(_args: argparse.Namespace) -> int:
+    """Neuen Hauptschlüssel für .env ausgeben (verschlüsselt die Schlüssel der Familien; Format wie
+    ``crypto.new_master_key``)."""
+    print(f"KIDCTL_MASTER_KEY={base64.urlsafe_b64encode(os.urandom(32)).decode().rstrip('=')}")
+    print("Getrennt sichern (z. B. Passwortmanager) – ohne ihn sind die verschlüsselten Daten verloren.", file=sys.stderr)
+    return 0
+
+
+def vapid_keys(_args: argparse.Namespace) -> int:
+    """Erzeugt ein VAPID-Schlüsselpaar für Web Push (Ausgabe für .env)."""
+    def b64(data: bytes) -> str:
+        return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
+
+    key = ec.generate_private_key(ec.SECP256R1())
+    priv = key.private_numbers().private_value.to_bytes(32, "big")
+    pub = key.public_key().public_bytes(serialization.Encoding.X962,
+                                        serialization.PublicFormat.UncompressedPoint)
+    print(f"VAPID_PRIVATE_KEY={b64(priv)}\nVAPID_PUBLIC_KEY={b64(pub)}")
+    print("VAPID_SUBJECT=mailto:you@example.org  # anpassen", file=sys.stderr)
+    return 0
+
+
+# Ersteinrichtung: Schlüssel erzeugen, bevor .env vollständig ist – deshalb vor den App-Importen, die beim Laden die
+# Konfiguration (SECRET_KEY, KIDCTL_MASTER_KEY, DATABASE_URL) verlangen.
+if __name__ == "__main__" and sys.argv[1:] in (["master-key"], ["vapid-keys"]):
+    sys.exit(master_key(argparse.Namespace()) if sys.argv[1] == "master-key" else vapid_keys(argparse.Namespace()))
+
 from .db import init_db
 from .tenant import platform_session, set_family
 from .accounts import end_sessions, password_error
@@ -202,33 +230,11 @@ def reset_totp(args: argparse.Namespace) -> int:
     return 0
 
 
-def vapid_keys(_args: argparse.Namespace) -> int:
-    """Erzeugt ein VAPID-Schlüsselpaar für Web Push (Ausgabe für .env)."""
-    def b64(data: bytes) -> str:
-        return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
-
-    key = ec.generate_private_key(ec.SECP256R1())
-    priv = key.private_numbers().private_value.to_bytes(32, "big")
-    pub = key.public_key().public_bytes(serialization.Encoding.X962,
-                                        serialization.PublicFormat.UncompressedPoint)
-    print(f"VAPID_PRIVATE_KEY={b64(priv)}\nVAPID_PUBLIC_KEY={b64(pub)}")
-    print("VAPID_SUBJECT=mailto:you@example.org  # anpassen", file=sys.stderr)
-    return 0
-
-
 def backup(_args: argparse.Namespace) -> int:
     """Datenbank-Backup sofort erstellen (wie der tägliche Lauf)."""
     from . import backup as bk
     info = bk.run()
     print(f"Backup: {info.path} ({info.size} Bytes)")
-    return 0
-
-
-def master_key(_args: argparse.Namespace) -> int:
-    """Neuen Hauptschlüssel für .env ausgeben (verschlüsselt die Schlüssel der Familien)."""
-    from .crypto import new_master_key
-    print(f"KIDCTL_MASTER_KEY={new_master_key()}")
-    print("Getrennt sichern (z. B. Passwortmanager) – ohne ihn sind die verschlüsselten Daten verloren.", file=sys.stderr)
     return 0
 
 

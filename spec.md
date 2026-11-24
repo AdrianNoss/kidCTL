@@ -3757,3 +3757,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   (Paketnamen, Abhängigkeiten `kidctl=0.48.0dev293` bzw. `0.48.0~dev293-1`). Nicht geprüft: Windows-Bau mit
   Vorab-Version (Inno Setup, erst im ersten Lauf von `prerelease.yml`), Signatur/Veröffentlichung (Adrian), dpkg-Vergleich
   (dpkg lokal nicht installiert).
+- 2026-11-24: Ersteinrichtung: `python -m app.cli master-key` und `vapid-keys` brechen nicht mehr ab, solange `.env`
+  noch unvollständig ist (bisher verlangte schon das Laden der CLI `KIDCTL_MASTER_KEY` – der dokumentierte Befehl ging
+  bei einer Neuinstallation nicht; aufgefallen beim Einrichten von dev.kidctl.de). Beide Befehle laufen jetzt vor den
+  App-Importen. Geprüft: Test ruft die CLI ohne Konfiguration auf (Schlüssel 32 Byte, VAPID-Paar), andere Befehle
+  verlangen die Konfiguration weiter.
