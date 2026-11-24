@@ -13,7 +13,11 @@ den Bau-Rechner nicht. Alle Skripte laufen ohne `--apply` als Dry-Run.
 | `kidctl-repo-build.sh` | Pakete bauen bzw. mit `--ci` aus GitHub Actions holen, signieren, pacman- und APT-Repo aktualisieren |
 | `kidctl-repo-publish.sh` | lokales Repo per rsync auf den Server (`KIDCTL_REPO_TARGET` oder `publish-target`) |
 | `kidctl-release.sh` | alles in einem: Lauf abwarten, holen, signieren, veröffentlichen, GitHub-Release anlegen |
+| `kidctl-dev-release.sh` | Vorab-Version aus `dev` für die Testinstanz: Lauf von `prerelease.yml` holen, signieren, nach `repo-dev` und `publish-target-dev` (siehe `dev/dev-instanz.md`) |
 | `kidctl-repo-client.sh` | Kinderrechner: Repo und Schlüssel einrichten (wird mit dem Repo ausgeliefert) |
+
+`--dev` (`kidctl-repo-build.sh --ci`, `kidctl-repo-publish.sh`, `build.py fetch/sign`): Paketkanal der Testinstanz,
+eigenes lokales Repo `repo-dev`, eigenes Ziel.
 
 Lokal bauen geht weiterhin: `kidctl-repo-build.sh --apply` ohne `--ci` (makepkg) und
 `packaging/windows/build.py all --apply` (Windows-VM).

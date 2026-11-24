@@ -32,6 +32,9 @@ CACHE = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "kidctl
 VENDOR_PY = "py3.12"
 MAINTAINER = "KidCTL <info@kidctl.de>"
 HOMEPAGE = "https://github.com/AdrianNoss/kidCTL"
+sys.path.insert(0, str(ROOT / "common"))
+from kidctl_common.version import deb_version  # noqa: E402
+
 EXCLUDE = re.compile(r"(__pycache__|\.pyc$|/tests?/)")
 
 
@@ -39,7 +42,7 @@ def version() -> str:
     text = (ARCH / "PKGBUILD").read_text()
     ver = re.search(r"^pkgver=(\S+)", text, re.M).group(1)
     rel = re.search(r"^pkgrel=(\S+)", text, re.M).group(1)
-    return f"{ver}-{rel}"
+    return f"{deb_version(ver)}-{rel}"   # Vorab-Version der Testinstanz: 0.48.0dev3 → 0.48.0~dev3
 
 
 def mtime() -> int:

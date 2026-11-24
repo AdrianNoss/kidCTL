@@ -176,3 +176,24 @@ def test_pair_page_and_user_mapping_name_the_platform(client, parent):
     assert "Windows-Benutzer" in page and "Linux-Benutzer" not in page and "<th>UID</th>" not in page
     page = client.get(f"/devices/{ids[1]}").text
     assert "Linux-Benutzer" in page and "<th>UID</th>" in page
+
+
+def test_prerelease_versions(tmp_path, monkeypatch):
+    """Testinstanz: Vorab-Versionen im Repo werden erkannt und sind kleiner als das Release derselben Nummer."""
+    monkeypatch.setattr(versions, "_win_cache", None)
+    monkeypatch.setattr(versions, "_cache", None)
+    repo = _windows_repo(tmp_path, "KidCTL-Setup-0.47.0.exe", "KidCTL-Setup-0.48.0dev312.exe",
+                         "KidCTL-Setup-0.48.0dev99.exe")
+    assert versions.latest_windows(repo).version == "0.48.0dev312"
+    assert [i.version for i in versions.windows_installers(repo)] == ["0.48.0dev312", "0.48.0dev99", "0.47.0"]
+    (repo / "kidctl-0.48.0dev312-1-any.pkg.tar.zst").write_bytes(b"x")
+    (repo / "kidctl-0.47.0-1-any.pkg.tar.zst").write_bytes(b"x")
+    pool = repo / "deb" / "pool" / "main"
+    pool.mkdir(parents=True)
+    (pool / "kidctl_0.48.0~dev313-1_amd64.deb").write_bytes(b"x")
+    assert versions.latest(repo).version == "0.48.0dev313"       # ~dev aus dem APT-Repo vereinheitlicht
+    rel = versions.Release("0.48.0dev312", versions.latest(repo).published)
+    assert versions.update_for("0.47.0", rel) == "0.48.0dev312"
+    assert versions.update_for("0.48.0dev3", rel) == "0.48.0dev312"
+    assert versions.update_for("0.48.0dev312", rel) is None
+    assert versions.update_for("0.48.0", rel) is None             # Release ist neuer als jede Vorab-Version

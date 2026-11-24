@@ -3743,3 +3743,17 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   `tests.yml` auch für Pushes auf `dev`, Anleitung `dev/dev-instanz.md`, Variablen in `docs/server*.md` und
   `.env.example`. Offen: eigener Paketkanal für dev (Vorab-Versionen, Update-Knopf auf Testgeräten). Geprüft:
   Compose-Ergebnis für Prod und dev per Variablen-Ersetzung verglichen (Prod identisch), Doku-Parität.
+- 2026-11-24: Paketkanal der Testinstanz (mit Adrian entschieden): Testgeräte an dev.kidctl.de bekommen Vorab-Versionen
+  aus `dev` über das Repo der Testinstanz und den Update-Knopf. Schema `<nächste Minor>dev<Commit-Anzahl>`
+  (`0.48.0dev312`, Debian `0.48.0~dev312`, Windows-Dateiversion `0.47.65535.312`), kleiner als das Release; neuer
+  gemeinsamer Vergleich `kidctl_common.version` in Server (`versions.py`: Repo-Erkennung, Update-Hinweis) und
+  Windows-Updater (Manifest erlaubt `devN`). Bau per `prerelease.yml` (Push auf `dev` bzw. von Hand, ohne Tag/Release,
+  ohne SignPath), Version nur im Bau (`packaging/devversion.py`). Veröffentlichung `kidctl-dev-release.sh` mit
+  denselben Schlüsseln nach `repo-dev`/`publish-target-dev`; `--dev` in `kidctl-repo-build.sh`, `kidctl-repo-publish.sh`,
+  `build.py`. Windows-Agenten bis 0.47.0 lehnen `devN`-Manifeste ab – erstes Update eines Windows-Testgeräts von Hand.
+  Prod unverändert (`release.yml` und Release-Aufruf von ISCC identisch, Versionen ohne `dev` sortieren wie
+  bisher). Geprüft: Tests für Vergleich/Erkennung/Manifest/Installer-Sortierung, `vercmp` gegen pacman,
+  Veröffentlichung nie aufs Prod-Ziel (Fake-rsync); lokaler `makepkg`- und `build-deb.py`-Bau mit `0.48.0dev293`
+  (Paketnamen, Abhängigkeiten `kidctl=0.48.0dev293` bzw. `0.48.0~dev293-1`). Nicht geprüft: Windows-Bau mit
+  Vorab-Version (Inno Setup, erst im ersten Lauf von `prerelease.yml`), Signatur/Veröffentlichung (Adrian), dpkg-Vergleich
+  (dpkg lokal nicht installiert).

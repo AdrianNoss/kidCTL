@@ -22,6 +22,8 @@ import time
 from pathlib import Path
 
 from kidctl_common import ed25519
+from kidctl_common.version import PATTERN as VERSION_PATTERN
+from kidctl_common.version import version_key   # Vorab-Versionen (0.48.0dev3) < Release 0.48.0
 
 from .. import __version__, store, tls
 
@@ -36,15 +38,11 @@ FIRST_CHECK = 120.0
 RETRY = 24 * 3600.0
 MAX_MANIFEST = 64 * 1024
 MAX_INSTALLER = 500 * 1024 * 1024
-FILE_PATTERN = re.compile(r"^KidCTL-Setup-\d+(?:\.\d+)*\.exe$")
+FILE_PATTERN = re.compile(rf"^KidCTL-Setup-{VERSION_PATTERN}\.exe$")
 
 DETACHED_PROCESS = 0x00000008
 CREATE_NEW_PROCESS_GROUP = 0x00000200
 CREATE_BREAKAWAY_FROM_JOB = 0x01000000
-
-
-def version_key(v: str) -> tuple[int, ...]:
-    return tuple(int(x) for x in re.findall(r"\d+", v))
 
 
 def public_key() -> bytes | None:
@@ -64,7 +62,7 @@ def parse_manifest(data: bytes, signature_b64: bytes, key: bytes) -> dict:
     if not ed25519.verify(key, data, sig):
         raise ValueError("Signatur ungültig")
     m = json.loads(data)
-    if not (isinstance(m, dict) and isinstance(m.get("version"), str) and re.fullmatch(r"\d+(\.\d+)*", m["version"])
+    if not (isinstance(m, dict) and isinstance(m.get("version"), str) and re.fullmatch(VERSION_PATTERN, m["version"])
             and isinstance(m.get("file"), str) and FILE_PATTERN.match(m["file"])
             and isinstance(m.get("sha256"), str) and re.fullmatch(r"[0-9a-f]{64}", m["sha256"])):
         raise ValueError("Manifest ungültig")

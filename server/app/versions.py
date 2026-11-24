@@ -3,7 +3,10 @@ APT-Repository (``<data>/repo/deb/pool/main/kidctl_<ver>-<rel>_amd64.deb``) und 
 ein Gerät beim Verbinden meldet. Beide werden aus demselben Stand gebaut (gleiche Versionsnummer).
 
 Windows getrennt (eigener Bau, eigene Veröffentlichung): Installer ``<data>/repo/windows/KidCTL-Setup-<ver>.exe``;
-die Agenten aktualisieren sich selbst (``latest.json``)."""
+die Agenten aktualisieren sich selbst (``latest.json``).
+
+Testinstanz: Vorab-Versionen aus dem Branch ``dev`` (``0.48.0dev312``, im APT-Repo ``0.48.0~dev312``) sind kleiner als
+das Release derselben Nummer (``kidctl_common.version``)."""
 
 from __future__ import annotations
 
@@ -12,12 +15,14 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from kidctl_common.version import PATTERN, normalize, version_key
+
 from .config import settings
 
-PKG = re.compile(r"^kidctl-(\d+(?:\.\d+)*)-(\d+)-any\.pkg\.tar\.(?:zst|xz)$")
-DEB = re.compile(r"^kidctl_(\d+(?:\.\d+)*)-(\d+)_(?:amd64|all)\.deb$")
+PKG = re.compile(rf"^kidctl-({PATTERN})-(\d+)-any\.pkg\.tar\.(?:zst|xz)$")
+DEB = re.compile(r"^kidctl_(\d+(?:\.\d+)*(?:~dev\d+)?)-(\d+)_(?:amd64|all)\.deb$")
 DEB_POOL = Path("deb") / "pool" / "main"
-WIN = re.compile(r"^KidCTL-Setup-(\d+(?:\.\d+)*)\.exe$")
+WIN = re.compile(rf"^KidCTL-Setup-({PATTERN})\.exe$")
 WIN_DIR = Path("windows")
 _cache: tuple[tuple[float, float], "Release | None"] | None = None
 _win_cache: tuple[float, "Release | None"] | None = None
@@ -29,8 +34,7 @@ class Release:
     published: datetime   # UTC ohne Zeitzone (wie die DB)
 
 
-def _key(version: str) -> tuple[int, ...]:
-    return tuple(int(x) for x in re.findall(r"\d+", version))
+_key = version_key
 
 
 def latest(repo: Path | None = None) -> Release | None:
@@ -50,7 +54,7 @@ def latest(repo: Path | None = None) -> Release | None:
     for f, pattern in candidates:
         m = pattern.match(f.name)
         if m and (best is None or _key(m.group(1)) > _key(best[0])):
-            best = (m.group(1), f.stat().st_mtime)
+            best = (normalize(m.group(1)), f.stat().st_mtime)
     release = Release(best[0], datetime.fromtimestamp(best[1], timezone.utc).replace(tzinfo=None)) if best else None
     _cache = (mtime, release)
     return release

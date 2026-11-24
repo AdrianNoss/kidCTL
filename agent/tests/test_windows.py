@@ -505,3 +505,11 @@ def test_winagent_refreshes_login_screen_on_lock_change(winagent, fake):
         await agent.tick_once()
         assert len(fake.killed) == 4                      # wieder aktiviert -> erneut
     asyncio.run(main())
+
+
+def test_manifest_accepts_prerelease():
+    key = ed25519.public_key(SECRET)
+    body, sig = _manifest("0.48.0dev312")
+    assert upd.parse_manifest(body, sig, key)["version"] == "0.48.0dev312"
+    assert upd.version_key("0.48.0dev312") < upd.version_key("0.48.0")
+    assert upd.version_key("0.47.0") < upd.version_key("0.48.0dev312")

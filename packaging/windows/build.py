@@ -11,6 +11,9 @@
     build.py fetch   [--apply]   Installer des GitHub-Laufs zum Tag v<Version> (oder --run) ins Repo holen;
                                  danach „sign --apply“ für latest.json
 
+--dev (fetch, sign): Paketkanal der Testinstanz – Repo ``$KIDCTL_REPO_HOME/repo-dev``, Installer aus dem neuesten
+erfolgreichen Lauf von prerelease.yml auf ``dev`` (Vorab-Version, z. B. 0.48.0dev312), derselbe Update-Schlüssel.
+
 Ohne --apply nur Anzeige (Dry-Run). Veröffentlichen wie die übrigen Pakete mit
 ``packaging/repo/kidctl-repo-publish.sh --apply`` (Ordner ``windows/`` im Repo, Server: ``/repo/windows/``).
 
@@ -37,6 +40,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "common"))
 from kidctl_common import ed25519  # noqa: E402
+from kidctl_common.version import file_version, is_prerelease, version_key  # noqa: E402
 
 REPO_HOME = Path(os.environ.get("KIDCTL_REPO_HOME", Path.home() / ".local/share/kidctl-repo"))
 REPO_WIN = REPO_HOME / "repo" / "windows"
@@ -59,6 +63,7 @@ QT_KEEP_DLLS = {"Qt6Core", "Qt6Gui", "Qt6Widgets", "Qt6Network", "Qt6Svg", "Qt6O
 QT_DROP_DIRS = ("qml", "include", "typesystems", "glue", "scripts", "metatypes", "resources", "doc")
 
 APPLY = False
+CHANNEL = "release"
 UNBOUND: tuple[str, str] | None = None
 INNOSETUP: tuple[str, str] | None = None
 
@@ -232,7 +237,23 @@ def winvm(*args: str, check: bool = True) -> subprocess.CompletedProcess:
 
 
 def iscc_args(ver: str, staging: str, out: str) -> list[str]:
-    return ["/Q", f"/DAppVersion={ver}", f"/DStaging={staging}", f"/DOutputDir={out}", "kidctl.iss"]
+    # Vorab-Version (0.48.0dev312): Windows braucht eine numerische Dateiversion (0.47.65535.312)
+    extra = [f"/DFileVersion={file_version(ver)}"] if is_prerelease(ver) else []
+    return ["/Q", f"/DAppVersion={ver}", *extra, f"/DStaging={staging}", f"/DOutputDir={out}", "kidctl.iss"]
+
+
+def newest_first(names: list[str]) -> list[str]:
+    """Installer-Dateinamen nach Version, neuester zuerst (Vorab-Version vor dem Release derselben Nummer)."""
+    return sorted(names, key=lambda n: version_key(re.sub(r"^KidCTL-Setup-|\.exe$", "", n)), reverse=True)
+
+
+def use_channel(channel: str) -> None:
+    """``dev``: eigenes Repo und Workflow der Testinstanz – nie ins Prod-Repo."""
+    global REPO_WIN, WORKFLOW, CHANNEL
+    if channel == "dev":
+        REPO_WIN = REPO_HOME / "repo-dev" / "windows"
+        WORKFLOW = "prerelease.yml"
+        CHANNEL = "dev"
 
 
 def cmd_ci(out: Path) -> None:
@@ -261,11 +282,17 @@ def cmd_ci(out: Path) -> None:
 
 
 def ci_run(ver: str) -> str:
-    """Erfolgreicher Lauf von release.yml für den Commit des Tags v<ver>, sonst der neueste erfolgreiche."""
+    """Erfolgreicher Lauf von release.yml für den Commit des Tags v<ver>, sonst der neueste erfolgreiche
+    (Kanal dev: neuester erfolgreicher Lauf von prerelease.yml auf dev)."""
     def newest(*extra: str) -> str:
         return subprocess.run(["gh", "run", "list", "-R", GITHUB_REPO, "-w", WORKFLOW, "-s", "success", "-L", "1",
                                *extra, "--json", "databaseId", "-q", ".[0].databaseId"],
                               check=True, capture_output=True, text=True).stdout.strip()
+    if CHANNEL == "dev":
+        run = newest("-b", "dev")
+        if not run:
+            sys.exit(f"Kein erfolgreicher Lauf von {WORKFLOW} auf dev gefunden.")
+        return run
     tag = subprocess.run(["gh", "api", f"repos/{GITHUB_REPO}/commits/v{ver}", "--jq", ".sha"],
                          capture_output=True, text=True).stdout.strip()
     run = (newest("-c", tag) if tag else "") or newest()
@@ -276,9 +303,10 @@ def ci_run(ver: str) -> str:
 
 def cmd_fetch(run: str | None) -> None:
     """Installer aus GitHub Actions ins Repo holen (gh CLI, angemeldet): signiert, falls vorhanden, sonst unsigniert."""
-    ver = version()
+    ver = "<Vorab-Version des Laufs>" if CHANNEL == "dev" else version()
     target = REPO_WIN / f"KidCTL-Setup-{ver}.exe"
-    say(f"Installer {ver} aus GitHub Actions holen ({GITHUB_REPO}, Lauf {run or f'zu v{ver} bzw. neuester'})")
+    default = f"neuester von {WORKFLOW} auf dev" if CHANNEL == "dev" else f"zu v{ver} bzw. neuester"
+    say(f"Installer {ver} aus GitHub Actions holen ({GITHUB_REPO}, Lauf {run or default})")
     if not APPLY:
         print(f"[dry-run] gh run download <Lauf> -n {SIGNED_ARTIFACT} (sonst {UNSIGNED_ARTIFACT}) -> {target}")
         return
@@ -291,6 +319,11 @@ def cmd_fetch(run: str | None) -> None:
             break
     else:
         sys.exit(f"Lauf {run} hat keinen Installer ({SIGNED_ARTIFACT} / {UNSIGNED_ARTIFACT}).")
+    if CHANNEL == "dev":   # Version steht nur im Bau (devversion.py), nicht im Checkout
+        found = newest_first([f.name for f in tmp.glob("KidCTL-Setup-*.exe")])
+        if not found or not is_prerelease(found[0][len("KidCTL-Setup-"):-len(".exe")]):
+            sys.exit(f"Lauf {run} enthält keinen Installer mit Vorab-Version ({found or 'nichts'}).")
+        target = REPO_WIN / found[0]
     exe = tmp / target.name
     if not exe.exists():
         sys.exit(f"{target.name} fehlt im Artefakt von Lauf {run} – passt die Version ({ver}) zum gebauten Stand?")
@@ -327,8 +360,7 @@ def cmd_compile() -> None:
 
 
 def cmd_sign() -> None:
-    found = sorted(REPO_WIN.glob("KidCTL-Setup-*.exe"),
-                   key=lambda f: tuple(int(x) for x in re.findall(r"\d+", f.stem)))
+    found = [REPO_WIN / n for n in reversed(newest_first([f.name for f in REPO_WIN.glob("KidCTL-Setup-*.exe")]))]
     if not found:
         if not APPLY:
             print(f"[dry-run] latest.json + latest.json.sig für den neuesten Installer in {REPO_WIN}")
@@ -358,10 +390,13 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("cmd", choices=("keygen", "stage", "compile", "sign", "all", "ci", "fetch"))
     ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--dev", action="store_true", help="fetch/sign: Paketkanal der Testinstanz (repo-dev, prerelease.yml)")
     ap.add_argument("--out", type=Path, default=ROOT / "dist", help="ci: Zielordner des Installers")
     ap.add_argument("--run", help="fetch: Lauf-ID in GitHub Actions (Standard: Lauf zum Tag v<Version>, sonst neuester erfolgreicher)")
     args = ap.parse_args()
     APPLY = args.apply
+    if args.dev:
+        use_channel("dev")
     if args.cmd == "keygen":
         cmd_keygen()
     if args.cmd in ("stage", "all"):

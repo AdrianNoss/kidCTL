@@ -7,7 +7,12 @@ KEY_UID="${KIDCTL_GPG_UID:-kidctl Paketsignatur <pakete@kids.nossco.de>}"
 PUBKEY_NAME=kidctl-repo.asc
 
 APPLY=0
-for a in "$@"; do [[ "$a" == "--apply" ]] && APPLY=1; done
+CHANNEL=release   # --dev: Paketkanal der Testinstanz (eigenes Repo repo-dev, eigenes Ziel, Workflow prerelease.yml)
+for a in "$@"; do
+  [[ "$a" == "--apply" ]] && APPLY=1
+  [[ "$a" == "--dev" ]] && CHANNEL=dev
+done
+[[ "$CHANNEL" == dev ]] && REPO_DIR="$REPO_HOME/repo-dev"
 run() { if (( APPLY )); then "$@"; else printf '[dry-run]'; printf ' %q' "$@"; echo; fi; }
 die() { echo "Fehler: $*" >&2; exit 1; }
 

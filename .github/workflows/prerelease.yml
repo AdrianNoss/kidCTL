@@ -1,0 +1,115 @@
+# Vorab-Versionen für die Testinstanz dev.kidctl.de: Pakete aus dem Branch dev bauen – Windows-Installer (unsigniert,
+# kein SignPath) und Linux-Pakete (Arch, Debian/Ubuntu). Kein Tag, kein GitHub-Release. Die Version entsteht nur hier
+# (packaging/devversion.py: nächste Minor-Version + dev + Commit-Anzahl, z. B. 0.48.0dev312) und wird nicht committet.
+# Signiert und auf die Testinstanz veröffentlicht wird danach lokal: packaging/repo/kidctl-dev-release.sh --apply
+#
+# Auslöser: Push auf dev, der Client- oder Paketcode ändert, oder Start von Hand (Branch dev).
+# Prod (release.yml, Tags v*, main) bleibt davon unberührt.
+
+name: Vorab-Pakete (dev)
+
+on:
+  push:
+    branches: [dev]
+    paths: ["agent/**", "tray/**", "common/**", "packaging/**", ".github/workflows/prerelease.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prerelease
+  cancel-in-progress: true   # nur der neueste Stand von dev zählt
+
+jobs:
+  version:
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0   # Commit-Anzahl für den Zähler
+
+      - name: Vorab-Version bestimmen
+        id: v
+        run: |
+          ver=$(python3 packaging/devversion.py show)
+          echo "Vorab-Version $ver"
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
+
+  windows:
+    needs: version
+    runs-on: windows-2025
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0   # v7.1.0
+        with:
+          python-version: "3.14"
+
+      - name: Vorab-Version eintragen
+        env:
+          VER: ${{ needs.version.outputs.version }}
+        run: python packaging/devversion.py set "$env:VER" --apply
+
+      - name: Installer bauen
+        run: python packaging/windows/build.py ci --apply --out dist
+
+      - name: Installer hochladen
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
+        with:
+          name: KidCTL-Setup-unsigned
+          path: dist/KidCTL-Setup-*.exe
+          if-no-files-found: error
+          retention-days: 14
+
+  linux:
+    needs: version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    container: archlinux:base
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Bauwerkzeuge
+        run: pacman -Syu --noconfirm --needed base-devel git python
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Vorab-Version eintragen
+        env:
+          VER: ${{ needs.version.outputs.version }}
+        run: python packaging/devversion.py set "$VER" --apply
+
+      - name: Arch-Pakete bauen
+        run: |
+          # makepkg läuft nicht als root; --nodeps: reines Python (arch=any)
+          useradd -m builder
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          mkdir -p dist/arch /tmp/kb
+          chown -R builder "$GITHUB_WORKSPACE" /tmp/kb
+          cd packaging/arch
+          su builder -c "BUILDDIR=/tmp/kb SRCDEST=/tmp/kb LOGDEST=/tmp/kb PKGDEST=$GITHUB_WORKSPACE/dist/arch makepkg --force --cleanbuild --nodeps"
+
+      - name: Debian-Pakete bauen
+        run: python packaging/debian/build-deb.py dist/deb
+
+      - name: Pakete hochladen
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
+        with:
+          name: kidctl-linux
+          path: |
+            dist/arch/*.pkg.tar.zst
+            dist/deb/*.deb
+          if-no-files-found: error
+          retention-days: 14

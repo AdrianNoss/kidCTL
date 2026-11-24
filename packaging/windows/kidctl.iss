@@ -10,6 +10,10 @@
 #ifndef AppVersion
   #error AppVersion fehlt (/DAppVersion=…)
 #endif
+; Vorab-Version der Testinstanz (AppVersion 0.48.0dev312): build.py setzt eine numerische Dateiversion
+#ifndef FileVersion
+  #define FileVersion AppVersion
+#endif
 #ifndef Staging
   #define Staging "staging"
 #endif
@@ -30,8 +34,9 @@ AppPublisherURL=https://github.com/AdrianNoss/kidCTL
 AppCopyright=Copyright (c) 2026 Adrian Noss, AGPL-3.0-or-later
 ; Produktname und -version fest – SignPath prüft beides bei der Signatur
 VersionInfoProductName=KidCTL
-VersionInfoProductVersion={#AppVersion}
-VersionInfoVersion={#AppVersion}
+VersionInfoProductVersion={#FileVersion}
+VersionInfoProductTextVersion={#AppVersion}
+VersionInfoVersion={#FileVersion}
 VersionInfoDescription=KidCTL Setup
 DefaultDirName={autopf}\KidCTL
 DisableDirPage=yes
