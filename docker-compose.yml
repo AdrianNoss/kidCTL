@@ -1,7 +1,9 @@
+# Zweite Instanz (z. B. dev.kidctl.de) in eigenem Ordner: KIDCTL_NAME und KIDCTL_HOST in dessen .env setzen
+# (Container-, Router- und Middleware-Namen sowie Hostname); ohne Angabe gelten die Werte von app.kidctl.de.
 services:
   db:
     image: postgres:17
-    container_name: kidctl-db
+    container_name: ${KIDCTL_NAME:-kidctl}-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: kidctl
@@ -22,11 +24,11 @@ services:
     build:
       context: .
       dockerfile: server/Dockerfile
-    container_name: kidctl
+    container_name: ${KIDCTL_NAME:-kidctl}
     restart: unless-stopped
     env_file: .env
     environment:
-      DATABASE_URL: postgresql+psycopg://kidctl:${POSTGRES_PASSWORD}@kidctl-db:5432/kidctl
+      DATABASE_URL: postgresql+psycopg://kidctl:${POSTGRES_PASSWORD}@${KIDCTL_NAME:-kidctl}-db:5432/kidctl
     depends_on:
       db:
         condition: service_healthy
@@ -43,19 +45,19 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik
-      - traefik.http.routers.kidctl.rule=Host(`app.kidctl.de`)
-      - traefik.http.routers.kidctl.entrypoints=websecure
-      - traefik.http.routers.kidctl.tls=true
-      - traefik.http.routers.kidctl.tls.certresolver=letsencrypt
-      - traefik.http.routers.kidctl.middlewares=secHeaders@file
-      - traefik.http.services.kidctl.loadbalancer.server.port=8000
+      - traefik.http.routers.${KIDCTL_NAME:-kidctl}.rule=Host(`${KIDCTL_HOST:-app.kidctl.de}`)
+      - traefik.http.routers.${KIDCTL_NAME:-kidctl}.entrypoints=websecure
+      - traefik.http.routers.${KIDCTL_NAME:-kidctl}.tls=true
+      - traefik.http.routers.${KIDCTL_NAME:-kidctl}.tls.certresolver=letsencrypt
+      - traefik.http.routers.${KIDCTL_NAME:-kidctl}.middlewares=secHeaders@file
+      - traefik.http.services.${KIDCTL_NAME:-kidctl}.loadbalancer.server.port=8000
       # http:// dauerhaft auf https:// umleiten (Entrypoint-Name „web“ ggf. an die Traefik-Konfiguration anpassen)
-      - traefik.http.routers.kidctl-http.rule=Host(`app.kidctl.de`)
-      - traefik.http.routers.kidctl-http.entrypoints=web
-      - traefik.http.routers.kidctl-http.middlewares=kidctl-https
-      - traefik.http.routers.kidctl-http.service=kidctl
-      - traefik.http.middlewares.kidctl-https.redirectscheme.scheme=https
-      - traefik.http.middlewares.kidctl-https.redirectscheme.permanent=true
+      - traefik.http.routers.${KIDCTL_NAME:-kidctl}-http.rule=Host(`${KIDCTL_HOST:-app.kidctl.de}`)
+      - traefik.http.routers.${KIDCTL_NAME:-kidctl}-http.entrypoints=web
+      - traefik.http.routers.${KIDCTL_NAME:-kidctl}-http.middlewares=${KIDCTL_NAME:-kidctl}-https
+      - traefik.http.routers.${KIDCTL_NAME:-kidctl}-http.service=${KIDCTL_NAME:-kidctl}
+      - traefik.http.middlewares.${KIDCTL_NAME:-kidctl}-https.redirectscheme.scheme=https
+      - traefik.http.middlewares.${KIDCTL_NAME:-kidctl}-https.redirectscheme.permanent=true
 
 networks:
   traefik:

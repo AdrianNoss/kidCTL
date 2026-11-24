@@ -11,6 +11,8 @@ Abweichungen nur nach Rückfrage.
 - Erst Anforderungen klären, dann umsetzen. Bei Unklarheiten fragen statt raten.
 - Minimal-invasive Änderungen: nur anfassen, was für die Aufgabe nötig ist.
 - Pragmatisch statt over-engineered.
+- **Branches:** Entwicklung landet auf `dev` (Test auf `dev.kidctl.de`), nach `main` nur mit Adrians ausdrücklichem
+  OK; Sicherheitsfixes direkt auf `main`, danach nach `dev` mergen. Ablauf: `dev/dev-instanz.md`.
 - Skripte, die Dateien oder Systemkonfiguration ändern, laufen standardmäßig als Dry-Run;
   echte Änderungen nur mit `--apply`, vorher `.bak`-Backup.
 - Antworten und Doku auf Deutsch, knapp, Markdown (BookStack-tauglich).

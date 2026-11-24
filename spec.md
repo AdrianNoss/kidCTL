@@ -3736,3 +3736,10 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   `LUTRIS_GAME_UUID`) in der Sitzung → WebUI „spielt gerade: VM-Test: Wüste“. Windows 11 als `kind` angemeldet:
   Countdown-Dialog und Benachrichtigung vor Beginn, „Bildschirmzeit zu Ende – Abmeldung in 60 s“, Abmeldung,
   Konto deaktiviert. Nicht geprüft: echtes Lutris/Bottles mit Wine-Spiel (nur nachgestellte Umgebung).
+- 2026-11-24: Entwicklungsablauf mit Testinstanz (mit Adrian entschieden): neue Entwicklung auf Branch `dev`, Test auf
+  `dev.kidctl.de` (eigener Ordner und Stack auf srv02, eigene Schlüssel und Testdaten, Aktualisierung manuell durch
+  Adrian), nach `main` nur nach Adrians OK; Sicherheitsfixes direkt auf `main`. `docker-compose.yml` mit
+  `KIDCTL_NAME`/`KIDCTL_HOST` für eine zweite Instanz (Standardwerte = bisherige Namen, Prod unverändert),
+  `tests.yml` auch für Pushes auf `dev`, Anleitung `dev/dev-instanz.md`, Variablen in `docs/server*.md` und
+  `.env.example`. Offen: eigener Paketkanal für dev (Vorab-Versionen, Update-Knopf auf Testgeräten). Geprüft:
+  Compose-Ergebnis für Prod und dev per Variablen-Ersetzung verglichen (Prod identisch), Doku-Parität.
