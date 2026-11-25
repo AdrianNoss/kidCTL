@@ -37,6 +37,8 @@ gilt die Sprache der Desktop-Sitzung.
 - **Spiele-Limit**: optional ein eigenes Tageskontingent für Spiele (Steam, Heroic, Lutris, Bottles und Apps der
   Gruppe „Spiele“; unter Windows auch Epic, EA app, GOG Galaxy, Battle.net, Ubisoft Connect und Spiele, die ein Launcher wie
   Wargaming startet); Spiele werden nach einer Vorwarnung geschlossen, der Rest des Rechners bleibt nutzbar.
+- **„Zählt nicht“-Programme**: Lern-Apps oder Office verbrauchen keine Bildschirmzeit, solange nur sie geöffnet sind;
+  Browser, Terminals und Launcher lassen sich nicht ausnehmen.
 - **Anfragen und Chat**: Das Kind fragt in der Tray-App nach mehr Zeit, mehr Spielzeit oder der Freigabe einer
   gesperrten App bzw. Website oder schreibt eine Nachricht; die Eltern antworten per Push auf dem Handy –
   „Dauerhaft erlauben“, „Nur heute“ oder „Ablehnen“.

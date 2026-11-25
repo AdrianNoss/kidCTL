@@ -18,7 +18,7 @@ from . import lock as lk
 from . import schedule as sch
 from . import vacations as vac
 from .chat import device_ids_for_child
-from .programs import game_keys, policy_programs
+from .programs import free_keys, game_keys, policy_programs
 from .webfilter import web_policy
 from .config import settings
 from .tenant import family_session, platform_session
@@ -64,6 +64,7 @@ def build_policy(db: Session, device_id: int) -> p.Policy:
             program_mode=child.program_mode,
             allowed_programs=policy_programs(db, child.id),
             game_apps=game_keys(db, child.id),
+            free_apps=free_keys(db, child.id),
             web=web_policy(db, child),
             locked=lk.is_locked(child),
             lock_grace_seconds=(child.lock_grace_minutes if child.lock_grace_minutes is not None else 1) * 60,

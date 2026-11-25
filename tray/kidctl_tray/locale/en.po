@@ -272,3 +272,6 @@ msgstr "{time} left (until {end})"
 
 msgid "Sperrzeiten: {list} Uhr"
 msgstr "Blocked times: {list}"
+
+msgid "Die Zeit läuft gerade nicht"
+msgstr "Your time is not running right now"

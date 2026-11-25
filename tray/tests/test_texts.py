@@ -48,3 +48,11 @@ def test_block_texts():
     assert texts.status_line(st(allowed=False, reason="blocked")) == "Jetzt ist Sperrzeit"
     assert "Sperrzeiten: Schule 08:00–13:00, 18:00–19:00 Uhr" in texts.detail_lines(blocked)
     assert texts.status_line(st(until=time(18))) == "Noch 45 min (bis 18:00 Uhr)"
+
+
+def test_free_line():
+    """„Zählt nicht“: Hinweis direkt unter der Restzeit, nur solange Zeit erlaubt ist."""
+    lines = texts.detail_lines(st(free=True))
+    assert lines[1] == "Die Zeit läuft gerade nicht"
+    assert "Die Zeit läuft gerade nicht" not in texts.detail_lines(st())
+    assert "Die Zeit läuft gerade nicht" not in texts.detail_lines(st(free=True, allowed=False, reason="quota"))

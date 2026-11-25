@@ -13,10 +13,11 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from kidctl_common import protocol as p
+from kidctl_common.freeapps import never_free
 
 from .chat import device_ids_for_child
 from .i18n import N_, _
-from .models import BlockedEvent, ChildCustomProgram, ChildGameApp, ChildProgram, Device, DeviceApp, DeviceUser
+from .models import BlockedEvent, ChildAppRule, ChildCustomProgram, ChildGameApp, ChildProgram, Device, DeviceApp, DeviceUser
 
 MODES = {"off": N_("Aus"), "audit": N_("Nur protokollieren"), "enforce": N_("Sperren")}
 MAX_EVENTS_PER_REPORT = 500
@@ -66,6 +67,8 @@ class CatalogEntry:
     game: bool = False      # zählt als Spiel (von den Eltern markiert oder Kategorie „Spiele“)
     game_auto: bool = False  # Kategorie „Spiele“ – immer Spiel, nicht abwählbar
     note: str = ""          # unterscheidet gleichnamige Einträge einer Gruppe
+    free: bool = False      # „zählt nicht“ (keine Bildschirmzeit, solange nur solche Programme laufen)
+    free_locked: bool = False  # Browser, Terminal, Launcher …: nie ausnehmbar
 
 
 # Gruppen der Programmliste: (ID, Anzeige, freedesktop-Kategorien) – erste passende Gruppe gewinnt
@@ -113,11 +116,14 @@ def catalog_for_child(db: Session, child_id: int) -> list[CatalogEntry]:
     devices = device_ids_for_child(db, child_id)
     allowed = set(allowed_keys(db, child_id))
     games = set(game_keys(db, child_id))
+    free = set(free_keys(db, child_id))
+    cats: dict[str, set[str]] = {}
     entries: dict[str, CatalogEntry] = {}
     if devices:
         for app in db.scalars(select(DeviceApp).where(DeviceApp.device_id.in_(devices))):
             e = entries.get(app.key)
             auto = "Game" in (app.categories or "").split(";")
+            cats.setdefault(app.key, set()).update(c for c in (app.categories or "").split(";") if c)
             if e is None:
                 entries[app.key] = CatalogEntry(app.key, app.label, 1, app.key in allowed,
                                                 group=group_for(app.categories or ""),
@@ -135,6 +141,9 @@ def catalog_for_child(db: Session, child_id: int) -> list[CatalogEntry]:
         if steam_row and p.is_steam_key(key):
             continue   # gehört zur gemeinsamen Zeile „Steam“
         entries[key] = CatalogEntry(key, key.split(":", 1)[-1].rsplit("/", 1)[-1], 0, True, missing=True)
+    for e in entries.values():
+        e.free_locked = never_free(e.key, cats.get(e.key, ()))
+        e.free = e.key in free and not e.free_locked and not e.game
     return sorted(entries.values(), key=lambda e: (not e.allowed, e.name.lower()))
 
 
@@ -170,6 +179,39 @@ def set_games(db: Session, child_id: int, keys: set[str]) -> None:
         db.execute(delete(ChildGameApp).where(ChildGameApp.child_id == child_id, ChildGameApp.key == key))
     for key in keys - current:
         db.add(ChildGameApp(child_id=child_id, key=key))
+
+
+def free_keys(db: Session, child_id: int) -> list[str]:
+    """„Zählt nicht“-Programme des Kindes (für Policy und Katalog)."""
+    return sorted(db.scalars(select(ChildAppRule.key).where(ChildAppRule.child_id == child_id, ChildAppRule.free)))
+
+
+def free_allowed(db: Session, child_id: int, keys: set[str], games: set[str]) -> set[str]:
+    """Nur ausnehmbare Schlüssel: keine Spiele (markiert oder Kategorie „Spiele“), keine Browser, Terminals,
+    Dateimanager, Entwicklungswerkzeuge oder Launcher (Schlüssel bzw. Kategorien laut Katalog der Geräte)."""
+    cats: dict[str, set[str]] = {}
+    devices = device_ids_for_child(db, child_id)
+    if devices and keys:
+        for key, categories in db.execute(select(DeviceApp.key, DeviceApp.categories)
+                                          .where(DeviceApp.device_id.in_(devices), DeviceApp.key.in_(keys))):
+            cats.setdefault(key, set()).update(c for c in (categories or "").split(";") if c)
+    return {k for k in keys if k not in games and "Game" not in cats.get(k, ()) and not never_free(k, cats.get(k, ()))}
+
+
+def free_old_devices(devices) -> list[str]:
+    """Geräte, deren Agent „zählt nicht“ noch nicht kennt (dort zählt weiter jede Minute)."""
+    return sorted(d.name for d in devices if (d.protocol_version or 0) > 0
+                  and p.FEATURE_FREE_APPS not in (d.features or "").split(","))
+
+
+def set_free(db: Session, child_id: int, keys: set[str]) -> None:
+    rules = {r.key: r for r in db.scalars(select(ChildAppRule).where(ChildAppRule.child_id == child_id))}
+    for key, rule in rules.items():
+        rule.free = key in keys
+    for key in keys - rules.keys():
+        db.add(ChildAppRule(child_id=child_id, key=key, free=True))
+    # Zeilen ohne jede Einstellung entfernen (weitere Regeln je App kämen als eigene Spalten dazu)
+    db.execute(delete(ChildAppRule).where(ChildAppRule.child_id == child_id, ChildAppRule.free.is_(False)))
 
 
 def allowed_keys(db: Session, child_id: int) -> list[str]:

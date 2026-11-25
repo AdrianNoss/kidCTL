@@ -10,8 +10,11 @@ import os
 from datetime import date, timedelta
 
 from . import store
+from kidctl_common.freeapps import is_browser_name, name_never_free, program_name
+
 from .procs import ProcInfo, snap_file
-from .programs import GENERIC_DIRS, STEAM_LAUNCHERS, STEAM_SYSTEM, _program_path, electron_app
+from .programs import (GENERIC_DIRS, STEAM_LAUNCHERS, STEAM_SYSTEM, _program_path, electron_app,
+                       electron_args_unsafe, is_electron)
 
 APPTIME_FILE = "apptime.json"
 KEEP_DAYS = 35
@@ -45,6 +48,34 @@ class AppIndex:
         if self.steam and steam_root and path.startswith(steam_root):
             return self.steam
         return None
+
+
+_stat = os.stat   # Tests ersetzen das
+
+
+def free_process_ok(info: ProcInfo) -> bool:
+    """Darf ein Prozess, den ``AppIndex`` einem „zählt nicht“-Programm zuordnet, als solches gelten?
+    Umgehungsschutz: kein Browser/Terminal/Interpreter unter anderem Namen im Ordner der App, keine vom Kind
+    angelegte Datei (Programmdatei muss root gehören), Flatpak nur im eigenen Mount-Namensraum (der Cgroup-Name
+    allein ist mit ``systemd-run --user --scope`` fälschbar), kein Electron mit Optionen, die fremden Code laden."""
+    if info.flatpak_id:
+        return info.mnt_foreign
+    if info.snap_name:
+        return True   # ``AppIndex.key_for`` hat die Snap-Datei bereits geprüft
+    if info.mnt_foreign or (is_electron(info.exe) and electron_args_unsafe(info)):
+        return False
+    path = electron_app(info) or _program_path(info)
+    if name_never_free(program_name(path)):
+        return False
+    try:
+        return _stat(path).st_uid == 0
+    except OSError:
+        return False
+
+
+def browser_process(info: ProcInfo) -> bool:
+    """Läuft hier ein Browser (auch ohne Katalog-Eintrag, z. B. entpackt im Home)? Dann zählt die Zeit immer."""
+    return is_browser_name(program_name(info.exe)) or is_browser_name(program_name(_program_path(info)))
 
 
 class AppTime:

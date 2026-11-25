@@ -14,6 +14,10 @@ version is in the README.
   USB stick or via the boot menu. KidCTL itself only protects the running system.
 - **No idle detection:** screen time keeps running as long as the child is signed in – even if they're
   not doing anything.
+- **"Doesn't count" by open apps:** KidCTL sees which apps are running, not which window is in front. Apps outside
+  the app list (e.g. downloaded portable apps) are not recognised as "another app" – except browsers. Without app
+  control set to "Block", a child can use such an app next to a learning app without time running. KidCTL does not
+  check what an exempted app itself shows (e.g. embedded web content).
 - **VPN and fixed IP addresses:** the web filter works via DNS (name resolution). Anyone who opens a website directly
   by its IP address (including DNS-over-HTTPS via an IP address) or uses a VPN with fixed
   IP addresses bypasses it. VPNs are not actively detected.

@@ -13,7 +13,7 @@ from kidctl_common import protocol as p
 from . import desktoptrust, gnomesearch, integrity, kidmounts, sdnotify
 from .accounting import boottime
 from .apps import scan_apps
-from .apptime import AppIndex, AppTime
+from .apptime import AppIndex, AppTime, browser_process, free_process_ok
 from .connection import Connection
 from .core import STARTUP_SYNC, AgentCore  # noqa: F401 – STARTUP_SYNC: Weitergabe (Tests)
 from .dnsfilter import DnsFilter
@@ -47,6 +47,10 @@ def _is_launcher(key: str) -> bool:
     return key == STEAM_KEY or exe.startswith(STEAM_SYSTEM) or exe in LAUNCHERS or key in FLATPAK_LAUNCHERS
 
 
+def own_program(key: str) -> bool:
+    return key.startswith("exe:") and os.path.basename(key).startswith("kidctl")
+
+
 def local_users() -> list[p.LocalUser]:
     return [p.LocalUser(username=u.pw_name, uid=u.pw_uid, full_name=u.pw_gecos.split(",")[0][:255])
             for u in pwd.getpwall()
@@ -55,7 +59,7 @@ def local_users() -> list[p.LocalUser]:
 
 class Agent(AgentCore):
     admin_text = "Admin (wheel/sudo)"
-    FEATURES = (p.FEATURE_SELF_UPDATE,)
+    FEATURES = (p.FEATURE_SELF_UPDATE, p.FEATURE_FREE_APPS)
 
     def __init__(self, logind, desktop, device: dict | None = None, tray_path: str | None = None) -> None:
         super().__init__(logind, desktop, device)
@@ -98,6 +102,8 @@ class Agent(AgentCore):
     async def _after_count(self, now, counting: set[str], delta: float) -> None:
         if delta:
             self._count_apps(counting, now.date(), delta)
+        else:
+            self.free_now = set()
         self._collect_blocked_domains()
         await self._day_changed(now.date())
 
@@ -321,6 +327,7 @@ class Agent(AgentCore):
         alive: set[tuple[int, int]] = set()
         playing: dict[str, dict[str, str]] = {}
         gaming: set[str] = set()
+        free_now: set[str] = set()
         for user in users:
             try:
                 uid = pwd.getpwnam(user).pw_uid
@@ -328,6 +335,8 @@ class Agent(AgentCore):
                 continue
             steam_lib = f"{STEAM_ROOT}/{user}"
             keys = set()
+            free_keys = self.free_keys(user)
+            free_seen = other_seen = False   # „zählt nicht“: nur Ausgenommenes, kein anderes Programm, kein Browser
             for pid in pids_of({uid}):
                 info = read_proc(pid)
                 if info is None:
@@ -335,12 +344,23 @@ class Agent(AgentCore):
                 alive.add((info.pid, info.start))
                 if game := self._game_key(info, user):
                     keys.add(game)
+                    other_seen = True
                     if game not in self.apptime.names:
                         home = safe_home(user) or ""
                         self.apptime.names[game] = self.game_names.name(game, home, steam_lib)
                     playing.setdefault(user, {})[game] = self.apptime.names[game]
                 elif k := self.app_index.key_for(info, steam_lib + "/"):
                     keys.add(k)
+                    if own_program(k):
+                        pass   # KidCTL-Tray (GNOME: im Katalog) läuft immer – weder ausgenommen noch anderes Programm
+                    elif free_keys and k in free_keys and free_process_ok(info):
+                        free_seen = True
+                    else:
+                        other_seen = True
+                elif free_keys and browser_process(info):
+                    other_seen = True
+            if free_seen and not other_seen:
+                free_now.add(user)
             self.apptime.add(user, day, keys, delta)
             if any(self.is_game(k, user) for k in keys):
                 self.usage.add_games(user, day, delta)
@@ -348,6 +368,7 @@ class Agent(AgentCore):
         self._game_of = {k: v for k, v in self._game_of.items() if k in alive}
         self.playing = playing
         self.gaming = gaming
+        self.free_now = free_now
 
     def _game_key(self, info, user: str) -> str | None:
         """Spiel eines Prozesses (Umgebung nur bei Kandidaten lesen: Spieleordner, Wine, Container)."""

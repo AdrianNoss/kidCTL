@@ -118,6 +118,11 @@ Root: HKLM; Subkey: "SOFTWARE\Policies\Microsoft\Edge"; ValueType: string; Value
 Root: HKLM; Subkey: "SOFTWARE\Policies\Google\Chrome"; ValueType: string; ValueName: "DnsOverHttpsMode"; ValueData: "off"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "SOFTWARE\Policies\Mozilla\Firefox\DNSOverHTTPS"; ValueType: dword; ValueName: "Enabled"; ValueData: 0; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "SOFTWARE\Policies\Mozilla\Firefox\DNSOverHTTPS"; ValueType: dword; ValueName: "Locked"; ValueData: 1; Flags: uninsdeletevalue
+; „Zählt nicht“: Browser nicht unsichtbar im Hintergrund weiterlaufen lassen (Edge-Schnellstart) – ein laufender
+; Browser zählt immer als geöffnetes Programm
+Root: HKLM; Subkey: "SOFTWARE\Policies\Microsoft\Edge"; ValueType: dword; ValueName: "StartupBoostEnabled"; ValueData: 0; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "SOFTWARE\Policies\Microsoft\Edge"; ValueType: dword; ValueName: "BackgroundModeEnabled"; ValueData: 0; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "SOFTWARE\Policies\Google\Chrome"; ValueType: dword; ValueName: "BackgroundModeEnabled"; ValueData: 0; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "SOFTWARE\Policies\Microsoft\Windows NT\DNSClient"; ValueType: dword; ValueName: "DoHPolicy"; ValueData: 1; Flags: uninsdeletevalue
 ; Dienst auch im abgesicherten Modus
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\SafeBoot\Minimal\{#Svc}"; ValueType: string; ValueName: ""; ValueData: "Service"; Flags: uninsdeletekey

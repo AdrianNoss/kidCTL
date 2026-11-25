@@ -14,6 +14,11 @@ steht im README.
   USB-Stick oder über das Bootmenü. KidCTL selbst schützt nur das laufende System.
 - **Keine Leerlauferkennung:** Die Bildschirmzeit läuft weiter, solange das Kind angemeldet ist – auch wenn es
   gerade nichts tut.
+- **„Zählt nicht“ nach geöffneten Programmen:** KidCTL sieht, welche Programme laufen, nicht welches Fenster vorne
+  ist. Programme außerhalb der Programmliste (z. B. portabel heruntergeladen) erkennt es nicht als „anderes
+  Programm“ – außer Browsern. Ohne Programmkontrolle „Sperren“ kann ein Kind so ein solches Programm neben einer
+  Lern-App nutzen, ohne dass Zeit läuft. Was eine ausgenommene App selbst anzeigt (z. B. eingebettete Webinhalte),
+  prüft KidCTL nicht.
 - **VPN und feste IP-Adressen:** Der Website-Filter arbeitet über DNS (Namensauflösung). Wer eine Website direkt
   über ihre IP-Adresse aufruft (auch DNS-over-HTTPS über eine IP-Adresse) oder ein VPN mit fest eingetragenen
   IP-Adressen nutzt, umgeht ihn. VPNs werden nicht aktiv erkannt.

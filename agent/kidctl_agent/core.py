@@ -16,6 +16,7 @@ from zoneinfo import ZoneInfo
 from kidctl_common import i18n
 from kidctl_common import protocol as p
 from kidctl_common import tray as t
+from kidctl_common.freeapps import never_free
 from kidctl_common.i18n import _, ngettext
 
 from . import store
@@ -87,6 +88,8 @@ class AgentCore:
         self._admin_warned: set[str] = set()
         self._started = self.clock()
         self.game_keys: set[str] = set()   # Katalog-Apps der Kategorie „Game“ (ohne Launcher)
+        # User, bei denen im letzten Takt nur „zählt nicht“-Programme liefen (setzt die Plattform in ``_after_count``)
+        self.free_now: set[str] = set()
         self._synced = self.conn is None  # ohne Server: sofort gecachte Policy durchsetzen
         # Chat-Abgleich je Kind: (Zeitpunkt der Anfrage, erster Abgleich?) – Nachrichten von davor sind Verlauf
         self._chat_sync: dict[int, tuple[datetime, bool]] = {}
@@ -149,6 +152,18 @@ class AgentCore:
         child = next((c for c in self.policy.children if c.id == self.policy.users[user]), None)
         return child is not None and key in child.game_apps
 
+    def free_keys(self, user: str) -> set[str]:
+        """„Zählt nicht“-Programme für das Kind von ``user``. Der Agent prüft selbst nach: nie Spiele, Browser,
+        Terminals, Dateimanager, Launcher (Schlüssel oder Kategorie laut eigenem Katalog) – auch wenn die Policy
+        sie nennt (veralteter oder manipulierter Server)."""
+        if self.policy is None or user not in self.policy.users:
+            return set()
+        child = next((c for c in self.policy.children if c.id == self.policy.users[user]), None)
+        if child is None or not child.free_apps:
+            return set()
+        cats = {a.key: a.categories for a in self.apps}
+        return {k for k in child.free_apps if not never_free(k, cats.get(k, ())) and not self.is_game(k, user)}
+
     def game_remaining(self, user: str, day) -> int | None:
         """Restspielzeit (Sekunden) heute, ``None`` = kein Spiele-Limit."""
         child_id = self.policy.users[user]
@@ -166,7 +181,8 @@ class AgentCore:
         now = self.now_local()
         decisions = self.decisions(now)  # nur zugeordnete Nicht-Admins
         counting = {s.user for s in sessions if s.counts and s.user in decisions}
-        delta = self.usage.tick(counting, now.date())
+        # „Zählt nicht“: läuft (seit dem letzten Takt) nur Ausgenommenes, verbraucht der Takt keine Bildschirmzeit
+        delta = self.usage.tick(counting - self.free_now, now.date())
         await self._after_count(now, counting, delta)
         # Login-Sperre sofort (auch mit gecachter Policy) – sonst wäre direkt nach dem Booten
         # kurz eine Anmeldung möglich. Gilt auch ohne laufende Sitzung.
@@ -431,7 +447,7 @@ class AgentCore:
             game_limit_minutes=None if (gl := game_limit(child, now.date())) is None else gl // 60,
             game_used_seconds=self.usage.used_game_seconds(child_id, same, now.date()),
             logout_in_seconds=self.logout_in(user), gaming=user in getattr(self, "gaming", set()),
-            block=d.block, blocks=blocks_on(child, now.date()), until=d.until)
+            block=d.block, blocks=blocks_on(child, now.date()), until=d.until, free=user in self.free_now)
 
     def logout_in(self, user: str) -> int | None:
         """Sekunden bis zur Abmeldung (laufender Countdown), sonst ``None``."""

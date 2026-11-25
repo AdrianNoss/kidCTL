@@ -31,7 +31,7 @@ from .dnsfilter import WinDnsFilter
 from .watcher import WinProgramWatcher
 from ..apptime import AppTime
 from ..gamelimit import GameLimit
-from .apptime import WinAppIndex
+from .apptime import WinAppIndex, browser_process, free_process_ok, key_norm
 from .catalog import norm
 from .games import LAUNCHERS, exe_game_key, exe_name, long_path
 from .programs import WINDIR, _under
@@ -65,6 +65,13 @@ def install_dir() -> str:
     return str(folder) if (folder / "lib" / "kidctl_agent").is_dir() else ""
 
 
+def own_program(key: str) -> bool:
+    """KidCTL selbst (Tray-App, Startmenü-Eintrag) – gilt für „zählt nicht“ weder als ausgenommen noch als anderes
+    Programm (die Tray-App läuft immer)."""
+    folder = install_dir()
+    return bool(folder) and key.startswith("exe:") and norm(key[4:]).startswith(norm(folder) + "\\")
+
+
 def tray_command() -> tuple[str, str] | None:
     """(Befehlszeile, Arbeitsordner) der Tray-App neben dem Python des Dienstes; ``None`` außerhalb der
     Installation (Tests, Entwicklung)."""
@@ -76,7 +83,7 @@ def tray_command() -> tuple[str, str] | None:
 
 class WinAgent(AgentCore):
     admin_text = "Administrator"
-    FEATURES = (p.FEATURE_SELF_UPDATE,)
+    FEATURES = (p.FEATURE_SELF_UPDATE, p.FEATURE_FREE_APPS)
 
     def __init__(self, sessions: WinSessions | None, desktop: WinDesktop | None, device: dict | None = None,
                  accounts: Accounts | None = None) -> None:
@@ -254,7 +261,7 @@ class WinAgent(AgentCore):
         Spielprozesse (Spiele-Limit). Gelesen wird auch ohne gezählte Zeit (Limit wirkt sofort)."""
         users = {a.sid: a.wire for a in self.accounts.all() if self.policy and a.wire in self.policy.users}
         if not users:
-            self.playing, self.gaming, self._game_procs = {}, set(), {}
+            self.playing, self.gaming, self._game_procs, self.free_now = {}, set(), {}, set()
             return
         procs = self.programs.procs
         index = WinAppIndex(self.programs.catalog, self.programs.games)
@@ -268,6 +275,10 @@ class WinAgent(AgentCore):
             log.exception("Prozesse nicht lesbar (Programmzeit)")
             return
         keys: dict[str, set[str]] = {}
+        # „zählt nicht“: je User die ausgenommenen Programme; gesehen = (ausgenommenes, anderes Programm/Browser)
+        free_keys = {u: {key_norm(k) for k in self.free_keys(u)} for u in users.values()}
+        free_seen: set[str] = set()
+        other_seen: set[str] = set()
         playing: dict[str, dict[str, str]] = {}
         game_procs: dict[str, list[tuple[int, int]]] = {}
         games = self.programs.games
@@ -286,9 +297,16 @@ class WinAgent(AgentCore):
                     and not _under(exe, WINDIR) and not (exe.startswith(launcher_homes) and not exe.startswith(libraries)):
                 found = (exe_game_key(info.exe), exe_name(long_path(info.exe)))   # Rückfall: vom Launcher gestartet
             if found is None:
+                if free_keys[user] and browser_process(info):
+                    other_seen.add(user)
                 continue
             key, name = found
             keys.setdefault(user, set()).add(key)
+            if not own_program(key):
+                if key_norm(key) in free_keys[user] and not self.is_game(key, user) and free_process_ok(info):
+                    free_seen.add(user)
+                else:
+                    other_seen.add(user)
             if name:
                 self.apptime.names.setdefault(key, name)
             if self.is_game(key, user):
@@ -302,6 +320,7 @@ class WinAgent(AgentCore):
         self.playing = {u: g for u, g in playing.items() if u in counting}
         self.gaming = set(self.playing)
         self._game_procs = game_procs
+        self.free_now = (free_seen - other_seen) & counting
 
     def _app_usage_report(self, today) -> p.AppUsageReport:
         apps = [p.AppUsageEntry(username=u, day=d, key=k, seconds=s, name=self.apptime.names.get(k, ""))

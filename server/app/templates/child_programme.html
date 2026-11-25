@@ -17,6 +17,12 @@
       {% if has_linux %}<p>{{ _("Systemkomponenten (KDE/Plasma, KidCTL) sind immer erlaubt. Terminals, Shells und Interpreter sind gesperrt, solange sie nicht ausdrücklich freigegeben sind – für ein nutzbares Terminal das Terminal-Programm (z. B. Konsole) und die Shell des Kindes freigeben (Gruppe „Terminal & Shells“).") }}</p>{% endif %}
       {% if has_windows %}<p>{{ _("Windows-Bestandteile wie Explorer und Einstellungen sind immer erlaubt. Eingabeaufforderung, PowerShell und ähnliche Werkzeuge bleiben gesperrt, solange sie nicht freigegeben sind.") }}</p>{% endif %}
     </details>
+    <details class="help"><summary>{{ _("Was heißt „Zählt nicht“?") }}</summary>
+      <p>{{ _("Programme mit „Zählt nicht“ (z. B. Lern-Apps, Office) verbrauchen keine Bildschirmzeit, solange außer ihnen kein anderes Programm aus dieser Liste und kein Spiel geöffnet ist. Sie laufen nur im erlaubten Zeitfenster; ist die Bildschirmzeit aufgebraucht, endet die Sitzung wie gewohnt.") }}</p>
+      <p>{{ _("Browser, Terminals, Dateimanager, Entwicklungswerkzeuge und Spiele-Launcher lassen sich nicht ausnehmen – mit ihnen ließe sich alles andere öffnen. Am zuverlässigsten wirkt „Zählt nicht“ mit der Programmkontrolle „Sperren“.") }}</p>
+      {% if has_windows %}<p>{{ _("Unter Windows gilt „Zählt nicht“ nur für Programme unter „Programme“ und Store-Apps, nicht für Programme im Benutzerordner (dort könnte das Kind sie austauschen).") }}</p>{% endif %}
+    </details>
+    {% if free_old_devices %}<p class="warn">{{ _("{devices} kennt „Zählt nicht“ noch nicht und zählt dort weiter jede Minute – bitte KidCTL dort aktualisieren.").format(devices=free_old_devices | join(", ")) }}</p>{% endif %}
     {% if catalog %}
     <div class="app-catalog" data-count-text="{{ _('{n} von {total} erlaubt') }}">
       <div class="app-tools">
@@ -47,6 +53,9 @@
               <label class="game-flag" title="{{ _('Zählt als Spiel (Spiele-Limit, Spielzeit)') }}">
                 <input type="checkbox" name="game" value="{{ app.key }}"{% if app.game %} checked{% endif %}> {{ _("Spiel") }}
               </label>
+              {% if not app.free_locked %}<label class="game-flag free-flag" title="{{ _('Zählt nicht: Läuft nur dieses Programm (und andere, die nicht zählen), wird keine Bildschirmzeit verbraucht') }}">
+                <input type="checkbox" name="free" value="{{ app.key }}"{% if app.free %} checked{% endif %}> {{ _("Zählt nicht") }}
+              </label>{% endif %}
               <button type="submit" class="ghost small" formaction="/children/{{ child.id }}/programs/custom/{{ app.custom_id }}/delete"
                       formnovalidate title="{{ _('Eintrag entfernen') }}" aria-label="{{ _('{name} entfernen').format(name=app.name) }}"
                       data-confirm="{{ _('Eigenes Programm „{name}“ entfernen? Die Freigabe wird entzogen.').format(name=app.name) }}">{{ _("Entfernen") }}</button>
@@ -62,6 +71,9 @@
               <label class="game-flag" title="{{ _('Kategorie „Spiele“ – zählt immer als Spiel') if app.game_auto else _('Zählt als Spiel (Spiele-Limit, Spielzeit)') }}">
                 <input type="checkbox" name="game" value="{{ app.key }}"{% if app.game %} checked{% endif %}{% if app.game_auto %} disabled{% endif %}> {{ _("Spiel") }}
               </label>
+              {% if not app.free_locked and not app.game_auto %}<label class="game-flag free-flag" title="{{ _('Zählt nicht: Läuft nur dieses Programm (und andere, die nicht zählen), wird keine Bildschirmzeit verbraucht') }}">
+                <input type="checkbox" name="free" value="{{ app.key }}"{% if app.free %} checked{% endif %}> {{ _("Zählt nicht") }}
+              </label>{% endif %}
             </div>
           </div>
           {% endif %}
