@@ -186,6 +186,12 @@
   text:
     de: "Alarme und Anfragen zusätzlich über eigene Kanäle – nur Hinweis und Link, kein Inhalt."
     en: "Alerts and requests also through your own channels – only a notice and a link, no content."
+- id: own-blocklists
+  status: planned
+  title: { de: "Eigene Sperrlisten", en: "Your own blocklists" }
+  text:
+    de: "Eigene Domainlisten pflegen oder importieren und mehreren Kindern zuweisen."
+    en: "Maintain or import your own domain lists and assign them to several children."
 - id: update-button
   status: done
   version: "0.46"
