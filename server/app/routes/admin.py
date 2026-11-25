@@ -27,6 +27,7 @@ from .. import (
 )
 from .. import lock as lk
 from .. import schedule as sch
+from .. import timebank
 from ..i18n import N_, _
 from ..middleware import csp
 from ..security import (
@@ -136,6 +137,7 @@ def _child_page(request: Request, db: Session, child: Child, tab: str = "heute",
                    vacation_saved=bool(child.vacation_rules), special_days=cal.special_days(today),
                    holiday_region=cal.region,
                    max_blocks=sch.MAX_BLOCKS, old_devices=policy.old_protocol_devices(db, child),
+                   bank=timebank.for_day(db, child, today, cal), tb=timebank,
                    exceptions=db.scalars(select(DayException).where(
                        DayException.child_id == child.id, DayException.day >= today).order_by(DayException.day)).all())
     elif tab == "internet":
@@ -191,6 +193,20 @@ async def child_schedule(child_id: int, request: Request, db: Session = Depends(
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
     return _redirect(f"/children/{child_id}/zeiten?saved=1")
+
+
+@router.post("/children/{child_id}/time-bank", dependencies=[Depends(csrf_protect)])
+async def child_time_bank(child_id: int, request: Request, db: Session = Depends(get_db)):
+    """Zeitkonto des Kindes (Schalter, Anteil, Deckel je Tag, Verfall)."""
+    child = _get_or_404(db, Child, child_id)
+    try:
+        timebank.apply_settings(child, await request.form(), sch.today_local())
+    except sch.ScheduleError as e:
+        db.rollback()
+        return _child_page(request, db, child, "zeiten", status_code=400, bank_error=str(e))
+    db.commit()
+    await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
+    return _redirect(f"/children/{child_id}/zeiten?saved=bank#zeitkonto")
 
 
 @router.post("/children/{child_id}/vacation-schedule", dependencies=[Depends(csrf_protect)])

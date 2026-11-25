@@ -516,6 +516,13 @@ class Child(FamilyScoped, Base):
     locked: Mapped[bool] = mapped_column(Boolean, default=False)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     lock_grace_minutes: Mapped[int] = mapped_column(Integer, default=1)  # Vorwarnung bis zur Abmeldung
+    # Zeitkonto (siehe app.timebank): Anteil nicht genutzter Minuten, Deckel je Tag, Verfall in Tagen.
+    # bank_since = erster Tag, dessen Restminuten eingezahlt werden (Tag nach dem Einschalten)
+    bank_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    bank_percent: Mapped[int] = mapped_column(Integer, default=50)
+    bank_cap_minutes: Mapped[int] = mapped_column(Integer, default=30)
+    bank_expiry_days: Mapped[int] = mapped_column(Integer, default=7)
+    bank_since: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     rules: Mapped[list[WeekdayRule]] = relationship(

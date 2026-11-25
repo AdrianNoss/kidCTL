@@ -33,6 +33,7 @@ child's computer the language of the desktop session is used.
     account is disabled).
   - School holidays and public holidays (Germany, Austria, Switzerland): a separate school holiday schedule per
     child, public holidays count as a selectable weekday.
+  - Time bank: part of the unused minutes is allowed in addition on the following days (daily cap, expiry).
   - Also works offline with the last known rules.
 - **Game limit**: optional separate daily allowance for games (Steam, Heroic, Lutris, Bottles and apps in
   the "Games" group; on Windows also Epic, EA app, GOG Galaxy, Battle.net, Ubisoft Connect and games started by a

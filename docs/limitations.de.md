@@ -29,6 +29,9 @@ steht im README.
 - **Ferien und Feiertage offline:** Der Rechner kennt die Regeln der nächsten 7 Tage (Ferien und Feiertage
   eingerechnet). Ist er länger als 6 Tage ohne Verbindung zum Server, wiederholt sich diese Woche – Ferienbeginn
   oder -ende und Feiertage danach greifen erst, wenn er wieder verbunden ist.
+- **Zeitkonto und Offline-Nutzung:** Das Guthaben rechnet der Server aus der gemeldeten Nutzung. Ein Rechner ohne
+  Verbindung bekommt kein neues Guthaben. Meldet ein Rechner die Nutzung vergangener Tage erst Tage später, kann in
+  der Zwischenzeit zu viel Guthaben gegolten haben; danach wird neu gerechnet.
 - **Kein Browserverlauf:** KidCTL speichert bewusst nicht, welche erlaubten Websites besucht wurden – nur, was
   gesperrt wurde.
 - **Server im gemeinsamen Docker-Netz:** Für Login-Sperren und `ADMIN_ALLOW_NETS` zählt die von Traefik gemeldete

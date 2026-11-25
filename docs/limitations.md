@@ -30,6 +30,9 @@ version is in the README.
   holidays and public holidays included). If it has no connection to the server for more than 6 days, that week
   repeats – the start or end of school holidays and public holidays after that only take effect once it is
   connected again.
+- **Time bank and offline use:** The server calculates the balance from the reported usage. A computer without a
+  connection gets no new balance. If a computer reports the usage of past days only days later, too much balance
+  may have applied in the meantime; after that it is recalculated.
 - **No browsing history:** KidCTL deliberately doesn't store which allowed websites were visited – only what
   was blocked.
 - **Server in a shared Docker network:** login locks and `ADMIN_ALLOW_NETS` use the address reported by Traefik,

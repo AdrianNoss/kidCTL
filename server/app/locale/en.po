@@ -3728,3 +3728,60 @@ msgstr "{label}: name may have at most 40 characters."
 
 msgid "{label}: Sperrzeit {n}"
 msgstr "{label}: blocked time {n}"
+
+msgid "Zeitkonto"
+msgstr "Time bank"
+
+msgid "Zeitkonto gespeichert."
+msgstr "Time bank saved."
+
+msgid "Nicht genutzte Minuten werden teilweise gutgeschrieben und an den Folgetagen zusätzlich erlaubt. Es zählt nur die Zeit pro Tag der Vorlage – Gutschriften und Spielzeit nicht; Zeitfenster und Sperrzeiten bleiben gleich."
+msgstr "Part of the unused minutes is saved and allowed in addition on the following days. Only the daily time of the schedule counts – not extra time or game time; allowed hours and blocked times stay the same."
+
+msgid "Eingeschaltet – gutgeschrieben wird ab {day}."
+msgstr "Switched on – minutes are saved from {day}."
+
+msgid "Kontostand: {balance} – heute zusätzlich erlaubt: {today}."
+msgstr "Balance: {balance} – additionally allowed today: {today}."
+
+msgid "Zeitkonto verwenden"
+msgstr "Use time bank"
+
+msgid "Ausschalten löscht das Guthaben."
+msgstr "Switching it off deletes the balance."
+
+msgid "Anteil der nicht genutzten Minuten"
+msgstr "Share of unused minutes"
+
+msgid "Höchstens pro Tag"
+msgstr "At most per day"
+
+msgid "Verfällt nach"
+msgstr "Expires after"
+
+msgid "Tagen"
+msgstr "days"
+
+msgid "Wie rechnet das Zeitkonto?"
+msgstr "How does the time bank work?"
+
+msgid "Beispiel: 60 min erlaubt, 40 min genutzt, Anteil 50 % → 10 min auf das Konto. An jedem Folgetag gibt es höchstens den eingestellten Wert zusätzlich, das älteste Guthaben zuerst; das Konto fasst höchstens das Dreifache davon. Guthaben verfällt nach der eingestellten Zahl von Tagen. Ein Rechner ohne Internetverbindung bekommt neues Guthaben erst, wenn er wieder verbunden ist."
+msgstr "Example: 60 min allowed, 40 min used, share 50 % → 10 min go to the bank. On each following day there is at most the set amount in addition, oldest balance first; the bank holds at most three times that amount. Balance expires after the set number of days. A computer without an internet connection only gets new balance once it is connected again."
+
+msgid "Zeitkonto speichern"
+msgstr "Save time bank"
+
+msgid "heute +{today} (Konto {balance})"
+msgstr "today +{today} (balance {balance})"
+
+msgid "Zeitkonto: ungültige Eingabe."
+msgstr "Time bank: invalid input."
+
+msgid "Zeitkonto: ungültiger Anteil."
+msgstr "Time bank: invalid share."
+
+msgid "Zeitkonto: höchstens pro Tag muss zwischen {min} und {max} Minuten liegen."
+msgstr "Time bank: the daily maximum must be between {min} and {max} minutes."
+
+msgid "Zeitkonto: Verfall muss zwischen {min} und {max} Tagen liegen."
+msgstr "Time bank: expiry must be between {min} and {max} days."
