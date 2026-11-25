@@ -9,7 +9,7 @@ from kidctl_common import protocol as p
 
 from app import policy, schedule as sch, timebank as tb
 from app.models import Child, DayException, UsageRecord, Vacation, VacationRule, WeekdayRule
-from conftest import SessionLocal, csrf_from, login, recv
+from conftest import SessionLocal, csrf_from, login
 from test_policy import _policy, device
 
 WED = date(2026, 11, 25)

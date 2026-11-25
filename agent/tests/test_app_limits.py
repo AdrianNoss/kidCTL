@@ -11,7 +11,6 @@ from kidctl_common import applimits as al
 from kidctl_common import protocol as p
 from kidctl_common import tray as t
 
-from kidctl_agent import agent as agent_mod
 from kidctl_agent.accounting import Usage
 from kidctl_agent.gamelimit import AppLimits
 from kidctl_agent.win.programs import key_norm
