@@ -687,6 +687,8 @@ class UsageRecord(FamilyScoped, Base):
         ForeignKey("child.id", ondelete="CASCADE"), nullable=True, index=True)
     seconds: Mapped[int] = mapped_column(Integer, default=0)
     game_seconds: Mapped[int] = mapped_column(Integer, default=0)  # davon mit laufendem Spiel
+    # Zeit je Limit (Programm/Kategorie) als JSON {Schlüssel: Sekunden}, verschlüsselt (nennt Programme)
+    limit_seconds: Mapped[str | None] = mapped_column(Sealed("usage_record.limit_seconds"), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
@@ -725,7 +727,8 @@ class ChildGameApp(FamilyScoped, Base):
 class ChildAppRule(FamilyScoped, Base):
     """Einstellung je (Kind, App-Schlüssel) aus dem Programmkatalog (ergänzt 2026-11-25). ``free`` = „zählt nicht“:
     läuft nur diese App, verbraucht sie keine Bildschirmzeit (Browser usw. nie, siehe ``kidctl_common.freeapps``).
-    Bewusst allgemein gehalten, damit weitere Regeln je App (z. B. eigenes Limit) hier dazukommen können."""
+    ``limit_minutes`` = eigenes Tageslimit (ergänzt 2026-11-25); ``key`` dann auch eine Kategorie ``cat:…``
+    (``kidctl_common.applimits``). Zeilen ohne jede Einstellung werden gelöscht."""
     __tablename__ = "child_app_rule"
     __table_args__ = (UniqueConstraint("child_id", "key"),)
 
@@ -733,6 +736,7 @@ class ChildAppRule(FamilyScoped, Base):
     child_id: Mapped[int] = mapped_column(ForeignKey("child.id", ondelete="CASCADE"), index=True)
     key: Mapped[str] = mapped_column(String(512))
     free: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+    limit_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class ChildProgram(FamilyScoped, Base):

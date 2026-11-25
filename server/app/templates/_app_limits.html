@@ -1,0 +1,53 @@
+{# Kind → Zeiten: Karte „Limits für Programme“ (K4). #}
+<section class="card" id="limits">
+  <h2>{{ _("Limits für Programme") }}</h2>
+  {% if request.query_params.get("saved") == "limits" %}<p class="success">{{ _("Limits gespeichert.") }}</p>{% endif %}
+  {% if limit_error %}<p class="error">{{ limit_error }}</p>{% endif %}
+  <p>{{ _("Eigenes Tageslimit für ein Programm oder eine Kategorie, innerhalb der Bildschirmzeit. Kurz vorher gibt es eine Warnung, danach wird das Programm für heute geschlossen; der restliche Rechner bleibt nutzbar. Gutschriften und Zeitkonto gelten nur für die Bildschirmzeit.") }}</p>
+  {% if limit_old_devices and app_limits %}<p class="warn">{{ _("{devices} kennt Limits für Programme noch nicht – bitte KidCTL dort aktualisieren.").format(devices=limit_old_devices | join(", ")) }}</p>{% endif %}
+  {% if app_limits %}
+  <div class="scroll">
+  <table class="responsive">
+    <tr><th>{{ _("Programm") }}</th><th>{{ _("Pro Tag") }}</th><th>{{ _("Heute genutzt") }}</th><th></th></tr>
+    {% for l in app_limits %}
+    <tr>
+      <td>{{ l.name }}</td>
+      <td data-label="{{ _('Pro Tag') }}"><span class="unit"><input type="number" name="minutes" form="limit-{{ loop.index }}" min="0" max="{{ max_limit }}" step="5" value="{{ l.minutes }}" class="short" required aria-label="{{ _('Minuten pro Tag für {name}').format(name=l.name) }}"> {{ _("min") }}</span></td>
+      <td data-label="{{ _('Heute genutzt') }}">{{ fmt_minutes(l.used_minutes) }}</td>
+      <td class="right">
+        <form method="post" action="/children/{{ child.id }}/limits" class="inline" id="limit-{{ loop.index }}">
+          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+          <input type="hidden" name="key" value="{{ l.key }}">
+          <button type="submit" class="small">{{ _("Speichern") }}</button>
+        </form>
+        <form method="post" action="/children/{{ child.id }}/limits/remove" class="inline">
+          <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+          <input type="hidden" name="key" value="{{ l.key }}">
+          <button type="submit" class="danger small">{{ _("Entfernen") }}</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% endif %}
+  {% if app_limits | length < max_limits %}
+  <form method="post" action="/children/{{ child.id }}/limits" class="stack">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label>{{ _("Programm oder Kategorie") }} <select name="key" required>
+      <option value="">{{ _("Bitte wählen …") }}</option>
+      <optgroup label="{{ _('Kategorien') }}">
+        {% for key, label in limit_categories %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+      </optgroup>
+      {% if limit_programs %}<optgroup label="{{ _('Programme') }}">
+        {% for key, name in limit_programs %}<option value="{{ key }}">{{ name }}</option>{% endfor %}
+      </optgroup>{% endif %}
+    </select></label>
+    <label>{{ _("Pro Tag") }} <span class="unit"><input type="number" name="minutes" min="0" max="{{ max_limit }}" step="5" value="60" class="short" required> {{ _("min") }}</span></label>
+    <details class="help"><summary>{{ _("Was zählt zu einer Kategorie?") }}</summary>
+      <p>{{ _("Browser: alle Webbrowser, auch ohne Eintrag in der Programmliste (erkannt am Programmnamen). Chat und Musik & Video: Programme mit dieser Kategorie in der Programmliste. Laufen mehrere passende Programme gleichzeitig, zählt die Zeit einmal. Spiele begrenzt du mit „davon Spiele“ in der Wochenvorlage.") }}</p>
+    </details>
+    <button type="submit">{{ _("Limit hinzufügen") }}</button>
+  </form>
+  {% endif %}
+</section>

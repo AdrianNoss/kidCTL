@@ -22,6 +22,22 @@ Per child (the child's page):
 
   ![Weekly schedule with allowed hours and "of which games"](img/en/game-limit.webp)
 
+- **Program limits** (child → *Times*): a separate daily limit in minutes for an app from the app list or a
+  category – *Browser*, *Chat* or *Music & video*; at most 20 limits per child, the same value every day. The limit
+  applies within screen time: warnings 5 and 1 minute before, then the app is closed and closed again on every
+  start until the end of the day; the rest of the computer stays usable. The *Today* tab shows how much of it has
+  been used today, the tray app shows the child the time left.
+  - Time counts while at least one matching app is open; several at once count once, summed over all of the child's
+    computers. "Doesn't count" apps can be limited too.
+  - KidCTL detects *Browser* by program name, even without an entry in the app list, and *Chat* and *Music & video*
+    by the apps' category (estimated from the name on Windows).
+  - Credits, the time bank and approved requests only add screen time, not time for a program limit – for more
+    time the parents change the limit. Games are still limited by the game limit.
+
+  > [!NOTE]
+  > Program limits need KidCTL 0.48 or later on the child's computer; older versions don't enforce them. The card
+  > lists such computers.
+
 - **School holidays and public holidays**: enter school holiday periods once for the family under *Settings →
   Holidays*; on those days each child's **school holiday schedule** applies (child → *Times*, same fields as the
   weekly schedule; until it is saved, the weekly schedule also applies during school holidays). There you also pick

@@ -133,4 +133,4 @@ def test_hello_announces_feature():
     from kidctl_agent.connection import Connection
 
     conn = Connection({"server_url": "https://x", "token": "t"}, Agent)
-    assert json.loads(conn._hello())["features"] == [p.FEATURE_SELF_UPDATE, p.FEATURE_FREE_APPS]
+    assert json.loads(conn._hello())["features"] == [p.FEATURE_SELF_UPDATE, p.FEATURE_FREE_APPS, p.FEATURE_APP_LIMITS]

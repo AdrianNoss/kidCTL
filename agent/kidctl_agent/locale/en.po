@@ -171,3 +171,24 @@ msgstr "From {name}. Open the chat to read them."
 
 msgid "Jetzt ist Sperrzeit."
 msgstr "This is a blocked time."
+
+# Limit je Programm/Kategorie (K4)
+msgid "Browser"
+msgstr "Browser"
+
+msgid "Chat"
+msgstr "Chat"
+
+msgid "Musik & Video"
+msgstr "Music & video"
+
+msgid "Zeit für {name} aufgebraucht"
+msgstr "Time for {name} used up"
+
+msgid "{name} wird für heute geschlossen. Du kannst deine Eltern im Chat fragen."
+msgstr "{name} will be closed for today. You can ask your parents in the chat."
+
+msgid "Noch {n} Minute für {name} – danach wird es geschlossen. Bitte speichern."
+msgid_plural "Noch {n} Minuten für {name} – danach wird es geschlossen. Bitte speichern."
+msgstr[0] "{n} minute left for {name} – it will be closed afterwards. Please save."
+msgstr[1] "{n} minutes left for {name} – it will be closed afterwards. Please save."

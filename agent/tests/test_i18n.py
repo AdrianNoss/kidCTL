@@ -19,8 +19,11 @@ PO = PKG / "locale" / "en.po"
 ME = getpass.getuser()
 
 
+COMMON_TEXTS = [Path(__file__).resolve().parents[2] / "common" / "kidctl_common" / "applimits.py"]  # Kategorien
+
+
 def _msgids():
-    return extract_python(list(PKG.rglob("*.py")))
+    return extract_python(list(PKG.rglob("*.py")) + COMMON_TEXTS)
 
 
 def test_every_text_has_english_translation():

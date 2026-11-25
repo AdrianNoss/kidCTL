@@ -15,7 +15,7 @@ PO = APP / "locale" / "en.po"
 
 
 def _msgids():
-    files = [f for f in APP.rglob("*.py")]
+    files = [f for f in APP.rglob("*.py")] + [APP.parents[1] / "common" / "kidctl_common" / "applimits.py"]
     return extract_python(files) | extract_jinja(APP / "templates")
 
 

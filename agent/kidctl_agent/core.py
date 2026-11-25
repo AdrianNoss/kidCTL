@@ -13,6 +13,7 @@ import logging
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
+from kidctl_common import applimits as al
 from kidctl_common import i18n
 from kidctl_common import protocol as p
 from kidctl_common import tray as t
@@ -173,6 +174,54 @@ class AgentCore:
             return None
         return limit - self.usage.used_game_seconds(child_id, self.users_of(child_id), day)
 
+    # ---------- Limits je Programm/Kategorie ----------
+
+    def child_of(self, user: str) -> p.ChildPolicy | None:
+        if self.policy is None or user not in self.policy.users:
+            return None
+        return next((c for c in self.policy.children if c.id == self.policy.users[user]), None)
+
+    def app_limits(self, user: str) -> list[p.AppLimit]:
+        child = self.child_of(user)
+        return list(child.app_limits) if child else []
+
+    def limit_matcher(self, user: str, norm=lambda k: k):
+        """``match(app_key, exe)`` -> Limits des Kindes von ``user``, zu denen ein Prozess gehört (``None`` = keine
+        Limits). Kategorien laut eigenem Katalog."""
+        limits = self.app_limits(user)
+        if not limits:
+            return None
+        return al.matcher([lim.key for lim in limits], {a.key: a.categories for a in self.apps}, norm)
+
+    def limit_label(self, lim: p.AppLimit):
+        """Name des Limits in der aktuellen Sprache (aufrufen innerhalb von ``i18n.use``)."""
+        def label(_user: str = "") -> str:
+            if al.is_category(lim.key):
+                return _(al.category_label(lim.key))
+            return lim.name or lim.key.split(":", 1)[-1].replace("\\", "/").rsplit("/", 1)[-1]
+        return label
+
+    def limit_remaining(self, user: str, day, lim: p.AppLimit) -> int:
+        child_id = self.policy.users[user]
+        return lim.minutes * 60 - self.usage.used_limit_seconds(child_id, self.users_of(child_id), day, lim.key)
+
+    async def enforce_limits(self, user: str, uid: int, day, running: set[str],
+                             processes: dict[str, list[tuple[int, int]]]) -> None:
+        """Limits je Programm/Kategorie für einen User mit erlaubter Sitzung: Vorwarnung bzw. passende Prozesse
+        schließen. ``running`` = Limits mit laufendem Programm, ``processes`` = Prozesse je Limit."""
+        for lim in self.app_limits(user):
+            remaining = self.limit_remaining(user, day, lim)
+            await self.applimits.step(lim.key, self.limit_label(lim), user, uid, day, remaining, lim.key in running,
+                                      processes.get(lim.key, []) if remaining <= 0 else [])
+
+    def tray_limits(self, user: str, day) -> list[t.TrayLimit]:
+        out = []
+        with i18n.use(self.lang_of(user)):
+            for lim in self.app_limits(user):
+                used = lim.minutes * 60 - self.limit_remaining(user, day, lim)
+                out.append(t.TrayLimit(name=self.limit_label(lim)(), minutes=lim.minutes, used_seconds=max(0, used)))
+        return out
+
     # ---------- Takt ----------
 
     async def tick_once(self) -> None:
@@ -238,7 +287,8 @@ class AgentCore:
         if self.conn is None or not self.conn.connected:
             return
         today = self.now_local().date()
-        entries = [p.UsageEntry(username=u, day=d, seconds=s, game_seconds=g)
+        entries = [p.UsageEntry(username=u, day=d, seconds=s, game_seconds=g,
+                                limit_seconds=self.usage.limit_entries(u, d))
                    for u, d, s, g in self.usage.report_entries(today)]
         if entries:
             await self.conn.send(p.UsageReport(entries=entries))
@@ -313,6 +363,7 @@ class AgentCore:
         elif isinstance(msg, p.UsageUpdate):
             self.usage.others[(msg.child_id, msg.day.isoformat())] = msg.others_seconds
             self.usage.others_games[(msg.child_id, msg.day.isoformat())] = msg.others_game_seconds
+            self.usage.others_limits[(msg.child_id, msg.day.isoformat())] = dict(msg.others_limit_seconds)
         elif isinstance(msg, p.Ping):
             await self.conn.send(p.Pong())
         elif isinstance(msg, p.UpdateNow):
@@ -447,7 +498,8 @@ class AgentCore:
             game_limit_minutes=None if (gl := game_limit(child, now.date())) is None else gl // 60,
             game_used_seconds=self.usage.used_game_seconds(child_id, same, now.date()),
             logout_in_seconds=self.logout_in(user), gaming=user in getattr(self, "gaming", set()),
-            block=d.block, blocks=blocks_on(child, now.date()), until=d.until, free=user in self.free_now)
+            block=d.block, blocks=blocks_on(child, now.date()), until=d.until, free=user in self.free_now,
+            limits=self.tray_limits(user, now.date()))
 
     def logout_in(self, user: str) -> int | None:
         """Sekunden bis zur Abmeldung (laufender Countdown), sonst ``None``."""

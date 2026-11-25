@@ -30,7 +30,7 @@ from .update import Updater
 from .dnsfilter import WinDnsFilter
 from .watcher import WinProgramWatcher
 from ..apptime import AppTime
-from ..gamelimit import GameLimit
+from ..gamelimit import AppLimits, GameLimit
 from .apptime import WinAppIndex, browser_process, free_process_ok, key_norm
 from .catalog import norm
 from .games import LAUNCHERS, exe_game_key, exe_name, long_path
@@ -83,7 +83,7 @@ def tray_command() -> tuple[str, str] | None:
 
 class WinAgent(AgentCore):
     admin_text = "Administrator"
-    FEATURES = (p.FEATURE_SELF_UPDATE, p.FEATURE_FREE_APPS)
+    FEATURES = (p.FEATURE_SELF_UPDATE, p.FEATURE_FREE_APPS, p.FEATURE_APP_LIMITS)
 
     def __init__(self, sessions: WinSessions | None, desktop: WinDesktop | None, device: dict | None = None,
                  accounts: Accounts | None = None) -> None:
@@ -102,6 +102,9 @@ class WinAgent(AgentCore):
         self._game_procs: dict[str, list[tuple[int, int]]] = {}   # User -> Spielprozesse (PID, Start)
         self.gamelimit = GameLimit(desktop, kill=lambda pid, sig: self.programs.procs.terminate(pid),
                                    on_request=self.open_game_request_dialog, lang_of=self.lang_of)
+        self.applimits = AppLimits(desktop, kill=lambda pid, sig: self.programs.procs.terminate(pid), lang_of=self.lang_of)
+        self.limit_running: dict[str, set[str]] = {}   # User -> Limits mit laufendem Programm (letzter gezählter Takt)
+        self._limit_procs: dict[str, dict[str, list[tuple[int, int]]]] = {}   # User -> Limit -> Prozesse
         self.wfp = None            # WFP-Sitzung (nur Windows, beim Start geöffnet)
         self._dns_key = None       # zuletzt angewendetes Profil (aktive Sitzung, Policy, Tag)
         self._dns_lock = asyncio.Lock()   # Abgleich nie doppelt gleichzeitig (Takt, Policy, Start)
@@ -195,6 +198,9 @@ class WinAgent(AgentCore):
             remaining = self.game_remaining(user, day)
             procs = self._game_procs.get(user, []) if remaining is not None and remaining <= 0 else []
             await self.gamelimit.step(user, 0, day, remaining, user in self.gaming, procs)
+            if self.app_limits(user):
+                await self.enforce_limits(user, 0, day, self.limit_running.get(user, set()),
+                                          self._limit_procs.get(user, {}))
         if self._ticks % SCAN_EVERY == 0:
             await self.programs.scan()
 
@@ -262,6 +268,7 @@ class WinAgent(AgentCore):
         users = {a.sid: a.wire for a in self.accounts.all() if self.policy and a.wire in self.policy.users}
         if not users:
             self.playing, self.gaming, self._game_procs, self.free_now = {}, set(), {}, set()
+            self.limit_running, self._limit_procs = {}, {}
             return
         procs = self.programs.procs
         index = WinAppIndex(self.programs.catalog, self.programs.games)
@@ -281,6 +288,10 @@ class WinAgent(AgentCore):
         other_seen: set[str] = set()
         playing: dict[str, dict[str, str]] = {}
         game_procs: dict[str, list[tuple[int, int]]] = {}
+        # Limits je Programm/Kategorie: Matcher je User, Limits mit laufendem Programm und ihre Prozesse
+        matchers = {u: self.limit_matcher(u, key_norm) for u in users.values()}
+        hits: dict[str, set[str]] = {}
+        limit_procs: dict[str, dict[str, list[tuple[int, int]]]] = {}
         games = self.programs.games
         libraries = tuple(d + "\\" for d in games.steam_dirs[1:] + games.epic_dirs)
         # Ordner laufender Launcher: was dort liegt, gehört zum Launcher (Dienste, Helfer) – außer Spielebibliotheken
@@ -296,6 +307,10 @@ class WinAgent(AgentCore):
             if (found is None or not self.is_game(found[0], user)) and self.programs.launches.launcher_of(info.pid) \
                     and not _under(exe, WINDIR) and not (exe.startswith(launcher_homes) and not exe.startswith(libraries)):
                 found = (exe_game_key(info.exe), exe_name(long_path(info.exe)))   # Rückfall: vom Launcher gestartet
+            if (match := matchers[user]) is not None and not (found and own_program(found[0])):
+                for lk in match(found[0] if found else None, info.exe, browser_process(info)):
+                    hits.setdefault(user, set()).add(lk)
+                    limit_procs.setdefault(user, {}).setdefault(lk, []).append(info.ident)
             if found is None:
                 if free_keys[user] and browser_process(info):
                     other_seen.add(user)
@@ -317,10 +332,13 @@ class WinAgent(AgentCore):
                 self.apptime.add(user, day, keys.get(user, set()), delta)
                 if user in playing:
                     self.usage.add_games(user, day, delta)
+                self.usage.add_limits(user, day, hits.get(user, set()), delta)
         self.playing = {u: g for u, g in playing.items() if u in counting}
         self.gaming = set(self.playing)
         self._game_procs = game_procs
         self.free_now = (free_seen - other_seen) & counting
+        self.limit_running = {u: h for u, h in hits.items() if u in counting}
+        self._limit_procs = limit_procs
 
     def _app_usage_report(self, today) -> p.AppUsageReport:
         apps = [p.AppUsageEntry(username=u, day=d, key=k, seconds=s, name=self.apptime.names.get(k, ""))

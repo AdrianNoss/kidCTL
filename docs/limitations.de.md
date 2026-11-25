@@ -19,6 +19,11 @@ steht im README.
   Programm“ – außer Browsern. Ohne Programmkontrolle „Sperren“ kann ein Kind so ein solches Programm neben einer
   Lern-App nutzen, ohne dass Zeit läuft. Was eine ausgenommene App selbst anzeigt (z. B. eingebettete Webinhalte),
   prüft KidCTL nicht.
+- **Limits für Programme nach Name und Kategorie:** Ein Programm-Limit erkennt das Programm an seiner Datei bzw. an
+  seiner Kategorie in der Programmliste, Browser zusätzlich am Programmnamen. Ein umbenannter portabler Browser oder
+  ein Programm ohne passende Kategorie (unter Windows wird sie am Namen geschätzt) fällt nicht unter die Kategorie;
+  dagegen hilft die Programmkontrolle „Sperren“. Webseiten im Browser (z. B. Web-Chat) zählen nur zum Limit
+  *Browser*, nicht zu *Chat*.
 - **VPN und feste IP-Adressen:** Der Website-Filter arbeitet über DNS (Namensauflösung). Wer eine Website direkt
   über ihre IP-Adresse aufruft (auch DNS-over-HTTPS über eine IP-Adresse) oder ein VPN mit fest eingetragenen
   IP-Adressen nutzt, umgeht ihn. VPNs werden nicht aktiv erkannt.

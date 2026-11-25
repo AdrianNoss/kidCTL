@@ -103,7 +103,7 @@ class Agent:
         url = self.base.replace("http", "ws", 1) + "/api/v1/ws"
         self.ws = await websockets.connect(url, additional_headers={"Authorization": f"Bearer {self.token}"})
         await self.send(type="hello", protocol_version=2, agent_version="0.32.7", hostname=self.hostname,
-                        platform=self.platform, features=["free_apps"])
+                        platform=self.platform, features=["free_apps", "app_limits"])
         self.task = asyncio.create_task(self._reader())
 
     async def _reader(self) -> None:
@@ -252,6 +252,8 @@ async def seed(base: str, database_url: str, secret: str, lang: str = "de") -> t
         "free": ["exe:/usr/bin/libreoffice", "flatpak:org.tuxpaint.Tuxpaint"]})
     await web.post(f"/children/{ids['Max']}/programs", {
         "program_mode": "audit", "app": [k for k, *_ in WIN_APPS if "cmd.exe" not in k]})
+    await web.post(f"/children/{ids['Max']}/limits", {"key": "cat:browser", "minutes": "60"})
+    await web.post(f"/children/{ids['Lena']}/limits", {"key": "cat:media", "minutes": "45"})
     await web.post(f"/children/{ids['Lena']}/web", {
         "web_mode": "whitelist", "safesearch": "1", "bundle": ["wikipedia", "youtube", "anton", "microsoft365"],
         "allow": "schule.example\nbibliothek.example", "deny": ""})
@@ -283,9 +285,12 @@ async def seed(base: str, database_url: str, secret: str, lang: str = "de") -> t
                                {"dev": agents[dev].device_id, "user": user, "day": day, "child": child_id, "s": secs,
                                 "g": gsecs, "at": datetime.now(timezone.utc).replace(tzinfo=None)})
                     continue
-                usage[dev].append({"username": user, "day": day.isoformat(), "seconds": secs, "game_seconds": gsecs})
                 apps = LINUX_APPS if dev == "laptop" else WIN_APPS
                 rest = secs - gsecs
+                # Firefox (erstes Programm, 45 %) zählt fürs Browser-Limit von Max
+                limits = {"cat:browser": int(rest * 0.45)} if user == "max" else {}
+                usage[dev].append({"username": user, "day": day.isoformat(), "seconds": secs, "game_seconds": gsecs,
+                                   "limit_seconds": limits})
                 for (k, *_), w in zip(apps[:4], (0.45, 0.25, 0.15, 0.15)):
                     app_usage[dev].append({"username": user, "day": day.isoformat(), "key": k, "seconds": int(rest * w)})
                 for (k, n), w in zip(GAMES, (0.6, 0.3, 0.1)):

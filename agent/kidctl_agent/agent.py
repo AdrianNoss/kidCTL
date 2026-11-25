@@ -18,7 +18,7 @@ from .connection import Connection
 from .core import STARTUP_SYNC, AgentCore  # noqa: F401 – STARTUP_SYNC: Weitergabe (Tests)
 from .dnsfilter import DnsFilter
 
-from .gamelimit import GameLimit
+from .gamelimit import AppLimits, GameLimit
 from .games import GameNames, bottles_program, game_id
 from .gnomesearch import GnomeSearch
 from .kidmounts import STEAM_ROOT, KidMounts, safe_home
@@ -59,7 +59,7 @@ def local_users() -> list[p.LocalUser]:
 
 class Agent(AgentCore):
     admin_text = "Admin (wheel/sudo)"
-    FEATURES = (p.FEATURE_SELF_UPDATE, p.FEATURE_FREE_APPS)
+    FEATURES = (p.FEATURE_SELF_UPDATE, p.FEATURE_FREE_APPS, p.FEATURE_APP_LIMITS)
 
     def __init__(self, logind, desktop, device: dict | None = None, tray_path: str | None = None) -> None:
         super().__init__(logind, desktop, device)
@@ -74,6 +74,8 @@ class Agent(AgentCore):
         self.gnome_search = GnomeSearch(getattr(desktop, "_as_user", lambda *a: None))
         self.programs = ProgramWatcher(self)
         self.gamelimit = GameLimit(desktop, on_request=self.open_game_request_dialog, lang_of=self.lang_of)
+        self.applimits = AppLimits(desktop, lang_of=self.lang_of)
+        self.limit_running: dict[str, set[str]] = {}   # User -> Limits mit laufendem Programm (letzter Takt)
         self.game_keys: set[str] = set()   # Katalog-Apps der Kategorie „Game“ (ohne Launcher)
         self.gaming: set[str] = set()      # User mit laufendem Spiel (letzter gezählter Takt)
         self._day = None  # zuletzt gesehener lokaler Tag (Ablauf der Freigaben „nur heute“)
@@ -104,6 +106,7 @@ class Agent(AgentCore):
             self._count_apps(counting, now.date(), delta)
         else:
             self.free_now = set()
+            self.limit_running = {}
         self._collect_blocked_domains()
         await self._day_changed(now.date())
 
@@ -135,6 +138,10 @@ class Agent(AgentCore):
             remaining = self.game_remaining(s.user, day)
             procs = self._game_processes(s.uid, s.user) if remaining is not None and remaining <= 0 else []
             await self.gamelimit.step(s.user, s.uid, day, remaining, s.user in self.gaming, procs)
+            if limits := self.app_limits(s.user):
+                exhausted = any(self.limit_remaining(s.user, day, lim) <= 0 for lim in limits)
+                procs_by = self._limit_processes(s.uid, s.user) if exhausted else {}
+                await self.enforce_limits(s.user, s.uid, day, self.limit_running.get(s.user, set()), procs_by)
 
     def _game_processes(self, uid: int, user: str) -> list[tuple[int, int]]:
         steam_lib = f"{STEAM_ROOT}/{user}/"
@@ -146,6 +153,24 @@ class Agent(AgentCore):
             key = self._game_key(info, user) or self.app_index.key_for(info, steam_lib)
             if key and self.is_game(key, user):
                 out.append((info.pid, info.start))
+        return out
+
+    def _limit_processes(self, uid: int, user: str) -> dict[str, list[tuple[int, int]]]:
+        """Prozesse je Limit (Programm/Kategorie) des Users."""
+        match = self.limit_matcher(user)
+        out: dict[str, list[tuple[int, int]]] = {}
+        if match is None:
+            return out
+        steam_lib = f"{STEAM_ROOT}/{user}/"
+        for pid in pids_of({uid}):
+            info = read_proc(pid)
+            if info is None:
+                continue
+            key = self._game_key(info, user) or self.app_index.key_for(info, steam_lib)
+            if key and own_program(key):
+                continue
+            for lk in match(key, info.exe, browser_process(info)):
+                out.setdefault(lk, []).append((info.pid, info.start))
         return out
 
     async def _day_changed(self, today) -> None:
@@ -328,6 +353,7 @@ class Agent(AgentCore):
         playing: dict[str, dict[str, str]] = {}
         gaming: set[str] = set()
         free_now: set[str] = set()
+        limit_running: dict[str, set[str]] = {}
         for user in users:
             try:
                 uid = pwd.getpwnam(user).pw_uid
@@ -337,11 +363,17 @@ class Agent(AgentCore):
             keys = set()
             free_keys = self.free_keys(user)
             free_seen = other_seen = False   # „zählt nicht“: nur Ausgenommenes, kein anderes Programm, kein Browser
+            match = self.limit_matcher(user)
+            hits: set[str] = set()   # Limits mit laufendem Programm (parallel laufende zählen einmal)
             for pid in pids_of({uid}):
                 info = read_proc(pid)
                 if info is None:
                     continue
                 alive.add((info.pid, info.start))
+                if match is not None:
+                    pkey = self._game_key(info, user) or self.app_index.key_for(info, steam_lib + "/")
+                    if not (pkey and own_program(pkey)):
+                        hits |= match(pkey, info.exe, browser_process(info))
                 if game := self._game_key(info, user):
                     keys.add(game)
                     other_seen = True
@@ -362,6 +394,9 @@ class Agent(AgentCore):
             if free_seen and not other_seen:
                 free_now.add(user)
             self.apptime.add(user, day, keys, delta)
+            self.usage.add_limits(user, day, hits, delta)
+            if hits:
+                limit_running[user] = hits
             if any(self.is_game(k, user) for k in keys):
                 self.usage.add_games(user, day, delta)
                 gaming.add(user)
@@ -369,6 +404,7 @@ class Agent(AgentCore):
         self.playing = playing
         self.gaming = gaming
         self.free_now = free_now
+        self.limit_running = limit_running
 
     def _game_key(self, info, user: str) -> str | None:
         """Spiel eines Prozesses (Umgebung nur bei Kandidaten lesen: Spieleordner, Wine, Container)."""

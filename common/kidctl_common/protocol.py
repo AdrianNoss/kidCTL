@@ -268,6 +268,18 @@ class TempGrant(BaseModel):
     day: date
 
 
+class AppLimit(BaseModel):
+    """Limit je Programm/Kategorie (ergänzt 2026-11-25): höchstens ``minutes`` am Tag für ein Programm (App-Schlüssel)
+    oder eine Kategorie (``cat:browser`` usw., siehe ``kidctl_common.applimits``). ``name`` = Anzeigename des Programms
+    (bei Kategorien leer, der Agent übersetzt selbst)."""
+    key: str = Field(max_length=512)
+    minutes: int = Field(ge=0, le=24 * 60)
+    name: str = Field(default="", max_length=255)
+
+
+LimitSeconds = dict[Annotated[str, Field(max_length=512)], Annotated[int, Field(ge=0, le=2 * 86400)]]
+
+
 class ChildPolicy(BaseModel):
     id: ChildId
     name: str
@@ -289,6 +301,8 @@ class ChildPolicy(BaseModel):
     # Bildschirmzeit. Ältere Agenten ignorieren das Feld (zählen alles). Browser usw. prüft der Agent nochmals
     # (``kidctl_common.freeapps``).
     free_apps: list[Annotated[str, Field(max_length=512)]] = Field(default=[], max_length=2000)
+    # Limits je Programm/Kategorie (ergänzt 2026-11-25); ältere Agenten ignorieren das Feld
+    app_limits: list[AppLimit] = Field(default=[], max_length=20)
 
     def programs_on(self, day: date) -> list[str]:
         """Freigegebene Programme an ``day``: dauerhafte plus „nur heute“."""
@@ -331,6 +345,7 @@ class Relocate(BaseModel):
 
 FEATURE_SELF_UPDATE = "self_update"
 FEATURE_FREE_APPS = "free_apps"   # Agent wertet ``ChildPolicy.free_apps`` aus (ab 0.48)
+FEATURE_APP_LIMITS = "app_limits"   # Agent wertet ``ChildPolicy.app_limits`` aus (ab 0.48)
 
 
 class UpdateNow(BaseModel):
@@ -357,6 +372,8 @@ class UsageEntry(BaseModel):
     day: date
     seconds: int = Field(ge=0, le=2 * 86400)
     game_seconds: int = Field(default=0, ge=0, le=2 * 86400)  # davon mit laufendem Spiel (ergänzt 2026-10-20)
+    # Zeit je Limit (``AppLimit.key``) an diesem Tag (ergänzt 2026-11-25)
+    limit_seconds: LimitSeconds = Field(default={}, max_length=20)
 
 
 class UsageReport(BaseModel):
@@ -372,6 +389,7 @@ class UsageUpdate(BaseModel):
     day: date
     others_seconds: int
     others_game_seconds: int = 0
+    others_limit_seconds: dict[str, int] = {}   # je Limit (ergänzt 2026-11-25)
 
 
 # ---------- Programme ----------

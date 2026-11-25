@@ -38,6 +38,8 @@ child's computer the language of the desktop session is used.
 - **Game limit**: optional separate daily allowance for games (Steam, Heroic, Lutris, Bottles and apps in
   the "Games" group; on Windows also Epic, EA app, GOG Galaxy, Battle.net, Ubisoft Connect and games started by a
   launcher such as Wargaming); games are closed after a warning, the rest of the computer stays usable.
+- **Program limits**: a separate daily limit for an app or category (browser, chat, music & video); the app is
+  closed after a warning, the rest of the computer stays usable.
 - **"Doesn't count" apps**: learning apps or office use no screen time while only they are open; browsers,
   terminals and launchers cannot be exempted.
 - **Requests and chat**: in the tray app the child asks for more time, more game time or access to a
