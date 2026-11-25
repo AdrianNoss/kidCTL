@@ -147,7 +147,8 @@ def _child_page(request: Request, db: Session, child: Child, tab: str = "heute",
         catalog = programs.catalog_for_child(db, child.id)
         ctx.update(catalog=catalog, catalog_groups=programs.grouped_catalog(catalog), open_groups=programs.OPEN_GROUPS,
                    program_modes=programs.MODES, has_linux=not platforms or "linux" in platforms,
-                   has_windows=not platforms or "windows" in platforms)
+                   has_windows=not platforms or "windows" in platforms,
+                   free_old_devices=programs.free_old_devices(devices) if any(e.free for e in catalog) else [])
     return render(request, f"child_{tab}.html", status_code=status_code, child=child, tab=tab, today=today,
                   **_child_head(db, child), **ctx)
 
@@ -260,7 +261,10 @@ async def child_programs(child_id: int, request: Request, db: Session = Depends(
     prefixes = ("exe:", "flatpak:", "snap:", "appx:")
     keys = {str(k) for k in form.getlist("app") if str(k).startswith(prefixes)}
     programs.set_allowed(db, child.id, keys)
-    programs.set_games(db, child.id, {str(k)[:512] for k in form.getlist("game") if str(k).startswith(prefixes)})
+    games = {str(k)[:512] for k in form.getlist("game") if str(k).startswith(prefixes)}
+    programs.set_games(db, child.id, games)
+    free = {str(k)[:512] for k in form.getlist("free") if str(k).startswith(prefixes)}
+    programs.set_free(db, child.id, programs.free_allowed(db, child.id, free, games))
     db.commit()
     await policy.push_policies(db, chat.device_ids_for_child(db, child.id))
     return _redirect(f"/children/{child_id}/programme?programs=1")

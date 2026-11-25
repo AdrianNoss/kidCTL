@@ -71,6 +71,8 @@ def detail_lines(state: t.TrayState) -> list[str]:
     lines = [status_line(state),
              _("Heute genutzt: {used} von {allowed}").format(used=fmt_duration(state.used_seconds),
                                                              allowed=fmt_duration(state.allowed_minutes * 60))]
+    if state.allowed and state.free:   # nur Programme offen, die nicht zählen (ältere Agenten senden False)
+        lines.insert(1, _("Die Zeit läuft gerade nicht"))
     if state.window_start and state.window_end:
         lines.append(_("Erlaubt: {start}–{end} Uhr").format(start=f"{state.window_start:%H:%M}",
                                                             end=f"{state.window_end:%H:%M}"))

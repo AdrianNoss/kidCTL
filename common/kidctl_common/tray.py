@@ -95,6 +95,8 @@ class TrayState(BaseModel):
     block: Block | None = None
     blocks: list[Block] = []
     until: time | None = None
+    # „Zählt nicht“ (ergänzt 2026-11-25): gerade laufen nur Programme, die keine Bildschirmzeit verbrauchen
+    free: bool = False
 
 
 class TrayChat(BaseModel):

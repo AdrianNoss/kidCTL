@@ -41,6 +41,21 @@ Je Kind (Seite des Kindes):
 
   ![Programmkontrolle im Modus „Sperren“ mit Katalog nach Gruppen](img/de/programs.webp)
 
+- **Zählt nicht** (Programmliste, Kästchen unter der App): Lern-Apps, Office und Ähnliches verbrauchen keine
+  Bildschirmzeit, solange außer ihnen kein anderes Programm aus der Liste und kein Spiel geöffnet ist. Ein leerer
+  Desktop zählt wie bisher, ebenso jeder geöffnete Browser. Das Zeitfenster und die Sperrzeiten gelten weiter; ist
+  die Bildschirmzeit aufgebraucht, endet die Sitzung wie gewohnt. In der Statistik erscheinen die Programme
+  weiterhin, die Tray-App zeigt dem Kind „Die Zeit läuft gerade nicht“.
+  - Browser, Terminals, Dateimanager, Entwicklungswerkzeuge, Spiele-Launcher und Spiele lassen sich nicht
+    ausnehmen – der Rechner des Kindes prüft das zusätzlich selbst.
+  - Programme, die im Hintergrund laufen (z. B. Update-Hinweis, Cloud-Sync), gelten als geöffnet; bei Bedarf
+    ebenfalls als „Zählt nicht“ markieren.
+  - Unter Windows nur für Programme unter „Programme“ und Store-Apps, nicht für Programme im Benutzerordner.
+
+  > [!NOTE]
+  > „Zählt nicht“ braucht KidCTL ab Version 0.48 auf dem Rechner des Kindes; ältere Versionen zählen weiter jede
+  > Minute. Die Seite „Programme“ nennt solche Rechner.
+
 - **Internet** (Website-Filter):
   - **Aus**
   - **Whitelist**: nur Freigegebenes. Dafür gibt es Bundles wie YouTube, Wikipedia, Lern-Apps oder

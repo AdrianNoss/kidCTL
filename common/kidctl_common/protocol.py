@@ -285,6 +285,10 @@ class ChildPolicy(BaseModel):
     temp_grants: list[TempGrant] = []  # Freigaben „nur heute“ (ergänzt 2026-10-20)
     # Apps, die zusätzlich zur Kategorie „Spiele“ als Spiel zählen (ergänzt 2026-11-06, App-Schlüssel)
     game_apps: list[str] = []
+    # „Zählt nicht“-Programme (ergänzt 2026-11-25, App-Schlüssel): laufen nur sie, verbrauchen sie keine
+    # Bildschirmzeit. Ältere Agenten ignorieren das Feld (zählen alles). Browser usw. prüft der Agent nochmals
+    # (``kidctl_common.freeapps``).
+    free_apps: list[Annotated[str, Field(max_length=512)]] = Field(default=[], max_length=2000)
 
     def programs_on(self, day: date) -> list[str]:
         """Freigegebene Programme an ``day``: dauerhafte plus „nur heute“."""
@@ -326,6 +330,7 @@ class Relocate(BaseModel):
 # eingerichteten, signierten Quelle). Ältere Agenten ignorieren ``update_now`` und melden die Fähigkeit nicht.
 
 FEATURE_SELF_UPDATE = "self_update"
+FEATURE_FREE_APPS = "free_apps"   # Agent wertet ``ChildPolicy.free_apps`` aus (ab 0.48)
 
 
 class UpdateNow(BaseModel):

@@ -715,6 +715,19 @@ class ChildGameApp(FamilyScoped, Base):
     key: Mapped[str] = mapped_column(String(512))
 
 
+class ChildAppRule(FamilyScoped, Base):
+    """Einstellung je (Kind, App-Schlüssel) aus dem Programmkatalog (ergänzt 2026-11-25). ``free`` = „zählt nicht“:
+    läuft nur diese App, verbraucht sie keine Bildschirmzeit (Browser usw. nie, siehe ``kidctl_common.freeapps``).
+    Bewusst allgemein gehalten, damit weitere Regeln je App (z. B. eigenes Limit) hier dazukommen können."""
+    __tablename__ = "child_app_rule"
+    __table_args__ = (UniqueConstraint("child_id", "key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    child_id: Mapped[int] = mapped_column(ForeignKey("child.id", ondelete="CASCADE"), index=True)
+    key: Mapped[str] = mapped_column(String(512))
+    free: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+
+
 class ChildProgram(FamilyScoped, Base):
     """Von den Eltern freigegebenes Programm (App-Schlüssel) für ein Kind."""
     __tablename__ = "child_program"

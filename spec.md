@@ -1766,7 +1766,8 @@ Self-Hostern). Plan mit Etappen: `dev/planung/PLAN-2026-11.md`. Fachliche Detail
 - **Limit je Programm/Kategorie:** Verallgemeinerung des Spiele-Limits (eigenes Tageskontingent für ein Programm
   oder eine Kategorie, z. B. Browser).
 - **„Zählt nicht“-Programme:** Programme (z. B. Lern-Apps, Office) laufen im Zeitfenster, ohne das Kontingent zu
-  verbrauchen. Browser, Terminals und Launcher sind nie ausnehmbar (Umgehung).
+  verbrauchen. Browser, Terminals und Launcher sind nie ausnehmbar (Umgehung). Umgesetzt, siehe Abschnitt
+  „„Zählt nicht“-Programme“.
 - **Zeitkonto:** nicht genutzte Minuten teilweise auf Folgetage übertragen, mit Deckel je Tag und Verfall; offline
   mit gecachter Policy.
 
@@ -1780,6 +1781,36 @@ Self-Hostern). Plan mit Etappen: `dev/planung/PLAN-2026-11.md`. Fachliche Detail
 
 **Ideen ohne Termin (nicht auf der Roadmap):** Lernmodus auf Knopfdruck, lokale API für Home Assistant, eigene
 Wochenstatistik für das Kind in der Tray-App, Clients für macOS/Android (bewusst nicht jetzt).
+
+## „Zählt nicht“-Programme (entschieden 2026-11-25, umgesetzt 2026-11-25)
+
+Abgestimmt mit Adrian (über die Planungssitzung, alle Empfehlungen übernommen):
+
+- **Semantik:** Ein Zähltakt verbraucht keine Bildschirmzeit, wenn in der Sitzung mindestens ein „zählt nicht“-
+  Programm läuft und sonst **kein anderes Katalog-Programm, kein Spiel und kein Browser** (auch ohne Katalog-Eintrag,
+  erkannt am Programmnamen). Leerer Desktop zählt wie bisher. Kein Fokus-Fenster (Agent sieht es unter Wayland bzw.
+  als Dienst nicht zuverlässig). KidCTLs eigene Tray-App ist neutral. Gezählt wird anhand des vorigen Takts (≤ 5 s
+  Versatz).
+- **Zeitende:** unverändert Vorwarnung + Abmeldung; „zählt nicht“ öffnet nach Zeitende nichts (das wäre K9
+  Lernmodus). Zeitfenster und Sperrzeiten gelten weiter. Spielzeit unberührt.
+- **Spiele** (Kategorie, markiert, erkannt) sind nicht ausnehmbar; „Spiel“ und „Zählt nicht“ schließen sich aus
+  (Server verwirft, WebUI blendet aus).
+- **Nie ausnehmbar** (`kidctl_common/freeapps.py`, Server und Agent): Kategorien WebBrowser, TerminalEmulator, Shell,
+  FileManager, Development, PackageManager; Programmnamen von Browsern, Terminals/Shells, Interpretern, Dateimanagern
+  und Spiele-Launchern (Linux und Windows), Steam, bekannte Flatpak-IDs, Store-Apps (Edge, Terminal, Xbox).
+- **Umgehungsschutz im Agenten:** Linux – Programmdatei muss root gehören, Name nicht auf der Liste (auch nicht im
+  Ordner der App), Flatpak nur mit eigenem Mount-Namensraum (Cgroup-Name allein ist fälschbar), kein Container, kein
+  Electron mit Optionen, die fremden Code laden. Windows – nur Store-Apps und Programme unter Programme/Windows
+  (Benutzerordner wäre austauschbar), Name und `OriginalFilename` der Versionsinfo nicht auf der Liste (umbenannte
+  Browser-Kopie).
+- **Browser im Hintergrund:** Installer bzw. Paket setzen Edge `StartupBoostEnabled=0`/`BackgroundModeEnabled=0`,
+  Chrome/Chromium `BackgroundModeEnabled=false` – sonst liefe Edge unsichtbar weiter und verhinderte „zählt nicht“.
+- **Protokoll:** optionales Feld `ChildPolicy.free_apps` (keine neue Protokollversion; ältere Agenten ignorieren es
+  und zählen alles). Agenten ab 0.48 melden die Fähigkeit `free_apps` im `hello`; der Programme-Tab nennt Geräte ohne
+  sie. Tray: `TrayState.free` → Zeile „Die Zeit läuft gerade nicht“.
+- **Daten:** Tabelle `child_app_rule(child_id, key, free)` (Alembic `0029`), allgemein gehalten für weitere Regeln je
+  App (K4 Limit je Programm). Programmzeit-Statistik zählt ausgenommene Programme weiter.
+- **Restlücken:** siehe `docs/limitations*` („Zählt nicht“ nach geöffneten Programmen).
 
 ## Info und Neuigkeiten (entschieden 2026-11-22 per /grill-me, umgesetzt 2026-11-22)
 
@@ -3762,3 +3793,16 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   bei einer Neuinstallation nicht; aufgefallen beim Einrichten von dev.kidctl.de). Beide Befehle laufen jetzt vor den
   App-Importen. Geprüft: Test ruft die CLI ohne Konfiguration auf (Schlüssel 32 Byte, VAPID-Paar), andere Befehle
   verlangen die Konfiguration weiter.
+- 2026-11-25: „Zählt nicht“-Programme (K5, Anforderungen über die Planungssitzung mit Adrian abgestimmt, siehe Abschnitt
+  „„Zählt nicht“-Programme“): Kästchen „Zählt nicht“ im Programmkatalog (nicht bei Spielen, Browsern, Terminals,
+  Dateimanagern, Entwicklungswerkzeugen, Launchern), Tabelle `child_app_rule` (Alembic `0029`), Policy-Feld
+  `free_apps` ohne neue Protokollversion, Hinweis auf Geräte ohne Fähigkeit `free_apps`. Agent Linux/Windows: Takt
+  zählt nicht, solange nur ausgenommene Programme laufen; Umgehungsschutz (root-eigene Datei, Name/Versionsinfo,
+  Flatpak-Namensraum, geschützte Windows-Ordner), laufender Browser zählt immer. Tray-Zeile „Die Zeit läuft gerade
+  nicht“. Edge-Schnellstart und Browser-Hintergrundmodus per Policy aus. Doku `webui`, `limitations` (neue Restlücke),
+  README, Funktionsliste, Roadmap `free-apps` → in Arbeit. Getestet: Server-Suite gegen PostgreSQL (412), Agent (362
+  + 3 E2E), Tray (31), darunter Umgehungsversuche (umbenannte Browser-Binary im App-Ordner bzw. als `lernapp.exe`
+  mit `OriginalFilename` chrome.exe, gefälschte Flatpak-Cgroup, Kopie im Home, Programm im Benutzerordner, Policy mit
+  Browser/Spiel/Konsole); Migration gegen Alt-Schema-Datenbank (0028 → head, `alembic check`, Downgrade/Upgrade);
+  Doku-Parität, `hugo --minify --panicOnWarning`, Design-Review „Programme“ DE/EN ohne Auffälligkeiten,
+  Screenshots erneuert. Nicht geprüft: VM Linux (KDE) und Windows mit echten Prozessen.

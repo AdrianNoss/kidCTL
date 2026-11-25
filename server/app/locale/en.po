@@ -3728,3 +3728,24 @@ msgstr "{label}: name may have at most 40 characters."
 
 msgid "{label}: Sperrzeit {n}"
 msgstr "{label}: blocked time {n}"
+
+msgid "Zählt nicht: Läuft nur dieses Programm (und andere, die nicht zählen), wird keine Bildschirmzeit verbraucht"
+msgstr "Doesn't count: while only this program (and others that don't count) is running, no screen time is used"
+
+msgid "Zählt nicht"
+msgstr "Doesn't count"
+
+msgid "Was heißt „Zählt nicht“?"
+msgstr "What does “Doesn't count” mean?"
+
+msgid "Programme mit „Zählt nicht“ (z. B. Lern-Apps, Office) verbrauchen keine Bildschirmzeit, solange außer ihnen kein anderes Programm aus dieser Liste und kein Spiel geöffnet ist. Sie laufen nur im erlaubten Zeitfenster; ist die Bildschirmzeit aufgebraucht, endet die Sitzung wie gewohnt."
+msgstr "Programs marked “Doesn't count” (e.g. learning apps, office) use no screen time as long as no other program from this list and no game is open besides them. They only run within the allowed time window; once screen time is used up, the session ends as usual."
+
+msgid "Browser, Terminals, Dateimanager, Entwicklungswerkzeuge und Spiele-Launcher lassen sich nicht ausnehmen – mit ihnen ließe sich alles andere öffnen. Am zuverlässigsten wirkt „Zählt nicht“ mit der Programmkontrolle „Sperren“."
+msgstr "Browsers, terminals, file managers, development tools and game launchers cannot be exempted – they could be used to open anything else. “Doesn't count” works most reliably with program control set to “Block”."
+
+msgid "Unter Windows gilt „Zählt nicht“ nur für Programme unter „Programme“ und Store-Apps, nicht für Programme im Benutzerordner (dort könnte das Kind sie austauschen)."
+msgstr "On Windows, “Doesn't count” only applies to programs under “Program Files” and Store apps, not to programs in the user folder (the child could swap them there)."
+
+msgid "{devices} kennt „Zählt nicht“ noch nicht und zählt dort weiter jede Minute – bitte KidCTL dort aktualisieren."
+msgstr "{devices} doesn't support “Doesn't count” yet and keeps counting every minute there – please update KidCTL on it."

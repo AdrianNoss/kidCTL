@@ -7,9 +7,42 @@ Pfad, sonst sein Programm- bzw. App-Ordner außerhalb von ``%WINDIR%``). Alles a
 
 from __future__ import annotations
 
+from functools import lru_cache
+
+from kidctl_common.freeapps import is_browser_name, name_never_free, program_name
+
 from .catalog import Catalog, norm
-from .games import MINECRAFT_JAVA, GameIndex, package_runtime
-from .programs import WINDIR, _under, app_root, key_norm
+from .games import MINECRAFT_JAVA, GameIndex, _version_string, package_runtime
+from .programs import PROGRAM_FILES, PROGRAM_FILES_X86, WINDIR, _under, app_root, key_norm
+
+# Für Kinder nicht beschreibbar: nur hier installierte Programme können „zählt nicht“ sein (im Benutzerordner könnte das
+# Kind die Programmdatei z. B. gegen einen umbenannten Browser tauschen)
+PROTECTED = (PROGRAM_FILES, PROGRAM_FILES_X86, WINDIR)
+
+
+@lru_cache(maxsize=512)
+def _original_name(exe: str) -> str:
+    return _version_string(exe, "OriginalFilename")
+
+
+def free_process_ok(proc, original=None) -> bool:
+    """Darf ein Prozess, der einem „zählt nicht“-Programm zugeordnet ist, als solches gelten? Nur Store-Apps und
+    Programme unter Programme/Windows, kein Browser/Terminal/Launcher – auch nicht laut Versionsinformation
+    (``OriginalFilename``, gegen umbenannte Kopien)."""
+    if name_never_free(program_name(proc.exe)):
+        return False
+    if proc.pfn:
+        return True   # Paketordner unter WindowsApps gehört TrustedInstaller
+    path = norm(proc.exe)
+    if not any(_under(path, d) for d in PROTECTED):
+        return False
+    orig = (original or _original_name)(proc.exe)
+    return not (orig and name_never_free(program_name(orig)))
+
+
+def browser_process(proc) -> bool:
+    """Browser (auch ohne Katalog-Eintrag, z. B. portabel im Benutzerordner)? Dann zählt die Zeit immer."""
+    return is_browser_name(program_name(proc.exe))
 
 
 class WinAppIndex:
@@ -46,4 +79,4 @@ class WinAppIndex:
         return None
 
 
-__all__ = ["WinAppIndex", "key_norm"]
+__all__ = ["WinAppIndex", "browser_process", "free_process_ok", "key_norm"]

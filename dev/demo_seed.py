@@ -103,7 +103,7 @@ class Agent:
         url = self.base.replace("http", "ws", 1) + "/api/v1/ws"
         self.ws = await websockets.connect(url, additional_headers={"Authorization": f"Bearer {self.token}"})
         await self.send(type="hello", protocol_version=2, agent_version="0.32.7", hostname=self.hostname,
-                        platform=self.platform)
+                        platform=self.platform, features=["free_apps"])
         self.task = asyncio.create_task(self._reader())
 
     async def _reader(self) -> None:
@@ -248,7 +248,8 @@ async def seed(base: str, database_url: str, secret: str, lang: str = "de") -> t
         "program_mode": "enforce",
         "app": [k for k, *_ in LINUX_APPS + WIN_APPS if not any(x in k for x in ("konsole", "cmd.exe", "steam"))]
                + ["exe:/usr/bin/steam"],
-        "game": ["flatpak:net.supertuxkart.SuperTuxKart"]})
+        "game": ["flatpak:net.supertuxkart.SuperTuxKart"],
+        "free": ["exe:/usr/bin/libreoffice", "flatpak:org.tuxpaint.Tuxpaint"]})
     await web.post(f"/children/{ids['Max']}/programs", {
         "program_mode": "audit", "app": [k for k, *_ in WIN_APPS if "cmd.exe" not in k]})
     await web.post(f"/children/{ids['Lena']}/web", {

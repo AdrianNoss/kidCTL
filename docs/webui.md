@@ -41,6 +41,20 @@ Per child (the child's page):
 
   ![App control in "Block" mode with the catalogue by group](img/en/programs.webp)
 
+- **Doesn't count** (app list, box below the app): learning apps, office and the like use no screen time as long as
+  no other app from the list and no game is open besides them. An empty desktop counts as before, and so does any
+  open browser. Allowed hours and blocked times still apply; once screen time is used up, the session ends as usual.
+  The apps still appear in the statistics, and the tray app shows the child "Your time is not running right now".
+  - Browsers, terminals, file managers, development tools, game launchers and games cannot be exempted – the
+    child's computer checks this itself as well.
+  - Apps running in the background (e.g. update notifier, cloud sync) count as open; mark them as "Doesn't count"
+    too if needed.
+  - On Windows only for apps under "Program Files" and Store apps, not for apps in the user folder.
+
+  > [!NOTE]
+  > "Doesn't count" needs KidCTL 0.48 or later on the child's computer; older versions keep counting every minute.
+  > The "Apps" page lists such computers.
+
 - **Internet** (web filter):
   - **Off**
   - **Allow list**: only what is allowed. There are bundles such as YouTube, Wikipedia, learning apps or

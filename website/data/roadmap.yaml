@@ -157,7 +157,7 @@
     de: "Eigenes Tageskontingent für einzelne Programme oder Kategorien, etwa den Browser."
     en: "A separate daily limit for single apps or categories, such as the browser."
 - id: free-apps
-  status: planned
+  status: in_progress
   title: { de: "Lern-Apps zählen nicht", en: "Learning apps don't count" }
   text:
     de: "Ausgewählte Programme verbrauchen keine Bildschirmzeit."

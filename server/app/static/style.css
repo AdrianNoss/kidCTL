@@ -475,6 +475,7 @@ body.no-nav .save-bar { bottom:0; }
 .game-flag { display:flex; align-items:center; gap:.375rem; padding:0 .5rem; font-size:.8125rem; color:var(--on-surface-variant);
              white-space:nowrap; cursor:pointer; margin:0; }
 .game-flag:has(input:checked) { color:var(--on-surface); }
+.app-item:has(input[name="game"]:checked) .free-flag { display:none; }   /* Spiele zählen immer */
 
 /* ---------- Protokoll ---------- */
 .log-filter .segmented { margin-bottom:1rem; }
