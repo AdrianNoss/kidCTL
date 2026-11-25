@@ -84,6 +84,11 @@ def detail_lines(state: t.TrayState) -> list[str]:
         lines.append(_("Spielzeit: noch {left} von {total}").format(
             left=fmt_duration(left), total=fmt_duration(state.game_limit_minutes * 60))
             if left else _("Spielzeit für heute aufgebraucht"))
+    for lim in state.limits:   # Limits je Programm/Kategorie (Name übersetzt der Agent)
+        left = max(0, lim.minutes * 60 - lim.used_seconds)
+        lines.append(_("{name}: noch {left} von {total}").format(
+            name=lim.name, left=fmt_duration(left), total=fmt_duration(lim.minutes * 60))
+            if left else _("{name}: für heute aufgebraucht").format(name=lim.name))
     if not state.online:
         lines.append(_("Offline – Nachrichten werden gesendet, sobald Verbindung besteht"))
     elif state.pending_outbox:

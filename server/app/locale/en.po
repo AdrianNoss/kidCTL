@@ -3818,3 +3818,61 @@ msgstr "Time bank: the daily maximum must be between {min} and {max} minutes."
 
 msgid "Zeitkonto: Verfall muss zwischen {min} und {max} Tagen liegen."
 msgstr "Time bank: expiry must be between {min} and {max} days."
+
+# Limit je Programm/Kategorie (K4)
+msgid "Browser"
+msgstr "Browser"
+
+msgid "{used} von {limit}"
+msgstr "{used} of {limit}"
+
+msgid "Bitte ein Programm oder eine Kategorie auswählen."
+msgstr "Please choose a program or category."
+
+msgid "Bitte die Minuten pro Tag angeben."
+msgstr "Please enter the minutes per day."
+
+msgid "Das Limit muss zwischen 0 und {max} Minuten liegen."
+msgstr "The limit must be between 0 and {max} minutes."
+
+msgid "Höchstens {n} Limits je Kind."
+msgstr "At most {n} limits per child."
+
+msgid "Limits für Programme"
+msgstr "Program limits"
+
+msgid "Limits gespeichert."
+msgstr "Limits saved."
+
+msgid "Eigenes Tageslimit für ein Programm oder eine Kategorie, innerhalb der Bildschirmzeit. Kurz vorher gibt es eine Warnung, danach wird das Programm für heute geschlossen; der restliche Rechner bleibt nutzbar. Gutschriften und Zeitkonto gelten nur für die Bildschirmzeit."
+msgstr "A separate daily limit for a program or category, within screen time. There is a warning shortly before; then the program is closed for the rest of the day while the rest of the computer stays usable. Credits and the time bank only apply to screen time."
+
+msgid "{devices} kennt Limits für Programme noch nicht – bitte KidCTL dort aktualisieren."
+msgstr "{devices} does not support program limits yet – please update KidCTL there."
+
+msgid "Pro Tag"
+msgstr "Per day"
+
+msgid "Heute genutzt"
+msgstr "Used today"
+
+msgid "Minuten pro Tag für {name}"
+msgstr "Minutes per day for {name}"
+
+msgid "Programm oder Kategorie"
+msgstr "Program or category"
+
+msgid "Bitte wählen …"
+msgstr "Please choose …"
+
+msgid "Kategorien"
+msgstr "Categories"
+
+msgid "Was zählt zu einer Kategorie?"
+msgstr "What belongs to a category?"
+
+msgid "Browser: alle Webbrowser, auch ohne Eintrag in der Programmliste (erkannt am Programmnamen). Chat und Musik & Video: Programme mit dieser Kategorie in der Programmliste. Laufen mehrere passende Programme gleichzeitig, zählt die Zeit einmal. Spiele begrenzt du mit „davon Spiele“ in der Wochenvorlage."
+msgstr "Browser: all web browsers, even without an entry in the program list (detected by program name). Chat and Music & video: programs with this category in the program list. If several matching programs run at the same time, the time counts once. Games are limited with “of which games” in the weekly schedule."
+
+msgid "Limit hinzufügen"
+msgstr "Add limit"

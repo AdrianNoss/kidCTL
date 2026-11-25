@@ -82,10 +82,12 @@
   points:
     de:
       - "Spiele-Limit: eigenes Kontingent für Spiele, der Rest des Rechners bleibt nutzbar"
+      - "Limits für Programme: eigenes Tageslimit z. B. für den Browser"
       - "„Zählt nicht“: Lern-Apps und Office verbrauchen keine Bildschirmzeit"
       - "Optional wöchentlicher oder monatlicher Bericht per Mail"
     en:
       - "Game limit: a separate allowance for games, the rest of the computer stays usable"
+      - "Program limits: a separate daily limit, e.g. for the browser"
       - "\"Doesn't count\": learning apps and office use no screen time"
       - "Optional weekly or monthly report by email"
   shot_alt: { de: "Statistik über 14 Tage", en: "Statistics over 14 days" }

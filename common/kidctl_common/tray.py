@@ -71,6 +71,13 @@ class TrayAccessRequest(BaseModel):
 
 # ---------- Agent -> Tray ----------
 
+class TrayLimit(BaseModel):
+    """Limit je Programm/Kategorie für die Anzeige (Name bereits übersetzt)."""
+    name: str
+    minutes: int
+    used_seconds: int = 0
+
+
 class TrayState(BaseModel):
     type: Literal["state"] = "state"
     restricted: bool                 # False: User ist keinem Kind zugeordnet
@@ -97,6 +104,7 @@ class TrayState(BaseModel):
     until: time | None = None
     # „Zählt nicht“ (ergänzt 2026-11-25): gerade laufen nur Programme, die keine Bildschirmzeit verbrauchen
     free: bool = False
+    limits: list[TrayLimit] = []   # Limits je Programm/Kategorie (ergänzt 2026-11-25)
 
 
 class TrayChat(BaseModel):

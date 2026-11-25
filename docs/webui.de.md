@@ -21,6 +21,22 @@ Je Kind (Seite des Kindes):
 
   ![Wochenvorlage mit Zeitfenstern und „davon Spiele“](img/de/game-limit.webp)
 
+- **Limits für Programme** (Kind → *Zeiten*): eigenes Tageslimit in Minuten für ein Programm aus der Programmliste
+  oder eine Kategorie – *Browser*, *Chat* oder *Musik & Video*; höchstens 20 Limits je Kind, gleicher Wert an jedem
+  Tag. Das Limit gilt innerhalb der Bildschirmzeit: Vorwarnung 5 und 1 Minute vorher, danach wird das Programm
+  geschlossen und bis Tagesende bei jedem Start wieder; der restliche Rechner bleibt nutzbar. Der Tab *Heute* zeigt,
+  wie viel davon heute genutzt ist, die Tray-App zeigt dem Kind die Restzeit.
+  - Gezählt wird, solange mindestens ein passendes Programm geöffnet ist; mehrere gleichzeitig zählen einmal, über
+    alle Rechner des Kindes zusammen. Auch „Zählt nicht“-Programme lassen sich begrenzen.
+  - *Browser* erkennt KidCTL auch ohne Eintrag in der Programmliste am Programmnamen, *Chat* und *Musik & Video* an
+    der Kategorie der Programme (unter Windows am Namen geschätzt).
+  - Gutschriften, Zeitkonto und genehmigte Anfragen erhöhen nur die Bildschirmzeit, nicht ein Programm-Limit – mehr
+    Zeit gibt es, indem die Eltern das Limit ändern. Spiele begrenzt weiterhin das Spiele-Limit.
+
+  > [!NOTE]
+  > Limits für Programme braucht KidCTL ab Version 0.48 auf dem Rechner des Kindes; ältere Versionen setzen sie
+  > nicht durch. Die Karte nennt solche Rechner.
+
 - **Ferien und Feiertage**: Ferienzeiträume tragt ihr einmal für die Familie unter *Einstellungen → Ferien &
   Feiertage* ein; an diesen Tagen gilt für jedes Kind seine **Ferienvorlage** (Kind → *Zeiten*, gleiche Felder wie
   die Wochenvorlage; solange sie nicht gespeichert ist, gilt auch in den Ferien die Wochenvorlage). Dort wählt ihr

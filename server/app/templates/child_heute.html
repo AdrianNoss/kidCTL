@@ -21,6 +21,7 @@
   <dl class="today-facts">
     <div><dt>{{ _("Erlaubt") }}</dt><dd>{% if status.window_start %}{{ status.window_start.strftime("%H:%M") }}–{{ status.window_end.strftime("%H:%M") }}{% else %}–{% endif %}</dd></div>
     {% if day_label %}<div><dt>{{ _("Heute") }}</dt><dd>{{ day_label }}</dd></div>{% endif %}
+    {% for l in app_limits %}<div><dt>{{ l.name }}</dt><dd>{{ _("{used} von {limit}").format(used=fmt_minutes(l.used_minutes), limit=fmt_minutes(l.minutes)) }}</dd></div>{% endfor %}
     {% if child.bank_enabled %}<div><dt>{{ _("Zeitkonto") }}</dt><dd>{{ _("heute +{today} (Konto {balance})").format(today=fmt_minutes(status.bank_minutes), balance=fmt_minutes(status.bank_balance)) }}</dd></div>{% endif %}
     <div><dt>{{ _("Online") }}</dt><dd>{% if online_devices %}{{ online_devices | join(", ") }}{% else %}{{ _("kein Rechner") }}{% endif %}</dd></div>
   </dl>

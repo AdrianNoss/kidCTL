@@ -139,5 +139,7 @@
   {% else %}<p class="muted">{{ _("Keine geplanten Gutschriften. Zeit schreibst du unter „Heute“ gut.") }}</p>{% endif %}
 </section>
 
+{% include "_app_limits.html" %}
+
 {% include "_zeitkonto.html" %}
 {% endblock %}

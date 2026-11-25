@@ -59,13 +59,25 @@ class GameLimit:
                 except ProcessLookupError:
                     pass
         if new:
-            log.info("Spielzeit von %s aufgebraucht – schließe %d Spielprozess(e)", user, len(processes))
+            log.info("%s von %s aufgebraucht – schließe %d Prozess(e)", self.what, user, len(processes))
             if now - self.last_notify.get(user, -1e9) >= NOTIFY_DEDUP:
                 self.last_notify[user] = now
                 with i18n.use(self.lang_of(user)):
-                    title, body = _("Spielzeit aufgebraucht"), _("Spiele werden für heute geschlossen. Du kannst um mehr Spielzeit bitten.")
-                    action = _("Mehr Spielzeit anfragen")
+                    title, body, action = self.done_texts()
                 await self.desktop.notify(user, uid, title, body, critical=True, on_action=self.on_request, action=action)
+
+    what = "Spielzeit"   # fürs Log
+
+    def done_texts(self) -> tuple[str, str, str]:
+        """(Titel, Text, Knopf) bei aufgebrauchter Zeit – in der Sprache des Users aufgerufen."""
+        return (_("Spielzeit aufgebraucht"), _("Spiele werden für heute geschlossen. Du kannst um mehr Spielzeit bitten."),
+                _("Mehr Spielzeit anfragen"))
+
+    def warn_texts(self, minutes: int) -> tuple[str, str, str]:
+        body = ngettext("Noch {n} Minute Spielzeit – danach werden Spiele geschlossen. Bitte speichern.",
+                        "Noch {n} Minuten Spielzeit – danach werden Spiele geschlossen. Bitte speichern.",
+                        minutes).format(n=minutes)
+        return _("Spielzeit"), body, _("Mehr Spielzeit anfragen")
 
     async def _warn(self, user: str, uid: int, day: date, remaining: int, gaming: bool) -> None:
         warned = self.warned.setdefault((user, day), set())
@@ -75,9 +87,58 @@ class GameLimit:
             warned.update(due)
             minutes = max(1, round(remaining / 60))
             with i18n.use(self.lang_of(user)):
-                body = (ngettext("Noch {n} Minute Spielzeit – danach werden Spiele geschlossen. Bitte speichern.",
-                                 "Noch {n} Minuten Spielzeit – danach werden Spiele geschlossen. Bitte speichern.",
-                                 minutes).format(n=minutes))
-                title, action = _("Spielzeit"), _("Mehr Spielzeit anfragen")
+                title, body, action = self.warn_texts(minutes)
             await self.desktop.notify(user, uid, title, body, critical=min(due) == 1, on_action=self.on_request,
                                       action=action)
+
+
+class AppLimit(GameLimit):
+    """Limit je Programm/Kategorie (K4): gleicher Ablauf wie das Spiele-Limit, eigene Texte, kein Anfrageknopf
+    (keine eigene Gutschrift – das Kind fragt im Chat). ``label(user)`` = Name des Programms bzw. der Kategorie in
+    der Sprache des Users."""
+
+    def __init__(self, desktop, label, **kw) -> None:
+        super().__init__(desktop, on_request=None, **kw)
+        self.label = label
+        self._user = ""
+
+    @property
+    def what(self) -> str:
+        return f"Limit {self.label(self._user)}"
+
+    async def step(self, user, uid, day, remaining, gaming, processes) -> None:
+        self._user = user
+        await super().step(user, uid, day, remaining, gaming, processes)
+
+    def done_texts(self) -> tuple[str, str, str]:
+        name = self.label(self._user)
+        return (_("Zeit für {name} aufgebraucht").format(name=name),
+                _("{name} wird für heute geschlossen. Du kannst deine Eltern im Chat fragen.").format(name=name), "")
+
+    def warn_texts(self, minutes: int) -> tuple[str, str, str]:
+        name = self.label(self._user)
+        body = ngettext("Noch {n} Minute für {name} – danach wird es geschlossen. Bitte speichern.",
+                        "Noch {n} Minuten für {name} – danach wird es geschlossen. Bitte speichern.",
+                        minutes).format(n=minutes, name=name)
+        return name, body, ""
+
+
+class AppLimits:
+    """Ein ``AppLimit`` je Limit-Schlüssel (eigener Zustand für Warnungen und beendete Prozesse)."""
+
+    def __init__(self, desktop, kill=os.kill, clock=boottime, lang_of=lambda user: "de") -> None:
+        self.desktop, self.kill, self.clock, self.lang_of = desktop, kill, clock, lang_of
+        self.by_key: dict[str, AppLimit] = {}
+
+    async def step(self, key: str, label, user: str, uid: int, day: date, remaining: int, running: bool,
+                   processes: list[tuple[int, int]]) -> None:
+        lim = self.by_key.get(key)
+        if lim is None:
+            lim = self.by_key[key] = AppLimit(self.desktop, label, kill=self.kill, clock=self.clock,
+                                              lang_of=self.lang_of)
+        lim.label = label
+        await lim.step(user, uid, day, remaining, running, processes)
+
+    def retain(self, keys: set[str]) -> None:
+        """Limits, die es nicht mehr gibt, vergessen."""
+        self.by_key = {k: v for k, v in self.by_key.items() if k in keys}

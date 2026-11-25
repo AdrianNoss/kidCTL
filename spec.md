@@ -1790,7 +1790,7 @@ Self-Hostern). Plan mit Etappen: `dev/planung/PLAN-2026-11.md`. Fachliche Detail
 
 **Etappe 2 – Zeit-Logik (Ziel 0.48):**
 - **Limit je Programm/Kategorie:** Verallgemeinerung des Spiele-Limits (eigenes Tageskontingent für ein Programm
-  oder eine Kategorie, z. B. Browser).
+  oder eine Kategorie, z. B. Browser) – umgesetzt, siehe „Limit je Programm/Kategorie“.
 - **„Zählt nicht“-Programme:** Programme (z. B. Lern-Apps, Office) laufen im Zeitfenster, ohne das Kontingent zu
   verbrauchen. Browser, Terminals und Launcher sind nie ausnehmbar (Umgehung). Umgesetzt, siehe Abschnitt
   „„Zählt nicht“-Programme“.
@@ -1837,6 +1837,37 @@ Abgestimmt mit Adrian (über die Planungssitzung, alle Empfehlungen übernommen)
 - **Daten:** Tabelle `child_app_rule(child_id, key, free)` (Alembic `0029`), allgemein gehalten für weitere Regeln je
   App (K4 Limit je Programm). Programmzeit-Statistik zählt ausgenommene Programme weiter.
 - **Restlücken:** siehe `docs/limitations*` („Zählt nicht“ nach geöffneten Programmen).
+
+## Limit je Programm/Kategorie (entschieden 2026-11-25, umgesetzt 2026-11-25)
+
+Abgestimmt mit Adrian (über die Planungssitzung, alle Empfehlungen übernommen):
+
+- **Ziele:** einzelne Programme aus dem Katalog des Kindes (auch eigene Programme; Steam auf jeder Plattform) und feste
+  Kategorien aus `kidctl_common/applimits.py`: *Browser* (freedesktop `WebBrowser`, zusätzlich am Programmnamen wie
+  `freeapps.BROWSERS`, auch ohne Katalog-Eintrag), *Chat* (`InstantMessaging`, `Chat`), *Musik & Video*
+  (`AudioVideo`, `Audio`, `Video`). Windows nutzt die geschätzten Katalog-Kategorien. Keine frei wählbaren Kategorien.
+- **Wert:** ein Minutenwert (0–1440) für alle Tage, nicht je Wochentag oder Ferienvorlage; höchstens 20 Limits je Kind.
+- **Zählung:** nur in gezählter Sitzung, solange mindestens ein passender Prozess läuft (kein Fokus); parallele
+  Programme derselben Regel zählen einmal je Takt. Fällt ein Programm unter mehrere Regeln (Firefox + *Browser*), zählt
+  es für jede. Auch „Zählt nicht“-Programme können ein Limit haben (Zeit zählt fürs Limit, nicht für die
+  Bildschirmzeit). KidCTLs eigene Tray-App zählt nie.
+- **Geräteübergreifend** wie die Spielzeit: `usage_report.entries[].limit_seconds` (je Limit, absolut, Maximum-Regel),
+  `usage_update.others_limit_seconds`; offline zählt jedes Gerät lokal weiter (gespeichert in `usage.json`).
+- **Ablauf:** wie beim Spiele-Limit (`gamelimit.AppLimit`): Vorwarnung 5 und 1 min vorher (nur bei laufendem
+  Programm), danach passende Prozesse schließen (SIGTERM, nach 10 s SIGKILL bzw. Windows hart), neu gestartete bis
+  Tagesende ebenso. Kein Anfrageknopf, die Meldung verweist auf den Chat. Rest des Rechners bleibt nutzbar.
+- **Spiele-Limit** bleibt unverändert daneben (nicht migriert).
+- **Gutschriften:** Zeitkonto, Bildschirmzeit-Gutschriften und genehmigte Anfragen wirken nicht auf Programm-Limits;
+  keine eigene Gutschrift je Limit in 0.48 (Eltern ändern das Limit).
+- **Protokoll:** optionale Felder `ChildPolicy.app_limits` (`key`, `minutes`, `name` – bei Kategorien leer, der Agent
+  übersetzt selbst), `limit_seconds`, `others_limit_seconds`, `TrayState.limits`; keine neue Protokollversion.
+  Agenten ab 0.48 melden die Fähigkeit `app_limits`; die Karte nennt Geräte ohne sie.
+- **Daten:** `child_app_rule.limit_minutes` (Schlüssel auch `cat:…`), `usage_record.limit_seconds` (JSON,
+  verschlüsselt), Alembic `0031`. Zeilen ohne „zählt nicht“ und ohne Limit werden gelöscht.
+- **Anzeige:** Karte „Limits für Programme“ im Tab *Zeiten* (hinzufügen, Minuten ändern, entfernen – ohne
+  JavaScript), Zeile je Limit „verbraucht von Limit“ im Tab *Heute*, Tray-Zeile „<Name>: noch … von …“ bzw. „für heute
+  aufgebraucht“ (Linux und Windows, kein eigenes Vordergrundfenster).
+- **Restlücken:** siehe `docs/limitations*` („Limits für Programme nach Name und Kategorie“).
 
 ## Info und Neuigkeiten (entschieden 2026-11-22 per /grill-me, umgesetzt 2026-11-22)
 
@@ -3862,3 +3893,20 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
     - Design-Review *Zeiten*/*Heute* (DE/EN, hell/dunkel) ohne Auffälligkeiten.
     - Migration gegen eine Alt-Schema-Datenbank (0028 mit Kind → head → 0028 → head, `alembic check` ohne
       Änderungen).
+- 2026-11-25: Limit je Programm/Kategorie (K4, Etappe 2, siehe Abschnitt „Limit je Programm/Kategorie“).
+  - Server: Karte im Tab *Zeiten*, Zeilen im Tab *Heute*, Policy-Feld `app_limits`, Zeit je Limit geräteübergreifend
+    (Migration `0031_app_limits`). Agent Linux/Windows: Zählung je Limit, Vorwarnung und Schließen (`AppLimit`),
+    Fähigkeit `app_limits`; Tray-Zeilen. Demo-Daten: Browser-Limit für Max, *Musik & Video* für Lena.
+  - Doku `webui`, `limitations` (neue Restlücke), README, Funktionsliste, Roadmap `app-limits` → in Arbeit.
+  - Getestet:
+    - `server/tests/test_app_limits.py`: setzen/ändern/entfernen, Fehleingaben ohne Teilspeicherung, Höchstzahl,
+      gemeinsame Zeile mit „zählt nicht“, Zeit je Limit über zwei Geräte (Maximum, Weitermeldung), alter Agent ohne
+      Feld, englische Karte, Hinweis auf Geräte ohne Fähigkeit; gesamte Server-Suite gegen PostgreSQL grün.
+    - `agent/tests/test_app_limits.py`: Zuordnung (Kategorie, Name ohne Katalog, Steam, Windows-Schreibweise),
+      parallel geöffnete Browser zählen einmal, „zählt nicht“ + Limit, Vorwarnung/SIGTERM/SIGKILL nur für passende
+      Prozesse, nächster Tag frei, Offline-Speicherung und andere Geräte, Tray/Bericht, englische Texte,
+      Windows-Agent mit Edge + portablem Chrome; gesamte Agent-Suite und Tray-Tests grün.
+    - Migration gegen Alt-Schema-Datenbank (0030 mit Regel und Nutzung → head → 0030 → head, `alembic check` ohne
+      Änderungen); Doku-Parität, `hugo --minify`; Design-Review *Heute*/*Zeiten* (DE/EN, hell/dunkel) ohne
+      Auffälligkeiten; Screenshots *child-today* erneuert.
+    - Nicht geprüft: VM Linux (KDE) und Windows mit echten Prozessen und Benachrichtigungen.

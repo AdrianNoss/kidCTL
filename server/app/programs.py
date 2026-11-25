@@ -210,8 +210,9 @@ def set_free(db: Session, child_id: int, keys: set[str]) -> None:
         rule.free = key in keys
     for key in keys - rules.keys():
         db.add(ChildAppRule(child_id=child_id, key=key, free=True))
-    # Zeilen ohne jede Einstellung entfernen (weitere Regeln je App kämen als eigene Spalten dazu)
-    db.execute(delete(ChildAppRule).where(ChildAppRule.child_id == child_id, ChildAppRule.free.is_(False)))
+    # Zeilen ohne jede Einstellung entfernen (Limits je Programm bleiben)
+    db.execute(delete(ChildAppRule).where(ChildAppRule.child_id == child_id, ChildAppRule.free.is_(False),
+                                          ChildAppRule.limit_minutes.is_(None)))
 
 
 def allowed_keys(db: Session, child_id: int) -> list[str]:

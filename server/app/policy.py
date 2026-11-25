@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from kidctl_common import protocol as p
 
 from . import access
+from . import applimits
 from . import lock as lk
 from . import schedule as sch
 from . import timebank
@@ -69,6 +70,7 @@ def build_policy(db: Session, device_id: int) -> p.Policy:
             allowed_programs=policy_programs(db, child.id),
             game_apps=game_keys(db, child.id),
             free_apps=free_keys(db, child.id),
+            app_limits=applimits.policy_limits(db, child.id),
             web=web_policy(db, child),
             locked=lk.is_locked(child),
             lock_grace_seconds=(child.lock_grace_minutes if child.lock_grace_minutes is not None else 1) * 60,
@@ -171,7 +173,8 @@ def record_usage(db: Session, device_id: int, report: p.UsageReport) -> set[tupl
                               child_id=child_id, seconds=0)
             db.add(rec)
             existing[(e.username, e.day)] = rec
-        if e.seconds > rec.seconds or e.game_seconds > (rec.game_seconds or 0):
+        limits_changed = applimits.merge(rec, e.limit_seconds)
+        if e.seconds > rec.seconds or e.game_seconds > (rec.game_seconds or 0) or limits_changed:
             rec.seconds, rec.updated_at = max(rec.seconds, e.seconds), utcnow()
             rec.game_seconds = max(rec.game_seconds or 0, e.game_seconds)
             if rec.child_id is not None:
@@ -190,7 +193,8 @@ def others_seconds(db: Session, device_id: int, child_id: int, day: date, games:
 def usage_update(db: Session, device_id: int, child_id: int, day: date) -> p.UsageUpdate:
     """Nutzung (und Spielzeit) des Kindes an ``day`` auf allen *anderen* Geräten."""
     return p.UsageUpdate(child_id=child_id, day=day, others_seconds=others_seconds(db, device_id, child_id, day),
-                         others_game_seconds=others_seconds(db, device_id, child_id, day, games=True))
+                         others_game_seconds=others_seconds(db, device_id, child_id, day, games=True),
+                         others_limit_seconds=applimits.others(db, device_id, child_id, day))
 
 
 def usage_update_payloads(db: Session, changed: set[tuple[int, date]], source_device: int) -> list[tuple[int, dict]]:

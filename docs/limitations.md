@@ -18,6 +18,10 @@ version is in the README.
   the app list (e.g. downloaded portable apps) are not recognised as "another app" – except browsers. Without app
   control set to "Block", a child can use such an app next to a learning app without time running. KidCTL does not
   check what an exempted app itself shows (e.g. embedded web content).
+- **Program limits by name and category:** a program limit recognises the app by its file or by its category in
+  the app list, browsers also by program name. A renamed portable browser or an app without a matching category (on
+  Windows it is estimated from the name) is not covered by the category; app control set to "Block" helps here.
+  Websites in the browser (e.g. web chat) only count towards the *Browser* limit, not *Chat*.
 - **VPN and fixed IP addresses:** the web filter works via DNS (name resolution). Anyone who opens a website directly
   by its IP address (including DNS-over-HTTPS via an IP address) or uses a VPN with fixed
   IP addresses bypasses it. VPNs are not actively detected.

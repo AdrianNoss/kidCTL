@@ -42,6 +42,9 @@ class Usage:
         # Spielzeit (Teil der Nutzung, während ein Spiel läuft) – lokal je (User, Tag), andere Geräte je (Kind, Tag)
         self.games: dict[tuple[str, str], float] = {}
         self.others_games: dict[tuple[int, str], int] = {}
+        # Limits je Programm/Kategorie: lokal je (User, Tag) {Limit: Sekunden}, andere Geräte je (Kind, Tag)
+        self.limits: dict[tuple[str, str], dict[str, float]] = {}
+        self.others_limits: dict[tuple[int, str], dict[str, int]] = {}
         self._last_tick: float | None = None
 
     # ---------- Persistenz ----------
@@ -65,6 +68,12 @@ class Usage:
         for key, sec in data.get("others_games", {}).items():
             child, day = key.split("|", 1)
             u.others_games[(int(child), day)] = int(sec)
+        for key, per in data.get("limits", {}).items():
+            user, day = key.split("|", 1)
+            u.limits[(user, day)] = {str(k): float(v) for k, v in per.items()}
+        for key, per in data.get("others_limits", {}).items():
+            child, day = key.split("|", 1)
+            u.others_limits[(int(child), day)] = {str(k): int(v) for k, v in per.items()}
         return u
 
     def save(self) -> None:
@@ -73,6 +82,8 @@ class Usage:
             "others": {f"{c}|{d}": s for (c, d), s in self.others.items()},
             "games": {f"{u}|{d}": round(s, 1) for (u, d), s in self.games.items()},
             "others_games": {f"{c}|{d}": s for (c, d), s in self.others_games.items()},
+            "limits": {f"{u}|{d}": {k: round(v, 1) for k, v in per.items()} for (u, d), per in self.limits.items()},
+            "others_limits": {f"{c}|{d}": per for (c, d), per in self.others_limits.items()},
         })
 
     def prune(self, today: date) -> None:
@@ -81,6 +92,8 @@ class Usage:
         self.others = {k: v for k, v in self.others.items() if k[1] >= cutoff}
         self.games = {k: v for k, v in self.games.items() if k[1] >= cutoff}
         self.others_games = {k: v for k, v in self.others_games.items() if k[1] >= cutoff}
+        self.limits = {k: v for k, v in self.limits.items() if k[1] >= cutoff}
+        self.others_limits = {k: v for k, v in self.others_limits.items() if k[1] >= cutoff}
 
     # ---------- Zählen ----------
 
@@ -107,6 +120,13 @@ class Usage:
             key = (user, day.isoformat())
             self.games[key] = self.games.get(key, 0.0) + seconds
 
+    def add_limits(self, user: str, day: date, keys: set[str], seconds: float) -> None:
+        """Zeit je Limit anrechnen (je Takt einmal je Limit, egal wie viele passende Programme laufen)."""
+        if seconds > 0 and keys:
+            per = self.limits.setdefault((user, day.isoformat()), {})
+            for key in keys:
+                per[key] = per.get(key, 0.0) + seconds
+
     # ---------- Auswertung ----------
 
     def used_seconds(self, child_id: int, usernames: list[str], day: date) -> int:
@@ -119,8 +139,17 @@ class Usage:
         d = day.isoformat()
         return int(sum(self.games.get((u, d), 0.0) for u in usernames)) + self.others_games.get((child_id, d), 0)
 
+    def used_limit_seconds(self, child_id: int, usernames: list[str], day: date, key: str) -> int:
+        d = day.isoformat()
+        local = sum(self.limits.get((u, d), {}).get(key, 0.0) for u in usernames)
+        return int(local) + self.others_limits.get((child_id, d), {}).get(key, 0)
+
+    def limit_entries(self, user: str, day: date) -> dict[str, int]:
+        return {k: int(v) for k, v in sorted(self.limits.get((user, day.isoformat()), {}).items())[:20]}
+
     def report_entries(self, today: date) -> list[tuple[str, date, int, int]]:
         """Zählerstände (Nutzung, Spielzeit) von gestern und heute für ``usage_report``."""
         days = {today.isoformat(), (today - timedelta(days=1)).isoformat()}
-        return [(u, date.fromisoformat(d), int(s), int(self.games.get((u, d), 0.0)))
-                for (u, d), s in sorted(self.local.items()) if d in days]
+        keys = sorted({k for k in self.local if k[1] in days} | {k for k in self.limits if k[1] in days})
+        return [(u, date.fromisoformat(d), int(self.local.get((u, d), 0.0)), int(self.games.get((u, d), 0.0)))
+                for u, d in keys]

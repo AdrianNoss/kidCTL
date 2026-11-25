@@ -56,3 +56,12 @@ def test_free_line():
     assert lines[1] == "Die Zeit läuft gerade nicht"
     assert "Die Zeit läuft gerade nicht" not in texts.detail_lines(st())
     assert "Die Zeit läuft gerade nicht" not in texts.detail_lines(st(free=True, allowed=False, reason="quota"))
+
+
+def test_app_limit_lines():
+    s = st(limits=[t.TrayLimit(name="Browser", minutes=60, used_seconds=20 * 60),
+                   t.TrayLimit(name="Discord", minutes=30, used_seconds=31 * 60)])
+    lines = texts.detail_lines(s)
+    assert any(line.startswith("Browser: noch") and "40" in line for line in lines)
+    assert "Discord: für heute aufgebraucht" in lines
+    assert not any(line.startswith(("Browser", "Discord")) for line in texts.detail_lines(st()))

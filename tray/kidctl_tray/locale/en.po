@@ -275,3 +275,9 @@ msgstr "Blocked times: {list}"
 
 msgid "Die Zeit läuft gerade nicht"
 msgstr "Your time is not running right now"
+
+msgid "{name}: noch {left} von {total}"
+msgstr "{name}: {left} of {total} left"
+
+msgid "{name}: für heute aufgebraucht"
+msgstr "{name}: used up for today"
