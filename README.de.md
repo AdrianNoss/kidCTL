@@ -33,6 +33,7 @@ gilt die Sprache der Desktop-Sitzung.
     wird deaktiviert).
   - Ferien und gesetzliche Feiertage (Deutschland, Österreich, Schweiz): eigene Ferienvorlage je Kind, Feiertage
     gelten wie ein wählbarer Wochentag.
+  - Zeitkonto: ein Teil der nicht genutzten Minuten gilt an den Folgetagen zusätzlich (Deckel je Tag, Verfall).
   - Funktioniert auch offline mit der zuletzt bekannten Regel.
 - **Spiele-Limit**: optional ein eigenes Tageskontingent für Spiele (Steam, Heroic, Lutris, Bottles und Apps der
   Gruppe „Spiele“; unter Windows auch Epic, EA app, GOG Galaxy, Battle.net, Ubisoft Connect und Spiele, die ein Launcher wie

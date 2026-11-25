@@ -29,6 +29,14 @@ Per child (the child's page):
   counts as a selectable weekday (default Sunday), taken from the school holiday schedule during school holidays.
   The server calculates public holidays itself, without fetching anything from the internet. The *Times* tab shows
   the school holidays and public holidays of the next 14 days. No new agent is needed for this.
+- **Time bank** (child → *Times*, off by default): a selectable share (25, 50 or 100 %) of the minutes not used on
+  a day goes to the bank and is allowed in addition on the following days – at most the set amount per day
+  (5–120 min), oldest balance first. Balance expires after 1–14 days, the bank holds at most three times the daily
+  amount. Only the daily time of the weekly or school holiday schedule counts, not extra time; game limit, allowed
+  hours and blocked times stay unchanged. Minutes are saved from the day after switching it on, switching it off
+  deletes the balance. The *Today* tab shows how much is added today and how much is in the bank. A day's balance
+  reaches a computer as soon as it is connected and then applies offline too until the end of the day; no new agent
+  is needed for this.
 - **Add time**: extra minutes, longer allowed hours or extra game time for
   a specific date. Extension and game time requests from the tray app can also be approved directly
   in the chat.

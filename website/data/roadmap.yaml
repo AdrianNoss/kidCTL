@@ -163,7 +163,7 @@
     de: "Ausgewählte Programme verbrauchen keine Bildschirmzeit."
     en: "Selected apps don't use up screen time."
 - id: time-bank
-  status: planned
+  status: in_progress
   title: { de: "Zeitkonto", en: "Time bank" }
   text:
     de: "Nicht genutzte Minuten teilweise auf spätere Tage übertragen."

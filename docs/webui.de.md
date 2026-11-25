@@ -28,6 +28,14 @@ Je Kind (Seite des Kindes):
   landesweite): Ein Feiertag gilt wie ein wählbarer Wochentag (Standard Sonntag), in den Ferien aus der
   Ferienvorlage. Die Feiertage berechnet der Server selbst, ohne Abruf aus dem Internet. Der Tab *Zeiten* zeigt die
   Ferien- und Feiertage der nächsten 14 Tage. Neue Agenten braucht es dafür nicht.
+- **Zeitkonto** (Kind → *Zeiten*, standardmäßig aus): Ein wählbarer Anteil (25, 50 oder 100 %) der an einem Tag
+  nicht genutzten Minuten wandert aufs Konto und ist an den Folgetagen zusätzlich erlaubt – höchstens der eingestellte
+  Wert pro Tag (5–120 min), das älteste Guthaben zuerst. Guthaben verfällt nach 1–14 Tagen, das Konto fasst höchstens
+  das Dreifache des Tageswerts. Es zählt nur die Zeit pro Tag der Wochen- bzw. Ferienvorlage, nicht Gutschriften;
+  Spiele-Limit, Zeitfenster und Sperrzeiten bleiben unverändert. Gutgeschrieben wird ab dem Tag nach dem Einschalten,
+  Ausschalten löscht das Guthaben. Der Tab *Heute* zeigt, wie viel heute dazukommt und wie viel auf dem Konto ist.
+  Das Guthaben eines Tages erreicht einen Rechner, sobald er verbunden ist, und gilt dann auch offline bis Tagesende;
+  neue Agenten braucht es dafür nicht.
 - **Zeit gutschreiben**: zusätzliche Minuten, ein längeres Zeitfenster oder zusätzliche Spielzeit für
   ein bestimmtes Datum. Verlängerungs- und Spielzeit-Anfragen aus der Tray-App lassen sich auch direkt
   im Chat genehmigen.

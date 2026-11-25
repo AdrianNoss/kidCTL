@@ -14,12 +14,14 @@
       - "Sperrzeiten (z. B. Schule) und Zeitfenster über Mitternacht"
       - "Ausnahmen für einzelne Tage, „Jetzt sperren“ mit einem Tipp"
       - "Ferienvorlage für Schulferien, Feiertage gelten wie ein Wochenendtag"
+      - "Zeitkonto: nicht genutzte Minuten teilweise auf Folgetage übertragen"
       - "Funktioniert offline mit der zuletzt bekannten Regel"
     en:
       - "Warnings before time runs out, then sign-out and sign-in lock"
       - "Blocked times (e.g. school) and allowed hours past midnight"
       - "Exceptions for single days, “lock now” with one tap"
       - "Holiday schedule for school holidays, public holidays count like a weekend day"
+      - "Time bank: carry part of the unused minutes over to the following days"
       - "Works offline with the last known rules"
   shot_alt: { de: "Zeiten eines Kindes: Wochenvorlage mit Kontingent und Zeitfenstern", en: "A child's times: weekly schedule with allowance and allowed hours" }
 - id: requests

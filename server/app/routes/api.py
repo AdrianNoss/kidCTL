@@ -241,6 +241,7 @@ def _process(family_id: int, device_id: int, msg, last_seen: datetime) -> _Outco
         elif isinstance(msg, p.UsageReport):
             changed = policy.record_usage(db, device_id, msg)
             out.push += policy.usage_update_payloads(db, changed, device_id)
+            out.push += policy.bank_policy_payloads(db, changed)
         elif isinstance(msg, p.ChatSync):
             chat.expire_stale_requests(db)
             out.reply += [chat.to_wire(db, m) for m in chat.history_for_agent(db, device_id, msg)]

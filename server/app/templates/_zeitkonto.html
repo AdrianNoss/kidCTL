@@ -1,0 +1,24 @@
+{# Kind → Zeiten: Karte „Zeitkonto“ (K7). Eigene Datei, damit child_zeiten.html nur eine Zeile dazubekommt. #}
+<section class="card" id="zeitkonto">
+  <h2>{{ _("Zeitkonto") }}</h2>
+  {% if request.query_params.get("saved") == "bank" %}<p class="success">{{ _("Zeitkonto gespeichert.") }}</p>{% endif %}
+  {% if bank_error %}<p class="error">{{ bank_error }}</p>{% endif %}
+  <p>{{ _("Nicht genutzte Minuten werden teilweise gutgeschrieben und an den Folgetagen zusätzlich erlaubt. Es zählt nur die Zeit pro Tag der Vorlage – Gutschriften und Spielzeit nicht; Zeitfenster und Sperrzeiten bleiben gleich.") }}</p>
+  {% if child.bank_enabled %}
+  <p>{% if child.bank_since and child.bank_since > today %}{{ _("Eingeschaltet – gutgeschrieben wird ab {day}.").format(day=fmt_date(child.bank_since, with_weekday=True)) }}{% else %}{{ _("Kontostand: {balance} – heute zusätzlich erlaubt: {today}.").format(balance=fmt_minutes(bank.balance), today=fmt_minutes(bank.available)) }}{% endif %}</p>
+  {% endif %}
+  <form method="post" action="/children/{{ child.id }}/time-bank" class="stack">
+    <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+    <label class="option"><input type="checkbox" name="bank_enabled" value="1"{% if child.bank_enabled %} checked{% endif %}>
+      <span>{{ _("Zeitkonto verwenden") }}<small>{{ _("Ausschalten löscht das Guthaben.") }}</small></span></label>
+    <label>{{ _("Anteil der nicht genutzten Minuten") }} <select name="bank_percent">
+      {% for pct in tb.PERCENTS %}<option value="{{ pct }}"{% if pct == child.bank_percent %} selected{% endif %}>{{ pct }} %</option>{% endfor %}
+    </select></label>
+    <label>{{ _("Höchstens pro Tag") }} <span class="unit"><input type="number" name="bank_cap_minutes" min="{{ tb.CAP_MIN }}" max="{{ tb.CAP_MAX }}" step="5" value="{{ child.bank_cap_minutes }}" class="short" required> {{ _("min") }}</span></label>
+    <label>{{ _("Verfällt nach") }} <span class="unit"><input type="number" name="bank_expiry_days" min="{{ tb.EXPIRY_MIN }}" max="{{ tb.EXPIRY_MAX }}" value="{{ child.bank_expiry_days }}" class="short" required> {{ _("Tagen") }}</span></label>
+    <details class="help"><summary>{{ _("Wie rechnet das Zeitkonto?") }}</summary>
+      <p>{{ _("Beispiel: 60 min erlaubt, 40 min genutzt, Anteil 50 % → 10 min auf das Konto. An jedem Folgetag gibt es höchstens den eingestellten Wert zusätzlich, das älteste Guthaben zuerst; das Konto fasst höchstens das Dreifache davon. Guthaben verfällt nach der eingestellten Zahl von Tagen. Ein Rechner ohne Internetverbindung bekommt neues Guthaben erst, wenn er wieder verbunden ist.") }}</p>
+    </details>
+    <button type="submit">{{ _("Zeitkonto speichern") }}</button>
+  </form>
+</section>

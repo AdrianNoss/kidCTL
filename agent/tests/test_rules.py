@@ -39,6 +39,14 @@ def test_exception_extra_minutes_and_window_override():
     assert evaluate(other_day, at(12), 3600).reason == QUOTA          # Ausnahme gilt nur ihr Datum
 
 
+
+def test_several_exceptions_same_day_add_up():
+    """Zeitkonto: der Server schickt das Guthaben als zweite Ausnahme für heute – beide zählen."""
+    c = child(exceptions=[DayOverride(day=TUE, extra_minutes=30, window_end_override=time(21)),
+                          DayOverride(day=TUE, extra_minutes=20)])
+    assert evaluate(c, at(12), 3600).remaining_seconds == 3000       # 60 + 30 + 20 min
+    assert evaluate(c, at(20, 30), 0).remaining_seconds == 1800      # Fensterende der ersten bleibt
+
 def test_missing_rule_blocks():
     c = ChildPolicy(id=1, name="Max", rules=[])
     assert not evaluate(c, at(12), 0).allowed

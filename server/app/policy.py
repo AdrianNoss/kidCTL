@@ -16,6 +16,7 @@ from kidctl_common import protocol as p
 from . import access
 from . import lock as lk
 from . import schedule as sch
+from . import timebank
 from . import vacations as vac
 from .chat import device_ids_for_child
 from .programs import free_keys, game_keys, policy_programs
@@ -52,6 +53,8 @@ def build_policy(db: Session, device_id: int) -> p.Policy:
     for child in db.scalars(select(Child).where(Child.id.in_(set(users.values()))).order_by(Child.id)):
         excs = db.scalars(select(DayException).where(
             DayException.child_id == child.id, DayException.day >= since).order_by(DayException.day))
+        # Zeitkonto: heute nutzbares Guthaben als zusätzliche Tagesausnahme (Agent addiert alle Ausnahmen eines Tages)
+        bank = timebank.for_day(db, child, today, cal).available
         children.append(p.ChildPolicy(
             id=child.id, name=child.name,
             # Geltende Regeln von heute … heute+6 (Ferien/Feiertage eingerechnet) – siehe app.vacations
@@ -60,7 +63,8 @@ def build_policy(db: Session, device_id: int) -> p.Policy:
                              game_minutes=r.game_minutes, blocks=r.block_list) for wd, r in cal.week_rules(child, today)],
             exceptions=[p.DayOverride(day=e.day, extra_minutes=e.extra_minutes,
                                       window_end_override=e.window_end_override,
-                                      extra_game_minutes=e.extra_game_minutes or 0) for e in excs],
+                                      extra_game_minutes=e.extra_game_minutes or 0) for e in excs]
+                       + ([p.DayOverride(day=today, extra_minutes=bank)] if bank else []),
             program_mode=child.program_mode,
             allowed_programs=policy_programs(db, child.id),
             game_apps=game_keys(db, child.id),
@@ -199,6 +203,25 @@ def usage_update_payloads(db: Session, changed: set[tuple[int, date]], source_de
     return out
 
 
+def bank_policy_payloads(db: Session, changed: set[tuple[int, date]]) -> list[tuple[int, dict]]:
+    """Nachträgliche Nutzung vergangener Tage ändert das Zeitkonto: geänderte Policies für die online-Geräte der
+    betroffenen Kinder (auch das meldende Gerät) – ohne zu senden."""
+    today = sch.today_local()
+    out = []
+    for child_id in sorted({c for c, d in changed if d < today}):
+        child = db.get(Child, child_id)
+        if child is None or not child.bank_enabled:
+            continue
+        for device_id in sorted(device_ids_for_child(db, child_id)):
+            dev = db.get(Device, device_id)
+            if dev is None or not manager.is_online(device_id):
+                continue
+            pol = build_policy(db, device_id)
+            if pol.version != dev.policy_version:
+                out.append((device_id, pol.model_dump(mode="json")))
+    return out
+
+
 async def push_usage_updates(db: Session, changed: set[tuple[int, date]], source_device: int) -> None:
     """Informiert die *anderen* online-Geräte eines Kindes über neue Nutzungszeit."""
     for device_id, payload in usage_update_payloads(db, changed, source_device):
@@ -208,9 +231,11 @@ async def push_usage_updates(db: Session, changed: set[tuple[int, date]], source
 @dataclass
 class DayStatus:
     used_seconds: int
-    allowed_minutes: int
+    allowed_minutes: int            # inkl. Gutschrift und Zeitkonto
     window_start: object
     window_end: object
+    bank_minutes: int = 0           # davon aus dem Zeitkonto
+    bank_balance: int = 0           # Kontostand zu Tagesbeginn
 
     @property
     def remaining_minutes(self) -> int:
@@ -222,16 +247,22 @@ class DayStatus:
         return max(0, self.used_seconds // 60 - self.allowed_minutes)
 
 
-def day_status(db: Session, child: Child, day: date | None = None, cal: vac.Calendar | None = None) -> DayStatus:
+def day_status(db: Session, child: Child, day: date | None = None, cal: vac.Calendar | None = None,
+               bank: timebank.BankDay | None = None) -> DayStatus:
+    """Stand eines Tages; ``bank`` vorab berechnet (``timebank.simulate``) spart bei Tageslisten die Einzelrechnung."""
     day = day or sch.today_local()
-    rule = (cal or vac.Calendar.load(db)).rule_for(child, day)
+    cal = cal or vac.Calendar.load(db)
+    rule = cal.rule_for(child, day)
+    if bank is None:
+        bank = timebank.for_day(db, child, day, cal)
     exc = db.scalar(select(DayException).where(DayException.child_id == child.id, DayException.day == day))
     used = db.scalar(select(func.coalesce(func.sum(UsageRecord.seconds), 0)).where(
         UsageRecord.child_id == child.id, UsageRecord.day == day)) or 0
-    quota = (rule.quota_minutes if rule else 0) + (exc.extra_minutes if exc else 0)
+    quota = (rule.quota_minutes if rule else 0) + (exc.extra_minutes if exc else 0) + bank.available
     end = exc.window_end_override if exc and exc.window_end_override else (rule.window_end if rule else None)
     return DayStatus(used_seconds=used, allowed_minutes=quota,
-                     window_start=rule.window_start if rule else None, window_end=end)
+                     window_start=rule.window_start if rule else None, window_end=end,
+                     bank_minutes=bank.available, bank_balance=bank.balance)
 
 
 async def push_for_lists(list_ids: set[str]) -> None:

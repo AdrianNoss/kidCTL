@@ -630,6 +630,32 @@ Abweichungen stehen hier und unter „Restlücken“.
 - Anzeige: Tab „Heute“ nennt Ferien bzw. Feiertag des Tages; Tab „Zeiten“ listet die Sondertage der nächsten 14 Tage.
 - Export/Import der Familie enthält Ferienzeiträume, Feiertagseinstellung und Ferienvorlagen.
 
+### Zeitkonto (entschieden 2026-11-25, Planungssitzung; umgesetzt 2026-11-25)
+
+- **Je Kind** unter Kind → *Zeiten*, standardmäßig aus. Einstellungen: Anteil 25/50/100 % (Standard 50), höchstens
+  pro Tag 5–120 min (Standard 30), Verfall nach 1–14 Tagen (Standard 7).
+- **Einzahlung:** Für jeden abgeschlossenen Tag ab dem Tag nach dem Einschalten (`child.bank_since`) abgerundet
+  Anteil × (Zeit pro Tag der geltenden Vorlage − Nutzung). Wochen- oder Ferienvorlage und Feiertage wie in
+  `Calendar.rule_for`. Gutschriften der Eltern und genutztes Guthaben zählen nicht, sonst schaukelt sich das Konto
+  auf. Der Kontostand ist auf 3 × Tageswert begrenzt.
+- **Verbrauch:** An einem Tag ist `min(Tageswert, Kontostand)` zusätzlich erlaubt. Die Nutzung über Regel und
+  Gutschrift hinaus verbraucht das älteste Guthaben zuerst. Eine Einzahlung von Tag d gilt an d+1 … d+Verfall.
+- **Nur Gesamtzeit:** Spiele-Limit, Zeitfenster und Sperrzeiten bleiben unverändert.
+- **Ausschalten** löscht das Guthaben (`bank_since = NULL`). Erneutes Einschalten beginnt wieder am Folgetag.
+- **Berechnung:** im Server (`app/timebank.py`) zustandslos aus `usage_record`, `day_exception` und dem Kalender,
+  höchstens 28 Tage zurück. Es gibt keine Buchungstabelle, nachträgliche Meldungen werden einfach neu gerechnet.
+- **Policy:** Das heute nutzbare Guthaben ist eine zusätzliche `DayOverride` für heute. Der Agent addiert alle
+  Ausnahmen eines Tages, deshalb braucht es weder ein neues Protokoll noch neue Agenten oder Tray-Änderungen.
+- **Offline:** Ein Rechner setzt das Guthaben mit der gecachten Policy bis Tagesende durch, bekommt neues aber erst
+  mit der nächsten Verbindung. Der Tageswechsel-Job (`vacations.run_forever`) schiebt die Policies nach Mitternacht
+  nach. Meldet ein Gerät Nutzung vergangener Tage nach, gehen geänderte Policies an die online-Geräte des Kindes,
+  auch an das meldende. Restlücke in `docs/limitations*` (verspätete Meldungen).
+- **Anzeige:**
+  - Eltern, Tab *Zeiten*: Karte „Zeitkonto“ mit Kontostand und heute zusätzlich erlaubten Minuten.
+  - Eltern, Tab *Heute*: „Zeitkonto: heute +X (Konto Y)“; das erlaubte Tageskontingent, die Statistik und der
+    Nutzungsbericht enthalten das Guthaben.
+  - Kind: nur die höhere Restzeit in der Tray-App, ohne eigenen Hinweis (Kandidat für später).
+
 ## Programm-Whitelist
 
 - Agent abonniert Prozess-Events über Netlink (`PROC_EVENTS`), löst `/proc/<pid>/exe` auf und
@@ -3820,3 +3846,19 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Browser/Spiel/Konsole); Migration gegen Alt-Schema-Datenbank (0028 → head, `alembic check`, Downgrade/Upgrade);
   Doku-Parität, `hugo --minify --panicOnWarning`, Design-Review „Programme“ DE/EN ohne Auffälligkeiten,
   Screenshots erneuert. Nicht geprüft: VM Linux (KDE) und Windows mit echten Prozessen.
+- 2026-11-25: Zeitkonto (K7, Etappe 2): nicht genutzte Minuten teilweise auf Folgetage, mit Anteil, Deckel je Tag,
+  Kontogrenze 3 × Deckel und Verfall (siehe „Bildschirmzeit → Zeitkonto“).
+  - Server rechnet zustandslos (`app/timebank.py`); Migration `0030_zeitkonto` (Spalten `child.bank_*`).
+  - Guthaben als zusätzliche Tagesausnahme in der Policy, also ohne Protokolländerung.
+  - Nachmeldungen vergangener Tage schieben geänderte Policies nach.
+  - WebUI-Karte im Tab *Zeiten*, Zeile im Tab *Heute*; Statistik und Bericht rechnen das Guthaben ein.
+  - Doku `webui`, README und Funktionsliste ergänzt, Restlücke eingetragen, Roadmap `time-bank` auf „in Arbeit“.
+  - Getestet:
+    - `server/tests/test_timebank.py`: Einzahlung/Verbrauch/Deckel/älteste zuerst, Verfall und Kontogrenze,
+      Gutschriften zählen nicht, Jahreswechsel mit Ferienvorlage, Formular samt Fehlerfällen und Ausschalten,
+      Policy mit Guthaben, Nachmeldung schickt neue Policy, Policy ohne Zeitkonto unverändert.
+    - Gesamte Server-Suite gegen PostgreSQL (416 grün).
+    - Agent-Unittest: mehrere Ausnahmen eines Tages werden addiert.
+    - Design-Review *Zeiten*/*Heute* (DE/EN, hell/dunkel) ohne Auffälligkeiten.
+    - Migration gegen eine Alt-Schema-Datenbank (0028 mit Kind → head → 0028 → head, `alembic check` ohne
+      Änderungen).
