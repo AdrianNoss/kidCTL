@@ -162,7 +162,8 @@ def test_pair_page_and_user_mapping_name_the_platform(client, parent):
     login(client, parent)
     page = client.post("/devices/pair", data={"name": "PC", "csrf_token": csrf_from(client.get("/devices").text)}).text
     assert "kidctl.cmd&#34; enroll" in page or 'kidctl.cmd" enroll' in page   # Windows-Weg
-    assert "sudo kidctl enroll" in page and 'href="/repo/"' in page
+    assert "sudo kidctl enroll" in page and 'href="/repo/" target="_blank" rel="noopener"' in page
+    assert "docs/child-linux/" in page and "Installer herunterladen" not in page   # noch kein Installer
     with SessionLocal() as db:
         win = Device(name="Win", token_hash="f" * 64, platform="windows")
         lin = Device(name="Lin", token_hash="9" * 64, platform="linux")
@@ -176,6 +177,17 @@ def test_pair_page_and_user_mapping_name_the_platform(client, parent):
     assert "Windows-Benutzer" in page and "Linux-Benutzer" not in page and "<th>UID</th>" not in page
     page = client.get(f"/devices/{ids[1]}").text
     assert "Linux-Benutzer" in page and "<th>UID</th>" in page
+
+
+def test_pair_page_links_latest_installer(client, parent, monkeypatch):
+    from conftest import csrf_from
+    login(client, parent)
+    monkeypatch.setattr(versions, "windows_installers", lambda repo=None: [
+        versions.Installer("KidCTL-Setup-0.48.0.exe", "0.48.0", 1, datetime.now()),
+        versions.Installer("KidCTL-Setup-0.47.0.exe", "0.47.0", 1, datetime.now())])
+    page = client.post("/devices/pair", data={"name": "PC", "csrf_token": csrf_from(client.get("/devices").text)}).text
+    assert 'href="/repo/windows/KidCTL-Setup-0.48.0.exe"' in page and "(0.48.0)" in page
+    assert 'href="/repo/" target="_blank" rel="noopener"' in page   # Download-Seite als Rückfall
 
 
 def test_prerelease_versions(tmp_path, monkeypatch):

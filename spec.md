@@ -3762,3 +3762,17 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   bei einer Neuinstallation nicht; aufgefallen beim Einrichten von dev.kidctl.de). Beide Befehle laufen jetzt vor den
   App-Importen. Geprüft: Test ruft die CLI ohne Konfiguration auf (Schlüssel 32 Byte, VAPID-Paar), andere Befehle
   verlangen die Konfiguration weiter.
+- 2026-11-25: Kleinkram 0.48 (WebUI). **Gerät koppeln:** Gibt es einen Windows-Installer im Repo, verlinkt die Seite
+  direkt den neuesten („Installer herunterladen (Version)“); die Download-Seite bleibt als Rückfall bzw. für ältere
+  Versionen und öffnet in neuem Tab. Linux verweist auf die Anleitung „Kinderrechner (Linux)“ (Paketquelle +
+  Paket, neuer Tab). **Kind → Zeiten:** Sperrzeiten in Wochen- und Ferienvorlage einklappbar (`<details>`, ohne
+  JavaScript); eingeklappt, solange keine eingetragen ist, aufgeklappt mit Anzahl, sobald welche bestehen oder beim
+  Speichern der jeweiligen Vorlage ein Fehler auftritt. **Einstellungen:** Knöpfe neben Feldern mit Beschriftung
+  (Familie, Ferien, Feiertage, Support-Zugriff, Export/Import, Familie löschen, Backup; Verwaltung: Rechnung
+  erstellen) sitzen mittig zum Feld statt zur Beschriftung – über die zentrale Klasse `.row.bottom`; Formulare mit
+  Text hinter dem Feld (Gerät: Alarm, Chat: Anfrage anpassen) unverändert. **Eigene Domains:** höchstens 1 000 je
+  Feld (freigegeben/gesperrt, Konstante `webfilter.MAX_CUSTOM_DOMAINS`, kein `.env`-Wert, weil die 4-MB-Grenze des
+  Agenten fest ist); Prüfung nur beim Speichern mit Fehlermeldung DE/EN. Ältere, längere Listen bleiben speicherbar,
+  dürfen aber nicht wachsen. Geprüft: pytest (Installer-Link mit/ohne Installer, Sperrzeiten zu/auf/Fehler, Limit
+  inkl. Altbestand, Übersetzungen), Design-Review vorher/nachher (Einstellungen, Zeiten, Gerät, Chat,
+  Verwaltung Familie/Preisliste, hell/dunkel, mobil/Desktop), Screenshots `child-times`, `pair`, `game-limit` neu.

@@ -57,6 +57,24 @@ def test_block_validation(client, parent):
     assert _blocks(cid, 0) == []
 
 
+def _open_toggles(page):
+    import re
+    return re.findall(r'<details class="section-toggle"( open)?>', page)
+
+
+def test_blocks_collapsed_unless_set_or_error(client, parent):
+    """Sperrzeiten (Wochen- und Ferienvorlage) eingeklappt, außer es gibt Einträge oder einen Fehler beim Speichern."""
+    cid, tok = _setup(client, parent)
+    assert _open_toggles(client.get(f"/children/{cid}/zeiten").text) == ["", ""]
+    _save(client, cid, tok, block_wd_0_start="08:00", block_wd_0_end="13:00")
+    page = client.get(f"/children/{cid}/zeiten").text
+    # Ferienvorlage noch nicht gespeichert: vorbelegt mit der Wochenvorlage, also auch dort offen
+    assert _open_toggles(page) == [" open", " open"] and '<span class="count">1</span>' in page
+    _save(client, cid, tok)
+    r = _save(client, cid, tok, block_wd_0_start="13:00", block_wd_0_end="08:00")
+    assert r.status_code == 400 and _open_toggles(r.text) == [" open", ""]
+
+
 def test_window_over_midnight(client, parent):
     cid, tok = _setup(client, parent)
     assert _save(client, cid, tok, start_we="16:00", end_we="01:00").status_code == 303

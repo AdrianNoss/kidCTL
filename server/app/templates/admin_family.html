@@ -119,7 +119,7 @@
     {% endfor %}
   </table>
   {% else %}<p class="muted">{{ _("Noch keine Rechnungen.") }}</p>{% endif %}
-  <form method="post" action="/admin/families/{{ f.id }}/invoices" class="row">
+  <form method="post" action="/admin/families/{{ f.id }}/invoices" class="row bottom">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <label>{{ _("Vorlage") }} <select name="price_item"><option value="">{{ _("ohne Vorlage") }}</option>
       {% for p in price_items %}<option value="{{ p.id }}">{{ p.label }} · {{ eur(p.amount_cents) }}</option>{% endfor %}</select></label>

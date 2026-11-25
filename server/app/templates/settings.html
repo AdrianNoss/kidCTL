@@ -7,7 +7,7 @@
   <div class="card-head"><h2>{{ _("Familie") }}</h2></div>
   {% if saved == "family" %}<p class="success">{{ _("Gespeichert.") }}</p>{% endif %}
   {% if is_owner %}
-  <form method="post" action="/settings/family" class="row">
+  <form method="post" action="/settings/family" class="row bottom">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <label>{{ _("Name der Familie") }} <input name="name" maxlength="128" value="{{ family.name if family else '' }}" placeholder="{{ _('z. B. Familie Müller') }}"></label>
     <button type="submit" class="secondary">{{ _("Speichern") }}</button>
@@ -37,7 +37,7 @@
   {% else %}<p class="muted">{{ _("Keine Ferien eingetragen.") }}</p>{% endif %}
   {% if vacation_error %}<p class="error">{{ vacation_error }}</p>{% endif %}
   {% set vf = vacation_form or {} %}
-  <form method="post" action="/settings/vacations" class="row">
+  <form method="post" action="/settings/vacations" class="row bottom">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <label>{{ _("Name") }} <input name="name" maxlength="64" value="{{ vf.name or '' }}" placeholder="{{ _('z. B. Sommerferien') }}"></label>
     <label>{{ _("Erster Tag") }} <input type="date" name="first_day" value="{{ vf.first_day or '' }}" required></label>
@@ -47,7 +47,7 @@
   <h3>{{ _("Gesetzliche Feiertage") }}</h3>
   {% if holiday_error %}<p class="error">{{ holiday_error }}</p>{% endif %}
   {% set current = (holiday_region.country ~ ":" ~ holiday_region.subdiv) if holiday_region else "" %}
-  <form method="post" action="/settings/holidays" class="row">
+  <form method="post" action="/settings/holidays" class="row bottom">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <label>{{ _("Region") }}
       <select name="region">
@@ -143,7 +143,7 @@
     <button type="submit" class="danger">{{ _("Freigabe beenden") }}</button>
   </form>
   {% elif is_owner %}
-  <form method="post" action="/settings/support" class="row">
+  <form method="post" action="/settings/support" class="row bottom">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <label>{{ _("Dauer") }} <select name="hours">{% for h in support_durations %}<option value="{{ h }}"{% if h == 24 %} selected{% endif %}>{{ ngettext("{n} Stunde", "{n} Stunden", h).format(n=h) }}</option>{% endfor %}</select></label>
     <button type="submit" class="secondary">{{ _("Support-Zugriff freigeben") }}</button>
@@ -164,7 +164,7 @@
   {% if imported %}<p class="success">{{ _("Import abgeschlossen. Geräte bitte neu koppeln – ihre Kopplung gilt nur auf dem alten Server.") }}</p>{% endif %}
   {% if is_owner %}
   <p class="muted"><small>{{ _("Export: ZIP mit allen Daten eurer Familie (Kinder, Regeln, Geräte, Nutzung, Protokoll, Chat) – lesbar, für ein eigenes Backup oder den Umzug zu einem anderen KidCTL-Server. Eltern-Accounts und Passwörter sind nicht enthalten.") }}</small></p>
-  <form method="post" action="/settings/export" class="row">
+  <form method="post" action="/settings/export" class="row bottom">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <label>{{ _("Aktuelles Passwort") }} <input type="password" name="current_password" required autocomplete="current-password"></label>
     <button type="submit" class="secondary">{{ _("Exportieren") }}</button>
@@ -173,7 +173,7 @@
   {% if family_empty %}
   <h3>{{ _("Import") }}</h3>
   <p class="muted"><small>{{ _("Übernimmt einen Export in diese noch leere Familie. Geräte kommen getrennt an und müssen neu gekoppelt werden.") }}</small></p>
-  <form method="post" action="/settings/import" enctype="multipart/form-data" class="row">
+  <form method="post" action="/settings/import" enctype="multipart/form-data" class="row bottom">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <label>{{ _("Export-Datei") }} <input type="file" name="file" accept=".zip,application/zip" required></label>
     <label>{{ _("Aktuelles Passwort") }} <input type="password" name="current_password" required autocomplete="current-password"></label>
@@ -184,7 +184,7 @@
   {% if SAAS %}
   <details{% if delete_error %} open{% endif %}><summary>{{ _("Familie löschen") }}</summary>
     <p class="warn"><small>{{ _("Löscht eure Familie endgültig: alle Eltern-Accounts, Kinder, Geräte und Daten. Der Schlüssel der Familie wird verworfen, dadurch sind die Daten auch in Backups des Servers nicht mehr lesbar. Verbundene Agenten heben dabei alle Einschränkungen auf; Computer, die gerade aus sind, behalten die letzten Regeln – dort KidCTL deinstallieren.") }}</small></p>
-    <form method="post" action="/settings/delete-family" class="row">
+    <form method="post" action="/settings/delete-family" class="row bottom">
       <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
       <label>{{ _("Zur Bestätigung LÖSCHEN eingeben") }} <input name="confirm" required autocomplete="off"></label>
       <label>{{ _("Aktuelles Passwort") }} <input type="password" name="current_password" required autocomplete="current-password"></label>
@@ -208,7 +208,7 @@
   {% if backup_error %}<p class="warn"><small>{{ _("Letzter Fehler:") }} {{ backup_error }}</small></p>{% endif %}
   <p class="muted"><small>{{ _("Täglich ab {hour}:00 Uhr ein geprüfter Schnappschuss der Datenbank, die letzten {keep} bleiben erhalten. Bei einem Fehler oder ohne Backup seit 2 Tagen kommt eine Push-Nachricht. Das externe Backup des Servers sollte den Ordner data/ mitsichern.").format(hour=backup_hour, keep=backup_keep) }}</small></p>
   {% if backups %}
-  <form method="post" action="/settings/backup/download" class="row">
+  <form method="post" action="/settings/backup/download" class="row bottom">
     <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
     <label>{{ _("Backup") }} <select name="name">{% for b in backups %}<option value="{{ b.path.name }}">{{ fmt_datetime(b.at) }} ({{ fmt_size(b.size) }})</option>{% endfor %}</select></label>
     <label>{{ _("Aktuelles Passwort") }} <input type="password" name="current_password" required autocomplete="current-password"></label>

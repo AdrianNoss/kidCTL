@@ -99,6 +99,8 @@ BLOCKLISTS = {b.id: b for b in [
 DEFAULT_LISTS = ("hagezi-multi", "hagezi-nsfw")  # Vorauswahl im Blacklist-Modus
 REFRESH_SECONDS = 24 * 3600
 MAX_LIST_BYTES = 64 * 1024 * 1024
+# Eigene Domains je Feld (freigegeben/gesperrt): stehen direkt in der Policy, die der Agent nur bis 4 MB annimmt
+MAX_CUSTOM_DOMAINS = 1000
 
 
 # ---------- Domains ----------
@@ -150,6 +152,11 @@ def parse_domain_input(text: str) -> tuple[list[str], list[str]]:
         d = normalize_domain(item)
         (ok if d else bad).append(d or item)
     return sorted(set(ok)), bad
+
+
+def too_many_domains(new: list[str], old: list[str]) -> bool:
+    """Mehr eigene Domains als erlaubt? Ältere, schon längere Listen bleiben speicherbar, dürfen aber nicht wachsen."""
+    return len(new) > max(MAX_CUSTOM_DOMAINS, len(old))
 
 
 # ---------- Listen herunterladen / ausliefern ----------

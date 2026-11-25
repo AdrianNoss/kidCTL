@@ -21,6 +21,23 @@
   {% endfor %}
 </tr>
 {% endmacro %}
+{% macro blocks_section(rmap, err) %}{% set ns = namespace(n=0) %}
+{% for days in (groups.values() | map(attribute=1) | list if child.weekdays_same else [[0], [1], [2], [3], [4], [5], [6]]) %}{% set ns.n = ns.n + rmap[days[0]].block_list | length %}{% endfor %}
+{# Eingeklappt, solange nichts eingetragen ist (und kein Fehler beim Speichern) #}
+<details class="section-toggle"{% if ns.n or err %} open{% endif %}>
+  <summary>{{ _("Sperrzeiten") }}{% if ns.n %} <span class="count">{{ ns.n }}</span>{% endif %}</summary>
+  <div class="scroll">
+  <table class="schedule-table blocks-table">
+    <tr><th></th>{% for i in range(max_blocks) %}<th>{{ _("Sperrzeit {n}").format(n=i + 1) }}</th>{% endfor %}</tr>
+    {% if child.weekdays_same %}
+      {% for key, (label, days) in groups.items() %}{{ block_row(key, _(label), rmap[days[0]]) }}{% endfor %}
+    {% else %}
+      {% for d in range(7) %}{{ block_row(d, weekday_names[d], rmap[d]) }}{% endfor %}
+    {% endif %}
+  </table>
+  </div>
+</details>
+{% endmacro %}
 {% block content %}
 {% include "_child_head.html" %}
 {% if request.query_params.get("saved") == "1" %}<p class="success">{{ _("Zeiten gespeichert.") }}</p>{% endif %}
@@ -51,17 +68,7 @@
       {% endif %}
     </table>
     </div>
-    <h3>{{ _("Sperrzeiten") }}</h3>
-    <div class="scroll">
-    <table class="schedule-table blocks-table">
-      <tr><th></th>{% for i in range(max_blocks) %}<th>{{ _("Sperrzeit {n}").format(n=i + 1) }}</th>{% endfor %}</tr>
-      {% if child.weekdays_same %}
-        {% for key, (label, days) in groups.items() %}{{ block_row(key, _(label), rules[days[0]]) }}{% endfor %}
-      {% else %}
-        {% for d in range(7) %}{{ block_row(d, weekday_names[d], rules[d]) }}{% endfor %}
-      {% endif %}
-    </table>
-    </div>
+    {{ blocks_section(rules, error) }}
     <details class="help"><summary>{{ _("Wie wirken diese Werte?") }}</summary>
       <p>{{ _("Die Nutzung endet, wenn die Zeit pro Tag aufgebraucht ist oder die erlaubte Zeitspanne vorbei ist. Der Tag wechselt um 00:00 Uhr.") }}</p>
       <p>{{ _("Liegt „bis“ vor „Erlaubt von“ (z. B. 16:00 bis 01:00), reicht die Zeitspanne über Mitternacht – höchstens bis 06:00 Uhr. Die Zeit nach Mitternacht zählt schon zum Kontingent des neuen Tages.") }}</p>
@@ -93,17 +100,7 @@
       {% endif %}
     </table>
     </div>
-    <h3>{{ _("Sperrzeiten") }}</h3>
-    <div class="scroll">
-    <table class="schedule-table blocks-table">
-      <tr><th></th>{% for i in range(max_blocks) %}<th>{{ _("Sperrzeit {n}").format(n=i + 1) }}</th>{% endfor %}</tr>
-      {% if child.weekdays_same %}
-        {% for key, (label, days) in groups.items() %}{{ block_row(key, _(label), vacation_rules[days[0]]) }}{% endfor %}
-      {% else %}
-        {% for d in range(7) %}{{ block_row(d, weekday_names[d], vacation_rules[d]) }}{% endfor %}
-      {% endif %}
-    </table>
-    </div>
+    {{ blocks_section(vacation_rules, vacation_error) }}
     <button type="submit">{{ _("Ferienvorlage speichern") }}</button>
   </form>
   <h3>{{ _("Die nächsten 14 Tage") }}</h3>

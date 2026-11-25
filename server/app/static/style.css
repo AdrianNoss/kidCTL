@@ -583,6 +583,16 @@ a.tile:hover { background:color-mix(in srgb, var(--on-surface) 8%, var(--surface
                                      transform:rotate(-45deg); transition:transform .15s; margin-right:.125rem; }
 .search-advanced[open] > summary::before { transform:rotate(45deg); }
 .search-advanced > summary .count { background:var(--primary-container); color:var(--on-primary-container); }
+/* Einklappbarer Abschnitt mit Überschrift wie h3 (z. B. Sperrzeiten unter Kind → Zeiten), ohne JavaScript */
+.section-toggle { margin:1.25rem 0 .75rem; }
+.section-toggle > summary { display:inline-flex; align-items:center; gap:.5rem; list-style:none; margin:0; padding:.375rem 0;
+                            font-size:.9375rem; line-height:1.375rem; font-weight:500; color:var(--on-surface-variant); }
+.section-toggle > summary::-webkit-details-marker { display:none; }
+.section-toggle > summary::before { content:""; width:.4rem; height:.4rem; border:solid currentColor; border-width:0 2px 2px 0;
+                                    transform:rotate(-45deg); transition:transform .15s; margin-right:.125rem; }
+.section-toggle[open] > summary { margin-bottom:.5rem; }
+.section-toggle[open] > summary::before { transform:rotate(45deg); }
+.section-toggle > summary .count { background:var(--primary-container); color:var(--on-primary-container); }
 .filter-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:.75rem 1rem; padding:.75rem 0 .25rem;
                border-top:1px solid var(--outline-variant); margin-top:.375rem; }
 .filter-grid label { margin:0; min-width:0; }

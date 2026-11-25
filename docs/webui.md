@@ -7,7 +7,8 @@ Per child (the child's page):
   run past midnight (ending at 06:00 at the latest); time after midnight already counts towards the next day's allowance.
 - **Blocked times**: up to three times per day (e.g. school 08:00–13:00, dinner 18:00–19:00) during which the computer
   is locked even if time is left – with a warning, just like at the end of the time. Optionally named; the child sees
-  the name in the tray app. Extra time does not lift blocked times.
+  the name in the tray app. Extra time does not lift blocked times. The section is collapsed as long as no blocked time
+  is set.
 
   > [!NOTE]
   > Blocked times and hours past midnight need KidCTL 0.47 or later on the child's computer. Older versions only
@@ -47,6 +48,7 @@ Per child (the child's page):
     Microsoft 365.
   - **Block list**: block lists, e.g. HaGeZi Multi + NSFW, plus your own blocks and exceptions.
   - SafeSearch per child.
+  - Your own allowed or blocked domains: at most 1,000 per field.
 
   ![Web filter with allowed services and custom domains](img/en/web-filter.webp)
 

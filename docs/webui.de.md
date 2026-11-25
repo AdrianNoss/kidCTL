@@ -7,7 +7,7 @@ Je Kind (Seite des Kindes):
   Mitternacht (Ende spätestens 06:00); die Zeit nach Mitternacht zählt schon zum Kontingent des neuen Tages.
 - **Sperrzeiten**: je Tag bis zu drei Zeiten (z. B. Schule 08:00–13:00, Abendessen 18:00–19:00), in denen der Rechner
   trotz Restzeit gesperrt ist – mit Vorwarnung wie am Ende der Zeit. Optional mit Namen, den das Kind in der Tray-App
-  sieht. Gutschriften heben Sperrzeiten nicht auf.
+  sieht. Gutschriften heben Sperrzeiten nicht auf. Der Bereich ist eingeklappt, solange keine Sperrzeit eingetragen ist.
 
   > [!NOTE]
   > Sperrzeiten und Fenster über Mitternacht brauchen KidCTL ab Version 0.47 auf dem Rechner des Kindes. Ältere
@@ -47,6 +47,7 @@ Je Kind (Seite des Kindes):
     Microsoft 365.
   - **Blacklist**: Sperrlisten, z. B. HaGeZi Multi + NSFW, plus eigene Sperren und Ausnahmen.
   - SafeSearch je Kind.
+  - Eigene freigegebene bzw. gesperrte Domains: höchstens 1 000 je Feld.
 
   ![Website-Filter mit freigegebenen Diensten und eigenen Domains](img/de/web-filter.webp)
 

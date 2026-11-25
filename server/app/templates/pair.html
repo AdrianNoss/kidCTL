@@ -8,7 +8,13 @@
   <div class="pair-ways">
     <div>
       <h2>{{ _("Windows") }}</h2>
-      <p>{{ _("Installer von der {link} als Administrator ausführen und auf der Seite „Kopplung“ eingeben:").format(link='<a href="/repo/">' ~ _("Download-Seite") ~ '</a>') | safe }}</p>
+      {% set downloads = '<a href="/repo/" target="_blank" rel="noopener">' ~ _("Download-Seite") ~ '</a>' %}
+      {% if installer %}
+      <p><a href="/repo/windows/{{ installer.name }}" class="btn secondary" download>{{ _("Installer herunterladen") }} ({{ installer.version }})</a></p>
+      <p>{{ _("Installer als Administrator ausführen und auf der Seite „Kopplung“ eingeben (ältere Versionen auf der {link}):").format(link=downloads) | safe }}</p>
+      {% else %}
+      <p>{{ _("Installer von der {link} als Administrator ausführen und auf der Seite „Kopplung“ eingeben:").format(link=downloads) | safe }}</p>
+      {% endif %}
       <dl class="pair-values">
         <div><dt>{{ _("Server") }}</dt><dd><code>{{ base_url }}</code></dd></div>
         <div><dt>{{ _("Kopplungscode") }}</dt><dd><code>{{ code[:4] }}-{{ code[4:] }}</code></dd></div>
@@ -20,7 +26,7 @@
     </div>
     <div>
       <h2>{{ _("Linux") }}</h2>
-      <p>{{ _("Nach der Installation des Pakets kidctl im Terminal ausführen:") }}</p>
+      <p>{{ _("Paketquelle einrichten und das Paket kidctl installieren ({link}), danach im Terminal ausführen:").format(link='<a href="https://kidctl.de/' ~ ('de/' if lang() == 'de' else '') ~ 'docs/child-linux/" target="_blank" rel="noopener">' ~ _("Anleitung") ~ '</a>') | safe }}</p>
       <pre>sudo kidctl enroll {{ base_url }} {{ code }}</pre>
     </div>
   </div>

@@ -1707,14 +1707,23 @@ msgstr "Run the installer from the {link} as administrator and enter on the “P
 msgid "Download-Seite"
 msgstr "download page"
 
+msgid "Installer herunterladen"
+msgstr "Download installer"
+
+msgid "Installer als Administrator ausführen und auf der Seite „Kopplung“ eingeben (ältere Versionen auf der {link}):"
+msgstr "Run the installer as administrator and enter on the “Pairing” page (older versions on the {link}):"
+
 msgid "KidCTL ist schon installiert?"
 msgstr "KidCTL already installed?"
 
 msgid "In einer Eingabeaufforderung als Administrator:"
 msgstr "In a command prompt as administrator:"
 
-msgid "Nach der Installation des Pakets kidctl im Terminal ausführen:"
-msgstr "After installing the kidctl package, run in a terminal:"
+msgid "Paketquelle einrichten und das Paket kidctl installieren ({link}), danach im Terminal ausführen:"
+msgstr "Set up the package repository and install the kidctl package ({link}), then run in a terminal:"
+
+msgid "Anleitung"
+msgstr "guide"
 
 msgid "Nicht zugeordnete Windows-Benutzer werden nie eingeschränkt."
 msgstr "Unassigned Windows users are never restricted."
@@ -3728,3 +3737,6 @@ msgstr "{label}: name may have at most 40 characters."
 
 msgid "{label}: Sperrzeit {n}"
 msgstr "{label}: blocked time {n}"
+
+msgid "Zu viele Domains: höchstens {max} je Feld (freigegeben: {allow}, gesperrt: {deny})."
+msgstr "Too many domains: at most {max} per field (allowed: {allow}, blocked: {deny})."

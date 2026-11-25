@@ -23,7 +23,7 @@ from ..models import (
 )
 from .. import (
     access, accounts, blocklog, chat, i18n, nowplaying, passkeys, policy, programs, report, selfupdate, stats, vacations,
-    webfilter,
+    versions, webfilter,
 )
 from .. import lock as lk
 from .. import schedule as sch
@@ -334,6 +334,11 @@ async def child_web(child_id: int, request: Request, db: Session = Depends(get_d
     if bad_allow or bad_deny:
         return _child_page(request, db, child, "internet", status_code=400,
                            error=_("Ungültige Domain(s):") + " " + ", ".join((bad_allow + bad_deny)[:10]))
+    current = webfilter.child_settings(db, child.id)
+    if webfilter.too_many_domains(allow, current["allow"]) or webfilter.too_many_domains(deny, current["deny"]):
+        return _child_page(request, db, child, "internet", status_code=400,
+                           error=_("Zu viele Domains: höchstens {max} je Feld (freigegeben: {allow}, gesperrt: {deny}).")
+                           .format(max=webfilter.MAX_CUSTOM_DOMAINS, allow=len(allow), deny=len(deny)))
     lists = {str(x) for x in form.getlist("list")}
     webfilter.save_child_settings(db, child, mode, form.get("safesearch") == "1",
                                   {str(x) for x in form.getlist("bundle")}, allow, deny, lists)
@@ -487,7 +492,8 @@ def device_pair(request: Request, name: str = Form(...),
     db.add(pc)
     db.commit()
     return render(request, "pair.html", code=code, name=name, expires_at=pc.expires_at,
-                  base_url=settings.base_url, minutes=settings.pairing_code_minutes)
+                  base_url=settings.base_url, minutes=settings.pairing_code_minutes,
+                  installer=next(iter(versions.windows_installers()), None))
 
 
 @router.get("/devices/{device_id}")

@@ -74,6 +74,24 @@ def test_settings_to_policy(client, parent, monkeypatch):
         assert _save(client, cid, tok, web_mode="kaputt").status_code == 400
 
 
+def test_custom_domain_limit(client, parent, monkeypatch):
+    """Je Feld höchstens MAX_CUSTOM_DOMAINS; ältere, längere Listen bleiben speicherbar, wachsen aber nicht."""
+    monkeypatch.setattr(webfilter, "MAX_CUSTOM_DOMAINS", 3)
+    cid, tok = _setup(client, parent)
+    many = lambda n: "\n".join(f"d{i}.example.com" for i in range(n))
+    assert _save(client, cid, tok, web_mode="blacklist", deny=many(3), allow=many(3)).status_code == 303
+    r = _save(client, cid, tok, web_mode="blacklist", deny=many(4), allow=many(2))
+    assert r.status_code == 400 and "höchstens 3 je Feld" in r.text and "gesperrt: 4" in r.text
+    with SessionLocal() as db:
+        assert len(webfilter.child_settings(db, cid)["deny"]) == 3   # nichts verändert
+    with SessionLocal() as db:   # Altbestand über dem Limit (vor der Grenze gespeichert)
+        webfilter.save_child_settings(db, db.get(Child, cid), "blacklist", False, set(), [], many(5).split(), set())
+        db.commit()
+    assert _save(client, cid, tok, web_mode="blacklist", deny=many(5)).status_code == 303   # bleibt speicherbar
+    assert _save(client, cid, tok, web_mode="blacklist", deny=many(6)).status_code == 400   # wächst nicht
+    assert _save(client, cid, tok, web_mode="blacklist", deny=many(2)).status_code == 303
+
+
 LIST_BODY = "0.0.0.0 ads.example.com\n0.0.0.0 track.example.net\n"
 
 
