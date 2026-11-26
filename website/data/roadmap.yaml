@@ -151,19 +151,22 @@
     de: "Zum Beispiel während der Schulzeit sperren; Fenster auch über Mitternacht."
     en: "For example, block during school hours; windows can also span midnight."
 - id: app-limits
-  status: in_progress
+  status: done
+  version: "0.48"
   title: { de: "Limits je Programm", en: "Limits per app" }
   text:
     de: "Eigenes Tageskontingent für einzelne Programme oder Kategorien, etwa den Browser."
     en: "A separate daily limit for single apps or categories, such as the browser."
 - id: free-apps
-  status: in_progress
+  status: done
+  version: "0.48"
   title: { de: "Lern-Apps zählen nicht", en: "Learning apps don't count" }
   text:
     de: "Ausgewählte Programme verbrauchen keine Bildschirmzeit."
     en: "Selected apps don't use up screen time."
 - id: time-bank
-  status: in_progress
+  status: done
+  version: "0.48"
   title: { de: "Zeitkonto", en: "Time bank" }
   text:
     de: "Nicht genutzte Minuten teilweise auf spätere Tage übertragen."

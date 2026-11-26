@@ -6,6 +6,25 @@ die Version des laufenden Servers."""
 
 RELEASES: list[dict] = [
     {
+        "version": "0.48.0",
+        "date": "2026-11-26",
+        "de": [
+            "Limit je Programm oder Kategorie: eigenes Tageslimit z. B. für Browser, Chat, Musik und Video oder "
+            "ein einzelnes Programm, unter Kind → Zeiten.",
+            "„Zählt nicht“: Ausgewählte Lern- und Office-Programme verbrauchen keine Bildschirmzeit (Kind → Programme).",
+            "Zeitkonto: Nicht genutzte Minuten lassen sich teilweise auf die nächsten Tage übertragen.",
+            "Programme auf USB-Sticks lassen sich nicht mehr freigeben; Sperrzeiten sind auf der Zeiten-Seite "
+            "einklappbar.",
+        ],
+        "en": [
+            "Limit per app or category: a separate daily limit, e.g. for the browser, chat, music and video or a "
+            "single app, under child → Times.",
+            "“Doesn't count”: selected learning and office apps don't use up screen time (child → Apps).",
+            "Time bank: part of the unused minutes can be carried over to the next days.",
+            "Apps on USB sticks can no longer be allowed; blocked times can be collapsed on the Times page.",
+        ],
+    },
+    {
         "version": "0.47.0",
         "date": "2026-11-23",
         "de": [

@@ -3940,3 +3940,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   die Geräteanzeige als Kind eingehängt (`/run/media/kind/…`, ausführbar): freigegebene Programme auf beiden und ein
   Skript vom Stick beendet („Wechseldatenträger“). Nicht in der VM: `/media/` (Debian/Ubuntu), Steam-Bibliothek und
   Store-App auf USB-Platte (nur Unittests). VMs danach auf den Snapshot `vor-usb` zurückgesetzt.
+- 2026-11-26: Nutzer-Test (Adrian) der 0.48-Vorabversion unter Linux auf echter Hardware erfolgreich.
+- 2026-11-26: Version 0.48.0 (Etappe 2): Limit je Programm/Kategorie (K4), „Zählt nicht“-Programme (K5), Zeitkonto
+  (K7), Kleinkram 0.48, Programme auf Wechseldatenträgern nicht freigebbar. Release Notes, News, Roadmap `app-limits`,
+  `free-apps`, `time-bank` → erledigt (0.48). Geprüft: VM Linux/Windows (K4, USB-Fix), Nutzer-Tests Linux und Windows
+  auf echter Hardware (Vorabversion), Server-, Agent- und Tray-Tests, Doku-Parität, Hugo-Build.
