@@ -36,6 +36,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # enter the outp
 | `KIDCTL_TRIAL_DAYS` | SaaS only: trial period of new families in days (default 30). |
 | `BILLING_WEBHOOK_SECRET` | SaaS only, optional: secret for the subscription webhook `POST /api/billing/webhook` (see below). Empty = webhook off. |
 | `SUPPORT_NOTIFY_EMAIL` | SaaS only, optional: shared address that gets a notice for every new ticket and every reply by a family (in addition to operators with "ticket emails"). |
+| `FEATURE_REQUEST_EMAIL` | Optional: recipient for "Suggest a feature" in the web UI. Empty (default) = feature off. Requires sending email (`SMTP_*`). Suggestions leave the server by email – to send them to the KidCTL project, set `features@kidctl.de`. |
 | `TICKET_RETENTION_DAYS` | SaaS only: delete closed tickets after this many days (default 365). |
 | `INVOICE_TAX_MODE` | Invoices: `small_business` (default, small business under § 19 UStG, no VAT) or `standard` (19 % VAT). Stored per invoice when issued. |
 | `INVOICE_NUMBER_FORMAT` | Invoice number, default `RE-{YYYY}-{NNNN}` (consecutive per year, without gaps). |

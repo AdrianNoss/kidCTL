@@ -128,3 +128,14 @@ On the child's computer, the language of the child's desktop session applies (Pl
 Region & Language; GNOME: Settings → System → Region & Language); before sign-in on GNOME
 the language chosen there, otherwise the system language from `/etc/locale.conf`. Everything that doesn't
 start with `de` results in English.
+
+## Suggest a feature
+
+Settings → "Suggest a feature" (in hosted operation also on the *Support* page): title (at most 120 characters),
+category, description (at most 5000 characters) and optionally how important the wish is to you. The suggestion is
+sent by email to the development team. Your email address is only included if you tick "Follow-up questions allowed";
+this needs a confirmed address in your profile. Each parent can send up to 5 suggestions a day.
+
+> [!NOTE]
+> When self-hosting, the feature is off until `FEATURE_REQUEST_EMAIL` is set
+> ([Server](server.md#configuration-env)). Without it, no suggestion leaves the server.

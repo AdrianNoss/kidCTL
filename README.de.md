@@ -72,6 +72,8 @@ gilt die Sprache der Desktop-Sitzung.
   einmalig, was neu ist; Hinweis, wenn eine neuere Version erschienen ist.
 - **Newsletter:** Neuigkeiten an alle Familien, die zugestimmt haben – auf Deutsch und Englisch, mit Markdown
   formatiert, mit Vorschau und Abmeldelink.
+- **Feature vorschlagen:** Eltern schicken Ideen für neue Funktionen aus dem WebUI per Mail an das Entwicklungsteam
+  (`FEATURE_REQUEST_EMAIL`, ohne Eintrag aus); die Mailadresse nur, wenn Rückfragen erlaubt sind.
 - **Sicherheit**:
   - Eltern-Login nur mit TOTP (oder Passkey), Rate-Limiting, CSRF-Schutz.
   - Namen, Chat, Protokoll, Statistik und E-Mail-Adressen liegen auf dem Server verschlüsselt (eigener Schlüssel

@@ -1,0 +1,12 @@
+{#- Festes Format für den Postfach-Agenten (Teil C) – nur nach Rücksprache ändern. Keine Übersetzung. -#}
+KIDCTL-FEATURE-REQUEST v1
+ID: {{ req.id }}
+Datum: {{ req.date }}
+Kategorie: {{ req.category }}
+Wichtigkeit: {{ req.importance }}
+KidCTL-Version: {{ req.version }}
+Kontakt: {{ req.contact }}
+---
+Titel: {{ req.title }}
+---
+{{ req.description }}

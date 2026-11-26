@@ -119,6 +119,7 @@ from . import about  # noqa: E402
 templates.env.globals["about_info"] = about.info              # Info-Abschnitt: Version, Links, neuere Version
 templates.env.globals["unseen_notes"] = about.unseen_notes    # Hinweis „Neu in Version …“ auf der Übersicht
 templates.env.globals["REGISTRATION"] = settings.registration   # open | invite | closed
+templates.env.globals["feature_requests_on"] = lambda: settings.feature_requests   # „Feature vorschlagen“
 templates.env.globals["SAAS"] = settings.saas            # Betriebsart: viele Familien, Anmeldung nur per E-Mail
 
 

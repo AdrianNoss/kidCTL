@@ -48,6 +48,7 @@ class Settings:
     billing_webhook_secret: str = ""   # BILLING_WEBHOOK_SECRET: Webhook des Zahlungsanbieters (leer = aus)
     update_check: bool = True         # UPDATE_CHECK: täglich kidctl.de/version.json abrufen (Hinweis auf neue Version)
     support_notify_email: str = ""    # SUPPORT_NOTIFY_EMAIL: Sammeladresse für Ticket-Hinweise (optional)
+    feature_request_email: str = ""   # FEATURE_REQUEST_EMAIL: Empfänger für „Feature vorschlagen“ (leer = aus)
     ticket_retention_days: int = 365  # TICKET_RETENTION_DAYS: geschlossene Tickets danach löschen
     invoice_tax_mode: str = "small_business"   # INVOICE_TAX_MODE: small_business | standard
     invoice_number_format: str = "RE-{YYYY}-{NNNN}"   # INVOICE_NUMBER_FORMAT
@@ -67,6 +68,11 @@ class Settings:
     @property
     def mail_enabled(self) -> bool:
         return bool(self.smtp_host and self.smtp_from)
+
+    @property
+    def feature_requests(self) -> bool:
+        """„Feature vorschlagen“ nur mit Empfänger und SMTP – ohne beides verlässt nichts die Instanz."""
+        return bool(self.feature_request_email and self.mail_enabled)
 
 
 DEV_DATABASE_URL = "postgresql+psycopg://kidctl:kidctl-dev@127.0.0.1:55432/kidctl"
@@ -189,6 +195,7 @@ def load_settings() -> Settings:
         invoice_number_format=_number_format(),
         invoice_due_days=int(os.environ.get("INVOICE_DUE_DAYS", "14") or 14),
         support_notify_email=os.environ.get("SUPPORT_NOTIFY_EMAIL", "").strip(),
+        feature_request_email=os.environ.get("FEATURE_REQUEST_EMAIL", "").strip(),
         update_check=_bool("UPDATE_CHECK", True),
         ticket_retention_days=int(os.environ.get("TICKET_RETENTION_DAYS", "365") or 365),
         trial_days=int(os.environ.get("KIDCTL_TRIAL_DAYS", "30") or 30),

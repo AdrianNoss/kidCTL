@@ -1,0 +1,24 @@
+{% extends "mail/base.html" %}
+{#- An den Betreiber (FEATURE_REQUEST_EMAIL): Feature-Vorschlag einer Familie, mit Inhalt (bewusste Ausnahme).
+    Die Textfassung ist das feste Format KIDCTL-FEATURE-REQUEST v1 ohne Fußzeile. ctx: req (feature_requests.FeatureRequest) -#}
+{% set plain_subject = True %}
+{% set subject = "[KidCTL Feature] " ~ req.title %}
+{% set preheader = req.category ~ " · " ~ req.importance %}
+{% set text_template = "mail/feature_request.txt" %}
+{% set plain_text = True %}
+{% set reason = _("Du bekommst diese Mail, weil diese Adresse als FEATURE_REQUEST_EMAIL eingetragen ist.") %}
+{% block content %}
+  <tr><td bgcolor="{{ C.surface }}" class="k-card k-pad" style="background:{{ C.surface }};border:1px solid {{ C.border }};border-radius:16px;padding:28px 28px 8px;">
+    <div class="k-accent" style="font:500 14px/1.4 {{ sans }};color:{{ C.accent }};">{{ _("Feature-Vorschlag") }}</div>
+    <h1 class="k-ink" style="margin:2px 0 16px;font:400 24px/1.3 {{ sans }};color:{{ C.ink }};">{{ req.title }}</h1>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font:14px/1.4 {{ sans }};margin-bottom:16px;">
+      {% for label, value in [(_("Kategorie"), req.category), (_("Wichtigkeit"), req.importance), (_("Kontakt"), req.contact), (_("Version"), req.version), (_("Datum"), req.date), ("ID", req.id)] %}
+      <tr>
+        <td class="k-muted k-line" style="padding:6px 12px 6px 0;border-bottom:1px solid {{ C.line }};color:{{ C.muted }};white-space:nowrap;vertical-align:top;">{{ label }}</td>
+        <td class="k-ink k-line" style="padding:6px 0;border-bottom:1px solid {{ C.line }};color:{{ C.ink }};word-break:break-all;">{{ value }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    <p class="k-ink2" style="margin:0 0 14px;font:15px/1.6 {{ sans }};color:{{ C.ink2 }};white-space:pre-wrap;">{{ req.description }}</p>
+  </td></tr>
+{% endblock %}

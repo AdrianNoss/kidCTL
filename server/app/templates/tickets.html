@@ -24,4 +24,5 @@
     <a href="/settings#support">{{ _("Support-Zugriff") }}</a></small></p>
   <button type="submit">{{ _("Ticket senden") }}</button>
 </form>
+{% if feature_requests_on() %}<p class="muted"><small>{{ _("Ein Wunsch für eine neue Funktion?") }} <a href="/feature-request">{{ _("Feature vorschlagen") }}</a></small></p>{% endif %}
 {% endblock %}

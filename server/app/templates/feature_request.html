@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Feature vorschlagen") }} – {{ brand().name }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ _("Feature vorschlagen") }}</h1></div>
+{% if sent %}
+<section class="card">
+  <p class="success">{{ _("Danke, dein Vorschlag ist angekommen.") }}</p>
+  <p class="muted"><small>{{ _("Wir lesen jeden Vorschlag. Eine Antwort bekommst du nur, wenn du Rückfragen erlaubt hast und wir etwas wissen möchten.") }}</small></p>
+  <p><a href="/feature-request">{{ _("Weiteren Vorschlag schicken") }}</a></p>
+</section>
+{% else %}
+<form method="post" action="/feature-request" class="card">
+  <p class="muted"><small>{{ _("Dir fehlt etwas in KidCTL? Beschreib uns deine Idee – sie geht per E-Mail an das Entwicklungsteam.") | brand }}</small></p>
+  <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+  <label>{{ _("Titel") }} <input name="title" maxlength="{{ max_title }}" required value="{{ form.title or '' }}"></label>
+  <label>{{ _("Kategorie") }} <select name="category" required>
+    <option value="">{{ _("Bitte wählen") }}</option>
+    {% for k, label in categories.items() %}<option value="{{ k }}"{% if form.category == k %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select></label>
+  <label>{{ _("Beschreibung") }} <textarea name="description" rows="8" maxlength="{{ max_description }}" required>{{ form.description or '' }}</textarea></label>
+  <label>{{ _("Wie wichtig ist dir das? (optional)") }} <select name="importance">
+    <option value="">–</option>
+    {% for k, label in importance.items() %}<option value="{{ k }}"{% if form.importance == k %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select></label>
+  {% if has_email %}
+  <label class="option"><input type="checkbox" name="contact" value="1"{% if form.contact %} checked{% endif %}> {{ _("Rückfragen erlaubt: meine E-Mail-Adresse mitschicken") }}</label>
+  {% else %}
+  <p class="muted"><small>{{ _("Für Rückfragen hinterlege im Profil eine E-Mail-Adresse.") }} <a href="/profile">{{ _("Profil") }}</a></small></p>
+  {% endif %}
+  <p class="muted"><small>{{ _("Ohne Häkchen schicken wir keine Kontaktdaten mit. Höchstens {n} Vorschläge pro Tag.").format(n=daily_limit) }}</small></p>
+  <button type="submit">{{ _("Vorschlag senden") }}</button>
+</form>
+{% endif %}
+{% endblock %}
