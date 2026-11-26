@@ -4,6 +4,9 @@
 # Einmalig in den Repo-Einstellungen: Settings → Pages → Source „GitHub Actions“.
 # Schritte: Releases holen → Prüfergebnisse (Scorecard, Observatory) → Platzhalter-Check (Impressum) → Doku-Parität DE/EN → hugo --minify → Suchindex
 # (Pagefind, pip, gepinnt) → Deploy.
+# Release-Ereignis: nicht selbst bauen, sondern sich per workflow_dispatch neu starten. Pages verwirft sonst still die
+# Bereitstellung, weil der Release-Commit schon per Push deployt wurde (gleiche pages_build_version = Commit-SHA;
+# actions/deploy-pages#383) – die Seite bliebe auf der alten Release-Liste stehen.
 
 name: Projektseite
 
@@ -17,6 +20,10 @@ on:
   schedule:
     - cron: "11 6 * * 1"   # wöchentlich: Prüfergebnisse auffrischen
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Neuer Release-Tag, auf den beim Holen der Release-Liste gewartet wird (optional)"
+        required: false
 
 permissions:
   contents: read
@@ -30,7 +37,21 @@ env:
   PAGEFIND_VERSION: "1.6.0"
 
 jobs:
+  redispatch:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Workflow neu anstoßen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh workflow run pages.yml -R "$GITHUB_REPOSITORY" --ref main -f tag="$TAG"
+
   build:
+    if: github.event_name != 'release'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -50,9 +71,9 @@ jobs:
       - name: Releases holen
         env:
           GH_TOKEN: ${{ github.token }}
-          NEW_TAG: ${{ github.event.release.tag_name }}
+          NEW_TAG: ${{ inputs.tag }}
         run: |
-          # Beim Release-Ereignis kennt die Liste den neuen Release oft erst einige Sekunden später: bis zu 2 min warten.
+          # Nach einem Release kennt die Liste den neuen Release oft erst einige Sekunden später: bis zu 2 min warten.
           for i in $(seq 1 12); do
             gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
               --jq '[.[] | {tag_name, name, draft, prerelease, published_at, html_url, body,

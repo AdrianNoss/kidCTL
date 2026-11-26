@@ -3945,3 +3945,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   (K7), Kleinkram 0.48, Programme auf Wechseldatenträgern nicht freigebbar. Release Notes, News, Roadmap `app-limits`,
   `free-apps`, `time-bank` → erledigt (0.48). Geprüft: VM Linux/Windows (K4, USB-Fix), Nutzer-Tests Linux und Windows
   auf echter Hardware (Vorabversion), Server-, Agent- und Tray-Tests, Doku-Parität, Hugo-Build.
+- 2026-11-26: Projektseite blieb nach dem Release 0.48.0 auf 0.47 stehen: GitHub Pages verwirft still eine Bereitstellung
+  mit derselben Build-Version (Commit-SHA), die der Push des Release-Commits schon deployt hat (actions/deploy-pages#383).
+  `pages.yml` startet sich beim Release-Ereignis jetzt per `workflow_dispatch` neu (Tag als Eingabe für die Warteschleife).
+  Geprüft: Ursache über Artefakt (version.json = 0.48.0) vs. Live-Seite (0.47.0, Last-Modified vom Push-Lauf); Workflow-YAML
+  geparst. Wirkung erst beim nächsten Release prüfbar.
