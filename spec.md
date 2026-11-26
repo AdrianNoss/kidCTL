@@ -4081,3 +4081,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-26: USB-Datenträger – Details entschieden: erlaubte Geräte nur für Dateien (Programme weiter gesperrt), Liste
   je Familie, Schalter je Kind (neue Kinder gesperrt, bestehende erlaubt), mitgesperrt Abbilder, CD/DVD, SD-Karten,
   Handys (MTP). Spec-Abschnitt und Recherche nachgezogen.
+- 2026-11-26: Projektseite blieb nach dem Release 0.48.0 auf 0.47 stehen: GitHub Pages verwirft still eine Bereitstellung
+  mit derselben Build-Version (Commit-SHA), die der Push des Release-Commits schon deployt hat (actions/deploy-pages#383).
+  `pages.yml` startet sich beim Release-Ereignis jetzt per `workflow_dispatch` neu (Tag als Eingabe für die Warteschleife).
+  Geprüft: Ursache über Artefakt (version.json = 0.48.0) vs. Live-Seite (0.47.0, Last-Modified vom Push-Lauf); Workflow-YAML
+  geparst. Wirkung erst beim nächsten Release prüfbar.
