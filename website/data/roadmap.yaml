@@ -221,3 +221,9 @@
   text:
     de: "Spielzeit, Spiele und Restzeit der Switch je Kind in der Weboberfläche, über die Cloud der Nintendo-App."
     en: "Switch play time, games and remaining time per child in the web interface, via the Nintendo app's cloud."
+- id: usb-media
+  status: planned
+  title: { de: "USB-Datenträger sperren", en: "Block USB drives" }
+  text:
+    de: "USB-Sticks und externe Festplatten sind für Kinder gesperrt, nur von den Eltern erlaubte Geräte funktionieren."
+    en: "USB sticks and external hard drives are blocked for children; only devices allowed by parents work."

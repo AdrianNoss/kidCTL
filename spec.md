@@ -1978,6 +1978,23 @@ Nur für den Betreiber von kidctl.de, nicht Teil des Self-Hosting. Details: `too
 - **Tagesübersicht:** Mail per SMTP an `FEATURE_INBOX_REPORT_TO` ab `FEATURE_INBOX_REPORT_HOUR` (Standard 7 Uhr):
   neue Issues, Duplikat-Verdacht, Anzahl Unsortiert, Fehler.
 
+## USB-Datenträger (Grundsatz entschieden 2026-11-26; Details offen, noch nicht umgesetzt)
+
+Recherche: `dev/planung/2026-11-26-usb-datentraeger-recherche.md` (Mechanismen, Restlücken, offene Fragen).
+
+- Alle USB-Massenspeicher (Sticks und Festplatten) sind für zugeordnete Kinder **gesperrt**, auf Linux und Windows.
+  Zugreifbar sind nur Geräte, die Eltern erlaubt haben.
+- Erkennung erlaubter Geräte über die **Hardware-Kennung** (USB-Seriennummer), nicht über UUID/Label. Der Agent meldet
+  gesehene Datenträger, Eltern erlauben sie im WebUI, die Policy enthält die Kennungen (offline wirksam). Geräte ohne
+  eindeutige Seriennummer werden als „nicht eindeutig“ gekennzeichnet.
+- Gesperrt wird der Zugriff (Einbinden bzw. Lesen), nicht nur das Ausführen. Linux: polkit-Regel für udisks2 mit
+  Ausnahme je Seriennummer. Windows: Agent verhindert den Zugriff auf fremde Laufwerke in der Sitzung des Kindes.
+- Nie betroffen: Tastatur, Maus, Headset, Controller (HID), Admins und nicht zugeordnete Benutzer.
+- Bereits umgesetzt (0.48): Programme auf Wechseldatenträgern sind nicht freigebbar (Programmkontrolle
+  „Wechseldatenträger“).
+- Offen (Recherche, Frage 0): Programme auf erlaubten Geräten, Liste je Kind oder Familie, Verhalten für bestehende
+  Kinder nach dem Update, Abbilder/CD/Handys, Zielversion.
+
 ## Bewusst nicht umgesetzt / Restlücken
 
 Einzige Quelle für die Restlücken ist die öffentliche Doku **`docs/limitations.de.md`** (Englisch:
@@ -4053,3 +4070,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   IMAP-PEEK/MOVE-Ersatz), 3 Tests der Sperre, ruff; Image mit `podman build` gebaut, startet und meldet fehlende
   Einstellungen; `anthropic` 2.14.0 im Image kennt `output_config`. Nicht getestet: echtes Postfach, GitHub und
   Claude-API (Einrichtung macht Adrian), `docker compose config` (lokal kein Compose).
+- 2026-11-26: USB-Datenträger – Grundsatz von Adrian entschieden: alle USB-Massenspeicher (Sticks, Festplatten) für
+  Kinder gesperrt, nur von Eltern erlaubte Geräte (Hardware-Kennung) zugreifbar, Linux und Windows. Neuer Abschnitt
+  „USB-Datenträger“, Recherche-Dokument (Entscheidungen, offene Fragen) und Roadmap `usb-media` (geplant)
+  nachgezogen. Noch nicht umgesetzt.

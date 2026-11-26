@@ -129,6 +129,10 @@ dynamisch setzen. Aufwand **L**, später.
   gesperrt und nicht anfragbar (`removable_media`). Store-Apps und Launcher-Bibliotheken bleiben erlaubt. Der Server
   lehnt eigene Programme unter `/run/media/`, `/media/` ab. Restlücke in `docs/limitations*` (siehe Spec).
 - **Bestimmte Sticks anhand der Hardware-Kennung erlauben** (Variante C), auf beiden Plattformen gewünscht.
+- **Grundsatz Zugriff (2026-11-26):** Alle USB-Massenspeicher (Sticks und Festplatten) sind für Kinder gesperrt,
+  zugreifbar sind nur von den Eltern erlaubte Geräte (Hardware-Kennung). Damit gilt „Sperren“ als Standard statt
+  *erlaubt*, und unter Windows muss auch das Einbinden bzw. der Zugriff auf fremde Geräte verhindert werden (Aufwand
+  **L**, siehe unten), nicht nur das Ausführen. HID, Admins und nicht zugeordnete Benutzer bleiben unberührt.
 
 ### Hardware-Kennung – Stand der Recherche
 
@@ -152,16 +156,18 @@ dynamisch setzen. Aufwand **L**, später.
 
 ## Offene Fragen an Adrian
 
-0. Hardware-Kennung (neu): Was soll ein erlaubter Stick dürfen – nur eingebunden werden, oder sollen auch Programme
-   darauf laufen (z. B. externe Spieleplatte)? Gilt die Liste je Kind oder je Familie? Reicht unter Windows
-   zunächst „Programme nur von erlaubten Sticks“ (ohne Einbinden fremder Sticks zu verhindern)?
+0. Hardware-Kennung: Grundsatz entschieden (fremde Geräte gesperrt, erlaubte zugreifbar, auf beiden Plattformen
+   auch der Zugriff, nicht nur das Ausführen). Noch offen: Dürfen Programme auf einem erlaubten Gerät laufen
+   (externe Spieleplatte) bzw. freigegeben werden? Liste je Kind oder je Familie? Gilt die Sperre nach dem Update
+   sofort für alle bestehenden Kinder oder erst nach Einschalten? Zählen Abbilder (ISO, `loop-setup`), CD/DVD und
+   Handys (MTP) mit?
 
-1. Stufen wie oben (erlaubt / ohne Programme / nur lesen / gesperrt) oder reicht zunächst *erlaubt / gesperrt*?
+1. ~~Stufen~~ – entschieden: gesperrt, nur erlaubte Geräte zugreifbar (Frage 0).
 2. Soll die Einstellung nur zusammen mit Programmkontrolle „Sperren“ angeboten werden, oder unabhängig davon (dann
    mit Hinweis, dass Downloads weiter gehen)?
 3. ~~Befund 1 vorziehen~~ – entschieden, umgesetzt.
 4. ~~Erlaubte Geräte (C)~~ – entschieden: ja, per Hardware-Kennung (siehe Frage 0).
-5. Standard für neue Kinder: *erlaubt* (wie heute) oder *ohne Programme*?
+5. ~~Standard~~ – entschieden: gesperrt (für bestehende Kinder siehe Frage 0).
 6. Etappe: nach 0.50 (eigene Sperrlisten) als **0.51**? Agent-Release auf beiden Plattformen nötig.
 
 ## Etappe / Umfang (bei Umsetzung)
