@@ -3932,5 +3932,11 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Restlücke „USB-Sticks und externe Datenträger“ in `docs/limitations*`. Getestet: Unittests Linux/Windows
   (Pfad- und Ordnerfreigabe, Skript vom Stick, eigene Datei, Steam-Bibliothek und Store-App auf USB-Platte, Launcher
   auf dem Stick, Erkennung inkl. Cache/Systemlaufwerk/Fehler/Deskriptor), komplette Suiten Server (429) und Agent
-  (379) grün, ruff sauber. Nicht getestet: echte Erkennung unter Windows (USB-Stick, USB-HDD, ISO) und Linux in der
-  VM.
+  (379) grün, ruff sauber. VM-Test am selben Tag (Agent aus dem Arbeitsbaum, Dev-Server, per QMP eingesteckte
+  USB-Geräte): **Windows 11 Home** – Erkennung über die echte API: C: (SATA) nein, USB-Stick (Removable), USB-Platte
+  (meldet sich als „Fixed“, Bus USB), eingehängtes ISO (CD-ROM) ja, Netzpfad nein. Kind im Modus „Sperren“ mit
+  Freigaben für `E:\…` und `D:\…`: Programme beendet, Protokoll „Wechseldatenträger“ (WebUI DE) bzw. „removable
+  drive“ (EN), Toast „… ist nicht freigegeben“ ohne „Freigabe anfragen“. **Arch/Plasma** – Stick und USB-Platte über
+  die Geräteanzeige als Kind eingehängt (`/run/media/kind/…`, ausführbar): freigegebene Programme auf beiden und ein
+  Skript vom Stick beendet („Wechseldatenträger“). Nicht in der VM: `/media/` (Debian/Ubuntu), Steam-Bibliothek und
+  Store-App auf USB-Platte (nur Unittests). VMs danach auf den Snapshot `vor-usb` zurückgesetzt.
