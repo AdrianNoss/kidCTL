@@ -16,9 +16,9 @@ from ..security import csrf_protect
 router = APIRouter()
 
 ERRORS = {
-    "expired": N_("Der Login-Link ist abgelaufen. Bitte die Einrichtung neu starten."),
+    "expired": N_("Der Login-Link ist abgelaufen. Bitte einen neuen Link erzeugen."),
     "format": N_("Das ist nicht der kopierte Link. Er beginnt mit npf54789befb391a838://auth – bitte den Link hinter „Diese Person auswählen“ kopieren, nicht die Adresse der Seite."),
-    "rejected": N_("Nintendo hat die Anmeldung abgelehnt. Der Link gilt nur kurz und nur einmal – bitte die Einrichtung neu starten."),
+    "rejected": N_("Nintendo hat die Anmeldung abgelehnt. Der Link gilt nur kurz und nur einmal – bitte einen neuen Link erzeugen und von vorn beginnen."),
     "network": N_("Nintendo ist gerade nicht erreichbar. Bitte später erneut versuchen."),
 }
 

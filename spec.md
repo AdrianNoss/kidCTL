@@ -1885,7 +1885,8 @@ Abgestimmt mit Adrian am 2026-11-26, Empfehlungen übernommen außer der Zuordnu
   Rate-Limits bei vielen Familien bekannt sind), `KIDCTL_NINTENDO_INTERVAL` (Standard und Minimum 60 s). Je Familie
   in der DB nur Verknüpfung und Zuordnung.
 - **Einrichtung** unter Einstellungen → „Nintendo Switch“ (alle Eltern, ohne JavaScript): Login-Link erzeugen, den
-  kopierten `npf54789befb391a838://auth#…`-Link einfügen. Der PKCE-Verifier liegt verschlüsselt in der DB (30 min).
+  kopierten `npf54789befb391a838://auth#…`-Link einfügen. Der PKCE-Verifier liegt verschlüsselt in der DB (30 min). „Neuen Link erzeugen“
+  ersetzt einen offenen (z. B. schon verbrauchten) Link samt Verifier.
   Die Bibliothek hält ihn nur im Objekt, daher wird `_auth_code_verifier` gesetzt. Hinweis: Gerät ohne Nintendo-App
   nutzen.
 - **Session-Token:** `Sealed` (Familienschlüssel), nie im Log (Logger der Bibliothek fest auf WARNING, weil DEBUG
@@ -3962,3 +3963,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   0032 auf einer 0031-Datenbank, `alembic check`, Downgrade/Upgrade. Nicht getestet: Abruf mit echtem
   Nintendo-Konto (Adrian, `dev/nintendo_smoke.py`), deutsche Beschriftung der Nintendo-Seite („Diese Person auswählen“)
   nicht verifiziert.
+- 2026-11-26: Nintendo-Einrichtung: Button „Neuen Link erzeugen“ unter dem Einfügefeld. Vorher war ein schon
+  verbrauchter Login-Link bis zum Ablauf (30 min) nicht ersetzbar. Getestet: abgelehnter Link → neuer Link ersetzt
+  URL und Verifier, Einstellungen zeigen den neuen Link.

@@ -32,7 +32,7 @@ Requirement: the Switch is linked to your Nintendo Account in the "Nintendo Swit
    **"Copy link address"**. Do not click the button itself.
 5. Paste the copied link into KidCTL and choose **Connect**. It starts with `npf54789befb391a838://auth`.
 
-The sign-in link is valid for 30 minutes and only once. If it fails, simply start the setup again.
+The sign-in link is valid for 30 minutes and only once. If it fails, choose **Generate new link** below the input field and start over.
 
 After about a minute, Settings lists the consoles with their player profiles. Assign each profile to a child.
 Profiles without an assignment (e.g. your own) stay in the list but don't appear for any child.
