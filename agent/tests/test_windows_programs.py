@@ -419,3 +419,56 @@ def test_minecraft_java_runtime():
 def test_gameinput_is_base():
     """Echter Fall (2026-11-22): Ohne GameInputRawInputProxy.exe hat Minecraft Bedrock keine Steuerung."""
     assert classify(proc(r"C:\Program Files\Microsoft GameInput\x64\GameInputRawInputProxy.exe"), allowed()) is None
+
+
+def test_removable_media_never_grantable():
+    """Programme auf USB-Sticks/-Platten: Freigabe nach Pfad und Programmordner gelten nicht, keine Anfrage."""
+    stick = r"E:\Spiele\game.exe"
+    rem = lambda path: path[:2].upper() == "E:"
+    a = allowed("exe:" + stick)
+    v = classify(proc(stick), a, removable=rem)
+    assert v.key == "exe:" + stick and v.code == "removable_media" and not v.grantable
+    assert classify(proc(r"E:\Spiele\other.exe"), a, removable=rem).code == "removable_media"
+    assert classify(proc(r"E:\Spiele\mine.exe"), a, owner=lambda p: KID, removable=rem).code == "removable_media"
+    assert classify(proc(stick), a) is None                                       # ohne Erkennung wie bisher
+    # Steam-Bibliothek auf USB-Platte (freigegebener Launcher) und Store-Apps auf externem Laufwerk bleiben erlaubt
+    s = allowed(launcher_dirs=(catalog.norm(r"E:\SteamLibrary\steamapps\common"),))
+    assert classify(proc(r"E:\SteamLibrary\steamapps\common\Game\game.exe"), s, removable=rem) is None
+    calc = "Microsoft.WindowsCalculator_8wekyb3d8bbwe"
+    assert classify(proc(r"E:\WindowsApps\Calc\calc.exe", pfn=calc), allowed("appx:" + calc), removable=rem) is None
+    # Launcher auf dem Stick gibt seine Kinder nicht frei
+    b = allowed(r"exe:E:\Battle.net\Battle.net.exe")
+    assert classify(proc(r"C:\Games\x.exe"), b, ancestors=lambda: [r"E:\Battle.net\Battle.net.exe"],
+                    removable=rem) is not None
+
+
+def test_on_removable_detection():
+    from kidctl_agent.win import procs
+    procs._removable_cache.clear()
+    calls = []
+
+    def query(letter):
+        calls.append(letter)
+        return letter == "E"
+
+    assert procs.on_removable(r"E:\x.exe", query=query, now=0)
+    assert procs.on_removable(r"e:\y.exe", query=query, now=5) and calls == ["E"]          # zwischengespeichert
+    assert procs.on_removable(r"E:\x.exe", query=query, now=20) and calls == ["E", "E"]     # nach Ablauf neu
+    assert not procs.on_removable(r"D:\x.exe", query=query, now=0)
+    assert not procs.on_removable(r"C:\x.exe", query=query, now=0) and "C" not in calls     # Systemlaufwerk nie
+    assert not procs.on_removable(r"\\nas\share\x.exe", query=query, now=0)
+
+    def boom(letter):
+        raise OSError("kaputt")
+
+    assert not procs.on_removable(r"F:\x.exe", query=boom, now=0)
+    raw = bytearray(40)
+    assert not procs.descriptor_removable(bytes(raw))           # SATA/NVMe intern
+    raw[28] = 0x7
+    assert procs.descriptor_removable(bytes(raw))               # USB
+    raw[28] = 0x11
+    assert not procs.descriptor_removable(bytes(raw))           # NVMe (auch Thunderbolt – Restlücke)
+    raw[10] = 1
+    assert procs.descriptor_removable(bytes(raw))               # RemovableMedia
+    assert not procs.descriptor_removable(b"")
+    procs._removable_cache.clear()

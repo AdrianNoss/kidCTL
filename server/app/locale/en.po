@@ -3876,3 +3876,9 @@ msgstr "Browser: all web browsers, even without an entry in the program list (de
 
 msgid "Limit hinzufügen"
 msgstr "Add limit"
+
+msgid "Wechseldatenträger"
+msgstr "removable drive"
+
+msgid "Programme auf USB-Sticks und anderen Wechseldatenträgern lassen sich nicht freigeben."
+msgstr "Programs on USB sticks and other removable drives cannot be allowed."

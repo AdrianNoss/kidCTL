@@ -242,6 +242,13 @@ Abweichungen stehen hier und unter „Restlücken“.
     (außer Explorer; erlaubt, wenn die Aufgabenplanung bzw. ein Dienst sie startet), sonst Basis; freigegebene
     Programme samt Programmordner erlaubt (unter AppData der App-Ordner, z. B. `…\AppData\Local\Roblox` –
     übersteht Updates in neue Versionsordner); alles andere gesperrt.
+  - **Wechseldatenträger** (ab 0.48, Linux und Windows): Freigaben nach Pfad und Programmordner gelten auf
+    Wechseldatenträgern nicht, Programme und Skripte darauf sind gesperrt und nicht anfragbar (Code
+    `removable_media`), weil das Kind den Inhalt austauschen kann. Erkennung Linux: udisks2-Einhängepunkte
+    `/run/media/`, `/media/`. Windows: Laufwerkstyp Wechselmedium/DVD oder Bus USB, 1394, SD, MMC, Abbild
+    (`IOCTL_STORAGE_QUERY_PROPERTY`), nie das Systemlaufwerk, Ergebnis 10 s je Laufwerksbuchstabe zwischengespeichert.
+    Weiter erlaubt: Store-Apps und Spieleordner freigegebener Launcher (Steam-Bibliothek auf USB-Platte). Der Server
+    lehnt eigene Programme unter `/run/media/` und `/media/` ab. Restlücke in `docs/limitations*`.
   - **Ausführverbot statt `noexec`** (`win/acl.py`, per `icacls`, Zustand `winacl.json`; nur im Modus „Sperren“): auf dem Profil des
     Kindes sowie `C:\Users\Public` und `%WINDIR%\Temp`: `Deny Kind (OI)(IO)(X)` (Dateien nicht ausführbar,
     keine DLLs daraus – gegen COM-Hijacking), `Deny Kind (OI)(CI)(WDAC)` und `OWNER RIGHTS (OI)(CI)(M)` (Kind kann
@@ -3916,3 +3923,20 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   - Limit je Programm/Kategorie (K4), „Zählt nicht“-Programme (K5), Zeitkonto (K7).
   - Battle.net-Spielerkennung (offener Livetest seit 0.36.0) – damit erledigt.
   - Grundfunktionen: Bildschirmzeit, Sperre, Website-Filter, Tray.
+- 2026-11-26: Programme auf Wechseldatenträgern nicht freigebbar (Befund 1 aus
+  `dev/planung/2026-11-26-usb-datentraeger-recherche.md`, von Adrian in 0.48 vorgezogen; siehe Programmkontrolle
+  „Wechseldatenträger“). Linux `programs.on_removable` (udisks2-Einhängepunkte) und `Allowed.path_ok`, Windows
+  `win/procs.on_removable` (Laufwerkstyp/Bus, Cache 10 s) und `classify(removable=…)`: Pfad- und Ordnerfreigaben
+  gelten dort nicht, Sperre mit Code `removable_media` ohne „Freigabe anfragen“; Store-Apps und Launcher-Bibliotheken
+  bleiben erlaubt. Server: Begründung übersetzt, eigene Programme unter `/run/media/`, `/media/` abgelehnt.
+  Restlücke „USB-Sticks und externe Datenträger“ in `docs/limitations*`. Getestet: Unittests Linux/Windows
+  (Pfad- und Ordnerfreigabe, Skript vom Stick, eigene Datei, Steam-Bibliothek und Store-App auf USB-Platte, Launcher
+  auf dem Stick, Erkennung inkl. Cache/Systemlaufwerk/Fehler/Deskriptor), komplette Suiten Server (429) und Agent
+  (379) grün, ruff sauber. VM-Test am selben Tag (Agent aus dem Arbeitsbaum, Dev-Server, per QMP eingesteckte
+  USB-Geräte): **Windows 11 Home** – Erkennung über die echte API: C: (SATA) nein, USB-Stick (Removable), USB-Platte
+  (meldet sich als „Fixed“, Bus USB), eingehängtes ISO (CD-ROM) ja, Netzpfad nein. Kind im Modus „Sperren“ mit
+  Freigaben für `E:\…` und `D:\…`: Programme beendet, Protokoll „Wechseldatenträger“ (WebUI DE) bzw. „removable
+  drive“ (EN), Toast „… ist nicht freigegeben“ ohne „Freigabe anfragen“. **Arch/Plasma** – Stick und USB-Platte über
+  die Geräteanzeige als Kind eingehängt (`/run/media/kind/…`, ausführbar): freigegebene Programme auf beiden und ein
+  Skript vom Stick beendet („Wechseldatenträger“). Nicht in der VM: `/media/` (Debian/Ubuntu), Steam-Bibliothek und
+  Store-App auf USB-Platte (nur Unittests). VMs danach auf den Snapshot `vor-usb` zurückgesetzt.

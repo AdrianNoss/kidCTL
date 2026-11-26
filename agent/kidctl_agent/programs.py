@@ -26,6 +26,10 @@ Reihenfolge:
    Hilfsprozesse (Renderer, GPU, Crashpad) erlaubt, wenn sie von so einem Hauptprozess abstammen.
 8. Sonst gesperrt.
 
+Wechseldatenträger (udisks2-Einhängepunkte ``/run/media/``, ``/media/``): Freigaben nach Pfad gelten dort nicht,
+Programme und Skripte darauf sind gesperrt und nicht freigebbar (das Kind kann den Inhalt austauschen). Über Steam
+oder einen Spiele-Launcher Gestartetes bleibt erlaubt (Regeln 5 und 6).
+
 Container (eigener Mount-Namespace, z. B. bwrap/unshare): Dort kann unter einem Systempfad eine ganz
 andere Datei liegen. Für solche Prozesse wird deshalb die tatsächlich laufende Datei (bzw. das Skript
 oder die Electron-App) mit der Systemdatei unter demselben Pfad verglichen (Gerät + Inode). Weicht sie
@@ -71,6 +75,10 @@ VALUE_OPTS = {"-W", "-X", "-I", "-r", "--require", "-l"}
 SYSTEM_SCRIPT_DIRS = ("/usr/", "/etc/", "/opt/")
 # Shell-Optionen mit separatem Wert
 SHELL_VALUE_OPTS = {"-o", "+o", "-O", "+O", "--rcfile", "--init-file"}
+
+# Einhängepunkte von udisks2 (USB-Sticks, externe Platten, eingehängte Abbilder): Den Inhalt kann das Kind jederzeit
+# austauschen, eine Freigabe nach Pfad gilt dort deshalb nie (Programme dort sind gesperrt und nicht freigebbar)
+REMOVABLE_DIRS = ("/run/media/", "/media/")
 
 # Verzeichnisse, in denen viele fremde Programme liegen – dort keine „App-Verzeichnis“-Regel
 GENERIC_DIRS = {"/usr/bin", "/usr/sbin", "/bin", "/sbin", "/usr/local/bin", "/usr/local/sbin",
@@ -339,6 +347,8 @@ class Allowed:
         self.launcher_dirs = {d for e in self.launchers for d in self.pkg_dirs.get(e, ())}
 
     def path_ok(self, path: str) -> bool:
+        if on_removable(path):
+            return False
         if path in self.exes:  # ausdrückliche Eltern-Freigabe gilt immer
             return True
         if path in self.app_dirs or any(path.startswith(d + "/") for d in self.app_dirs):
@@ -346,6 +356,11 @@ class Allowed:
         if any(fnmatch.fnmatchcase(path, pat) for pat in self.excludes):
             return False
         return path in self.base_exact or any(fnmatch.fnmatchcase(path, pat) for pat in self.base)
+
+
+def on_removable(path: str) -> bool:
+    """Liegt ``path`` (aufgelöster Pfad) auf einem Wechseldatenträger bzw. eingehängten Abbild?"""
+    return path.startswith(REMOVABLE_DIRS)
 
 
 @dataclass(frozen=True)
@@ -559,7 +574,17 @@ def classify(info: ProcInfo, allowed: Allowed,
              ancestors: Callable[[], Iterable[ProcInfo]] | None = None,
              environ: Callable[[], dict[str, str]] | None = None) -> Verdict | None:
     """``None`` = erlaubt, sonst ``Verdict`` (was gesperrt wird). ``ancestors`` liefert die
-    Elternkette, ``environ`` die Umgebung (nur für Steam/Launcher/Electron gebraucht, daher lazy)."""
+    Elternkette, ``environ`` die Umgebung (nur für Steam/Launcher/Electron gebraucht, daher lazy).
+    Programme und Skripte auf Wechseldatenträgern sind nie freigebbar (``Allowed.path_ok`` lässt sie nie zu)."""
+    verdict = _classify(info, allowed, ancestors, environ)
+    if verdict is not None and verdict.grantable and verdict.key.startswith("exe:") and on_removable(verdict.key[4:]):
+        return Verdict(verdict.key, verdict.name, "Wechseldatenträger", grantable=False, code="removable_media")
+    return verdict
+
+
+def _classify(info: ProcInfo, allowed: Allowed,
+              ancestors: Callable[[], Iterable[ProcInfo]] | None,
+              environ: Callable[[], dict[str, str]] | None) -> Verdict | None:
     if info.flatpak_id:
         if info.flatpak_id in allowed.flatpaks:
             return None

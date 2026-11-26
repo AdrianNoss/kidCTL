@@ -11,6 +11,10 @@ Reihenfolge der Regeln:
    (``cmd`` nur interaktiv, ``rundll32``/``regsvr32`` nur mit fremder DLL); Programme mit Startmenü-Eintrag
    (Task-Manager, Systemsteuerung …) entscheiden die Eltern; alles andere ist Basis.
 5. Freigegebene Programme und ihr Programmordner (außerhalb von ``%WINDIR%``) – erlaubt; sonst gesperrt.
+
+Wechseldatenträger (USB-Stick, USB-Festplatte, SD-Karte, DVD, eingehängtes Abbild): Freigaben nach Pfad gelten dort
+nicht, Programme darauf sind gesperrt und nicht freigebbar (das Kind kann den Inhalt austauschen). Store-Apps auf
+externen Laufwerken und Spieleordner freigegebener Launcher (Steam-Bibliothek auf USB-Platte) bleiben erlaubt.
 """
 
 from __future__ import annotations
@@ -113,9 +117,18 @@ def _under(path: str, folder: str) -> bool:
 
 
 def classify(proc, allowed: WinAllowed, owner=lambda path: "", parent_exe=lambda: "",
-             ancestors=lambda: ()) -> Verdict | None:
+             ancestors=lambda: (), removable=lambda path: False) -> Verdict | None:
     """``None`` = erlaubt, sonst Begründung. ``owner(pfad)`` liefert die SID des Dateibesitzers,
-    ``parent_exe()`` den Pfad des Elternprozesses, ``ancestors()`` die Pfade der Vorfahren (nur bei Bedarf)."""
+    ``parent_exe()`` den Pfad des Elternprozesses, ``ancestors()`` die Pfade der Vorfahren (nur bei Bedarf),
+    ``removable(pfad)``, ob die Datei auf einem Wechseldatenträger liegt."""
+    rem = removable(proc.exe)
+    verdict = _classify(proc, allowed, owner, parent_exe, ancestors, removable, rem)
+    if verdict is not None and rem and verdict.grantable and verdict.key.startswith("exe:"):
+        return Verdict(verdict.key, verdict.name, "Wechseldatenträger", code="removable_media", grantable=False)
+    return verdict
+
+
+def _classify(proc, allowed: WinAllowed, owner, parent_exe, ancestors, removable, rem: bool) -> Verdict | None:
     exe = norm(proc.exe)
     name = ntpath.basename(proc.exe)
     base = name.lower()
@@ -123,7 +136,7 @@ def classify(proc, allowed: WinAllowed, owner=lambda path: "", parent_exe=lambda
         return None
     if any(_under(exe, d) for d in BASE_DIRS):
         return None
-    if not proc.pfn and "exe:" + exe in allowed.keys:
+    if not proc.pfn and not rem and "exe:" + exe in allowed.keys:
         return None   # früher einzeln freigegeben (vor der Paket-Zuordnung)
     if pkg := proc.pfn or package_of(exe) or package_runtime(exe):
         pfn = pkg.lower()
@@ -138,14 +151,14 @@ def classify(proc, allowed: WinAllowed, owner=lambda path: "", parent_exe=lambda
             return Verdict(key, pkg.split("_")[0], unknown_package=True)
         return None   # Paket ohne Startmenü-Eintrag: Hintergrunddienst
     key = "exe:" + proc.exe
-    if "exe:" + exe in allowed.keys:
+    if not rem and "exe:" + exe in allowed.keys:
         return None
     # Freigegebener Launcher: seine Spieleordner (Steam lädt Spiele als Kind – Dateien gehören ihm) und alles, was
     # er startet (Spiele, Installer der Spiele); wie Steam/Heroic unter Linux
     if any(_under(exe, d) for d in allowed.launcher_dirs):
         return None
     # Launcher im Ordner einer Freigabe zählt mit (Startmenü-Eintrag „Battle.net Launcher.exe“ -> Battle.net.exe)
-    if allowed.keys and any(ntpath.basename(a).lower() in LAUNCHERS
+    if allowed.keys and any(ntpath.basename(a).lower() in LAUNCHERS and not removable(a)
                             and ("exe:" + norm(a) in allowed.keys or any(_under(norm(a), d) for d in allowed.dirs))
                             for a in ancestors()):
         return None
@@ -153,7 +166,7 @@ def classify(proc, allowed: WinAllowed, owner=lambda path: "", parent_exe=lambda
         own = bool(allowed.sid) and owner(proc.exe) == allowed.sid
     except OSError:
         own = False
-    if own and not any(_under(exe, d) for d in allowed.dirs):
+    if own and (rem or not any(_under(exe, d) for d in allowed.dirs)):
         return Verdict(key, name, "eigene Programmdatei", code="own_program")
     if _under(exe, WINDIR):
         if base in SHELLS:
@@ -173,7 +186,7 @@ def classify(proc, allowed: WinAllowed, owner=lambda path: "", parent_exe=lambda
                 return None   # vom System gestartet, nicht vom Kind
             return Verdict(key, name)
         return None
-    if any(_under(exe, d) for d in allowed.dirs):
+    if not rem and any(_under(exe, d) for d in allowed.dirs):
         return None
     return Verdict(key, name)
 

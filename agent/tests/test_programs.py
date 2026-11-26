@@ -400,3 +400,18 @@ def test_compute_base_uses_groups(monkeypatch, tmp_path):
     monkeypatch.setattr(watcher, "service_exes", lambda: {"/usr/bin/kdeconnectd"})
     assert watcher._compute_base([], set(), [], ["plasma"], pkgdb.Pacman()) == {str(exe), "/usr/bin/kdeconnectd"}
     assert list(calls[1][:2]) == ["pacman", "-Qlq"] and set(calls[1][2:]) == {"powerdevil", "kidletime"}
+
+
+def test_removable_media_never_grantable():
+    """Programme und Skripte auf USB-Sticks (udisks2-Einhängepunkte): Freigabe nach Pfad gilt nicht, keine Anfrage."""
+    stick = "/run/media/kind/STICK/spiel/spiel"
+    a = allowed("exe:" + stick, "exe:/media/kind/X/game")
+    v = classify(proc(stick), a)
+    assert v.key == "exe:" + stick and v.code == "removable_media" and not v.grantable
+    assert classify(proc("/run/media/kind/STICK/spiel/helfer"), a).code == "removable_media"   # kein App-Ordner
+    assert classify(proc("/media/kind/X/game"), a).code == "removable_media"                    # Debian/Ubuntu
+    v = classify(proc("/usr/bin/bash", ["bash", "/run/media/kind/STICK/start.sh"]), a)
+    assert v.key == "exe:/run/media/kind/STICK/start.sh" and v.code == "removable_media" and not v.grantable
+    assert not a.path_ok(stick)
+    assert classify(proc("/usr/lib/firefox/firefox"), allowed("exe:/usr/lib/firefox/firefox")) is None
+    assert classify(proc("/usr/bin/konsole"), a).grantable                                     # sonst wie bisher

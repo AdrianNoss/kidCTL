@@ -11,7 +11,7 @@ def test_custom_key_validation():
     assert programs.custom_key(" /usr/bin/git ") == "exe:/usr/bin/git"
     assert programs.custom_key("/opt/foo-1.2/bin/foo_x") == "exe:/opt/foo-1.2/bin/foo_x"
     for bad in ("", "/", "usr/bin/git", "/usr/bin/../bin/sh", "/usr//bin/git", "/usr/bin/", "/usr/bin/a b",
-                "/usr/bin/$(x)", "../git", "/" + "a" * 600):
+                "/usr/bin/$(x)", "../git", "/" + "a" * 600, "/run/media/kind/STICK/spiel", "/media/kind/X/spiel"):
         with pytest.raises(ValueError):
             programs.custom_key(bad)
 
