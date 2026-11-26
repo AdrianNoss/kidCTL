@@ -3843,8 +3843,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   bisher). Geprüft: Tests für Vergleich/Erkennung/Manifest/Installer-Sortierung, `vercmp` gegen pacman,
   Veröffentlichung nie aufs Prod-Ziel (Fake-rsync); lokaler `makepkg`- und `build-deb.py`-Bau mit `0.48.0dev293`
   (Paketnamen, Abhängigkeiten `kidctl=0.48.0dev293` bzw. `0.48.0~dev293-1`). Nicht geprüft: Windows-Bau mit
-  Vorab-Version (Inno Setup, erst im ersten Lauf von `prerelease.yml`), Signatur/Veröffentlichung (Adrian), dpkg-Vergleich
-  (dpkg lokal nicht installiert).
+  Vorab-Version (Inno Setup, erst im ersten Lauf von `prerelease.yml`), Signatur/Veröffentlichung (Adrian) – beides am
+  2026-11-26 nachgeholt, siehe dort; dpkg-Vergleich (dpkg lokal nicht installiert).
 - 2026-11-24: Ersteinrichtung: `python -m app.cli master-key` und `vapid-keys` brechen nicht mehr ab, solange `.env`
   noch unvollständig ist (bisher verlangte schon das Laden der CLI `KIDCTL_MASTER_KEY` – der dokumentierte Befehl ging
   bei einer Neuinstallation nicht; aufgefallen beim Einrichten von dev.kidctl.de). Beide Befehle laufen jetzt vor den
@@ -3910,3 +3910,9 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
       Änderungen); Doku-Parität, `hugo --minify`; Design-Review *Heute*/*Zeiten* (DE/EN, hell/dunkel) ohne
       Auffälligkeiten; Screenshots *child-today* erneuert.
     - Nicht geprüft: VM Linux (KDE) und Windows mit echten Prozessen und Benachrichtigungen.
+- 2026-11-26: Nutzer-Test (Adrian) der 0.48-Vorabversion unter Windows auf echter Hardware, erfolgreich:
+  - Paketkanal der Testinstanz: Installer aus `prerelease.yml`, signiert und veröffentlicht per
+    `kidctl-dev-release.sh`, Installation und Update aus dem Repo von dev.kidctl.de.
+  - Limit je Programm/Kategorie (K4), „Zählt nicht“-Programme (K5), Zeitkonto (K7).
+  - Battle.net-Spielerkennung (offener Livetest seit 0.36.0) – damit erledigt.
+  - Grundfunktionen: Bildschirmzeit, Sperre, Website-Filter, Tray.
