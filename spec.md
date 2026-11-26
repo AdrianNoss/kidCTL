@@ -1888,6 +1888,29 @@ Abgestimmt mit Adrian (über die Planungssitzung, alle Empfehlungen übernommen)
   Agent-Paket, Agent und Tray kommen aus demselben Paket) und Links zu Projektseite, Quellcode und Lizenz; kein
   Sicherheitskontakt. Texte gemeinsam, Windows-Optik über `winstyle`.
 
+## Feature-Inbox (entschieden 2026-11-26 mit Adrian, Arbeitspaket Teil C; umgesetzt 2026-11-26)
+
+Nur für den Betreiber von kidctl.de, nicht Teil des Self-Hosting. Details: `tools/feature-inbox/README.md`.
+
+- **Dienst:** `tools/feature-inbox/` als eigener Container im Stack (`docker-compose.yml`, Profil `feature-inbox`,
+  nur ausgehendes Netz, ohne Traefik und Datenbank). Liest `features@kidctl.de` per IMAP (TLS) alle 15 min,
+  parst `KIDCTL-FEATURE-REQUEST v1` (Format aus Teil B), Fremdmails → Ordner `Unsortiert`, verarbeitete →
+  `Verarbeitet`. Idempotent über die Request-ID (lokaler Zustand + Marker im Issue). Probelauf ohne `--apply`.
+- **Aufbereitung:** Claude-API, Modell `FEATURE_INBOX_MODEL` (Standard `claude-haiku-5-5`), `FEATURE_INBOX_LLM=none`
+  schaltet ab; weitere Backends (lokales Modell) in `llm.py`. Zusammenfassung, Kategorie, Aufwand S/M/L, Bereiche,
+  Duplikate gegen offene `feature-request`-Issues, Rückfragen nur bei erlaubtem Kontakt.
+- **Issues:** Labels fest `feature-request` + `needs-triage`; Originaltext als entschärfter Zitatblock.
+  Kontaktadresse nie im (öffentlichen) Issue, nur im lokalen Zustand; Logs maskiert.
+- **Prompt-Injection:** Mailtext ist Daten; Modell ohne Tools, Antwort per Structured Output, Code übernimmt nur
+  geprüfte Felder; GitHub-Aufrufe nur „Issues auflisten“ und „Issue anlegen“. Token: Fine-grained, nur Repo,
+  nur Issues. Geheimnisse in eigener `feature-inbox.env` (Ausnahme von „nur `.env`“, damit Server und Inbox
+  getrennt bleiben).
+- **Sperre der Issue-Automatik** (lokaler Zeitplan-Task `kidctl-issues-taeglich`): Issue-Liste nur über
+  `dev/issues_freigegeben.py`; gesperrt sind `needs-triage` und `feature-request` ohne `approved`. Freigabe durch
+  Adrian: `needs-triage` entfernen, `approved` setzen.
+- **Tagesübersicht:** Mail per SMTP an `FEATURE_INBOX_REPORT_TO` ab `FEATURE_INBOX_REPORT_HOUR` (Standard 7 Uhr):
+  neue Issues, Duplikat-Verdacht, Anzahl Unsortiert, Fehler.
+
 ## Bewusst nicht umgesetzt / Restlücken
 
 Einzige Quelle für die Restlücken ist die öffentliche Doku **`docs/limitations.de.md`** (Englisch:
@@ -3916,3 +3939,12 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   - Limit je Programm/Kategorie (K4), „Zählt nicht“-Programme (K5), Zeitkonto (K7).
   - Battle.net-Spielerkennung (offener Livetest seit 0.36.0) – damit erledigt.
   - Grundfunktionen: Bildschirmzeit, Sperre, Website-Filter, Tray.
+- 2026-11-26: Feature-Inbox (Arbeitspaket Teil C, Abschnitt „Feature-Inbox“): Dienst `tools/feature-inbox/` (IMAP →
+  v1-Parser → Aufbereitung mit `claude-haiku-5-5` → GitHub-Issue mit `feature-request`/`needs-triage`, Tagesübersicht
+  per Mail), Compose-Service im Profil `feature-inbox`, Sperre der Issue-Automatik über `dev/issues_freigegeben.py`
+  (Zeitplan-Task angepasst), CI-Schritt und Dependabot. Getestet: 19 Tests mit gemocktem IMAP/GitHub/Modell/SMTP
+  (Parser, Idempotenz inkl. Absturz nach dem Anlegen, Unsortiert, GitHub-Fehler, Probelauf, Duplikate,
+  Modellausfall/Refusal, Prompt-Injection mit böswilliger Mail und böswilliger Modellantwort, Tagesübersicht,
+  IMAP-PEEK/MOVE-Ersatz), 3 Tests der Sperre, ruff; Image mit `podman build` gebaut, startet und meldet fehlende
+  Einstellungen; `anthropic` 2.14.0 im Image kennt `output_config`. Nicht getestet: echtes Postfach, GitHub und
+  Claude-API (Einrichtung macht Adrian), `docker compose config` (lokal kein Compose).

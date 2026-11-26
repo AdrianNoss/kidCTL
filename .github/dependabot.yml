@@ -36,6 +36,21 @@ updates:
     ignore:
       - dependency-name: python   # nur neue Digests derselben Version, keinen Sprung auf 3.13+
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+  - package-ecosystem: pip   # Feature-Inbox (tools/feature-inbox/requirements.txt, mit Hashes)
+    directory: /tools/feature-inbox
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 2
+  - package-ecosystem: docker   # Basis-Image der Feature-Inbox (Digest, wie der Server)
+    directory: /tools/feature-inbox
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 2
+    ignore:
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
   - package-ecosystem: github-actions
     directory: /
     schedule:

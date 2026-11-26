@@ -1,0 +1,2 @@
+# Feature-Inbox: einzige Fremdabhängigkeit ist das Anthropic-SDK (IMAP, SMTP, GitHub-REST, SQLite: Standardbibliothek)
+anthropic==2.14.0

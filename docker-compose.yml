@@ -59,7 +59,31 @@ services:
       - traefik.http.middlewares.${KIDCTL_NAME:-kidctl}-https.redirectscheme.scheme=https
       - traefik.http.middlewares.${KIDCTL_NAME:-kidctl}-https.redirectscheme.permanent=true
 
+  # Nur für den Betreiber von kidctl.de: liest features@kidctl.de und legt Vorschläge als GitHub-Issues zur Prüfung
+  # an (tools/feature-inbox/README.md). Startet nur mit `docker compose --profile feature-inbox up -d`.
+  feature-inbox:
+    profiles: [feature-inbox]
+    build:
+      context: tools/feature-inbox
+    container_name: ${KIDCTL_NAME:-kidctl}-feature-inbox
+    restart: unless-stopped
+    env_file:
+      - path: ./feature-inbox.env
+        required: false
+    mem_limit: 256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    volumes:
+      - ./data/feature-inbox:/data/feature-inbox
+    # nur ausgehend (IMAP, SMTP, GitHub, Claude-API); kein Traefik, kein Zugang zur Datenbank
+    networks:
+      - outbound
+
 networks:
+  outbound: {}
   traefik:
     # An den tatsächlichen Namen des Traefik-Netzwerks anpassen (docker network ls)
     name: traefik
