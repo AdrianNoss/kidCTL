@@ -24,6 +24,32 @@ from app.models import Child, NintendoConsole, NintendoLink, NintendoPlayer, Nin
 from conftest import TEST_FAMILY, SessionLocal, csrf_from, login
 
 TOKEN = "geheimes-session-token-123"
+
+
+class _Logs(logging.Handler):
+    """Sammelt alle Log-Zeilen (statt caplog, das in der CI per `-p no:logging` fehlt)."""
+
+    def __init__(self):
+        super().__init__(logging.DEBUG)
+        self.lines = []
+
+    def emit(self, record):
+        self.lines.append(self.format(record))
+
+    @property
+    def text(self):
+        return "\n".join(self.lines)
+
+
+@pytest.fixture
+def logs():
+    h, root = _Logs(), logging.getLogger()
+    old = root.level
+    root.addHandler(h)
+    root.setLevel(logging.DEBUG)
+    yield h
+    root.removeHandler(h)
+    root.setLevel(old)
 SYNC = 1_764_150_000   # Unix-Zeit
 
 
@@ -108,10 +134,9 @@ def test_incomplete_new_console_is_tolerated(client, parent, monkeypatch):
 
 # ---------- Abruf ----------
 
-def test_poll_success_stores_console_players_usage(client, parent, monkeypatch, caplog):
+def test_poll_success_stores_console_players_usage(client, parent, monkeypatch, logs):
     _linked()
     _fake_fetch(monkeypatch, ([_device()], set()))
-    caplog.set_level(logging.DEBUG)
     assert _run(nintendo.poll_family(TEST_FAMILY, None)) == nintendo.OK
     with SessionLocal() as db:
         con = db.scalar(select(NintendoConsole))
@@ -124,16 +149,15 @@ def test_poll_success_stores_console_players_usage(client, parent, monkeypatch, 
         assert set(usage) == {40, 5} and json.loads(usage[40].apps) == [["Zelda", 30], ["Mario Kart", 10]]
         row = db.scalar(select(NintendoLink))
         assert row.failures == 0 and row.last_ok_at and row.next_poll_at > utcnow()
-    assert "neue Spielerprofile ohne Zuordnung" in caplog.text
-    assert TOKEN not in caplog.text and "Max" not in caplog.text
+    assert "neue Spielerprofile ohne Zuordnung" in logs.text
+    assert TOKEN not in logs.text and "Max" not in logs.text
 
 
-def test_poll_auth_error_requires_relogin_without_retry(client, parent, monkeypatch, caplog):
+def test_poll_auth_error_requires_relogin_without_retry(client, parent, monkeypatch, logs):
     _linked()
     _fake_fetch(monkeypatch, ([_device()], set()))
     _run(nintendo.poll_family(TEST_FAMILY, None))
     _fake_fetch(monkeypatch, InvalidSessionTokenException(400, "invalid_grant"))
-    caplog.set_level(logging.DEBUG)
     assert _run(nintendo.poll_family(TEST_FAMILY, None)) == nintendo.REAUTH
     with SessionLocal() as db:
         row = db.scalar(select(NintendoLink))
@@ -143,7 +167,7 @@ def test_poll_auth_error_requires_relogin_without_retry(client, parent, monkeypa
         db.scalar(select(NintendoLink)).next_poll_at = utcnow() - timedelta(minutes=1)
         db.commit()
     assert TEST_FAMILY not in nintendo.due_families()          # keine Retry-Schleife
-    assert TOKEN not in caplog.text
+    assert TOKEN not in logs.text
 
 
 def test_poll_network_error_keeps_values_and_backs_off(client, parent, monkeypatch):
