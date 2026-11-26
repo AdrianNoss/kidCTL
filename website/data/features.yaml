@@ -164,3 +164,10 @@
   text:
     de: "Der Betreiber informiert über neue Versionen und Funktionen – nur wenn eure Familie zustimmt, jederzeit abbestellbar."
     en: "The operator tells you about new versions and features – only if your family opts in, unsubscribe at any time."
+- id: feature-requests
+  icon: chat
+  small: true
+  title: { de: "Feature vorschlagen", en: "Suggest a feature" }
+  text:
+    de: "Ideen für neue Funktionen direkt aus der Weboberfläche schicken – Kontaktdaten nur, wenn ihr Rückfragen erlaubt."
+    en: "Send ideas for new features right from the web interface – contact details only if you allow follow-up questions."

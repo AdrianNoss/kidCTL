@@ -39,7 +39,7 @@ def test_every_mail_type_renders(client, name, lang):
         ctx = mailer.samples()[name]
     r = mailer.render(name, lang, **ctx)
     _check(r, lang)
-    assert r.subject.startswith("KidCTL: ") != (name == "newsletter") and "powered by" not in r.html
+    assert r.subject.startswith("KidCTL: ") != (name in ("newsletter", "feature_request")) and "powered by" not in r.html
     if lang == "en" and name not in ("invoice", "ticket_support", "operator_notice"):
         assert "Hallo" not in r.html and "Du bekommst" not in r.text          # wirklich übersetzt
 

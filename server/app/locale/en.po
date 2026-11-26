@@ -4013,3 +4013,96 @@ msgstr "Open the sign-in link – preferably on a computer. On a device with the
 
 msgid "Spiele heute"
 msgstr "Games today"
+
+msgid "Feature vorschlagen"
+msgstr "Suggest a feature"
+
+msgid "Feature-Vorschlag"
+msgstr "Feature suggestion"
+
+msgid "Neue Plattform/Gerät"
+msgstr "New platform/device"
+
+msgid "Bedienung"
+msgstr "Ease of use"
+
+msgid "Regeln/Limits"
+msgstr "Rules/limits"
+
+msgid "Benachrichtigungen"
+msgstr "Notifications"
+
+msgid "niedrig"
+msgstr "low"
+
+msgid "mittel"
+msgstr "medium"
+
+msgid "hoch"
+msgstr "high"
+
+msgid "Titel"
+msgstr "Title"
+
+msgid "Beschreibung"
+msgstr "Description"
+
+msgid "Kontakt"
+msgstr "Contact"
+
+msgid "Wichtigkeit"
+msgstr "Importance"
+
+msgid "Bitte wählen"
+msgstr "Please choose"
+
+msgid "Bitte Titel, Kategorie und Beschreibung angeben."
+msgstr "Please enter a title, category and description."
+
+msgid "Der Titel darf höchstens {title} und die Beschreibung höchstens {text} Zeichen lang sein."
+msgstr "The title may be at most {title} and the description at most {text} characters long."
+
+msgid "Ungültige Angabe zur Wichtigkeit."
+msgstr "Invalid importance."
+
+msgid "Du hast heute schon {n} Vorschläge geschickt. Bitte versuche es morgen wieder."
+msgstr "You have already sent {n} suggestions today. Please try again tomorrow."
+
+msgid "Der Vorschlag konnte gerade nicht gesendet werden. Bitte versuche es später noch einmal."
+msgstr "The suggestion could not be sent right now. Please try again later."
+
+msgid "Danke, dein Vorschlag ist angekommen."
+msgstr "Thank you, your suggestion has arrived."
+
+msgid "Wir lesen jeden Vorschlag. Eine Antwort bekommst du nur, wenn du Rückfragen erlaubt hast und wir etwas wissen möchten."
+msgstr "We read every suggestion. You will only get a reply if you allowed follow-up questions and we want to know more."
+
+msgid "Weiteren Vorschlag schicken"
+msgstr "Send another suggestion"
+
+msgid "Dir fehlt etwas in KidCTL? Beschreib uns deine Idee – sie geht per E-Mail an das Entwicklungsteam."
+msgstr "Missing something in KidCTL? Describe your idea – it is sent by email to the development team."
+
+msgid "Dir fehlt etwas? Schick uns deine Idee."
+msgstr "Missing something? Send us your idea."
+
+msgid "Ein Wunsch für eine neue Funktion?"
+msgstr "A wish for a new feature?"
+
+msgid "Wie wichtig ist dir das? (optional)"
+msgstr "How important is this to you? (optional)"
+
+msgid "Rückfragen erlaubt: meine E-Mail-Adresse mitschicken"
+msgstr "Follow-up questions allowed: include my email address"
+
+msgid "Für Rückfragen hinterlege im Profil eine E-Mail-Adresse."
+msgstr "To allow follow-up questions, add an email address in your profile."
+
+msgid "Ohne Häkchen schicken wir keine Kontaktdaten mit. Höchstens {n} Vorschläge pro Tag."
+msgstr "Without the tick we send no contact details. At most {n} suggestions per day."
+
+msgid "Vorschlag senden"
+msgstr "Send suggestion"
+
+msgid "Du bekommst diese Mail, weil diese Adresse als FEATURE_REQUEST_EMAIL eingetragen ist."
+msgstr "You are receiving this email because this address is set as FEATURE_REQUEST_EMAIL."

@@ -75,6 +75,8 @@ child's computer the language of the desktop session is used.
   once what's new; notice when a newer version is out.
 - **Newsletter:** news to all families that opted in – in German and English, formatted with Markdown, with a
   preview and an unsubscribe link.
+- **Suggest a feature:** parents send ideas for new features from the web UI by email to the development team
+  (`FEATURE_REQUEST_EMAIL`, off without it); the email address only if follow-up questions are allowed.
 - **Security**:
   - Parent sign-in only with TOTP (or a passkey), rate limiting, CSRF protection.
   - Names, chat, activity log, statistics and email addresses are stored encrypted on the server (one key

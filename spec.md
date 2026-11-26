@@ -1912,6 +1912,30 @@ Abgestimmt mit Adrian am 2026-11-26, Empfehlungen übernommen außer der Zuordnu
 - **Doku:** `docs/nintendo*.md` (Wiki, Gruppe Betrieb). Smoke-Test mit echtem Konto: `dev/nintendo_smoke.py`
   (Token aus `NINTENDO_SESSION_TOKEN`).
 
+## Feature vorschlagen (entschieden 2026-11-26, umgesetzt 2026-11-26)
+
+Teil B des Arbeitspakets „Nintendo-Anbindung + Feature-Request-Kanal“; abgestimmt mit Adrian (alle Empfehlungen
+übernommen):
+
+- **Schalter:** `FEATURE_REQUEST_EMAIL` in `.env`, Standard leer = aus (Seite 404, keine Links); braucht SMTP.
+  app.kidctl.de trägt `features@kidctl.de` ein, Self-Hoster nur, wenn sie wollen – ohne Eintrag verlässt nichts die
+  Instanz.
+- **Ort:** eigene Seite `/feature-request`, verlinkt als Karte in *Einstellungen* und auf der Seite *Support* (SaaS);
+  kein eigener Navigationspunkt. Nur angemeldete Eltern, CSRF, in der Support-Ansicht gesperrt.
+- **Formular:** Titel (Pflicht, ≤ 120), Kategorie (Pflicht: Neue Plattform/Gerät, Bedienung, Regeln/Limits,
+  Benachrichtigungen, Sonstiges), Beschreibung (Pflicht, ≤ 5000, Plaintext), Wichtigkeit (optional:
+  niedrig/mittel/hoch), „Rückfragen erlaubt“ (Standard aus; nur mit bestätigter Mailadresse). Serverseitig:
+  HTML-Tags und Steuerzeichen entfernt, Titel einzeilig, Längen nach dem Bereinigen. Danach Bestätigung „Danke, dein
+  Vorschlag ist angekommen“.
+- **Mail:** Template `mail/feature_request.html` (HTML zum Lesen, mit Inhalt – bewusste Ausnahme von „nur Hinweis +
+  Link“, weil sie an den Betreiber geht). Betreff `[KidCTL Feature] <Titel>` ohne Markennamen davor. Die Textfassung
+  ist exakt das Format `KIDCTL-FEATURE-REQUEST v1` ohne Fußzeile (Flag `plain_text` in `mail/base.txt`) – Schnittstelle
+  zum Postfach-Agenten, nur nach Rücksprache ändern. Kategorie und Wichtigkeit stehen immer deutsch darin, `Datum` in
+  UTC (ISO 8601), `ID` als UUID4, `Kontakt` nur mit Häkchen (dann auch `Reply-To`), sonst `-`.
+- **Rate-Limit:** 5 Vorschläge je Elternteil in 24 Stunden, gezählt in `login_attempt` (`kind="feature"`, Löschung
+  nach der Frist der Anmeldeversuche); keine Migration, kein Inhalt in der Datenbank, kein Verwaltungsprotokoll (keine
+  Betreiber-Aktion). Fehlgeschlagener Versand zählt nicht.
+
 ## Info und Neuigkeiten (entschieden 2026-11-22 per /grill-me, umgesetzt 2026-11-22)
 
 - **Server-Version:** `server/app/release_notes.py`, oberster Eintrag = laufende Version (Version, Datum, 2–4
@@ -3991,3 +4015,9 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   0032 auf einer 0031-Datenbank, `alembic check`, Downgrade/Upgrade. Nicht getestet: Abruf mit echtem
   Nintendo-Konto (Adrian, `dev/nintendo_smoke.py`), deutsche Beschriftung der Nintendo-Seite („Diese Person auswählen“)
   nicht verifiziert.
+- 2026-11-26: Feature vorschlagen (Teil B, siehe Abschnitt „Feature vorschlagen“): Seite `/feature-request`, Mail an
+  `FEATURE_REQUEST_EMAIL` im Format `KIDCTL-FEATURE-REQUEST v1`, Rate-Limit 5/Tag je Elternteil, Doku DE/EN.
+  Getestet: `tests/test_feature_requests.py` (aus ohne Empfänger, Login-Pflicht, CSRF, Validierung und Bereinigung,
+  Mailformat per Regex, Kontakt nur mit Häkchen inkl. Reply-To, Rate-Limit und Freigabe nach 24 h, Fehlversand zählt
+  nicht, englische Oberfläche mit deutschem Mailformat), Mailtyp in DE/EN über `test_mails.py`, Seite im Browser
+  (Formular, Fehler, Bestätigung) mit gemocktem SMTP.

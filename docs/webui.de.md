@@ -130,3 +130,14 @@ Auf dem Kinderrechner gilt die Sprache der Desktop-Sitzung des Kindes (Plasma: S
 Region & Sprache; GNOME: Einstellungen → System → Region & Sprache), vor der Anmeldung unter GNOME
 die dort gewählte Sprache, sonst die Systemsprache aus `/etc/locale.conf`. Alles, was nicht mit `de`
 beginnt, ergibt Englisch.
+
+## Feature vorschlagen
+
+Einstellungen → „Feature vorschlagen“ (im gehosteten Betrieb auch auf der Seite *Support*): Titel (höchstens 120
+Zeichen), Kategorie, Beschreibung (höchstens 5000 Zeichen) und optional, wie wichtig dir der Wunsch ist. Der Vorschlag
+geht per E-Mail an das Entwicklungsteam. Deine E-Mail-Adresse geht nur mit, wenn du „Rückfragen erlaubt“ anhakst;
+dafür braucht dein Profil eine bestätigte Adresse. Jedes Elternteil kann bis zu 5 Vorschläge am Tag schicken.
+
+> [!NOTE]
+> Beim Self-Hosting ist die Funktion aus, bis `FEATURE_REQUEST_EMAIL` gesetzt ist
+> ([Server](server.de.md#konfiguration-env)). Ohne den Eintrag verlässt kein Vorschlag den Server.

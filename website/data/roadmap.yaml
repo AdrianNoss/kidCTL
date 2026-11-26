@@ -171,6 +171,12 @@
   text:
     de: "Nicht genutzte Minuten teilweise auf spätere Tage übertragen."
     en: "Carry part of the unused minutes over to later days."
+- id: feature-requests
+  status: in_progress
+  title: { de: "Feature vorschlagen", en: "Suggest a feature" }
+  text:
+    de: "Eltern schicken Wünsche für neue Funktionen direkt aus der Weboberfläche an das Entwicklungsteam."
+    en: "Parents send wishes for new features to the development team right from the web interface."
 - id: chores
   status: planned
   title: { de: "Aufgaben gegen Bildschirmzeit", en: "Chores for screen time" }

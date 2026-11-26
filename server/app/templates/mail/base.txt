@@ -11,11 +11,11 @@
 
 {% endif %}{% for para in after or [] %}{{ para }}
 
-{% endfor %}{% endif %}
+{% endfor %}{% endif %}{% if not plain_text %}
 --
 {% if reason %}{{ reason }}{% if unsubscribe %}
 {{ unsubscribe[0] }}: {{ unsubscribe[1] }}{% endif %}
 {% endif %}{% for label, url in footer.links %}{{ label }}: {{ url }}
 {% endfor %}{% if footer.provider %}{{ footer.provider | join(" · ") }}
 {% endif %}{% if brand().custom %}{{ brand().name }} · powered by KidCTL
-{% endif %}{% endautoescape %}
+{% endif %}{% endif %}{% endautoescape %}

@@ -16,6 +16,7 @@ from .tenant import platform_session
 from .middleware import SecurityMiddleware
 from .routes import admin, api, auth, billing as billing_routes, nintendo as nintendo_routes, operators, pwa, signup, wellknown
 from .routes import tickets as ticket_routes
+from .routes import feature_requests as feature_request_routes
 from .routes import (
     operator_branding, operator_codes, operator_families, operator_invoices, operator_log, operator_mails,
     operator_profile, operator_tickets,
@@ -116,6 +117,7 @@ for _mod in (operator_families, operator_codes, operator_log, operator_profile, 
 app.include_router(signup.router)
 app.include_router(billing_routes.router)
 app.include_router(ticket_routes.router)
+app.include_router(feature_request_routes.router)
 app.include_router(api.router)
 app.include_router(pwa.router)
 app.include_router(nintendo_routes.router)

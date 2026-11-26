@@ -68,6 +68,7 @@ PARENT = {
     "settings": "/settings",
     "tickets": "/support",
     "ticket": "/support/{ticket}",
+    "feature-request": "/feature-request",
 }
 ADMIN = {
     "admin": "/admin",
@@ -115,7 +116,10 @@ def drop_database() -> None:
 def server_env(data: Path, port: int) -> dict:
     return {**os.environ, "KIDCTL_DEV": "1", "SECRET_KEY": "design-review", "KIDCTL_DATA_DIR": str(data),
             "DATABASE_URL": DATABASE_URL, "KIDCTL_MODE": "saas", "BASE_URL": f"http://localhost:{port}",
-            "COOKIE_SECURE": "0", "PYTHONPATH": f"{REPO / 'server'}:{REPO / 'common'}"}
+            "COOKIE_SECURE": "0", "PYTHONPATH": f"{REPO / 'server'}:{REPO / 'common'}",
+            # „Feature vorschlagen“ braucht Empfänger + SMTP; Port 9 nimmt nichts an, es wird nie etwas versendet
+            "FEATURE_REQUEST_EMAIL": "features@example.org", "SMTP_HOST": "127.0.0.1", "SMTP_PORT": "9",
+            "SMTP_SECURITY": "none", "SMTP_FROM": "review@example.org"}
 
 
 def cli(env: dict, *args: str, **extra: str) -> str:

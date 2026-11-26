@@ -6,6 +6,7 @@ Ein Mail-Template legt oben Variablen fest, die Basis-Layout und Textfassung les
 - ``subject`` (ohne Namen – den setzt das System davor), ``preheader`` (Vorschauzeile), ``heading`` (Überschrift)
 - ``greeting``, ``paragraphs`` (Liste), ``action`` (Beschriftung, URL) als Button, ``after`` (Liste nach dem Button)
 - ``reason`` (Grund der Mail im Fuß), optional ``unsubscribe`` (URL)
+- ``plain_text``: Textfassung ohne Fußzeile (maschinenlesbares Format, z. B. Feature-Vorschlag)
 - eigene Inhalte über ``{% block content %}`` (HTML) und ``text_template`` (Textfassung), z. B. Nutzungsbericht
 
 Das Logo hängt als Inline-Bild (CID) an – keine externen Bilder, kein Tracking.
@@ -173,7 +174,7 @@ def samples() -> dict[str, dict]:
     """Mailtyp -> Beispiel-Variablen. Neuer Mailtyp → hier ergänzen (Vorschau und Tests nutzen die Liste)."""
     from datetime import date, datetime, timedelta
     from types import SimpleNamespace
-    from . import report, schedule as sch
+    from . import feature_requests, report, schedule as sch
     from .i18n import _
     url = settings.base_url
     today = date.today()
@@ -199,6 +200,7 @@ def samples() -> dict[str, dict]:
                                 text=_("das Passwort deines Betreiber-Zugangs wurde geändert.")),
         "email_changed": dict(username="mama", email="neu@example.org"),
         "passkey_notice": dict(name="Mama", event="added", passkey="iPhone", admin=False),
+        "feature_request": feature_requests.sample(),
         "newsletter": _newsletter_sample(f"{url}/newsletter/unsubscribe/1/BEISPIEL"),
         "report": dict(parent=SimpleNamespace(display_name="Mama", username="mama"), period=period, reports=[],
                        fmt=sch.fmt_minutes, short=report._short, bar_height=report.BAR_HEIGHT,

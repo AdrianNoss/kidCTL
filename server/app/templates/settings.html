@@ -161,6 +161,14 @@
 </section>
 {% endif %}
 
+{% if feature_requests_on() %}
+<section class="card" id="feature">
+  <div class="card-head"><h2>{{ _("Feature vorschlagen") }}</h2></div>
+  <p class="muted"><small>{{ _("Dir fehlt etwas? Schick uns deine Idee.") }}</small></p>
+  <a href="/feature-request" class="btn secondary">{{ _("Feature vorschlagen") }}</a>
+</section>
+{% endif %}
+
 <section class="card" id="data">
   <div class="card-head"><h2>{{ _("Daten der Familie") }}</h2></div>
   {% if imported %}<p class="success">{{ _("Import abgeschlossen. Geräte bitte neu koppeln – ihre Kopplung gilt nur auf dem alten Server.") }}</p>{% endif %}
