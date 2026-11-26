@@ -27,7 +27,7 @@ from .. import (
 )
 from .. import lock as lk
 from .. import schedule as sch
-from .. import applimits, timebank
+from .. import applimits, nintendo, timebank
 from kidctl_common import applimits as al
 from ..i18n import N_, _
 from ..middleware import csp
@@ -130,7 +130,8 @@ def _child_page(request: Request, db: Session, child: Child, tab: str = "heute",
                    web_mode_label=webfilter.MODES[child.web_mode], program_mode_label=programs.MODES[child.program_mode],
                    n_allowed=len(programs.allowed_keys(db, child.id)), max_extra=sch.MAX_EXTRA,
                    lock_durations=lk.DURATIONS, max_grace=lk.MAX_GRACE_MINUTES,
-                   app_limits=applimits.limit_rows(db, child.id, today))
+                   app_limits=applimits.limit_rows(db, child.id, today),
+                   nintendo=nintendo.for_child(db, child.id) if settings.nintendo else [])
     elif tab == "zeiten":
         ctx.update(rules=sch.rules_by_day(child), groups=sch.GROUPS, weekday_names=i18n.weekday_names(),
                    differs=sch.group_differs(child), max_quota=sch.MAX_QUOTA, fmt_minutes=sch.fmt_minutes,
@@ -376,8 +377,10 @@ def child_stats(child_id: int, request: Request, range: int = 7, db: Session = D
     bars = stats.daily(db, child)
     scale = max([b.used_minutes for b in bars] + [b.allowed_minutes for b in bars] + [1])
     app_rows = stats.apps(db, child, app_days)
+    switch = nintendo.daily(db, child.id, stats.DAYS) if settings.nintendo and nintendo.has_data(db, child.id) else []
     return render(request, "stats.html", child=child, tab="stats", **_child_head(db, child), bars=bars, scale=scale, sums=stats.week_sums(bars),
                   apps=app_rows, app_days=app_days, app_scale=max([r.minutes for r in app_rows] + [1]),
+                  switch=switch, switch_scale=max([m for _d, m in switch] + [1]),
                   fmt_minutes=sch.fmt_minutes, weekday_names=i18n.weekday_names())
 
 

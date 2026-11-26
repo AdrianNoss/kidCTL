@@ -209,3 +209,9 @@
   text:
     de: "Laufende Version in Weboberfläche und Kinder-App, Kurzfassung der Änderungen nach jedem Update."
     en: "Running version in the web interface and the child app, a short summary of changes after each update."
+- id: nintendo-switch
+  status: done
+  title: { de: "Nintendo Switch: Spielzeit anzeigen (experimentell)", en: "Nintendo Switch: show play time (experimental)" }
+  text:
+    de: "Spielzeit, Spiele und Restzeit der Switch je Kind in der Weboberfläche, über die Cloud der Nintendo-App."
+    en: "Switch play time, games and remaining time per child in the web interface, via the Nintendo app's cloud."

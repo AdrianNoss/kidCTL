@@ -1,0 +1,20 @@
+{# Heute-Tab: Nintendo Switch (experimentell) – je zugeordnetem Spielerprofil #}
+<section class="card" id="nintendo">
+  <div class="card-head"><h2>{{ _("Nintendo Switch") }}</h2><span class="pill warn">{{ _("experimentell") }}</span></div>
+  {% for n in nintendo %}{% set c = n.console %}
+  <h3>{{ c.name or _("Konsole") }} · {{ n.player.nickname or _("Profil") }}{% if c.stale %} <span class="pill warn">{{ _("veraltet") }}</span>{% endif %}</h3>
+  <dl>
+    <dt>{{ _("Heute gespielt") }}</dt><dd>{{ fmt_minutes(n.minutes) if n.minutes is not none else "–" }}</dd>
+    <dt>{{ _("Konsole gesamt") }}</dt><dd>{% if c.used_minutes is not none and c.day == today %}{% if c.limit_minutes is not none %}{{ _("{used} von {limit}").format(used=fmt_minutes(c.used_minutes), limit=fmt_minutes(c.limit_minutes)) }}{% else %}{{ fmt_minutes(c.used_minutes) }} · {{ _("kein Limit") }}{% endif %}{% else %}–{% endif %}</dd>
+    {% if c.limit_minutes is not none and c.remaining_minutes is not none and c.day == today %}<dt>{{ _("Restzeit") }}</dt><dd>{{ fmt_minutes(c.remaining_minutes) }}</dd>{% endif %}
+    <dt>{{ _("Stand") }}</dt><dd>{{ c.last_sync | localtime if c.last_sync else _("unbekannt") }}</dd>
+  </dl>
+  {% if n.apps %}
+  <table>
+    <tr><th>{{ _("Spiele heute") }}</th><th class="right">{{ _("gespielt") }}</th></tr>
+    {% for name, minutes in n.apps %}<tr><td>{{ name }}</td><td class="right">{{ fmt_minutes(minutes) }}</td></tr>{% endfor %}
+  </table>
+  {% endif %}
+  {% endfor %}
+  <p class="muted"><small>{{ _("Limit und Restzeit gelten für die ganze Konsole und werden in der Nintendo-App eingestellt. Die Switch-Zeit zählt nicht ins Kontingent am Computer. „Stand“ ist die letzte Verbindung der Switch mit Nintendo.") }}</small></p>
+</section>

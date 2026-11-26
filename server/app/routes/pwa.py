@@ -92,7 +92,7 @@ def _settings(request: Request, db: Session, sess: ParentSession, status_code: i
                   backup_done=request.query_params.get("backup"), imported=request.query_params.get("imported"),
                   saved=request.query_params.get("saved"),
                   is_owner=_is_owner(db, sess.parent_id), family_empty=family_export.is_empty(db),
-                  family=db.scalar(select(Family)), **_holiday_ctx(db),
+                  family=db.scalar(select(Family)), **_holiday_ctx(db), **_nintendo_ctx(db),
                   **_support_ctx(db, sess), **ctx)
 
 
@@ -105,6 +105,17 @@ def _holiday_ctx(db: Session) -> dict:
             "holiday_region": region, "holiday_countries": vacations.COUNTRIES,
             "holiday_subdivs": {c: vacations.subdivisions(c) for c in vacations.COUNTRIES},
             "weekday_names": i18n.weekday_names(), "vacation_today": sch.today_local()}
+
+
+def _nintendo_ctx(db: Session) -> dict:
+    if not settings.nintendo:
+        return {}
+    from .. import nintendo
+    from ..models import Child, NintendoConsole
+    row = nintendo.link(db)
+    return {"nintendo_link": row, "nintendo_login_url": nintendo.pending_url(row),
+            "nintendo_consoles": db.scalars(select(NintendoConsole).order_by(NintendoConsole.id)).all(),
+            "nintendo_children": db.scalars(select(Child).order_by(Child.id)).all()}
 
 
 def _is_owner(db: Session, parent_id) -> bool:

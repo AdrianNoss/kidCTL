@@ -1876,6 +1876,42 @@ Abgestimmt mit Adrian (über die Planungssitzung, alle Empfehlungen übernommen)
   aufgebraucht“ (Linux und Windows, kein eigenes Vordergrundfenster).
 - **Restlücken:** siehe `docs/limitations*` („Limits für Programme nach Name und Kategorie“).
 
+## Nintendo-Switch-Spielzeit (experimentell, Phase 1 nur lesen; entschieden 2026-11-26, umgesetzt 2026-11-26)
+
+Ursprung: Feature-Wunsch eines Nutzers, Arbeitspaket von Adrian. Recherche: `dev/planung/2026-11-26-nintendo-recherche.md`.
+Abgestimmt mit Adrian am 2026-11-26, Empfehlungen übernommen außer der Zuordnung.
+
+- **Quelle:** inoffizielle Cloud-API der App „Nintendo Switch Parental Controls“ über `pynintendoparental==2.7.0`
+  (`pynintendoauth==1.0.3`, MIT), wie die HA-Integration `nintendo_parental_controls`. In UI und Doku „experimentell“.
+- **Nur Anzeige:** Die Switch-Zeit zählt nicht ins Kontingent, ins Zeitkonto oder in die Bildschirmzeit der
+  Statistik. Kein Einfluss auf Policy und Agent. Schreiben (Limits, Bonuszeit, Sperre) ist Phase 2.
+- **Zuordnung je Spielerprofil** (nicht je Konsole): Ein Profil gehört höchstens einem Kind. Nicht zugeordnete Profile
+  bleiben gespeichert und werden einmalig geloggt (ohne Namen). Limit, Restzeit und Stand gelten je Konsole und stehen
+  beim Kind als „Konsole gesamt“.
+- **Schalter global in `.env`:** `KIDCTL_NINTENDO` (Standard an bei `single`, aus bei `saas`, bis Nintendos
+  Rate-Limits bei vielen Familien bekannt sind), `KIDCTL_NINTENDO_INTERVAL` (Standard und Minimum 60 s). Je Familie
+  in der DB nur Verknüpfung und Zuordnung.
+- **Einrichtung** unter Einstellungen → „Nintendo Switch“ (alle Eltern, ohne JavaScript): Login-Link erzeugen, den
+  kopierten `npf54789befb391a838://auth#…`-Link einfügen. Der PKCE-Verifier liegt verschlüsselt in der DB (30 min).
+  Die Bibliothek hält ihn nur im Objekt, daher wird `_auth_code_verifier` gesetzt. Hinweis: Gerät ohne Nintendo-App
+  nutzen.
+- **Session-Token:** `Sealed` (Familienschlüssel), nie im Log (Logger der Bibliothek fest auf WARNING, weil DEBUG
+  Spielnamen und Nicknames schreibt), nicht im Familien-Export (`nintendo_link` ausgeschlossen). „Verbindung
+  trennen“ löscht Token, Konsolen und Profile. Die Spielzeit je Kind bleibt.
+- **Abruf** (`app.nintendo.run_forever`, ein Client je Familie im Speicher): `discover_devices()`, dann
+  `Device.update(monthly_summary=False)` je Konsole, damit Fehler je Konsole ankommen. Restzeit bei „kein Limit“
+  bzw. unbegrenzter Bonuszeit = leer; die Bibliothek liefert dann die Minuten bis Mitternacht.
+- **Fehler:** ungültiges Token → Status „reauth“, kein weiterer Abruf. Andere Fehler → Status „error“ mit Code,
+  Konsolen „veraltet“, letzte Werte bleiben, Backoff Intervall × 2ⁿ bis 15 min. Fehler einer einzelnen Konsole
+  markieren nur diese. Fehlende Felder neuer Konsolen werden toleriert.
+- **Anzeige:** Karte „Nintendo Switch“ im Tab *Heute* je zugeordnetem Profil (heute gespielt, Konsole gesamt/Limit,
+  Restzeit, Stand, Spiele heute); eigene Karte in der *Statistik* (Minuten je Tag, 14 Tage), getrennt von der
+  Bildschirmzeit.
+- **Daten:** `nintendo_link`, `nintendo_console`, `nintendo_player`, `nintendo_usage` (Tag je Profil, Kind,
+  Minuten, Spiele als verschlüsseltes JSON), Alembic `0032`. Aufbewahrung `NINTENDO` 395 Tage wie `USAGE`.
+- **Doku:** `docs/nintendo*.md` (Wiki, Gruppe Betrieb). Smoke-Test mit echtem Konto: `dev/nintendo_smoke.py`
+  (Token aus `NINTENDO_SESSION_TOKEN`).
+
 ## Info und Neuigkeiten (entschieden 2026-11-22 per /grill-me, umgesetzt 2026-11-22)
 
 - **Server-Version:** `server/app/release_notes.py`, oberster Eintrag = laufende Version (Version, Datum, 2–4
@@ -3945,3 +3981,13 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   (K7), Kleinkram 0.48, Programme auf Wechseldatenträgern nicht freigebbar. Release Notes, News, Roadmap `app-limits`,
   `free-apps`, `time-bank` → erledigt (0.48). Geprüft: VM Linux/Windows (K4, USB-Fix), Nutzer-Tests Linux und Windows
   auf echter Hardware (Vorabversion), Server-, Agent- und Tray-Tests, Doku-Parität, Hugo-Build.
+- 2026-11-26: Nintendo-Switch-Spielzeit (experimentell, Phase 1 nur lesen), siehe Abschnitt
+  „Nintendo-Switch-Spielzeit“. Getestet: `server/tests/test_nintendo.py` mit Attrappen der Bibliothek, ohne echte
+  Nintendo-Aufrufe (Abbildung inkl. „kein Limit“ und unvollständiger neuer Konsole, Erfolg, Auth-Fehler → „reauth“
+  ohne Retry, Netzfehler → stale mit Backoff und Erholung, Fehler einer Konsole, `_fetch` gegen Bibliotheks-Attrappen,
+  Einrichtung über die WebUI inkl. Verifier, Token verschlüsselt in der DB und nicht im Export, falscher, abgelehnter
+  und abgelaufener Link, Zuordnung, Heute und Statistik, Trennen behält Statistik, fremde IDs 404, Schalter aus,
+  SaaS-Standard aus, Mindestintervall); keine Tokens oder Nicknames im Log. Ganze Server-Suite grün. Migration 0031 →
+  0032 auf einer 0031-Datenbank, `alembic check`, Downgrade/Upgrade. Nicht getestet: Abruf mit echtem
+  Nintendo-Konto (Adrian, `dev/nintendo_smoke.py`), deutsche Beschriftung der Nintendo-Seite („Diese Person auswählen“)
+  nicht verifiziert.

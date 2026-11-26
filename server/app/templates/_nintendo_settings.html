@@ -1,0 +1,72 @@
+{# Einstellungen → Nintendo Switch (experimentell); nur wenn KIDCTL_NINTENDO an ist #}
+{% set nl = nintendo_link %}
+<section class="card" id="nintendo">
+  <div class="card-head"><h2>{{ _("Nintendo Switch") }}</h2>
+    <span class="pill warn">{{ _("experimentell") }}</span>
+    {% if nl and nl.session_token %}
+      {% if nl.status == "reauth" %}<span class="pill danger">{{ _("neu anmelden") }}</span>
+      {% elif nl.status == "error" %}<span class="pill warn">{{ _("Fehler") }}</span>
+      {% elif nl.status == "ok" %}<span class="pill ok">{{ _("verbunden") }}</span>{% endif %}
+    {% endif %}</div>
+  {% if saved == "nintendo_linked" %}<p class="success">{{ _("Verbunden. Die ersten Daten kommen in etwa einer Minute.") }}</p>
+  {% elif saved == "nintendo" %}<p class="success">{{ _("Gespeichert.") }}</p>{% endif %}
+  {% if nintendo_error %}<p class="error">{{ nintendo_error }}</p>{% endif %}
+  <p>{{ _("Zeigt die Spielzeit der Switch im Tab „Heute“ und in der Statistik des Kindes. Nur Anzeige: Die Switch-Zeit zählt nicht ins Kontingent am Computer, Limits stellt ihr weiter in der Nintendo-App ein.") }}</p>
+  <p class="muted"><small>{{ _("Experimentell: Nintendo bietet dafür keine offizielle Schnittstelle. KidCTL nutzt dieselbe Cloud-Schnittstelle wie die App „Nintendo Switch Parental Controls“; das kann jederzeit ausfallen. Die Werte sind nur so aktuell wie die letzte Verbindung der Switch mit dem Internet.") }}</small></p>
+
+  {% if nl and nl.session_token and nl.status != "reauth" %}
+    {% if nl.status == "error" %}<p class="warn"><small>{{ _("Letzter Abruf fehlgeschlagen ({code}). KidCTL versucht es automatisch wieder; angezeigt werden die letzten bekannten Werte.").format(code=nl.error) }}</small></p>{% endif %}
+    {% if nl.last_ok_at %}<p class="muted"><small>{{ _("Zuletzt abgerufen: {when}").format(when=nl.last_ok_at | localtime) }}</small></p>{% endif %}
+    {% if nintendo_consoles %}
+    {% for c in nintendo_consoles %}
+    <h3>{{ c.name or _("Konsole") }} {% if c.model %}<small class="muted">{{ c.model }}</small>{% endif %}{% if c.stale %} <span class="pill warn">{{ _("veraltet") }}</span>{% endif %}</h3>
+    {% if c.players %}
+    <table class="responsive">
+      {% for p in c.players %}
+      <tr><td>{{ p.nickname or _("Profil") }}{% if not p.child_id %} <span class="pill">{{ _("nicht zugeordnet") }}</span>{% endif %}</td>
+        <td class="right">
+          <form method="post" action="/settings/nintendo/assign" class="row bottom">
+            <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+            <input type="hidden" name="player_id" value="{{ p.id }}">
+            <label>{{ _("Kind") }}
+              <select name="child_id">
+                <option value=""{{ " selected" if not p.child_id }}>{{ _("keinem Kind") }}</option>
+                {% for ch in nintendo_children %}<option value="{{ ch.id }}"{{ " selected" if p.child_id == ch.id }}>{{ ch.name }}</option>{% endfor %}
+              </select></label>
+            <button type="submit" class="secondary small">{{ _("Zuordnen") }}</button>
+          </form>
+        </td></tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="muted"><small>{{ _("Noch keine Spielerprofile gemeldet.") }}</small></p>{% endif %}
+    {% endfor %}
+    {% else %}<p class="muted">{{ _("Noch keine Konsole gefunden. Die Switch muss in der App „Nintendo Switch Parental Controls“ verknüpft sein.") }}</p>{% endif %}
+    <form method="post" action="/settings/nintendo/unlink">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <button type="submit" class="danger">{{ _("Verbindung trennen") }}</button>
+    </form>
+    <p class="muted"><small>{{ _("Trennen löscht die Anmeldung bei Nintendo, Konsolen und Zuordnungen. Die bisherige Spielzeit bleibt in der Statistik.") }}</small></p>
+  {% else %}
+    {% if nl and nl.status == "reauth" %}<p class="warn">{{ _("Die Anmeldung bei Nintendo ist nicht mehr gültig (z. B. Passwort geändert oder Zugriff widerrufen). Bitte neu anmelden.") }}</p>{% endif %}
+    {% if nintendo_login_url %}
+    <ol>
+      <li>{{ _("Öffne den Anmeldelink – am besten an einem Computer. Auf einem Gerät mit der App „Nintendo Switch Parental Controls“ fängt die App den Schritt ab.") }}<br>
+        <a href="{{ nintendo_login_url }}" target="_blank" rel="noopener noreferrer">{{ _("Bei Nintendo anmelden") }}</a></li>
+      <li>{{ _("Melde dich mit dem Nintendo-Account an, mit dem ihr die Switch in der App verwaltet.") }}</li>
+      <li>{{ _("Auf der Seite „Verknüpfung mit einem externen Account“: Rechtsklick auf „Diese Person auswählen“ → „Link-Adresse kopieren“. Den Button nicht anklicken.") }}</li>
+      <li>{{ _("Füge den kopierten Link hier ein. Er beginnt mit npf54789befb391a838://auth.") }}</li>
+    </ol>
+    <form method="post" action="/settings/nintendo/link" class="row bottom">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <label>{{ _("Kopierter Link") }} <input name="url" required maxlength="4096" autocomplete="off" spellcheck="false" placeholder="npf54789befb391a838://auth#…"></label>
+      <button type="submit">{{ _("Verbinden") }}</button>
+    </form>
+    <p class="muted"><small>{{ _("Der Link gilt 30 Minuten. KidCTL speichert danach nur die Anmeldung bei Nintendo, verschlüsselt; euer Nintendo-Passwort sieht KidCTL nie.") }}</small></p>
+    {% else %}
+    <form method="post" action="/settings/nintendo/start">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <button type="submit" class="secondary">{{ _("Neu anmelden") if nl and nl.status == "reauth" else _("Verbindung einrichten") }}</button>
+    </form>
+    {% endif %}
+  {% endif %}
+</section>

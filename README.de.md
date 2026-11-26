@@ -57,6 +57,9 @@ gilt die Sprache der Desktop-Sitzung.
 - **Auswertung**: Statistik pro Tag, Programm und Spiel, ein Protokoll gesperrter Programme und
   Domains sowie optional ein wöchentlicher oder monatlicher Nutzungsbericht per E-Mail. Ein Verlauf erlaubter
   Websites wird **nicht** gespeichert.
+- **Nintendo Switch** (experimentell): Spielzeit je Profil, gespielte Spiele, Limit und Restzeit der Konsole im Tab
+  „Heute“ und in der Statistik des Kindes – nur Anzeige, über die inoffizielle Cloud-Schnittstelle der Nintendo-App
+  ([Anleitung](docs/nintendo.de.md)).
 - **Alarme per Push**:
   - Gerät zu lange offline.
   - Schutzmaßnahme manipuliert, z. B. PAM, nftables oder noexec.

@@ -9,12 +9,12 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import about, alarms, backup, billing, tickets, i18n, policy, report, versions, webfilter, retention, vacations
+from . import about, alarms, backup, billing, tickets, i18n, nintendo, policy, report, versions, webfilter, retention, vacations
 from .config import settings
 from .db import init_db
 from .tenant import platform_session
 from .middleware import SecurityMiddleware
-from .routes import admin, api, auth, billing as billing_routes, operators, pwa, signup, wellknown
+from .routes import admin, api, auth, billing as billing_routes, nintendo as nintendo_routes, operators, pwa, signup, wellknown
 from .routes import tickets as ticket_routes
 from .routes import (
     operator_branding, operator_codes, operator_families, operator_invoices, operator_log, operator_mails,
@@ -33,7 +33,7 @@ async def lifespan(_app: FastAPI):
              asyncio.create_task(_prune_log_forever()), asyncio.create_task(report.run_forever()),
              asyncio.create_task(backup.run_forever()), asyncio.create_task(billing.run_forever()),
              asyncio.create_task(tickets.run_forever()), asyncio.create_task(about.run_forever()),
-             asyncio.create_task(vacations.run_forever())]
+             asyncio.create_task(vacations.run_forever()), asyncio.create_task(nintendo.run_forever())]
     yield
     for t in tasks:
         t.cancel()
@@ -118,5 +118,6 @@ app.include_router(billing_routes.router)
 app.include_router(ticket_routes.router)
 app.include_router(api.router)
 app.include_router(pwa.router)
+app.include_router(nintendo_routes.router)
 app.include_router(wellknown.router)
 app.include_router(admin.router)

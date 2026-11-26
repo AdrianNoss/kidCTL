@@ -8,6 +8,7 @@ Every 6 hours the server deletes what is older than:
 | Game sessions | 90 days | `KIDCTL_KEEP_GAMES_DAYS` |
 | App usage per app | 90 days | `KIDCTL_KEEP_APPS_DAYS` |
 | Screen time per day | 13 months (395 days) | `KIDCTL_KEEP_USAGE_DAYS` |
+| Switch play time per day (experimental) | 13 months (395 days) | `KIDCTL_KEEP_NINTENDO_DAYS` |
 | Chat | 12 months (365 days) | `KIDCTL_KEEP_CHAT_DAYS` |
 | Sign-in attempts | 30 days | `KIDCTL_KEEP_LOGINS_DAYS` |
 | Expired sessions and links | 30 days after expiry | `KIDCTL_KEEP_SESSIONS_DAYS`, `KIDCTL_KEEP_ADMIN_SESSIONS_DAYS`, `KIDCTL_KEEP_TOKENS_DAYS` |

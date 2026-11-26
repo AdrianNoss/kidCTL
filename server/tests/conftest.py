@@ -65,6 +65,14 @@ from fastapi.testclient import TestClient  # noqa: E402
 from app.db import Base, engine  # noqa: E402
 from app.db import SessionLocal as _PlainSession  # noqa: E402
 from app.main import app  # noqa: E402
+import app.nintendo as _nintendo  # noqa: E402
+
+
+async def _no_nintendo_poll() -> None:
+    """Kein Nintendo-Abruf im Hintergrund (nie echte Aufrufe); Tests rufen nintendo.poll_family selbst auf."""
+
+
+_nintendo.run_forever = _no_nintendo_poll
 from app.models import Parent  # noqa: E402
 from app.security import hash_password, new_totp_secret  # noqa: E402
 

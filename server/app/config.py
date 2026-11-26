@@ -55,6 +55,8 @@ class Settings:
     trusted_proxies: tuple = ()    # TRUSTED_PROXIES: nur von dort zählt X-Forwarded-For („*“ = von überall)
     admin_allow_nets: tuple = ()   # ADMIN_ALLOW_NETS: Verwaltungsbereich nur aus diesen Netzen (leer = alle)
     relocate_to: str = ""  # KIDCTL_RELOCATE_TO: Server-Umzug – Agenten wechseln, wenn der neue Server sie anerkennt
+    nintendo: bool = False            # KIDCTL_NINTENDO: Switch-Spielzeit (experimentell); Standard an bei single, aus bei saas
+    nintendo_interval: int = 60       # KIDCTL_NINTENDO_INTERVAL: Abruf je Familie in Sekunden (mindestens 60)
 
     @property
     def saas(self) -> bool:
@@ -183,6 +185,8 @@ def load_settings() -> Settings:
         registration=_registration(_mode()),
         master_key=_master_key(dev),
         relocate_to=_relocate_to(),
+        nintendo=_bool("KIDCTL_NINTENDO", _mode() != "saas"),
+        nintendo_interval=max(60, int(os.environ.get("KIDCTL_NINTENDO_INTERVAL", "60") or 60)),
         trusted_proxies=_trusted_proxies(),
         admin_allow_nets=_admin_nets(),
         invoice_tax_mode=_tax_mode(),

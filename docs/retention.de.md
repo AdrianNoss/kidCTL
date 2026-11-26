@@ -8,6 +8,7 @@ Der Server löscht alle 6 Stunden, was älter ist als:
 | Spielsitzungen | 90 Tage | `KIDCTL_KEEP_GAMES_DAYS` |
 | Programmnutzung je Programm | 90 Tage | `KIDCTL_KEEP_APPS_DAYS` |
 | Bildschirmzeit je Tag | 13 Monate (395 Tage) | `KIDCTL_KEEP_USAGE_DAYS` |
+| Switch-Spielzeit je Tag (experimentell) | 13 Monate (395 Tage) | `KIDCTL_KEEP_NINTENDO_DAYS` |
 | Chat | 12 Monate (365 Tage) | `KIDCTL_KEEP_CHAT_DAYS` |
 | Anmeldeversuche | 30 Tage | `KIDCTL_KEEP_LOGINS_DAYS` |
 | Abgelaufene Sitzungen und Links | 30 Tage nach Ablauf | `KIDCTL_KEEP_SESSIONS_DAYS`, `KIDCTL_KEEP_ADMIN_SESSIONS_DAYS`, `KIDCTL_KEEP_TOKENS_DAYS` |

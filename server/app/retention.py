@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from .models import (
     AdminLog,
     AppUsage, BlockedEvent, GameSession, LoginAttempt, Message, OperatorSession, PairingCode, Ticket, SupportAccess, SupportGrant, SupportSession, ParentSession, ParentToken,
-    UsageRecord,
+    NintendoUsage, UsageRecord,
 )
 
 log = logging.getLogger("kidctl.retention")
@@ -40,6 +40,7 @@ RULES = [
     Rule("GAMES", GameSession, "last_seen_at", 90, "Spielsitzungen"),
     Rule("APPS", AppUsage, "day", 90, "Programmnutzung je Programm"),
     Rule("USAGE", UsageRecord, "day", 395, "Bildschirmzeit je Tag (13 Monate)"),
+    Rule("NINTENDO", NintendoUsage, "day", 395, "Switch-Spielzeit je Tag (13 Monate)"),
     Rule("CHAT", Message, "created_at", 365, "Chat (12 Monate)"),
     Rule("LOGINS", LoginAttempt, "at", 30, "Anmeldeversuche"),
     Rule("SESSIONS", ParentSession, "expires_at", 30, "abgelaufene Sitzungen (nach Ablauf)"),

@@ -3882,3 +3882,134 @@ msgstr "removable drive"
 
 msgid "Programme auf USB-Sticks und anderen Wechseldatenträgern lassen sich nicht freigeben."
 msgstr "Programs on USB sticks and other removable drives cannot be allowed."
+
+# Nintendo Switch (experimentell)
+
+msgid "Auf der Seite „Verknüpfung mit einem externen Account“: Rechtsklick auf „Diese Person auswählen“ → „Link-Adresse kopieren“. Den Button nicht anklicken."
+msgstr "On the page “Linking an External Account”: right-click “Select this person” → “Copy link address”. Do not click the button."
+
+msgid "Bei Nintendo anmelden"
+msgstr "Sign in with Nintendo"
+
+msgid "Das ist nicht der kopierte Link. Er beginnt mit npf54789befb391a838://auth – bitte den Link hinter „Diese Person auswählen“ kopieren, nicht die Adresse der Seite."
+msgstr "That is not the copied link. It starts with npf54789befb391a838://auth – please copy the link behind “Select this person”, not the address of the page."
+
+msgid "Der Link gilt 30 Minuten. KidCTL speichert danach nur die Anmeldung bei Nintendo, verschlüsselt; euer Nintendo-Passwort sieht KidCTL nie."
+msgstr "The link is valid for 30 minutes. KidCTL then only stores the Nintendo sign-in, encrypted; KidCTL never sees your Nintendo password."
+
+msgid "Der Login-Link ist abgelaufen. Bitte die Einrichtung neu starten."
+msgstr "The sign-in link has expired. Please start the setup again."
+
+msgid "Die Anmeldung bei Nintendo ist nicht mehr gültig (z. B. Passwort geändert oder Zugriff widerrufen). Bitte neu anmelden."
+msgstr "The Nintendo sign-in is no longer valid (e.g. password changed or access revoked). Please sign in again."
+
+msgid "Experimentell: Nintendo bietet dafür keine offizielle Schnittstelle. KidCTL nutzt dieselbe Cloud-Schnittstelle wie die App „Nintendo Switch Parental Controls“; das kann jederzeit ausfallen. Die Werte sind nur so aktuell wie die letzte Verbindung der Switch mit dem Internet."
+msgstr "Experimental: Nintendo offers no official interface for this. KidCTL uses the same cloud interface as the “Nintendo Switch Parental Controls” app; it can stop working at any time. The values are only as current as the Switch’s last internet connection."
+
+msgid "Füge den kopierten Link hier ein. Er beginnt mit npf54789befb391a838://auth."
+msgstr "Paste the copied link here. It starts with npf54789befb391a838://auth."
+
+msgid "Heute gespielt"
+msgstr "Played today"
+
+msgid "Konsole"
+msgstr "Console"
+
+msgid "Konsole gesamt"
+msgstr "Console total"
+
+msgid "Kopierter Link"
+msgstr "Copied link"
+
+msgid "Letzter Abruf fehlgeschlagen ({code}). KidCTL versucht es automatisch wieder; angezeigt werden die letzten bekannten Werte."
+msgstr "Last update failed ({code}). KidCTL retries automatically; the last known values are shown."
+
+msgid "Limit und Restzeit gelten für die ganze Konsole und werden in der Nintendo-App eingestellt. Die Switch-Zeit zählt nicht ins Kontingent am Computer. „Stand“ ist die letzte Verbindung der Switch mit Nintendo."
+msgstr "Limit and remaining time apply to the whole console and are set in the Nintendo app. Switch time does not count towards the computer allowance. “As of” is the Switch’s last connection to Nintendo."
+
+msgid "Melde dich mit dem Nintendo-Account an, mit dem ihr die Switch in der App verwaltet."
+msgstr "Sign in with the Nintendo Account you use to manage the Switch in the app."
+
+msgid "Neu anmelden"
+msgstr "Sign in again"
+
+msgid "Nintendo Switch"
+msgstr "Nintendo Switch"
+
+msgid "Nintendo hat die Anmeldung abgelehnt. Der Link gilt nur kurz und nur einmal – bitte die Einrichtung neu starten."
+msgstr "Nintendo rejected the sign-in. The link is only valid briefly and only once – please start the setup again."
+
+msgid "Nintendo ist gerade nicht erreichbar. Bitte später erneut versuchen."
+msgstr "Nintendo cannot be reached right now. Please try again later."
+
+msgid "Noch keine Konsole gefunden. Die Switch muss in der App „Nintendo Switch Parental Controls“ verknüpft sein."
+msgstr "No console found yet. The Switch must be linked in the “Nintendo Switch Parental Controls” app."
+
+msgid "Noch keine Spielerprofile gemeldet."
+msgstr "No player profiles reported yet."
+
+msgid "Restzeit"
+msgstr "Remaining"
+
+msgid "Spielzeit der zugeordneten Switch-Profile je Tag – nur zur Ansicht, nicht in der Bildschirmzeit oben enthalten."
+msgstr "Play time of the assigned Switch profiles per day – for information only, not included in the screen time above."
+
+msgid "Stand"
+msgstr "As of"
+
+msgid "Switch-Spielzeit der letzten {n} Tage"
+msgstr "Switch play time of the last {n} days"
+
+msgid "Trennen löscht die Anmeldung bei Nintendo, Konsolen und Zuordnungen. Die bisherige Spielzeit bleibt in der Statistik."
+msgstr "Disconnecting deletes the Nintendo sign-in, consoles and assignments. Past play time stays in the statistics."
+
+msgid "Verbinden"
+msgstr "Connect"
+
+msgid "Verbindung einrichten"
+msgstr "Set up connection"
+
+msgid "Verbindung trennen"
+msgstr "Disconnect"
+
+msgid "Verbunden. Die ersten Daten kommen in etwa einer Minute."
+msgstr "Connected. The first data arrives in about a minute."
+
+msgid "Zeigt die Spielzeit der Switch im Tab „Heute“ und in der Statistik des Kindes. Nur Anzeige: Die Switch-Zeit zählt nicht ins Kontingent am Computer, Limits stellt ihr weiter in der Nintendo-App ein."
+msgstr "Shows the Switch play time in the child’s “Today” tab and statistics. Display only: Switch time does not count towards the computer allowance; you keep setting limits in the Nintendo app."
+
+msgid "Zuletzt abgerufen: {when}"
+msgstr "Last updated: {when}"
+
+msgid "Zuordnen"
+msgstr "Assign"
+
+msgid "experimentell"
+msgstr "experimental"
+
+msgid "gespielt"
+msgstr "played"
+
+msgid "kein Limit"
+msgstr "no limit"
+
+msgid "keinem Kind"
+msgstr "no child"
+
+msgid "neu anmelden"
+msgstr "sign in again"
+
+msgid "nicht zugeordnet"
+msgstr "not assigned"
+
+msgid "unbekannt"
+msgstr "unknown"
+
+msgid "verbunden"
+msgstr "connected"
+
+msgid "Öffne den Anmeldelink – am besten an einem Computer. Auf einem Gerät mit der App „Nintendo Switch Parental Controls“ fängt die App den Schritt ab."
+msgstr "Open the sign-in link – preferably on a computer. On a device with the “Nintendo Switch Parental Controls” app, the app intercepts this step."
+
+msgid "Spiele heute"
+msgstr "Games today"
