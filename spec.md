@@ -1992,8 +1992,12 @@ Recherche: `dev/planung/2026-11-26-usb-datentraeger-recherche.md` (Mechanismen, 
 - Nie betroffen: Tastatur, Maus, Headset, Controller (HID), Admins und nicht zugeordnete Benutzer.
 - Bereits umgesetzt (0.48): Programme auf Wechseldatenträgern sind nicht freigebbar (Programmkontrolle
   „Wechseldatenträger“).
-- Offen (Recherche, Frage 0): Programme auf erlaubten Geräten, Liste je Kind oder Familie, Verhalten für bestehende
-  Kinder nach dem Update, Abbilder/CD/Handys, Zielversion.
+- Erlaubte Geräte: nur **Dateien** zugreifbar; Programme darauf bleiben gesperrt und nicht freigebbar (wie 0.48).
+  Launcher-Bibliotheken (Steam) und Store-Apps auf erlaubten Geräten laufen über den freigegebenen Launcher weiter.
+- Liste erlaubter Geräte **je Familie** (gilt für alle Kinder).
+- **Schalter je Kind**: neue Kinder gesperrt, bestehende Kinder bleiben nach dem Update erlaubt, bis Eltern einschalten.
+- Mitgesperrt: Abbilder (ISO, `loop-setup`), CD/DVD, SD-Karten (Bus SD/MMC) und Handys (MTP/WPD).
+- Offen: Zielversion.
 
 ## Bewusst nicht umgesetzt / Restlücken
 
@@ -4074,3 +4078,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Kinder gesperrt, nur von Eltern erlaubte Geräte (Hardware-Kennung) zugreifbar, Linux und Windows. Neuer Abschnitt
   „USB-Datenträger“, Recherche-Dokument (Entscheidungen, offene Fragen) und Roadmap `usb-media` (geplant)
   nachgezogen. Noch nicht umgesetzt.
+- 2026-11-26: USB-Datenträger – Details entschieden: erlaubte Geräte nur für Dateien (Programme weiter gesperrt), Liste
+  je Familie, Schalter je Kind (neue Kinder gesperrt, bestehende erlaubt), mitgesperrt Abbilder, CD/DVD, SD-Karten,
+  Handys (MTP). Spec-Abschnitt und Recherche nachgezogen.

@@ -156,14 +156,12 @@ dynamisch setzen. Aufwand **L**, später.
 
 ## Offene Fragen an Adrian
 
-0. Hardware-Kennung: Grundsatz entschieden (fremde Geräte gesperrt, erlaubte zugreifbar, auf beiden Plattformen
-   auch der Zugriff, nicht nur das Ausführen). Noch offen: Dürfen Programme auf einem erlaubten Gerät laufen
-   (externe Spieleplatte) bzw. freigegeben werden? Liste je Kind oder je Familie? Gilt die Sperre nach dem Update
-   sofort für alle bestehenden Kinder oder erst nach Einschalten? Zählen Abbilder (ISO, `loop-setup`), CD/DVD und
-   Handys (MTP) mit?
+0. ~~Hardware-Kennung~~ – entschieden (2026-11-26): fremde Geräte gesperrt, erlaubte nur für Dateien (Programme
+   weiter gesperrt), Liste je Familie, Schalter je Kind (neue Kinder an, bestehende aus), mitgesperrt Abbilder,
+   CD/DVD, SD-Karten, Handys (MTP).
 
 1. ~~Stufen~~ – entschieden: gesperrt, nur erlaubte Geräte zugreifbar (Frage 0).
-2. Soll die Einstellung nur zusammen mit Programmkontrolle „Sperren“ angeboten werden, oder unabhängig davon (dann
+2. Soll der Schalter nur zusammen mit Programmkontrolle „Sperren“ angeboten werden, oder unabhängig davon (dann
    mit Hinweis, dass Downloads weiter gehen)?
 3. ~~Befund 1 vorziehen~~ – entschieden, umgesetzt.
 4. ~~Erlaubte Geräte (C)~~ – entschieden: ja, per Hardware-Kennung (siehe Frage 0).
