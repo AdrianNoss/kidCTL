@@ -24,6 +24,12 @@ steht im README.
   ein Programm ohne passende Kategorie (unter Windows wird sie am Namen geschätzt) fällt nicht unter die Kategorie;
   dagegen hilft die Programmkontrolle „Sperren“. Webseiten im Browser (z. B. Web-Chat) zählen nur zum Limit
   *Browser*, nicht zu *Chat*.
+- **USB-Sticks und externe Datenträger:** KidCTL schränkt das Einbinden nicht ein. Programme darauf sperrt nur die
+  Programmkontrolle „Sperren“, und zwar erst nach dem Start (unter Windows prüft sie alle 0,5 Sekunden). Bibliotheken,
+  die ein freigegebenes Programm vom Datenträger lädt, sperrt sie nicht. Freigeben lassen sich Programme auf
+  Wechseldatenträgern nicht, weil das Kind den Inhalt austauschen kann. Spiele aus einem freigegebenen Launcher (z. B.
+  eine Steam-Bibliothek auf einer USB-Platte) und Store-Apps auf externen Laufwerken laufen weiter. Unter Windows
+  gelten Thunderbolt-Platten (NVMe) nicht als Wechseldatenträger.
 - **VPN und feste IP-Adressen:** Der Website-Filter arbeitet über DNS (Namensauflösung). Wer eine Website direkt
   über ihre IP-Adresse aufruft (auch DNS-over-HTTPS über eine IP-Adresse) oder ein VPN mit fest eingetragenen
   IP-Adressen nutzt, umgeht ihn. VPNs werden nicht aktiv erkannt.

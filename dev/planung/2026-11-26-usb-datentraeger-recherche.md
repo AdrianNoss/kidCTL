@@ -109,26 +109,58 @@ dynamisch setzen. Aufwand **L**, später.
 
 ## Empfehlung
 
-1. **Sofort klein und unabhängig (Patch-fähig):** Programme auf Wechselmedien in der Programmkontrolle **nicht
+1. **Umgesetzt in 0.48:** Programme auf Wechselmedien in der Programmkontrolle **nicht
    freigebbar** machen bzw. im WebUI als „auf USB-Datenträger“ kennzeichnen (Befund 1). Befund 2 als Restlücke
    dokumentieren.
 2. **Feature „Wechseldatenträger“ je Kind als Variante (B)** mit drei Stufen: *erlaubt* (Standard) / *ohne
    Programme* (lesen und schreiben, nichts ausführen) / *nur lesen* / *gesperrt*. Gilt auch für Abbilder (ISO,
    `loop-setup`) und Handys (WPD) und ist unabhängig vom Modus der Programmkontrolle. Linux: polkit + Remount +
    classify-Regel. Windows: Wechselmedien-Richtlinie je SID + Agent-Prüfung.
-3. **(C) erlaubte Geräte erst später**, zunächst nur Linux. Dabei ist eine externe Spieleplatte der wichtigste Fall.
+3. **(C) erlaubte Geräte per Hardware-Kennung** (entschieden, beide Plattformen, siehe unten). Dabei ist eine externe
+   Spieleplatte der wichtigste Fall.
 4. **(D) AppLocker nicht jetzt.** Erst wenn Befund 2 im Alltag eine Rolle spielt, dann nur nach eigener VM-Reihe.
 5. Vor der Umsetzung VM-Prüfungen: Wechselmedien-Richtlinie unter Windows Home (Stick, USB-HDD, ISO, Handy, ohne
    Neuanmeldung), udisks2 `loop-setup` ohne Passwort, Remount über PID 1 aus dem Agent-Namespace, KDE und GNOME
    (Dolphin/Nautilus zeigen bei Sperre eine verständliche Meldung?).
 
+## Entscheidungen (Adrian, 2026-11-26)
+
+- **Befund 1 vorgezogen** (0.48): Freigaben nach Pfad gelten auf Wechseldatenträgern nicht, Programme darauf sind
+  gesperrt und nicht anfragbar (`removable_media`). Store-Apps und Launcher-Bibliotheken bleiben erlaubt. Der Server
+  lehnt eigene Programme unter `/run/media/`, `/media/` ab. Restlücke in `docs/limitations*` (siehe Spec).
+- **Bestimmte Sticks anhand der Hardware-Kennung erlauben** (Variante C), auf beiden Plattformen gewünscht.
+
+### Hardware-Kennung – Stand der Recherche
+
+- **Was:** USB-Seriennummer des Geräts (`iSerialNumber`), nicht die UUID oder das Label des Dateisystems. Die lassen
+  sich mit `mkfs`/`mlabel` auf jedem Rechner nachbauen.
+- **Linux:** udisks2 `Drive.Serial` (bzw. `Vendor`, `Model`). In der polkit-Regel per `action.lookup("drive.serial")`
+  prüfbar, für Remount/Prüfung im Agenten über `/sys/block/<dev>/../serial` bzw. D-Bus.
+- **Windows:** dieselbe Abfrage, die der Agent seit dem Fix nutzt (`IOCTL_STORAGE_QUERY_PROPERTY`), liefert ab
+  `SerialNumberOffset` die Seriennummer. Alternativ die Geräte-Instanz-ID `USBSTOR\…\<Seriennummer>&0`. Beide
+  Schreibweisen normalisieren (Großbuchstaben, ohne `&0`). Bei Geräten ohne Seriennummer erzeugt Windows eine
+  Ersatz-ID (zweites Zeichen `&`), die nicht verwendbar ist.
+- **Grenzen:** Billige Sticks haben oft keine oder dieselbe Seriennummer (z. B. `0123456789ABCDEF`). Solche Geräte
+  im WebUI als „nicht eindeutig“ markieren, nicht erlaubbar oder nur mit Warnhinweis. Mit Hersteller-Werkzeugen lässt
+  sich die Seriennummer mancher Sticks ändern → Restlücke („Hürde, keine Sicherheit“).
+- **Ablauf:** Der Agent meldet gesehene Datenträger (Hersteller, Modell, Größe, Seriennummer, zuletzt gesehen) an
+  den Server. Eltern haken sie unter „Erlaubte Datenträger“ an, die Policy enthält die Seriennummern, offline
+  wirksam.
+- **Aufwand:** Ausführen nur von erlaubten Sticks: **S–M** je Plattform, weil die Erkennung jetzt vorhanden ist.
+  Einbinden fremder Sticks verhindern: Linux **S** (polkit), Windows **L** (keine eingebaute Ausnahme je Gerät und
+  Benutzer → Agent müsste fremde Laufwerke für die Sitzung des Kindes aushängen).
+
 ## Offene Fragen an Adrian
+
+0. Hardware-Kennung (neu): Was soll ein erlaubter Stick dürfen – nur eingebunden werden, oder sollen auch Programme
+   darauf laufen (z. B. externe Spieleplatte)? Gilt die Liste je Kind oder je Familie? Reicht unter Windows
+   zunächst „Programme nur von erlaubten Sticks“ (ohne Einbinden fremder Sticks zu verhindern)?
 
 1. Stufen wie oben (erlaubt / ohne Programme / nur lesen / gesperrt) oder reicht zunächst *erlaubt / gesperrt*?
 2. Soll die Einstellung nur zusammen mit Programmkontrolle „Sperren“ angeboten werden, oder unabhängig davon (dann
    mit Hinweis, dass Downloads weiter gehen)?
-3. Befund 1 (Programme vom Stick nicht freigebbar) als eigener kleiner Fix vorziehen, z. B. in 0.48.x?
-4. Erlaubte Geräte (C): gewünscht? Wenn ja, reicht vorerst Linux?
+3. ~~Befund 1 vorziehen~~ – entschieden, umgesetzt.
+4. ~~Erlaubte Geräte (C)~~ – entschieden: ja, per Hardware-Kennung (siehe Frage 0).
 5. Standard für neue Kinder: *erlaubt* (wie heute) oder *ohne Programme*?
 6. Etappe: nach 0.50 (eigene Sperrlisten) als **0.51**? Agent-Release auf beiden Plattformen nötig.
 

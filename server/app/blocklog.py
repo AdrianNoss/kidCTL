@@ -71,6 +71,7 @@ DETAILS = {
     "own_program": N_("eigene Programmdatei"),
     "system_tool": N_("Systemwerkzeug"),
     "foreign_dll": N_("fremde DLL ({arg})"),
+    "removable_media": N_("Wechseldatenträger"),
 }
 
 

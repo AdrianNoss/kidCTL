@@ -9,6 +9,9 @@ from __future__ import annotations
 
 import ctypes
 import functools
+import ntpath
+import os
+import time
 from ctypes import POINTER, Structure, byref, c_void_p, c_wchar_p, sizeof
 from ctypes import wintypes as w
 from dataclasses import dataclass
@@ -172,3 +175,66 @@ def file_owner(path: str) -> str:
     """SID des Besitzers einer Datei (zwischengespeichert je Pfad und Änderungszeit)."""
     import os
     return _owner_cached(path, int(os.stat(path).st_mtime_ns))
+
+
+# ---------- Wechseldatenträger ----------
+
+DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM = 2, 3, 5
+IOCTL_STORAGE_QUERY_PROPERTY = 0x2D1400
+# STORAGE_BUS_TYPE: 1394, USB, SD, MMC, eingehängte Abbilder (ISO/VHD). USB-Festplatten melden sich oft als
+# DRIVE_FIXED – erkennbar am Bus. Thunderbolt-NVMe meldet „NVMe“ und ist nicht unterscheidbar (Restlücke).
+REMOVABLE_BUSES = {0x4, 0x7, 0xC, 0xD, 0xF}
+REMOVABLE_TTL = 10.0   # Laufwerksbuchstaben wechseln beim Umstecken
+_removable_cache: dict[str, tuple[float, bool]] = {}
+
+
+def descriptor_removable(raw: bytes) -> bool:
+    """``STORAGE_DEVICE_DESCRIPTOR`` -> Wechseldatenträger? (``RemovableMedia`` an Byte 10, ``BusType`` ab Byte 28)"""
+    if len(raw) < 32:
+        return False
+    return bool(raw[10]) or int.from_bytes(raw[28:32], "little") in REMOVABLE_BUSES
+
+
+def _query_removable(letter: str) -> bool:
+    kind = api._fn("kernel32", "GetDriveTypeW", w.UINT, c_wchar_p)(f"{letter}:\\")
+    if kind in (DRIVE_REMOVABLE, DRIVE_CDROM):
+        return True
+    if kind != DRIVE_FIXED:
+        return False   # Netzlaufwerk, unbekannt
+    create = api._fn("kernel32", "CreateFileW", w.HANDLE, c_wchar_p, w.DWORD, w.DWORD, c_void_p, w.DWORD, w.DWORD,
+                     w.HANDLE)
+    h = create(f"\\\\.\\{letter}:", 0, 0x1 | 0x2, None, 3, 0, None)   # ohne Zugriffsrechte, OPEN_EXISTING
+    if h in (None, api.INVALID_HANDLE_VALUE):
+        return False
+    try:
+        query = (w.DWORD * 3)(0, 0, 0)   # StorageDeviceProperty, PropertyStandardQuery
+        buf = ctypes.create_string_buffer(1024)
+        got = w.DWORD()
+        ioctl = api._fn("kernel32", "DeviceIoControl", w.BOOL, w.HANDLE, w.DWORD, c_void_p, w.DWORD, c_void_p,
+                        w.DWORD, POINTER(w.DWORD), c_void_p)
+        if not ioctl(h, IOCTL_STORAGE_QUERY_PROPERTY, byref(query), sizeof(query), buf, sizeof(buf), byref(got), None):
+            return False
+        return descriptor_removable(buf.raw[:got.value])
+    finally:
+        api.close_handle(h)
+
+
+def on_removable(path: str, query=_query_removable, now=None) -> bool:
+    """Liegt ``path`` auf einem Wechseldatenträger (USB-Stick, USB-Festplatte, SD-Karte, DVD, eingehängtes Abbild)?
+    Das Systemlaufwerk nie; bei Fehlern ``False`` (wie bisher)."""
+    drive = ntpath.splitdrive(path)[0]
+    if len(drive) != 2 or drive[1] != ":" or not drive[0].isalpha():
+        return False
+    letter = drive[0].upper()
+    if letter == os.environ.get("SystemDrive", "C:")[:1].upper():
+        return False
+    t = time.monotonic() if now is None else now
+    hit = _removable_cache.get(letter)
+    if hit and t - hit[0] < REMOVABLE_TTL:
+        return hit[1]
+    try:
+        value = bool(query(letter))
+    except OSError:
+        value = False
+    _removable_cache[letter] = (t, value)
+    return value

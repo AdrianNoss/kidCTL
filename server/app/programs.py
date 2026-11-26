@@ -238,6 +238,8 @@ def set_allowed(db: Session, child_id: int, keys: set[str]) -> None:
 # ---------- Eigene Programme ----------
 
 MAX_CUSTOM_NAME = 64
+# Einhängepunkte von Wechseldatenträgern unter Linux (udisks2); dort gilt eine Freigabe nach Pfad nie (Agent ab 0.48)
+REMOVABLE_DIRS = ("/run/media/", "/media/")
 _PATH_RE = re.compile(r"^/[A-Za-z0-9._+@/-]{1,500}$")
 # Windows: Laufwerk + Pfad, keine Steuer- oder Shell-Sonderzeichen
 _WIN_PATH_RE = re.compile(r"^[A-Za-z]:\\[^<>:\"/|?*\x00-\x1f]{1,500}$")
@@ -258,6 +260,8 @@ def custom_key(path: str) -> str:
         path = "/usr/bin/" + path
     if not _PATH_RE.match(path) or posixpath.normpath(path) != path or path.endswith("/"):
         raise ValueError(_("Bitte einen absoluten Programmpfad angeben, z. B. /usr/bin/git"))
+    if path.startswith(REMOVABLE_DIRS):
+        raise ValueError(_("Programme auf USB-Sticks und anderen Wechseldatenträgern lassen sich nicht freigeben."))
     return "exe:" + path
 
 

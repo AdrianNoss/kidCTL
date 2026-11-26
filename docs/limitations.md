@@ -22,6 +22,11 @@ version is in the README.
   the app list, browsers also by program name. A renamed portable browser or an app without a matching category (on
   Windows it is estimated from the name) is not covered by the category; app control set to "Block" helps here.
   Websites in the browser (e.g. web chat) only count towards the *Browser* limit, not *Chat*.
+- **USB sticks and external drives:** KidCTL doesn't restrict mounting them. Programs on them are only blocked by
+  app control set to "Block", and only after they start (on Windows it checks every 0.5 seconds). Libraries that an
+  allowed program loads from the drive are not blocked. Programs on removable drives can't be allowed because the
+  child can swap their contents. Games from an allowed launcher (e.g. a Steam library on a USB drive) and Store apps on
+  external drives keep working. On Windows, Thunderbolt drives (NVMe) don't count as removable drives.
 - **VPN and fixed IP addresses:** the web filter works via DNS (name resolution). Anyone who opens a website directly
   by its IP address (including DNS-over-HTTPS via an IP address) or uses a VPN with fixed
   IP addresses bypasses it. VPNs are not actively detected.

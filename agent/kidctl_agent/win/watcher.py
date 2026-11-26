@@ -270,7 +270,8 @@ class WinProgramWatcher:
                 out.append(parent.exe)
                 cur = parent
             return out
-        verdict = classify(info, allowed, owner=self.procs.file_owner, parent_exe=parent_exe, ancestors=ancestors)
+        verdict = classify(info, allowed, owner=self.procs.file_owner, parent_exe=parent_exe, ancestors=ancestors,
+                           removable=getattr(self.procs, "on_removable", lambda path: False))
         if verdict is None:
             return
         if verdict.unknown_package or (not self.games.steam_exe and ntpath.basename(info.exe).lower() == "steam.exe"):
