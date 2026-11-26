@@ -47,6 +47,8 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # Ausgabe als SE
 | `SOURCE_URL` | Link „Quellcode“ in der Fußzeile (AGPL-3.0 §13); bei eigenen Änderungen auf den eigenen Fork setzen. Standard: das KidCTL-Repo |
 | `TZ_HOME` | Zeitzone für Tageskontingente und Zeitfenster (Standard `Europe/Berlin`) |
 | `UPDATE_CHECK` | `0` schaltet die tägliche Abfrage von `https://kidctl.de/version.json` ab (Hinweis auf neue Versionen unter Einstellungen → Info). Standard: an |
+| `KIDCTL_NINTENDO` | Nintendo-Switch-Spielzeit (experimentell, siehe [Nintendo Switch](nintendo.de.md)). `1`/`0`; Standard: an im Einzelbetrieb, aus mit `KIDCTL_MODE=saas` |
+| `KIDCTL_NINTENDO_INTERVAL` | Abruf je Familie in Sekunden, mindestens und standardmäßig `60` |
 | `SECURITY_CONTACT` | Optional. Eigener Sicherheitskontakt (E-Mail-Adresse oder https-URL) für `/.well-known/security.txt`; wird vor dem Projektkontakt genannt |
 | `VAPID_*` | Web Push, siehe [Web Push](#web-push-empfohlen). Ohne Schlüssel gibt es keine Push-Benachrichtigungen. |
 | `SMTP_*` | E-Mail für „Passwort vergessen“, Sicherheitshinweise und Nutzungsbericht (optional), siehe [E-Mail](#e-mail-und-konto-wiederherstellung-empfohlen) |

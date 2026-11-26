@@ -42,6 +42,31 @@
   </details>
 </section>
 
+{% if switch %}
+<section class="card viz" id="nintendo">
+  <div class="card-head"><h2>{{ _("Nintendo Switch") }}</h2><span class="pill warn">{{ _("experimentell") }}</span></div>
+  <p class="muted"><small>{{ _("Spielzeit der zugeordneten Switch-Profile je Tag – nur zur Ansicht, nicht in der Bildschirmzeit oben enthalten.") }}</small></p>
+  <div class="columns" role="img" aria-label="{{ _('Switch-Spielzeit der letzten {n} Tage').format(n=switch | length) }}">
+    {% for day, minutes in switch %}
+    <div class="col" tabindex="0" data-tip="{{ fmt_date(day, with_weekday=True, year=False) }}: {{ fmt_minutes(minutes) }}">
+      <div class="plot">
+        <div class="bar p-{{ pct(minutes, switch_scale) }}"></div>
+        {% if loop.last %}<div class="value p-{{ pct(minutes, switch_scale) }}">{{ fmt_minutes(minutes) }}</div>{% endif %}
+      </div>
+      <div class="xlabel">{{ weekday(day) }}<br>{{ day.day }}{{ "." if lang() == "de" else "" }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  <details>
+    <summary>{{ _("Als Tabelle") }}</summary>
+    <table>
+      <tr><th>{{ _("Tag") }}</th><th class="right">{{ _("gespielt") }}</th></tr>
+      {% for day, minutes in switch|reverse %}<tr><td>{{ fmt_date(day, with_weekday=True, year=False) }}</td><td class="right">{{ fmt_minutes(minutes) }}</td></tr>{% endfor %}
+    </table>
+  </details>
+</section>
+{% endif %}
+
 <section class="card viz">
   <h2>{{ _("Programme") }}</h2>
   <div class="segmented">

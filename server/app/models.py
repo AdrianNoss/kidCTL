@@ -910,6 +910,79 @@ class Message(FamilyScoped, Base):
     access_scope: Mapped[str | None] = mapped_column(String(16), nullable=True)  # permanent | today
 
 
+class NintendoLink(FamilyScoped, Base):
+    """Verknüpfung mit dem Nintendo-Konto der Familie (Switch-Spielzeit, experimentell – app.nintendo).
+
+    ``session_token`` ist ein Vollzugriff auf das Nintendo-Konto: nur verschlüsselt, nie im Export, nie im Log."""
+    __tablename__ = "nintendo_link"
+    __table_args__ = (UniqueConstraint("family_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_token: Mapped[str | None] = mapped_column(Sealed("nintendo_link.session_token"), nullable=True)
+    # Einrichtung läuft: PKCE-Verifier und Login-Link (zwei Anfragen, auch über einen Neustart hinweg)
+    pending_verifier: Mapped[str | None] = mapped_column(Sealed("nintendo_link.pending_verifier"), nullable=True)
+    pending_url: Mapped[str | None] = mapped_column(Sealed("nintendo_link.pending_url"), nullable=True)
+    pending_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="")   # "" | ok | error | reauth
+    error: Mapped[str] = mapped_column(String(32), default="")    # Fehlerart (network, http_503, update_required …)
+    failures: Mapped[int] = mapped_column(Integer, default=0)     # Fehler in Folge (Backoff)
+    next_poll_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    last_ok_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class NintendoConsole(FamilyScoped, Base):
+    """Switch-Konsole mit dem letzten bekannten Stand von heute (Werte gelten je Konsole)."""
+    __tablename__ = "nintendo_console"
+    __table_args__ = (UniqueConstraint("family_id", "device_key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    device_key: Mapped[str] = mapped_column(Matchable("nintendo_console.device_key"))   # device_id bei Nintendo
+    name: Mapped[str] = mapped_column(Sealed("nintendo_console.name"), default="")
+    model: Mapped[str] = mapped_column(String(16), default="")
+    day: Mapped[date | None] = mapped_column(Date, nullable=True)            # Tag, für den die Werte gelten
+    used_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    limit_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)       # NULL = kein Limit
+    remaining_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)   # NULL = unbegrenzt/unbekannt
+    last_sync: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)     # Konsole zuletzt bei Nintendo
+    stale: Mapped[bool] = mapped_column(Boolean, default=False)              # letzter Abruf fehlgeschlagen
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    players: Mapped[list[NintendoPlayer]] = relationship(
+        back_populates="console", cascade="all, delete-orphan", order_by="NintendoPlayer.id")
+
+
+class NintendoPlayer(FamilyScoped, Base):
+    """Spielerprofil auf einer Konsole; ``child_id`` NULL = keinem Kind zugeordnet (wird nur angezeigt)."""
+    __tablename__ = "nintendo_player"
+    __table_args__ = (UniqueConstraint("console_id", "player_key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    console_id: Mapped[int] = mapped_column(ForeignKey("nintendo_console.id", ondelete="CASCADE"), index=True)
+    player_key: Mapped[str] = mapped_column(Matchable("nintendo_player.player_key"))   # playerId bei Nintendo
+    nickname: Mapped[str] = mapped_column(Sealed("nintendo_player.nickname"), default="")
+    child_id: Mapped[int | None] = mapped_column(ForeignKey("child.id", ondelete="SET NULL"), nullable=True)
+
+    console: Mapped[NintendoConsole] = relationship(back_populates="players")
+
+
+class NintendoUsage(FamilyScoped, Base):
+    """Spielzeit eines Profils je Tag (nur Anzeige – zählt nicht ins Kontingent)."""
+    __tablename__ = "nintendo_usage"
+    __table_args__ = (UniqueConstraint("player_id", "day"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # NULL = Konsole getrennt; Statistik je Kind bleibt erhalten
+    player_id: Mapped[int | None] = mapped_column(
+        ForeignKey("nintendo_player.id", ondelete="SET NULL"), nullable=True)
+    child_id: Mapped[int | None] = mapped_column(
+        ForeignKey("child.id", ondelete="CASCADE"), nullable=True, index=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    minutes: Mapped[int] = mapped_column(Integer, default=0)
+    apps: Mapped[str] = mapped_column(Sealed("nintendo_usage.apps"), default="")   # JSON [[Name, Minuten], …]
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 @event.listens_for(Parent.email, "set")
 def _email_index(target: Parent, value, _old, _initiator) -> None:
     """Suchwert immer passend zur Adresse (auch beim Anlegen per Konstruktor)."""

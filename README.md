@@ -57,6 +57,9 @@ child's computer the language of the desktop session is used.
 - **Reports**: statistics per day, app and game, a log of blocked apps and
   domains, and an optional weekly or monthly usage report by email. **No** history of allowed
   websites is stored.
+- **Nintendo Switch** (experimental): play time per profile, games played, the console's limit and remaining time in
+  the child's "Today" tab and statistics – display only, via the unofficial cloud interface of the Nintendo app
+  ([guide](docs/nintendo.md)).
 - **Push alerts**:
   - Device offline for too long.
   - Protection tampered with, e.g. PAM, nftables or noexec.

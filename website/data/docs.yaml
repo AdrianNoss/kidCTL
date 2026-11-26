@@ -19,6 +19,7 @@
     - postgresql-migration
     - uninstall
     - games
+    - nintendo
 - id: security
   title: { de: "Sicherheit", en: "Security" }
   pages:

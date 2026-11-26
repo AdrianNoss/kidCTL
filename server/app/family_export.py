@@ -29,7 +29,8 @@ from .models import Child, Device, FamilyScoped, HolidayRegion, utcnow
 FORMAT = "kidctl-family-export"
 VERSION = 1
 EXCLUDED = {"membership", "family_invite", "pairing_code", "support_grant", "support_access", "billing_address",
-            "ticket", "ticket_message"}
+            "ticket", "ticket_message",
+            "nintendo_link"}   # Session-Token = Vollzugriff aufs Nintendo-Konto; nach dem Umzug neu verknüpfen
 MAX_ZIP = 20 * 1024 * 1024        # Schutz vor zu großen Uploads/Archiven (entpackt, gesamt)
 
 

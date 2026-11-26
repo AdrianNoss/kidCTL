@@ -69,6 +69,8 @@
   </form>
 </section>
 
+{% if nintendo_children is defined %}{% include "_nintendo_settings.html" %}{% endif %}
+
 {% if SAAS and family %}
 <section class="card" id="newsletter">
   <div class="card-head"><h2>{{ _("Neuigkeiten per E-Mail") }}</h2>
