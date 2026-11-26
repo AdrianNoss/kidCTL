@@ -89,6 +89,8 @@ jobs:
         env:
           PYTHONPATH: .:../common
         run: python -m pytest -q -rs tests -p no:logging
+      - name: Feature-Inbox und Sperre der Issue-Automatik (ohne Netz, gemocktes IMAP/GitHub/Modell)
+        run: python -m pytest -q -rs tools/feature-inbox/tests dev/tests/test_issues_freigegeben.py -p no:logging
 
   tray:
     name: Tray-App
