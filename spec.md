@@ -3966,3 +3966,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-26: Nintendo-Einrichtung: Button „Neuen Link erzeugen“ unter dem Einfügefeld. Vorher war ein schon
   verbrauchter Login-Link bis zum Ablauf (30 min) nicht ersetzbar. Getestet: abgelehnter Link → neuer Link ersetzt
   URL und Verifier, Einstellungen zeigen den neuen Link.
+- 2026-11-27: Nintendo „Stand“ zeigte ein Tage altes Datum: `Device.last_sync` der Bibliothek ist der Zeitpunkt, zu dem
+  die Switch zuletzt die Kindersicherungs-Einstellungen übernommen hat, nicht die Spielzeit. „Stand“ ist jetzt der
+  Abruf, bei dem zuletzt neue Spielzeit kam (ändert sich die Tagessumme der Konsole oder beginnt ein neuer Tag).
+  Getestet: `test_stand_moves_only_with_new_play_time` (unverändert → Stand bleibt, neue Minuten → Stand springt).

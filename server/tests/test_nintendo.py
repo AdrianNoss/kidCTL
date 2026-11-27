@@ -40,7 +40,7 @@ def _device(device_id="dev1", *, limit=120, extra=None, today=45, remaining=75, 
     return SimpleNamespace(device_id=device_id, name=name, model="Switch", limit_time=limit, extra_playing_time=extra,
                            today_playing_time=today, today_time_remaining=remaining,
                            daily_summaries=[{"date": "x"}] if summaries else [],
-                           last_sync=SYNC, players=players)
+                           last_sync=SYNC, players=players)   # Einstellungs-Sync, wird ignoriert
 
 
 def _run(coro):
@@ -78,7 +78,7 @@ def test_snapshot_maps_device():
     c = nintendo.snapshot(_device())
     assert (c.key, c.name, c.model) == ("dev1", "Wohnzimmer", "Switch")
     assert (c.used_minutes, c.limit_minutes, c.remaining_minutes) == (45, 120, 75)
-    assert c.last_sync == datetime.fromtimestamp(SYNC, timezone.utc).replace(tzinfo=None)
+    assert not hasattr(c, "last_sync")
     assert [(p.key, p.nickname, p.minutes) for p in c.players] == [("p1", "Max", 40), ("p2", "Gast", 5)]
     assert c.players[0].apps == [("Zelda", 30), ("Mario Kart", 10)]
 
@@ -95,7 +95,7 @@ def test_incomplete_new_console_is_tolerated(client, parent, monkeypatch):
     dev = SimpleNamespace(device_id="neu", name=None, limit_time=None, daily_summaries=[],
                           last_sync="kaputt", players=[SimpleNamespace(player_id=None), SimpleNamespace(player_id="p9")])
     c = nintendo.snapshot(dev)
-    assert (c.used_minutes, c.limit_minutes, c.remaining_minutes, c.last_sync) == (None, None, None, None)
+    assert (c.used_minutes, c.limit_minutes, c.remaining_minutes) == (None, None, None)
     assert [(p.key, p.minutes) for p in c.players] == [("p9", None)]
     _linked()
     _fake_fetch(monkeypatch, ([dev], set()))
@@ -126,6 +126,25 @@ def test_poll_success_stores_console_players_usage(client, parent, monkeypatch, 
         assert row.failures == 0 and row.last_ok_at and row.next_poll_at > utcnow()
     assert "neue Spielerprofile ohne Zuordnung" in caplog.text
     assert TOKEN not in caplog.text and "Max" not in caplog.text
+
+
+def test_stand_moves_only_with_new_play_time(client, parent, monkeypatch):
+    # „Stand“ = wann zuletzt neue Spielzeit kam (nicht der Einstellungs-Sync der Bibliothek, der Tage alt sein kann)
+    _linked()
+
+    def poll(today):
+        _fake_fetch(monkeypatch, ([_device(today=today)], set()))
+        _run(nintendo.poll_family(TEST_FAMILY, None))
+        with SessionLocal() as db:
+            return db.scalar(select(NintendoConsole)).last_sync
+    first = poll(45)
+    assert first and first > datetime.fromtimestamp(SYNC, timezone.utc).replace(tzinfo=None)
+    assert utcnow() - first < timedelta(minutes=1)
+    with SessionLocal() as db:
+        db.scalar(select(NintendoConsole)).last_sync = first - timedelta(hours=1)
+        db.commit()
+    assert poll(45) == first - timedelta(hours=1)               # unverändert → Stand bleibt
+    assert utcnow() - poll(50) < timedelta(minutes=1)            # neue Minuten → Stand springt
 
 
 def test_poll_auth_error_requires_relogin_without_retry(client, parent, monkeypatch, caplog):

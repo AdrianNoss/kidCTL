@@ -16,7 +16,8 @@ today's play time per profile and the games played, plus the console's limit, re
 - **Limit and remaining time apply per console.** Nintendo has no limit per profile. KidCTL shows the play time and
   games per player profile.
 - **As current as the Switch.** The values come from the Nintendo cloud. If the Switch is offline, the last state
-  stays. "As of" in the "Today" tab shows when the Switch last checked in.
+  stays. "As of" in the "Today" tab shows when KidCTL last received new play
+  time. If nobody plays, it stays put.
 - KidCTL polls once a minute. The statistics keep the play time per day for 13 months, like screen time (see
   [Data retention](retention.md)).
 

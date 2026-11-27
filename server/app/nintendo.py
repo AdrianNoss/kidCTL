@@ -19,7 +19,7 @@ import asyncio
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -64,7 +64,6 @@ class ConsoleData:
     used_minutes: int | None = None
     limit_minutes: int | None = None
     remaining_minutes: int | None = None
-    last_sync: datetime | None = None
     players: list[PlayerData] = field(default_factory=list)
 
 
@@ -82,11 +81,6 @@ def snapshot(dev) -> ConsoleData:
     limit = _int(getattr(dev, "limit_time", None))
     unlimited = limit is None or limit < 0 or getattr(dev, "extra_playing_time", None) == -1
     has_today = bool(getattr(dev, "daily_summaries", None))
-    sync = getattr(dev, "last_sync", None)
-    try:
-        last_sync = datetime.fromtimestamp(float(sync), timezone.utc).replace(tzinfo=None) if sync else None
-    except (TypeError, ValueError, OverflowError, OSError):
-        last_sync = None
     players = []
     for p in getattr(dev, "players", None) or []:
         key = getattr(p, "player_id", None)
@@ -107,7 +101,7 @@ def snapshot(dev) -> ConsoleData:
         used_minutes=_int(getattr(dev, "today_playing_time", None)) if has_today else None,
         limit_minutes=None if unlimited else limit,
         remaining_minutes=None if unlimited else _int(getattr(dev, "today_time_remaining", None)),
-        last_sync=last_sync, players=players)
+        players=players)
 
 
 # ---------- Speichern ----------
@@ -126,9 +120,13 @@ def store(db: Session, consoles: list[ConsoleData], failed: set[str], day: date)
         if data.key in failed:
             con.stale = True
             continue
+        # „Stand“ = wann zuletzt neue Spielzeit kam. Das last_sync der Bibliothek taugt nicht: Es ist der Zeitpunkt,
+        # an dem die Switch zuletzt die Kindersicherungs-Einstellungen übernommen hat, nicht die Spielzeit.
+        if data.used_minutes is not None and (con.day != day or con.used_minutes != data.used_minutes):
+            con.last_sync = now
         con.day, con.used_minutes = day, data.used_minutes
         con.limit_minutes, con.remaining_minutes = data.limit_minutes, data.remaining_minutes
-        con.last_sync, con.stale, con.updated_at = data.last_sync or con.last_sync, False, now
+        con.stale, con.updated_at = False, now
         db.flush()
         players = {p.player_key: p for p in con.players}
         for pd in data.players:

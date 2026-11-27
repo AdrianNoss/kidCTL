@@ -3924,8 +3924,8 @@ msgstr "Copied link"
 msgid "Letzter Abruf fehlgeschlagen ({code}). KidCTL versucht es automatisch wieder; angezeigt werden die letzten bekannten Werte."
 msgstr "Last update failed ({code}). KidCTL retries automatically; the last known values are shown."
 
-msgid "Limit und Restzeit gelten für die ganze Konsole und werden in der Nintendo-App eingestellt. Die Switch-Zeit zählt nicht ins Kontingent am Computer. „Stand“ ist die letzte Verbindung der Switch mit Nintendo."
-msgstr "Limit and remaining time apply to the whole console and are set in the Nintendo app. Switch time does not count towards the computer allowance. “As of” is the Switch’s last connection to Nintendo."
+msgid "Limit und Restzeit gelten für die ganze Konsole und werden in der Nintendo-App eingestellt. Die Switch-Zeit zählt nicht ins Kontingent am Computer. „Stand“ ist der Zeitpunkt, zu dem KidCTL zuletzt neue Spielzeit von Nintendo bekommen hat."
+msgstr "Limit and remaining time apply to the whole console and are set in the Nintendo app. Switch time does not count towards the computer allowance. “As of” is when KidCTL last received new play time from Nintendo."
 
 msgid "Melde dich mit dem Nintendo-Account an, mit dem ihr die Switch in der App verwaltet."
 msgstr "Sign in with the Nintendo Account you use to manage the Switch in the app."
