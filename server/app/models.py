@@ -944,7 +944,7 @@ class NintendoConsole(FamilyScoped, Base):
     used_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     limit_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)       # NULL = kein Limit
     remaining_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)   # NULL = unbegrenzt/unbekannt
-    last_sync: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)     # Konsole zuletzt bei Nintendo
+    last_sync: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)     # zuletzt neue Spielzeit abgerufen
     stale: Mapped[bool] = mapped_column(Boolean, default=False)              # letzter Abruf fehlgeschlagen
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 

@@ -4104,3 +4104,7 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-27: Nintendo: Switch-Konsolen in der Geräteübersicht (Wunsch Adrian nach Test auf dev.kidctl.de), nur
   solange verbunden. Planung: Phase 2 (Switch zählt ins Kontingent, Sperren wirkt auf der Switch) für 0.51. Getestet:
   `test_devices_page_lists_consoles` (Zeile mit Profilen und heutiger Zeit, nach Trennen weg), Nintendo-Tests grün.
+- 2026-11-27: Nintendo „Stand“ zeigte ein Tage altes Datum: `Device.last_sync` der Bibliothek ist der Zeitpunkt, zu dem
+  die Switch zuletzt die Kindersicherungs-Einstellungen übernommen hat, nicht die Spielzeit. „Stand“ ist jetzt der
+  Abruf, bei dem zuletzt neue Spielzeit kam (ändert sich die Tagessumme der Konsole oder beginnt ein neuer Tag).
+  Getestet: `test_stand_moves_only_with_new_play_time` (unverändert → Stand bleibt, neue Minuten → Stand springt).

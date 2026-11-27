@@ -47,8 +47,7 @@ async def main(show_token: bool) -> int:
                 print(f"! Konsole {dev.device_id}: {type(e).__name__}: {e}")
             c = nintendo.snapshot(dev)
             print(f"\nKonsole {c.name!r} ({c.model}), id={c.key}")
-            print(f"  heute {c.used_minutes} min, Limit {c.limit_minutes}, Restzeit {c.remaining_minutes}, "
-                  f"Stand {c.last_sync} UTC")
+            print(f"  heute {c.used_minutes} min, Limit {c.limit_minutes}, Restzeit {c.remaining_minutes}")
             for p in c.players:
                 print(f"  Profil {p.nickname!r} ({p.key}): {p.minutes} min – {p.apps}")
     return 0
