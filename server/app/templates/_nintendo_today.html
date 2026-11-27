@@ -7,7 +7,8 @@
     <dt>{{ _("Heute gespielt") }}</dt><dd>{{ fmt_minutes(n.minutes) if n.minutes is not none else "–" }}</dd>
     <dt>{{ _("Konsole gesamt") }}</dt><dd>{% if c.used_minutes is not none and c.day == today %}{% if c.limit_minutes is not none %}{{ _("{used} von {limit}").format(used=fmt_minutes(c.used_minutes), limit=fmt_minutes(c.limit_minutes)) }}{% else %}{{ fmt_minutes(c.used_minutes) }} · {{ _("kein Limit") }}{% endif %}{% else %}–{% endif %}</dd>
     {% if c.limit_minutes is not none and c.remaining_minutes is not none and c.day == today %}<dt>{{ _("Restzeit") }}</dt><dd>{{ fmt_minutes(c.remaining_minutes) }}</dd>{% endif %}
-    <dt>{{ _("Stand") }}</dt><dd>{{ c.last_sync | localtime if c.last_sync else _("unbekannt") }}</dd>
+    <dt>{{ _("Neue Spielzeit zuletzt") }}</dt><dd>{{ c.last_sync | localtime if c.last_sync else _("unbekannt") }}</dd>
+    <dt>{{ _("Abgerufen") }}</dt><dd>{{ c.updated_at | localtime if c.updated_at else _("unbekannt") }}</dd>
   </dl>
   {% if n.apps %}
   <table>
@@ -16,5 +17,5 @@
   </table>
   {% endif %}
   {% endfor %}
-  <p class="muted"><small>{{ _("Limit und Restzeit gelten für die ganze Konsole und werden in der Nintendo-App eingestellt. Die Switch-Zeit zählt nicht ins Kontingent am Computer. „Stand“ ist der Zeitpunkt, zu dem KidCTL zuletzt neue Spielzeit von Nintendo bekommen hat.") }}</small></p>
+  <p class="muted"><small>{{ _("Limit und Restzeit gelten für die ganze Konsole und werden in der Nintendo-App eingestellt. Die Switch-Zeit zählt nicht ins Kontingent am Computer. Die Switch meldet ihre Spielzeit nur ab und zu an Nintendo; „Neue Spielzeit zuletzt“ zeigt, wann zuletzt neue Minuten kamen. Die Restzeit kann trotzdem sinken, wenn die Schlafenszeit näher rückt.") }}</small></p>
 </section>

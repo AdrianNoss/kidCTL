@@ -3930,8 +3930,8 @@ msgstr "Copied link"
 msgid "Letzter Abruf fehlgeschlagen ({code}). KidCTL versucht es automatisch wieder; angezeigt werden die letzten bekannten Werte."
 msgstr "Last update failed ({code}). KidCTL retries automatically; the last known values are shown."
 
-msgid "Limit und Restzeit gelten für die ganze Konsole und werden in der Nintendo-App eingestellt. Die Switch-Zeit zählt nicht ins Kontingent am Computer. „Stand“ ist der Zeitpunkt, zu dem KidCTL zuletzt neue Spielzeit von Nintendo bekommen hat."
-msgstr "Limit and remaining time apply to the whole console and are set in the Nintendo app. Switch time does not count towards the computer allowance. “As of” is when KidCTL last received new play time from Nintendo."
+msgid "Limit und Restzeit gelten für die ganze Konsole und werden in der Nintendo-App eingestellt. Die Switch-Zeit zählt nicht ins Kontingent am Computer. Die Switch meldet ihre Spielzeit nur ab und zu an Nintendo; „Neue Spielzeit zuletzt“ zeigt, wann zuletzt neue Minuten kamen. Die Restzeit kann trotzdem sinken, wenn die Schlafenszeit näher rückt."
+msgstr "Limit and remaining time apply to the whole console and are set in the Nintendo app. Switch time does not count towards the computer allowance. The Switch only reports its play time to Nintendo now and then; “Last new play time” shows when new minutes last arrived. The remaining time can still drop as bedtime approaches."
 
 msgid "Melde dich mit dem Nintendo-Account an, mit dem ihr die Switch in der App verwaltet."
 msgstr "Sign in with the Nintendo Account you use to manage the Switch in the app."
@@ -3960,8 +3960,11 @@ msgstr "Remaining"
 msgid "Spielzeit der zugeordneten Switch-Profile je Tag – nur zur Ansicht, nicht in der Bildschirmzeit oben enthalten."
 msgstr "Play time of the assigned Switch profiles per day – for information only, not included in the screen time above."
 
-msgid "Stand"
-msgstr "As of"
+msgid "Neue Spielzeit zuletzt"
+msgstr "Last new play time"
+
+msgid "Abgerufen"
+msgstr "Fetched"
 
 msgid "Switch-Spielzeit der letzten {n} Tage"
 msgstr "Switch play time of the last {n} days"

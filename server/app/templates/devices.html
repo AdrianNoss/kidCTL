@@ -26,7 +26,7 @@
       <td>{% if c.stale %}<span class="pill warn">{{ _("veraltet") }}</span>{% endif %}
           <span class="pill" title="{{ _('Spieler: {names}').format(names=c.players | map(attribute='nickname') | join(', ')) }}">{{ ngettext("{n} Profil", "{n} Profile", c.players | length).format(n=c.players | length) }}</span>
           {% if c.used_minutes is not none and c.day %}<span class="pill">{{ _("heute {used} min").format(used=c.used_minutes) }}{% if c.limit_minutes %} / {{ c.limit_minutes }} min{% endif %}</span>{% endif %}</td>
-      <td class="num" data-label="{{ _('Zuletzt gesehen') }}">{{ c.last_sync | localtime }}</td>
+      <td class="num" data-label="{{ _('Zuletzt gesehen') }}">{{ c.updated_at | localtime }}</td>
     </tr>
     {% endfor %}
   </table>
