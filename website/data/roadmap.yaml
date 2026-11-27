@@ -57,7 +57,7 @@
     de: "Alle Anleitungen als durchsuchbares Wiki auf dieser Seite, mit Screenshots und Sicherheitsrichtlinie."
     en: "All guides as a searchable wiki on this site, with screenshots and a security policy."
 - id: saas
-  status: in_progress
+  status: done
   title: { de: "Gehostete Variante für Familien", en: "Hosted version for families" }
   text:
     de: "KidCTL nutzen, ohne einen eigenen Server zu betreiben. Self-Hosting bleibt vollständig und kostenlos (AGPL-3.0)."
@@ -172,7 +172,8 @@
     de: "Nicht genutzte Minuten teilweise auf spätere Tage übertragen."
     en: "Carry part of the unused minutes over to later days."
 - id: feature-requests
-  status: in_progress
+  status: done
+  version: "0.49"
   title: { de: "Feature vorschlagen", en: "Suggest a feature" }
   text:
     de: "Eltern schicken Wünsche für neue Funktionen direkt aus der Weboberfläche an das Entwicklungsteam."
@@ -217,6 +218,7 @@
     en: "Running version in the web interface and the child app, a short summary of changes after each update."
 - id: nintendo-switch
   status: done
+  version: "0.49"
   title: { de: "Nintendo Switch: Spielzeit anzeigen (experimentell)", en: "Nintendo Switch: show play time (experimental)" }
   text:
     de: "Spielzeit, Spiele und Restzeit der Switch je Kind in der Weboberfläche, über die Cloud der Nintendo-App."

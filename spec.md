@@ -4090,3 +4090,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-26: Nintendo-Einrichtung: Button „Neuen Link erzeugen“ unter dem Einfügefeld. Vorher war ein schon
   verbrauchter Login-Link bis zum Ablauf (30 min) nicht ersetzbar. Getestet: abgelehnter Link → neuer Link ersetzt
   URL und Verifier, Einstellungen zeigen den neuen Link.
+- 2026-11-27: Planung (Adrian): Gehostete Variante (`saas`) gilt als erledigt, Adrian testet sie im Betrieb; Roadmap
+  `saas` → done. `FEATURE_REQUEST_EMAIL=features@kidctl.de` auf app.kidctl.de eingerichtet. Version 0.49 = Nintendo-
+  Switch-Spielzeit (experimentell) + Feature vorschlagen/Feature-Inbox, Release nach Adrians Test auf dev.kidctl.de
+  (Roadmap `nintendo-switch`, `feature-requests` → Version 0.49). Version 0.50 = USB-Datenträger, K6 Aufgaben,
+  K13 Weich-Modus; K10, `desktops` und eigene Sperrlisten danach. Nur Planung/Roadmap, kein Code.
