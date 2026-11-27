@@ -223,6 +223,12 @@
   text:
     de: "Spielzeit, Spiele und Restzeit der Switch je Kind in der Weboberfläche, über die Cloud der Nintendo-App."
     en: "Switch play time, games and remaining time per child in the web interface, via the Nintendo app's cloud."
+- id: nintendo-limits
+  status: planned
+  title: { de: "Nintendo Switch: Kontingent und Sperren", en: "Nintendo Switch: quota and locking" }
+  text:
+    de: "Die Switch-Spielzeit zählt ins Tageskontingent des Kindes, und Sperren wirkt auch auf der Switch."
+    en: "Switch play time counts towards the child's daily quota, and locking also applies to the Switch."
 - id: usb-media
   status: planned
   title: { de: "USB-Datenträger sperren", en: "Block USB drives" }

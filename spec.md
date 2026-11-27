@@ -1907,7 +1907,10 @@ Abgestimmt mit Adrian am 2026-11-26, Empfehlungen übernommen außer der Zuordnu
   markieren nur diese. Fehlende Felder neuer Konsolen werden toleriert.
 - **Anzeige:** Karte „Nintendo Switch“ im Tab *Heute* je zugeordnetem Profil (heute gespielt, Konsole gesamt/Limit,
   Restzeit, Stand, Spiele heute); eigene Karte in der *Statistik* (Minuten je Tag, 14 Tage), getrennt von der
-  Bildschirmzeit.
+  Bildschirmzeit. Geräteübersicht (`/devices`): je Konsole eine Zeile (Name → Einstellungen, Modell, „veraltet“,
+  Zahl der Profile, heute gespielt/Limit, zuletzt bei Nintendo), solange die Verbindung besteht.
+- **Phase 2 (geplant für 0.51, Adrian 2026-11-27):** Switch-Zeit zählt ins Kontingent des Kindes, und Sperren wirkt
+  auch auf der Switch (Umsetzung über Limit/Sperre der Nintendo-API, Details per /grill-me vor Beginn).
 - **Daten:** `nintendo_link`, `nintendo_console`, `nintendo_player`, `nintendo_usage` (Tag je Profil, Kind,
   Minuten, Spiele als verschlüsseltes JSON), Alembic `0032`. Aufbewahrung `NINTENDO` 395 Tage wie `USAGE`.
 - **Doku:** `docs/nintendo*.md` (Wiki, Gruppe Betrieb). Smoke-Test mit echtem Konto: `dev/nintendo_smoke.py`
@@ -4098,3 +4101,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
 - 2026-11-27: Nintendo: `pynintendoparental` 2.7.0 → 2.7.1. Nintendo lehnte den Abruf mit HTTP 400 `update_required`
   ab (App-Kennung 2.6.0); 2.7.1 meldet sich als App 2.7.0, sonst unverändert. Befund aus Adrians Test auf
   dev.kidctl.de (Verbindung klappte, Abruf der Konsolen nicht). Getestet: `test_nintendo.py` grün, Hash-Prüfung.
+- 2026-11-27: Nintendo: Switch-Konsolen in der Geräteübersicht (Wunsch Adrian nach Test auf dev.kidctl.de), nur
+  solange verbunden. Planung: Phase 2 (Switch zählt ins Kontingent, Sperren wirkt auf der Switch) für 0.51. Getestet:
+  `test_devices_page_lists_consoles` (Zeile mit Profilen und heutiger Zeit, nach Trennen weg), Nintendo-Tests grün.

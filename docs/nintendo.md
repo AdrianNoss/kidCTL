@@ -35,7 +35,8 @@ Requirement: the Switch is linked to your Nintendo Account in the "Nintendo Swit
 The sign-in link is valid for 30 minutes and only once. If it fails, choose **Generate new link** below the input field and start over.
 
 After about a minute, Settings lists the consoles with their player profiles. Assign each profile to a child.
-Profiles without an assignment (e.g. your own) stay in the list but don't appear for any child.
+Profiles without an assignment (e.g. your own) stay in the list but don't appear for any child. The consoles also show up in the device overview
+(profiles, today's play time, last seen).
 
 ## Security and data
 

@@ -384,3 +384,16 @@ def test_retention_rule_and_saas_default(monkeypatch):
     monkeypatch.setenv("KIDCTL_NINTENDO_INTERVAL", "10")
     s = config.load_settings()
     assert s.nintendo is True and s.nintendo_interval == 60
+
+
+def test_devices_page_lists_consoles(client, parent, monkeypatch):
+    """Geräteübersicht zeigt die Switch-Konsolen mit Profilen und heutiger Spielzeit, nach dem Trennen nicht mehr."""
+    _, tok = _child(client, parent)
+    _linked()
+    _fake_fetch(monkeypatch, ([_device()], set()))
+    _run(nintendo.poll_family(TEST_FAMILY, None))
+    page = client.get("/devices").text
+    assert "Wohnzimmer" in page and "Nintendo Switch" in page and "2 Profile" in page
+    assert "heute 45 min / 120 min" in page and 'href="/settings#nintendo"' in page
+    client.post("/settings/nintendo/unlink", data={"csrf_token": tok})
+    assert "Wohnzimmer" not in client.get("/devices").text

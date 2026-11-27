@@ -35,7 +35,8 @@ Voraussetzung: Die Switch ist in der App „Nintendo Switch Parental Controls“
 Der Anmeldelink gilt 30 Minuten und nur einmal. Klappt es nicht, unter dem Einfügefeld **Neuen Link erzeugen** wählen und von vorn beginnen.
 
 Nach etwa einer Minute erscheinen unter Einstellungen die Konsolen mit ihren Spielerprofilen. Jedes Profil ordnet ihr
-einem Kind zu. Profile ohne Zuordnung (z. B. eure eigenen) bleiben in der Liste, erscheinen aber bei keinem Kind.
+einem Kind zu. Profile ohne Zuordnung (z. B. eure eigenen) bleiben in der Liste, erscheinen aber bei keinem Kind. Die Konsolen stehen außerdem in der Geräteübersicht
+(Profile, heutige Spielzeit, zuletzt gesehen).
 
 ## Sicherheit und Daten
 

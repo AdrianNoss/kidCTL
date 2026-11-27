@@ -541,7 +541,8 @@ async def child_access_decide(child_id: int, msg_id: int, request: Request, acti
 @router.get("/devices")
 def devices_list(request: Request, db: Session = Depends(get_db)):
     devices = sorted(_by_name(db.scalars(select(Device))), key=lambda d: d.revoked_at is not None)
-    return render(request, "devices.html", devices=devices, online=manager.is_online)
+    consoles = nintendo.consoles(db) if settings.nintendo else []
+    return render(request, "devices.html", devices=devices, consoles=consoles, online=manager.is_online)
 
 
 @router.post("/devices/pair")

@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-head"><h1>{{ _("Geräte") }}</h1></div>
 <section class="card">
-  {% if devices %}
+  {% if devices or consoles %}
   <div class="scroll">
   <table class="responsive">
     <tr><th>{{ _("Gerät") }}</th><th>{{ _("Host") }}</th><th>{{ _("Status") }}</th><th>{{ _("Zuletzt gesehen") }}</th></tr>
@@ -17,6 +17,16 @@
           {% if d.protocol_unsupported and not d.revoked_at %}<span class="pill warn">{{ _("Agent veraltet") }}</span>
           {% elif not d.revoked_at and update_for(d.agent_version, platform=d.platform) %}<span class="pill warn" title="{{ _('Im Gerät per Knopf „Update“ aktualisieren') if 'self_update' in d.features.split(',') else (_('Wird automatisch installiert; klappt das nicht, den Installer auf dem Rechner erneut ausführen') if d.platform == 'windows' else _('Auf dem Rechner das Systemupdate ausführen (pacman -Syu bzw. apt upgrade)')) }}">{{ _("Update: {old} → {new}").format(old=d.agent_version, new=update_for(d.agent_version, platform=d.platform)) }}</span>{% endif %}</td>
       <td class="num" data-label="{{ _('Zuletzt gesehen') }}">{{ d.last_seen_at | localtime }}</td>
+    </tr>
+    {% endfor %}
+    {% for c in consoles %}
+    <tr>
+      <td><a href="/settings#nintendo" class="entity">{{ c.name or _("Konsole") }}</a></td>
+      <td data-label="{{ _('Host') }}">{{ _("Nintendo Switch") }}{% if c.model %} <small class="muted">{{ c.model }}</small>{% endif %}</td>
+      <td>{% if c.stale %}<span class="pill warn">{{ _("veraltet") }}</span>{% endif %}
+          <span class="pill" title="{{ _('Spieler: {names}').format(names=c.players | map(attribute='nickname') | join(', ')) }}">{{ ngettext("{n} Profil", "{n} Profile", c.players | length).format(n=c.players | length) }}</span>
+          {% if c.used_minutes is not none and c.day %}<span class="pill">{{ _("heute {used} min").format(used=c.used_minutes) }}{% if c.limit_minutes %} / {{ c.limit_minutes }} min{% endif %}</span>{% endif %}</td>
+      <td class="num" data-label="{{ _('Zuletzt gesehen') }}">{{ c.last_sync | localtime }}</td>
     </tr>
     {% endfor %}
   </table>

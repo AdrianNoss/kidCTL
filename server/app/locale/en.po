@@ -4112,3 +4112,14 @@ msgstr "Send suggestion"
 
 msgid "Du bekommst diese Mail, weil diese Adresse als FEATURE_REQUEST_EMAIL eingetragen ist."
 msgstr "You are receiving this email because this address is set as FEATURE_REQUEST_EMAIL."
+
+msgid "Spieler: {names}"
+msgstr "Players: {names}"
+
+msgid "{n} Profil"
+msgid_plural "{n} Profile"
+msgstr[0] "{n} profile"
+msgstr[1] "{n} profiles"
+
+msgid "heute {used} min"
+msgstr "today {used} min"

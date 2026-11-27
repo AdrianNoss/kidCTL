@@ -186,6 +186,14 @@ def _family(db: Session) -> int | None:
 
 # ---------- Einrichtung ----------
 
+def consoles(db: Session) -> list[NintendoConsole]:
+    """Switch-Konsolen der Familie für die Geräteübersicht (nur solange eine Verbindung besteht)."""
+    row = link(db)
+    if not row or not row.session_token:
+        return []
+    return list(db.scalars(select(NintendoConsole).order_by(NintendoConsole.id)))
+
+
 def link(db: Session) -> NintendoLink | None:
     return db.scalar(select(NintendoLink))
 
