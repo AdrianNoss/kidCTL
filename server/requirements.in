@@ -34,5 +34,5 @@ holidays==0.109
 # Zeitzonen-Daten für zoneinfo (das schlanke Debian-Image bringt tzdata nicht zuverlässig mit)
 tzdata==2026.6
 # Nintendo-Switch-Spielzeit (experimentell, inoffizielle Cloud-API, MIT); aiohttp ist ohnehin da (pywebpush)
-pynintendoparental==2.7.0
+pynintendoparental==2.7.1
 pynintendoauth==1.0.3

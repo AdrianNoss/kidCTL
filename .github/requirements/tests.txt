@@ -1768,9 +1768,9 @@ pynintendoauth==1.0.3 \
     --hash=sha256:b87a83d79ab70aced0dafbef7577fad061f6fcdfbc9ff3f3b3844228b9a1d2ec \
     --hash=sha256:f5acf2c7edf1e9904f5e645c4e430ea19292b87cbf90c7e409219336a552097a
     # via pynintendoparental
-pynintendoparental==2.7.0 \
-    --hash=sha256:2e16514aab2d45f196a1575d9b2f97c097f4af15fb145ed2b23b3df4661d350a \
-    --hash=sha256:ba8385fef8dd39f943c76c98b6594334f549ab6b2ca0fb0c6c2ac0c87c10f1ff
+pynintendoparental==2.7.1 \
+    --hash=sha256:1f6f3499dcb5a9f700f97d6a14d2857735a938ecf762071d8f3359beac8f015f \
+    --hash=sha256:80e191f35a3386dec284dd01ca1afd306a2b2943808fd565e8e44f7d59b8cc3a
     # via -r ../../server/requirements.in
 pyopenssl==26.4.0 \
     --hash=sha256:28dfcce0162b9211413e26dfbfdf1d24317fbeba18fc93c12400a1856b2a0bc7 \

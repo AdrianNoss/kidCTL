@@ -1881,7 +1881,7 @@ Abgestimmt mit Adrian (über die Planungssitzung, alle Empfehlungen übernommen)
 Ursprung: Feature-Wunsch eines Nutzers, Arbeitspaket von Adrian. Recherche: `dev/planung/2026-11-26-nintendo-recherche.md`.
 Abgestimmt mit Adrian am 2026-11-26, Empfehlungen übernommen außer der Zuordnung.
 
-- **Quelle:** inoffizielle Cloud-API der App „Nintendo Switch Parental Controls“ über `pynintendoparental==2.7.0`
+- **Quelle:** inoffizielle Cloud-API der App „Nintendo Switch Parental Controls“ über `pynintendoparental==2.7.1`
   (`pynintendoauth==1.0.3`, MIT), wie die HA-Integration `nintendo_parental_controls`. In UI und Doku „experimentell“.
 - **Nur Anzeige:** Die Switch-Zeit zählt nicht ins Kontingent, ins Zeitkonto oder in die Bildschirmzeit der
   Statistik. Kein Einfluss auf Policy und Agent. Schreiben (Limits, Bonuszeit, Sperre) ist Phase 2.
@@ -4095,3 +4095,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   Switch-Spielzeit (experimentell) + Feature vorschlagen/Feature-Inbox, Release nach Adrians Test auf dev.kidctl.de
   (Roadmap `nintendo-switch`, `feature-requests` → Version 0.49). Version 0.50 = USB-Datenträger, K6 Aufgaben,
   K13 Weich-Modus; K10, `desktops` und eigene Sperrlisten danach. Nur Planung/Roadmap, kein Code.
+- 2026-11-27: Nintendo: `pynintendoparental` 2.7.0 → 2.7.1. Nintendo lehnte den Abruf mit HTTP 400 `update_required`
+  ab (App-Kennung 2.6.0); 2.7.1 meldet sich als App 2.7.0, sonst unverändert. Befund aus Adrians Test auf
+  dev.kidctl.de (Verbindung klappte, Abruf der Konsolen nicht). Getestet: `test_nintendo.py` grün, Hash-Prüfung.
