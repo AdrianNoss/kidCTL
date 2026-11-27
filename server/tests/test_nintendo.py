@@ -14,7 +14,7 @@ from types import SimpleNamespace
 
 import pytest
 from pynintendoauth.exceptions import HttpException, InvalidSessionTokenException
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 
 from app import nintendo, retention
 from app import schedule as sch
@@ -292,7 +292,16 @@ def test_setup_rejected_and_expired_link(client, parent, monkeypatch):
         raise HttpException(400, "invalid_request")
     monkeypatch.setattr(pynintendoparental.Authenticator, "async_complete_login", reject)
     r = client.post("/settings/nintendo/link", data={"csrf_token": tok, "url": link})
-    assert r.status_code == 400 and "abgelehnt" in r.text
+    assert r.status_code == 400 and "abgelehnt" in r.text and "Neuen Link erzeugen" in r.text
+    with SessionLocal() as db:
+        old = db.scalar(select(NintendoLink))
+        old_url, old_verifier = old.pending_url, old.pending_verifier
+    client.post("/settings/nintendo/start", data={"csrf_token": tok})   # neuer Link ersetzt den verbrauchten
+    with SessionLocal() as db:
+        new = db.scalar(select(NintendoLink))
+        assert new.pending_url != old_url and new.pending_verifier != old_verifier
+        assert db.scalar(select(func.count()).select_from(NintendoLink)) == 1
+    assert new.pending_url in client.get("/settings").text.replace("&amp;", "&")
     with SessionLocal() as db:
         db.scalar(select(NintendoLink)).pending_at = utcnow() - timedelta(minutes=nintendo.PENDING_MINUTES + 1)
         db.commit()

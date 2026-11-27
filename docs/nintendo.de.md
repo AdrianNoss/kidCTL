@@ -32,7 +32,7 @@ Voraussetzung: Die Switch ist in der App „Nintendo Switch Parental Controls“
    klicken und **„Link-Adresse kopieren“** wählen. Den Button selbst nicht anklicken.
 5. Den kopierten Link in KidCTL einfügen und **Verbinden** wählen. Er beginnt mit `npf54789befb391a838://auth`.
 
-Der Anmeldelink gilt 30 Minuten und nur einmal. Klappt es nicht, die Einrichtung einfach neu starten.
+Der Anmeldelink gilt 30 Minuten und nur einmal. Klappt es nicht, unter dem Einfügefeld **Neuen Link erzeugen** wählen und von vorn beginnen.
 
 Nach etwa einer Minute erscheinen unter Einstellungen die Konsolen mit ihren Spielerprofilen. Jedes Profil ordnet ihr
 einem Kind zu. Profile ohne Zuordnung (z. B. eure eigenen) bleiben in der Liste, erscheinen aber bei keinem Kind.

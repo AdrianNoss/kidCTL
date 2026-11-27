@@ -1892,7 +1892,8 @@ Abgestimmt mit Adrian am 2026-11-26, Empfehlungen übernommen außer der Zuordnu
   Rate-Limits bei vielen Familien bekannt sind), `KIDCTL_NINTENDO_INTERVAL` (Standard und Minimum 60 s). Je Familie
   in der DB nur Verknüpfung und Zuordnung.
 - **Einrichtung** unter Einstellungen → „Nintendo Switch“ (alle Eltern, ohne JavaScript): Login-Link erzeugen, den
-  kopierten `npf54789befb391a838://auth#…`-Link einfügen. Der PKCE-Verifier liegt verschlüsselt in der DB (30 min).
+  kopierten `npf54789befb391a838://auth#…`-Link einfügen. Der PKCE-Verifier liegt verschlüsselt in der DB (30 min). „Neuen Link erzeugen“
+  ersetzt einen offenen (z. B. schon verbrauchten) Link samt Verifier.
   Die Bibliothek hält ihn nur im Objekt, daher wird `_auth_code_verifier` gesetzt. Hinweis: Gerät ohne Nintendo-App
   nutzen.
 - **Session-Token:** `Sealed` (Familienschlüssel), nie im Log (Logger der Bibliothek fest auf WARNING, weil DEBUG
@@ -4086,3 +4087,6 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   `pages.yml` startet sich beim Release-Ereignis jetzt per `workflow_dispatch` neu (Tag als Eingabe für die Warteschleife).
   Geprüft: Ursache über Artefakt (version.json = 0.48.0) vs. Live-Seite (0.47.0, Last-Modified vom Push-Lauf); Workflow-YAML
   geparst. Wirkung erst beim nächsten Release prüfbar.
+- 2026-11-26: Nintendo-Einrichtung: Button „Neuen Link erzeugen“ unter dem Einfügefeld. Vorher war ein schon
+  verbrauchter Login-Link bis zum Ablauf (30 min) nicht ersetzbar. Getestet: abgelehnter Link → neuer Link ersetzt
+  URL und Verifier, Einstellungen zeigen den neuen Link.

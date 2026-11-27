@@ -62,6 +62,11 @@
       <button type="submit">{{ _("Verbinden") }}</button>
     </form>
     <p class="muted"><small>{{ _("Der Link gilt 30 Minuten. KidCTL speichert danach nur die Anmeldung bei Nintendo, verschlüsselt; euer Nintendo-Passwort sieht KidCTL nie.") }}</small></p>
+    <form method="post" action="/settings/nintendo/start">
+      <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
+      <button type="submit" class="secondary small">{{ _("Neuen Link erzeugen") }}</button>
+    </form>
+    <p class="muted"><small>{{ _("Jeder Link funktioniert nur einmal. Hat die Anmeldung nicht geklappt, einen neuen Link erzeugen und von vorn beginnen; der alte Link wird damit ungültig.") }}</small></p>
     {% else %}
     <form method="post" action="/settings/nintendo/start">
       <input type="hidden" name="{{ CSRF_FIELD }}" value="{{ csrf_token }}">
