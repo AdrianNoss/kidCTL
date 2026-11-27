@@ -1,7 +1,7 @@
 # Nintendo Switch (experimentell)
 
 KidCTL zeigt die Spielzeit einer Nintendo Switch beim Kind an: im Tab „Heute“ und in der Statistik. Das gilt für
-die heutige Spielzeit je Profil und die gespielten Spiele, dazu Limit, Restzeit und Stand der Konsole.
+die heutige Spielzeit je Profil und die gespielten Spiele, dazu Limit und Restzeit der Konsole.
 
 > [!WARNING]
 > Experimentell. Nintendo bietet keine offizielle Schnittstelle. KidCTL nutzt dieselbe Cloud-Schnittstelle wie die
@@ -16,8 +16,9 @@ die heutige Spielzeit je Profil und die gespielten Spiele, dazu Limit, Restzeit 
 - **Limit und Restzeit gelten je Konsole.** Nintendo kennt kein Limit je Profil. Die Spielzeit und die Spiele zeigt
   KidCTL je Spielerprofil.
 - **So aktuell wie die Switch.** Die Werte kommen aus der Nintendo-Cloud. Ist die Switch offline, bleibt der letzte
-  Stand stehen. „Stand“ im Tab „Heute“ zeigt, wann KidCTL zuletzt neue Spielzeit
-  bekommen hat. Spielt niemand, bleibt er stehen.
+  Stand stehen. Im Tab „Heute“ zeigt „Neue Spielzeit zuletzt“, wann zuletzt
+  neue Minuten kamen, „Abgerufen“ den letzten Abruf bei Nintendo. Die Restzeit rechnet auch die Schlafenszeit ein und
+  kann deshalb sinken, ohne dass gespielt wird.
 - KidCTL fragt einmal pro Minute ab. Die Statistik speichert die Spielzeit je Tag 13 Monate lang, wie die
   Bildschirmzeit (siehe [Aufbewahrung](retention.de.md)).
 

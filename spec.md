@@ -4108,3 +4108,8 @@ Windows in „Architektur → Windows“ („Restlücken – Hintergrund (Window
   die Switch zuletzt die Kindersicherungs-Einstellungen übernommen hat, nicht die Spielzeit. „Stand“ ist jetzt der
   Abruf, bei dem zuletzt neue Spielzeit kam (ändert sich die Tagessumme der Konsole oder beginnt ein neuer Tag).
   Getestet: `test_stand_moves_only_with_new_play_time` (unverändert → Stand bleibt, neue Minuten → Stand springt).
+- 2026-11-27: Nintendo „Stand“ blieb nach dem Update auf dem alten Wert, weil er nur bei neuer Spielzeit überschrieben
+  wird. Migration 0033 leert die alten Werte. Tab „Heute“ zeigt statt „Stand“ zwei Zeilen: „Neue Spielzeit zuletzt“ und
+  „Abgerufen“ (letzter erfolgreicher Abruf der Konsole); Geräteübersicht „Zuletzt gesehen“ = Abruf. Hinweis, dass die
+  Restzeit der Bibliothek auch die Schlafenszeit einrechnet und ohne Spielen sinken kann. Getestet: Nintendo- und
+  i18n-Tests, Migration 0032 → 0033 mit altem Wert (geleert), `alembic check`, Downgrade/Upgrade.

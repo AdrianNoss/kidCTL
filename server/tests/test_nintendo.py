@@ -154,7 +154,7 @@ def test_poll_success_stores_console_players_usage(client, parent, monkeypatch, 
 
 
 def test_stand_moves_only_with_new_play_time(client, parent, monkeypatch):
-    # „Stand“ = wann zuletzt neue Spielzeit kam (nicht der Einstellungs-Sync der Bibliothek, der Tage alt sein kann)
+    # „Neue Spielzeit zuletzt“ = wann zuletzt neue Spielzeit kam (nicht der Einstellungs-Sync der Bibliothek, der Tage alt sein kann)
     _linked()
 
     def poll(today):
@@ -347,6 +347,7 @@ def test_assign_shows_today_and_stats_unlink_keeps_history(client, parent, monke
     heute = client.get(f"/children/{cid}").text
     assert "Nintendo Switch" in heute and "Wohnzimmer · Max" in heute and "Zelda" in heute
     assert "0:40 h" in heute or "40 min" in heute
+    assert "Neue Spielzeit zuletzt" in heute and "Abgerufen" in heute
     stats = client.get(f"/children/{cid}/stats").text
     assert 'id="nintendo"' in stats
     assert nintendo.daily(SessionLocal(), cid, 3)[-1] == (sch.today_local(), 40)

@@ -1,7 +1,7 @@
 # Nintendo Switch (experimental)
 
 KidCTL shows a Nintendo Switch's play time for the child: in the "Today" tab and in the statistics. This covers
-today's play time per profile and the games played, plus the console's limit, remaining time and last sync.
+today's play time per profile and the games played, plus the console's limit and remaining time.
 
 > [!WARNING]
 > Experimental. Nintendo offers no official interface. KidCTL uses the same cloud interface as the
@@ -16,8 +16,9 @@ today's play time per profile and the games played, plus the console's limit, re
 - **Limit and remaining time apply per console.** Nintendo has no limit per profile. KidCTL shows the play time and
   games per player profile.
 - **As current as the Switch.** The values come from the Nintendo cloud. If the Switch is offline, the last state
-  stays. "As of" in the "Today" tab shows when KidCTL last received new play
-  time. If nobody plays, it stays put.
+  stays. In the "Today" tab, "Last new play time" shows when new minutes last
+  arrived, "Fetched" the last poll at Nintendo. The remaining time includes bedtime and can therefore drop without
+  anyone playing.
 - KidCTL polls once a minute. The statistics keep the play time per day for 13 months, like screen time (see
   [Data retention](retention.md)).
 
